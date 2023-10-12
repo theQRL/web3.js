@@ -51,7 +51,7 @@ describe('getUncleByBlockHashAndIndex', () => {
 		async (_, inputParameters) => {
 			await ethRpcMethods.getUncleByBlockHashAndIndex(requestManager, ...inputParameters);
 			expect(requestManagerSendSpy).toHaveBeenCalledWith({
-				method: 'eth_getUncleByBlockHashAndIndex',
+				method: 'zond_getUncleByBlockHashAndIndex',
 				params: inputParameters,
 			});
 		},

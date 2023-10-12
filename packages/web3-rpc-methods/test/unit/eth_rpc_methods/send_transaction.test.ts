@@ -51,7 +51,7 @@ describe('sendTransaction', () => {
 		async (_, inputParameters) => {
 			await ethRpcMethods.sendTransaction(requestManager, ...inputParameters);
 			expect(requestManagerSendSpy).toHaveBeenCalledWith({
-				method: 'eth_sendTransaction',
+				method: 'zond_sendTransaction',
 				params: inputParameters,
 			});
 		},

@@ -52,7 +52,7 @@ describe('estimateGas', () => {
 		async (_, inputParameters) => {
 			await ethRpcMethods.estimateGas(requestManager, ...inputParameters);
 			expect(requestManagerSendSpy).toHaveBeenCalledWith({
-				method: 'eth_estimateGas',
+				method: 'zond_estimateGas',
 				params: inputParameters,
 			});
 		},

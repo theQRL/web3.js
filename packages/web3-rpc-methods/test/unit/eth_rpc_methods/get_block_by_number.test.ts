@@ -51,7 +51,7 @@ describe('getBlockByNumber', () => {
 		async (_, inputParameters) => {
 			await ethRpcMethods.getBlockByNumber(requestManager, ...inputParameters);
 			expect(requestManagerSendSpy).toHaveBeenCalledWith({
-				method: 'eth_getBlockByNumber',
+				method: 'zond_getBlockByNumber',
 				params: inputParameters,
 			});
 		},

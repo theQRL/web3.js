@@ -45,7 +45,7 @@ describe('getCoinbase', () => {
 	it('should call requestManager.send with getCoinbase method', async () => {
 		await ethRpcMethods.getCoinbase(requestManager);
 		expect(requestManagerSendSpy).toHaveBeenCalledWith({
-			method: 'eth_coinbase',
+			method: 'zond_coinbase',
 			params: [],
 		});
 	});

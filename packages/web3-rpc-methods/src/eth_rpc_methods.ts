@@ -33,56 +33,56 @@ import { validator } from 'web3-validator';
 
 export async function getProtocolVersion(requestManager: Web3RequestManager) {
 	return requestManager.send({
-		method: 'eth_protocolVersion',
+		method: 'zond_protocolVersion',
 		params: [],
 	});
 }
 
 export async function getSyncing(requestManager: Web3RequestManager) {
 	return requestManager.send({
-		method: 'eth_syncing',
+		method: 'zond_syncing',
 		params: [],
 	});
 }
 
 export async function getCoinbase(requestManager: Web3RequestManager) {
 	return requestManager.send({
-		method: 'eth_coinbase',
+		method: 'zond_coinbase',
 		params: [],
 	});
 }
 
 export async function getMining(requestManager: Web3RequestManager) {
 	return requestManager.send({
-		method: 'eth_mining',
+		method: 'zond_mining',
 		params: [],
 	});
 }
 
 export async function getHashRate(requestManager: Web3RequestManager) {
 	return requestManager.send({
-		method: 'eth_hashrate',
+		method: 'zond_hashrate',
 		params: [],
 	});
 }
 
 export async function getGasPrice(requestManager: Web3RequestManager) {
 	return requestManager.send({
-		method: 'eth_gasPrice',
+		method: 'zond_gasPrice',
 		params: [],
 	});
 }
 
 export async function getAccounts(requestManager: Web3RequestManager) {
 	return requestManager.send({
-		method: 'eth_accounts',
+		method: 'zond_accounts',
 		params: [],
 	});
 }
 
 export async function getBlockNumber(requestManager: Web3RequestManager) {
 	return requestManager.send({
-		method: 'eth_blockNumber',
+		method: 'zond_blockNumber',
 		params: [],
 	});
 }
@@ -95,7 +95,7 @@ export async function getBalance(
 	validator.validate(['address', 'blockNumberOrTag'], [address, blockNumber]);
 
 	return requestManager.send({
-		method: 'eth_getBalance',
+		method: 'zond_getBalance',
 		params: [address, blockNumber],
 	});
 }
@@ -109,7 +109,7 @@ export async function getStorageAt(
 	validator.validate(['address', 'hex', 'blockNumberOrTag'], [address, storageSlot, blockNumber]);
 
 	return requestManager.send({
-		method: 'eth_getStorageAt',
+		method: 'zond_getStorageAt',
 		params: [address, storageSlot, blockNumber],
 	});
 }
@@ -122,7 +122,7 @@ export async function getTransactionCount(
 	validator.validate(['address', 'blockNumberOrTag'], [address, blockNumber]);
 
 	return requestManager.send({
-		method: 'eth_getTransactionCount',
+		method: 'zond_getTransactionCount',
 		params: [address, blockNumber],
 	});
 }
@@ -134,7 +134,7 @@ export async function getBlockTransactionCountByHash(
 	validator.validate(['bytes32'], [blockHash]);
 
 	return requestManager.send({
-		method: 'eth_getBlockTransactionCountByHash',
+		method: 'zond_getBlockTransactionCountByHash',
 		params: [blockHash],
 	});
 }
@@ -146,7 +146,7 @@ export async function getBlockTransactionCountByNumber(
 	validator.validate(['blockNumberOrTag'], [blockNumber]);
 
 	return requestManager.send({
-		method: 'eth_getBlockTransactionCountByNumber',
+		method: 'zond_getBlockTransactionCountByNumber',
 		params: [blockNumber],
 	});
 }
@@ -158,7 +158,7 @@ export async function getUncleCountByBlockHash(
 	validator.validate(['bytes32'], [blockHash]);
 
 	return requestManager.send({
-		method: 'eth_getUncleCountByBlockHash',
+		method: 'zond_getUncleCountByBlockHash',
 		params: [blockHash],
 	});
 }
@@ -170,7 +170,7 @@ export async function getUncleCountByBlockNumber(
 	validator.validate(['blockNumberOrTag'], [blockNumber]);
 
 	return requestManager.send({
-		method: 'eth_getUncleCountByBlockNumber',
+		method: 'zond_getUncleCountByBlockNumber',
 		params: [blockNumber],
 	});
 }
@@ -183,7 +183,7 @@ export async function getCode(
 	validator.validate(['address', 'blockNumberOrTag'], [address, blockNumber]);
 
 	return requestManager.send({
-		method: 'eth_getCode',
+		method: 'zond_getCode',
 		params: [address, blockNumber],
 	});
 }
@@ -196,7 +196,7 @@ export async function sign(
 	validator.validate(['address', 'hex'], [address, message]);
 
 	return requestManager.send({
-		method: 'eth_sign',
+		method: 'zond_sign',
 		params: [address, message],
 	});
 }
@@ -210,7 +210,7 @@ export async function signTransaction(
 	transaction: TransactionWithSenderAPI | Partial<TransactionWithSenderAPI>,
 ) {
 	return requestManager.send({
-		method: 'eth_signTransaction',
+		method: 'zond_signTransaction',
 		params: [transaction],
 	});
 }
@@ -224,7 +224,7 @@ export async function sendTransaction(
 	transaction: TransactionWithSenderAPI | Partial<TransactionWithSenderAPI>,
 ) {
 	return requestManager.send({
-		method: 'eth_sendTransaction',
+		method: 'zond_sendTransaction',
 		params: [transaction],
 	});
 }
@@ -236,7 +236,7 @@ export async function sendRawTransaction(
 	validator.validate(['hex'], [transaction]);
 
 	return requestManager.send({
-		method: 'eth_sendRawTransaction',
+		method: 'zond_sendRawTransaction',
 		params: [transaction],
 	});
 }
@@ -251,7 +251,7 @@ export async function call(
 	validator.validate(['blockNumberOrTag'], [blockNumber]);
 
 	return requestManager.send({
-		method: 'eth_call',
+		method: 'zond_call',
 		params: [transaction, blockNumber],
 	});
 }
@@ -265,7 +265,7 @@ export async function estimateGas(
 	validator.validate(['blockNumberOrTag'], [blockNumber]);
 
 	return requestManager.send({
-		method: 'eth_estimateGas',
+		method: 'zond_estimateGas',
 		params: [transaction, blockNumber],
 	});
 }
@@ -278,7 +278,7 @@ export async function getBlockByHash(
 	validator.validate(['bytes32', 'bool'], [blockHash, hydrated]);
 
 	return requestManager.send({
-		method: 'eth_getBlockByHash',
+		method: 'zond_getBlockByHash',
 		params: [blockHash, hydrated],
 	});
 }
@@ -291,7 +291,7 @@ export async function getBlockByNumber(
 	validator.validate(['blockNumberOrTag', 'bool'], [blockNumber, hydrated]);
 
 	return requestManager.send({
-		method: 'eth_getBlockByNumber',
+		method: 'zond_getBlockByNumber',
 		params: [blockNumber, hydrated],
 	});
 }
@@ -303,7 +303,7 @@ export async function getTransactionByHash(
 	validator.validate(['bytes32'], [transactionHash]);
 
 	return requestManager.send({
-		method: 'eth_getTransactionByHash',
+		method: 'zond_getTransactionByHash',
 		params: [transactionHash],
 	});
 }
@@ -316,7 +316,7 @@ export async function getTransactionByBlockHashAndIndex(
 	validator.validate(['bytes32', 'hex'], [blockHash, transactionIndex]);
 
 	return requestManager.send({
-		method: 'eth_getTransactionByBlockHashAndIndex',
+		method: 'zond_getTransactionByBlockHashAndIndex',
 		params: [blockHash, transactionIndex],
 	});
 }
@@ -329,7 +329,7 @@ export async function getTransactionByBlockNumberAndIndex(
 	validator.validate(['blockNumberOrTag', 'hex'], [blockNumber, transactionIndex]);
 
 	return requestManager.send({
-		method: 'eth_getTransactionByBlockNumberAndIndex',
+		method: 'zond_getTransactionByBlockNumberAndIndex',
 		params: [blockNumber, transactionIndex],
 	});
 }
@@ -341,7 +341,7 @@ export async function getTransactionReceipt(
 	validator.validate(['bytes32'], [transactionHash]);
 
 	return requestManager.send({
-		method: 'eth_getTransactionReceipt',
+		method: 'zond_getTransactionReceipt',
 		params: [transactionHash],
 	});
 }
@@ -354,7 +354,7 @@ export async function getUncleByBlockHashAndIndex(
 	validator.validate(['bytes32', 'hex'], [blockHash, uncleIndex]);
 
 	return requestManager.send({
-		method: 'eth_getUncleByBlockHashAndIndex',
+		method: 'zond_getUncleByBlockHashAndIndex',
 		params: [blockHash, uncleIndex],
 	});
 }
@@ -367,14 +367,14 @@ export async function getUncleByBlockNumberAndIndex(
 	validator.validate(['blockNumberOrTag', 'hex'], [blockNumber, uncleIndex]);
 
 	return requestManager.send({
-		method: 'eth_getUncleByBlockNumberAndIndex',
+		method: 'zond_getUncleByBlockNumberAndIndex',
 		params: [blockNumber, uncleIndex],
 	});
 }
 
 export async function getCompilers(requestManager: Web3RequestManager) {
 	return requestManager.send({
-		method: 'eth_getCompilers',
+		method: 'zond_getCompilers',
 		params: [],
 	});
 }
@@ -383,7 +383,7 @@ export async function compileSolidity(requestManager: Web3RequestManager, code: 
 	validator.validate(['string'], [code]);
 
 	return requestManager.send({
-		method: 'eth_compileSolidity',
+		method: 'zond_compileSolidity',
 		params: [code],
 	});
 }
@@ -392,7 +392,7 @@ export async function compileLLL(requestManager: Web3RequestManager, code: strin
 	validator.validate(['string'], [code]);
 
 	return requestManager.send({
-		method: 'eth_compileLLL',
+		method: 'zond_compileLLL',
 		params: [code],
 	});
 }
@@ -401,7 +401,7 @@ export async function compileSerpent(requestManager: Web3RequestManager, code: s
 	validator.validate(['string'], [code]);
 
 	return requestManager.send({
-		method: 'eth_compileSerpent',
+		method: 'zond_compileSerpent',
 		params: [code],
 	});
 }
@@ -410,21 +410,21 @@ export async function newFilter(requestManager: Web3RequestManager, filter: Filt
 	validator.validate(['filter'], [filter]);
 
 	return requestManager.send({
-		method: 'eth_newFilter',
+		method: 'zond_newFilter',
 		params: [filter],
 	});
 }
 
 export async function newBlockFilter(requestManager: Web3RequestManager) {
 	return requestManager.send({
-		method: 'eth_newBlockFilter',
+		method: 'zond_newBlockFilter',
 		params: [],
 	});
 }
 
 export async function newPendingTransactionFilter(requestManager: Web3RequestManager) {
 	return requestManager.send({
-		method: 'eth_newPendingTransactionFilter',
+		method: 'zond_newPendingTransactionFilter',
 		params: [],
 	});
 }
@@ -433,7 +433,7 @@ export async function uninstallFilter(requestManager: Web3RequestManager, filter
 	validator.validate(['hex'], [filterIdentifier]);
 
 	return requestManager.send({
-		method: 'eth_uninstallFilter',
+		method: 'zond_uninstallFilter',
 		params: [filterIdentifier],
 	});
 }
@@ -442,7 +442,7 @@ export async function getFilterChanges(requestManager: Web3RequestManager, filte
 	validator.validate(['hex'], [filterIdentifier]);
 
 	return requestManager.send({
-		method: 'eth_getFilterChanges',
+		method: 'zond_getFilterChanges',
 		params: [filterIdentifier],
 	});
 }
@@ -451,7 +451,7 @@ export async function getFilterLogs(requestManager: Web3RequestManager, filterId
 	validator.validate(['hex'], [filterIdentifier]);
 
 	return requestManager.send({
-		method: 'eth_getFilterLogs',
+		method: 'zond_getFilterLogs',
 		params: [filterIdentifier],
 	});
 }
@@ -460,14 +460,14 @@ export async function getLogs(requestManager: Web3RequestManager, filter: Filter
 	validator.validate(['filter'], [filter]);
 
 	return requestManager.send({
-		method: 'eth_getLogs',
+		method: 'zond_getLogs',
 		params: [filter],
 	});
 }
 
 export async function getWork(requestManager: Web3RequestManager) {
 	return requestManager.send({
-		method: 'eth_getWork',
+		method: 'zond_getWork',
 		params: [],
 	});
 }
@@ -481,7 +481,7 @@ export async function submitWork(
 	validator.validate(['bytes8', 'bytes32', 'bytes32'], [nonce, hash, digest]);
 
 	return requestManager.send({
-		method: 'eth_submitWork',
+		method: 'zond_submitWork',
 		params: [nonce, hash, digest],
 	});
 }
@@ -494,7 +494,7 @@ export async function submitHashrate(
 	validator.validate(['bytes32', 'bytes32'], [hashRate, id]);
 
 	return requestManager.send({
-		method: 'eth_submitHashrate',
+		method: 'zond_submitHashrate',
 		params: [hashRate, id],
 	});
 }
@@ -512,7 +512,7 @@ export async function getFeeHistory(
 	}
 
 	return requestManager.send({
-		method: 'eth_feeHistory',
+		method: 'zond_feeHistory',
 		params: [blockCount, newestBlock, rewardPercentiles],
 	});
 }
@@ -521,21 +521,21 @@ export async function getPendingTransactions(
 	requestManager: Web3RequestManager<Web3EthExecutionAPI>,
 ) {
 	return requestManager.send({
-		method: 'eth_pendingTransactions',
+		method: 'zond_pendingTransactions',
 		params: [],
 	});
 }
 
 export async function requestAccounts(requestManager: Web3RequestManager<Web3EthExecutionAPI>) {
 	return requestManager.send({
-		method: 'eth_requestAccounts',
+		method: 'zond_requestAccounts',
 		params: [],
 	});
 }
 
 export async function getChainId(requestManager: Web3RequestManager<Web3EthExecutionAPI>) {
 	return requestManager.send({
-		method: 'eth_chainId',
+		method: 'zond_chainId',
 		params: [],
 	});
 }
@@ -552,7 +552,7 @@ export async function getProof(
 	);
 
 	return requestManager.send({
-		method: 'eth_getProof',
+		method: 'zond_getProof',
 		params: [address, storageKeys, blockNumber],
 	});
 }
@@ -572,7 +572,7 @@ export async function createAccessList(
 	validator.validate(['blockNumberOrTag'], [blockNumber]);
 
 	return requestManager.send({
-		method: 'eth_createAccessList',
+		method: 'zond_createAccessList',
 		params: [transaction, blockNumber],
 	});
 }
@@ -587,7 +587,7 @@ export async function signTypedData(
 	validator.validate(['address'], [address]);
 
 	return requestManager.send({
-		method: `eth_signTypedData${useLegacy ? '' : '_v4'}`,
+		method: `zond_signTypedData${useLegacy ? '' : '_v4'}`,
 		params: [address, typedData],
 	});
 }

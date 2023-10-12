@@ -51,7 +51,7 @@ describe('getBalance', () => {
 		async (_, inputParameters) => {
 			await ethRpcMethods.getBalance(requestManager, ...inputParameters);
 			expect(requestManagerSendSpy).toHaveBeenCalledWith({
-				method: 'eth_getBalance',
+				method: 'zond_getBalance',
 				params: inputParameters,
 			});
 		},

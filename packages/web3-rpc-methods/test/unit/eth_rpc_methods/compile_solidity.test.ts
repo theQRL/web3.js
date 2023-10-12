@@ -51,7 +51,7 @@ describe('compileSolidity', () => {
 		async (_, inputParameters) => {
 			await ethRpcMethods.compileSolidity(requestManager, ...inputParameters);
 			expect(requestManagerSendSpy).toHaveBeenCalledWith({
-				method: 'eth_compileSolidity',
+				method: 'zond_compileSolidity',
 				params: inputParameters,
 			});
 		},

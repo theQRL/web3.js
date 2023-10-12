@@ -45,7 +45,7 @@ describe('getSyncing', () => {
 	it('should call requestManager.send with getSyncing method', async () => {
 		await ethRpcMethods.getSyncing(requestManager);
 		expect(requestManagerSendSpy).toHaveBeenCalledWith({
-			method: 'eth_syncing',
+			method: 'zond_syncing',
 			params: [],
 		});
 	});

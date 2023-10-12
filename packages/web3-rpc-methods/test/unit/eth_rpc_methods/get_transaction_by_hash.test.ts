@@ -51,7 +51,7 @@ describe('getTransactionByHash', () => {
 		async (_, inputParameters) => {
 			await ethRpcMethods.getTransactionByHash(requestManager, ...inputParameters);
 			expect(requestManagerSendSpy).toHaveBeenCalledWith({
-				method: 'eth_getTransactionByHash',
+				method: 'zond_getTransactionByHash',
 				params: inputParameters,
 			});
 		},

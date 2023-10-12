@@ -37,7 +37,7 @@ describe('signTypedData', () => {
 		async (_, inputParameters) => {
 			await ethRpcMethods.signTypedData(requestManager, ...inputParameters);
 			expect(requestManagerSendSpy).toHaveBeenCalledWith({
-				method: `eth_signTypedData${inputParameters[2] ? '' : '_v4'}`,
+				method: `zond_signTypedData${inputParameters[2] ? '' : '_v4'}`,
 				params: [inputParameters[0], inputParameters[1]],
 			});
 		},

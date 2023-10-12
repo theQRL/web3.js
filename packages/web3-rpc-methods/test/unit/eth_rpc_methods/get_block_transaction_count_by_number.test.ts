@@ -54,7 +54,7 @@ describe('getBlockTransactionCountByNumber', () => {
 				...inputParameters,
 			);
 			expect(requestManagerSendSpy).toHaveBeenCalledWith({
-				method: 'eth_getBlockTransactionCountByNumber',
+				method: 'zond_getBlockTransactionCountByNumber',
 				params: inputParameters,
 			});
 		},

@@ -51,7 +51,7 @@ describe('getFeeHistory', () => {
 		async (_, inputParameters) => {
 			await ethRpcMethods.getFeeHistory(requestManager, ...inputParameters);
 			expect(requestManagerSendSpy).toHaveBeenCalledWith({
-				method: 'eth_feeHistory',
+				method: 'zond_feeHistory',
 				params: inputParameters,
 			});
 		},

@@ -54,7 +54,7 @@ describe('getTransactionByBlockNumberAndIndex', () => {
 				...inputParameters,
 			);
 			expect(requestManagerSendSpy).toHaveBeenCalledWith({
-				method: 'eth_getTransactionByBlockNumberAndIndex',
+				method: 'zond_getTransactionByBlockNumberAndIndex',
 				params: inputParameters,
 			});
 		},

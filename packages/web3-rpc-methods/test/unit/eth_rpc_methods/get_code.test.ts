@@ -51,7 +51,7 @@ describe('getCode', () => {
 		async (_, inputParameters) => {
 			await ethRpcMethods.getCode(requestManager, ...inputParameters);
 			expect(requestManagerSendSpy).toHaveBeenCalledWith({
-				method: 'eth_getCode',
+				method: 'zond_getCode',
 				params: inputParameters,
 			});
 		},

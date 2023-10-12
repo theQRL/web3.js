@@ -45,7 +45,7 @@ describe('getProtocolVersion', () => {
 	it('should call requestManager.send with getProtocolVersion method', async () => {
 		await ethRpcMethods.getProtocolVersion(requestManager);
 		expect(requestManagerSendSpy).toHaveBeenCalledWith({
-			method: 'eth_protocolVersion',
+			method: 'zond_protocolVersion',
 			params: [],
 		});
 	});

@@ -51,7 +51,7 @@ describe('getFilterLogs', () => {
 		async (_, inputParameters) => {
 			await ethRpcMethods.getFilterLogs(requestManager, ...inputParameters);
 			expect(requestManagerSendSpy).toHaveBeenCalledWith({
-				method: 'eth_getFilterLogs',
+				method: 'zond_getFilterLogs',
 				params: inputParameters,
 			});
 		},

@@ -51,7 +51,7 @@ describe('compileSerpent', () => {
 		async (_, inputParameters) => {
 			await ethRpcMethods.compileSerpent(requestManager, ...inputParameters);
 			expect(requestManagerSendSpy).toHaveBeenCalledWith({
-				method: 'eth_compileSerpent',
+				method: 'zond_compileSerpent',
 				params: inputParameters,
 			});
 		},

@@ -45,7 +45,7 @@ describe('getAccounts', () => {
 	it('should call requestManager.send with getAccounts method', async () => {
 		await ethRpcMethods.getAccounts(requestManager);
 		expect(requestManagerSendSpy).toHaveBeenCalledWith({
-			method: 'eth_accounts',
+			method: 'zond_accounts',
 			params: [],
 		});
 	});

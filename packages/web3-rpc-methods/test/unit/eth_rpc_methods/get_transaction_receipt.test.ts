@@ -51,7 +51,7 @@ describe('getTransactionReceipt', () => {
 		async (_, inputParameters) => {
 			await ethRpcMethods.getTransactionReceipt(requestManager, ...inputParameters);
 			expect(requestManagerSendSpy).toHaveBeenCalledWith({
-				method: 'eth_getTransactionReceipt',
+				method: 'zond_getTransactionReceipt',
 				params: inputParameters,
 			});
 		},

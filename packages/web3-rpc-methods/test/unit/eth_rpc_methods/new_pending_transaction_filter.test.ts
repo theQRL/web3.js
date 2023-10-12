@@ -45,7 +45,7 @@ describe('newPendingTransactionFilter', () => {
 	it('should call requestManager.send with newPendingTransactionFilter method', async () => {
 		await ethRpcMethods.newPendingTransactionFilter(requestManager);
 		expect(requestManagerSendSpy).toHaveBeenCalledWith({
-			method: 'eth_newPendingTransactionFilter',
+			method: 'zond_newPendingTransactionFilter',
 			params: [],
 		});
 	});

@@ -51,7 +51,7 @@ describe('submitHashrate', () => {
 		async (_, inputParameters) => {
 			await ethRpcMethods.submitHashrate(requestManager, ...inputParameters);
 			expect(requestManagerSendSpy).toHaveBeenCalledWith({
-				method: 'eth_submitHashrate',
+				method: 'zond_submitHashrate',
 				params: inputParameters,
 			});
 		},

@@ -51,7 +51,7 @@ describe('getUncleCountByBlockNumber', () => {
 		async (_, inputParameters) => {
 			await ethRpcMethods.getUncleCountByBlockNumber(requestManager, ...inputParameters);
 			expect(requestManagerSendSpy).toHaveBeenCalledWith({
-				method: 'eth_getUncleCountByBlockNumber',
+				method: 'zond_getUncleCountByBlockNumber',
 				params: inputParameters,
 			});
 		},

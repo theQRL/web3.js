@@ -43,11 +43,11 @@ describe('createAccessList', () => {
 	});
 
 	it.each(testData)(
-		'should call requestManager.send with eth_createAccessList method with correct params',
+		'should call requestManager.send with zond_createAccessList method with correct params',
 		async (_, inputParameters) => {
 			await ethRpcMethods.createAccessList(requestManager, ...inputParameters);
 			expect(requestManagerSendSpy).toHaveBeenCalledWith({
-				method: 'eth_createAccessList',
+				method: 'zond_createAccessList',
 				params: inputParameters,
 			});
 		},

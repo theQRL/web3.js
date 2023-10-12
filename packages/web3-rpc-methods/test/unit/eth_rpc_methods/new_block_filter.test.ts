@@ -45,7 +45,7 @@ describe('newBlockFilter', () => {
 	it('should call requestManager.send with newBlockFilter method', async () => {
 		await ethRpcMethods.newBlockFilter(requestManager);
 		expect(requestManagerSendSpy).toHaveBeenCalledWith({
-			method: 'eth_newBlockFilter',
+			method: 'zond_newBlockFilter',
 			params: [],
 		});
 	});

@@ -45,7 +45,7 @@ describe('getMining', () => {
 	it('should call requestManager.send with getMining method', async () => {
 		await ethRpcMethods.getMining(requestManager);
 		expect(requestManagerSendSpy).toHaveBeenCalledWith({
-			method: 'eth_mining',
+			method: 'zond_mining',
 			params: [],
 		});
 	});

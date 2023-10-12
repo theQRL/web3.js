@@ -45,7 +45,7 @@ describe('getCompilers', () => {
 	it('should call requestManager.send with getCompilers method', async () => {
 		await ethRpcMethods.getCompilers(requestManager);
 		expect(requestManagerSendSpy).toHaveBeenCalledWith({
-			method: 'eth_getCompilers',
+			method: 'zond_getCompilers',
 			params: [],
 		});
 	});

@@ -51,7 +51,7 @@ describe('getFilterChanges', () => {
 		async (_, inputParameters) => {
 			await ethRpcMethods.getFilterChanges(requestManager, ...inputParameters);
 			expect(requestManagerSendSpy).toHaveBeenCalledWith({
-				method: 'eth_getFilterChanges',
+				method: 'zond_getFilterChanges',
 				params: inputParameters,
 			});
 		},

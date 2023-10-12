@@ -45,7 +45,7 @@ describe('getBlockNumber', () => {
 	it('should call requestManager.send with getBlockNumber method', async () => {
 		await ethRpcMethods.getBlockNumber(requestManager);
 		expect(requestManagerSendSpy).toHaveBeenCalledWith({
-			method: 'eth_blockNumber',
+			method: 'zond_blockNumber',
 			params: [],
 		});
 	});

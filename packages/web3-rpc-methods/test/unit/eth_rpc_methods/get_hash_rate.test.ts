@@ -45,7 +45,7 @@ describe('getHashRate', () => {
 	it('should call requestManager.send with getHashRate method', async () => {
 		await ethRpcMethods.getHashRate(requestManager);
 		expect(requestManagerSendSpy).toHaveBeenCalledWith({
-			method: 'eth_hashrate',
+			method: 'zond_hashrate',
 			params: [],
 		});
 	});

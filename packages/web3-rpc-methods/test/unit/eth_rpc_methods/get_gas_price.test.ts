@@ -45,7 +45,7 @@ describe('getGasPrice', () => {
 	it('should call requestManager.send with getGasPrice method', async () => {
 		await ethRpcMethods.getGasPrice(requestManager);
 		expect(requestManagerSendSpy).toHaveBeenCalledWith({
-			method: 'eth_gasPrice',
+			method: 'zond_gasPrice',
 			params: [],
 		});
 	});

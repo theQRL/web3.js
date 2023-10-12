@@ -45,7 +45,7 @@ describe('getWork', () => {
 	it('should call requestManager.send with getWork method', async () => {
 		await ethRpcMethods.getWork(requestManager);
 		expect(requestManagerSendSpy).toHaveBeenCalledWith({
-			method: 'eth_getWork',
+			method: 'zond_getWork',
 			params: [],
 		});
 	});

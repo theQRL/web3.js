@@ -51,7 +51,7 @@ describe('getBlockTransactionCountByHash', () => {
 		async (_, inputParameters) => {
 			await ethRpcMethods.getBlockTransactionCountByHash(requestManager, ...inputParameters);
 			expect(requestManagerSendSpy).toHaveBeenCalledWith({
-				method: 'eth_getBlockTransactionCountByHash',
+				method: 'zond_getBlockTransactionCountByHash',
 				params: inputParameters,
 			});
 		},

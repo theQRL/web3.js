@@ -51,7 +51,7 @@ describe('call', () => {
 		async (_, inputParameters) => {
 			await ethRpcMethods.call(requestManager, ...inputParameters);
 			expect(requestManagerSendSpy).toHaveBeenCalledWith({
-				method: 'eth_call',
+				method: 'zond_call',
 				params: inputParameters,
 			});
 		},

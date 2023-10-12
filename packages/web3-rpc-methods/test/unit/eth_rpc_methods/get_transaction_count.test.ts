@@ -51,7 +51,7 @@ describe('getTransactionCount', () => {
 		async (_, inputParameters) => {
 			await ethRpcMethods.getTransactionCount(requestManager, ...inputParameters);
 			expect(requestManagerSendSpy).toHaveBeenCalledWith({
-				method: 'eth_getTransactionCount',
+				method: 'zond_getTransactionCount',
 				params: inputParameters,
 			});
 		},

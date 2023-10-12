@@ -51,7 +51,7 @@ describe('submitWork', () => {
 		async (_, inputParameters) => {
 			await ethRpcMethods.submitWork(requestManager, ...inputParameters);
 			expect(requestManagerSendSpy).toHaveBeenCalledWith({
-				method: 'eth_submitWork',
+				method: 'zond_submitWork',
 				params: inputParameters,
 			});
 		},

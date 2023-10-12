@@ -51,7 +51,7 @@ describe('getProof', () => {
 		async (_, inputParameters) => {
 			await ethRpcMethods.getProof(requestManager, ...inputParameters);
 			expect(requestManagerSendSpy).toHaveBeenCalledWith({
-				method: 'eth_getProof',
+				method: 'zond_getProof',
 				params: inputParameters,
 			});
 		},

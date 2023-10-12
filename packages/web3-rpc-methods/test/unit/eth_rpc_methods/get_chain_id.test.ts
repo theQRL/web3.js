@@ -45,7 +45,7 @@ describe('getChainId', () => {
 	it('should call requestManager.send with getChainId method', async () => {
 		await ethRpcMethods.getChainId(requestManager);
 		expect(requestManagerSendSpy).toHaveBeenCalledWith({
-			method: 'eth_chainId',
+			method: 'zond_chainId',
 			params: [],
 		});
 	});

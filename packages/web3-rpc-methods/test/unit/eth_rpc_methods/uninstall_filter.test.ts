@@ -51,7 +51,7 @@ describe('uninstallFilter', () => {
 		async (_, inputParameters) => {
 			await ethRpcMethods.uninstallFilter(requestManager, ...inputParameters);
 			expect(requestManagerSendSpy).toHaveBeenCalledWith({
-				method: 'eth_uninstallFilter',
+				method: 'zond_uninstallFilter',
 				params: inputParameters,
 			});
 		},

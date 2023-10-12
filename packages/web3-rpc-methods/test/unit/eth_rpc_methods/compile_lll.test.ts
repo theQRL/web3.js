@@ -51,7 +51,7 @@ describe('compileLLL', () => {
 		async (_, inputParameters) => {
 			await ethRpcMethods.compileLLL(requestManager, ...inputParameters);
 			expect(requestManagerSendSpy).toHaveBeenCalledWith({
-				method: 'eth_compileLLL',
+				method: 'zond_compileLLL',
 				params: inputParameters,
 			});
 		},

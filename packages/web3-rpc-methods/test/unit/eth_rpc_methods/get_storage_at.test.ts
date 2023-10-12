@@ -51,7 +51,7 @@ describe('getStorageAt', () => {
 		async (_, inputParameters) => {
 			await ethRpcMethods.getStorageAt(requestManager, ...inputParameters);
 			expect(requestManagerSendSpy).toHaveBeenCalledWith({
-				method: 'eth_getStorageAt',
+				method: 'zond_getStorageAt',
 				params: inputParameters,
 			});
 		},

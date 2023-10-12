@@ -45,7 +45,7 @@ describe('getPendingTransactions', () => {
 	it('should call requestManager.send with getPendingTransactions method', async () => {
 		await ethRpcMethods.getPendingTransactions(requestManager);
 		expect(requestManagerSendSpy).toHaveBeenCalledWith({
-			method: 'eth_pendingTransactions',
+			method: 'zond_pendingTransactions',
 			params: [],
 		});
 	});
