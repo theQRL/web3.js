@@ -14,10 +14,10 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { keccak256 } from 'ethereum-cryptography/keccak.js';
 import { bytesToHex, uint8ArrayEquals } from 'web3-utils';
-import { secp256k1 } from './constants.js';
 import { assertIsUint8Array, zeros } from '../common/utils.js';
+import { getDilithiumAddressFromPK } from '@theqrl/wallet.js'
+import { CryptoPublicKeyBytes } from '@theqrl/dilithium5';
 
 export class Address {
 	public readonly buf: Uint8Array;
@@ -65,21 +65,18 @@ export class Address {
 	}
 
 	/**
-	 * Returns the ethereum address of a given public key.
-	 * Accepts "Ethereum public keys" and SEC1 encoded keys.
-	 * @param pubKey The two points of an uncompressed key, unless sanitize is enabled
-	 * @param sanitize Accept public keys in other formats
+	 * Returns the zond address of a given public key.
+	 * Accepts "Dilithium5 public keys".
+	 * @param pubKey The Dilithium5 public key
 	 */
-	public static publicToAddress(_pubKey: Uint8Array, sanitize = false): Uint8Array {
+	public static publicToAddress(_pubKey: Uint8Array): Uint8Array {
 		let pubKey = _pubKey;
 		assertIsUint8Array(pubKey);
-		if (sanitize && pubKey.length !== 64) {
-			pubKey = secp256k1.ProjectivePoint.fromHex(pubKey).toRawBytes(false).slice(1);
+
+		if (pubKey.length !== CryptoPublicKeyBytes) {
+			throw new Error('Expected pubKey to be of length 2592');
 		}
-		if (pubKey.length !== 64) {
-			throw new Error('Expected pubKey to be of length 64');
-		}
-		// Only take the lower 160bits of the hash
-		return keccak256(pubKey).slice(-20);
+		
+		return getDilithiumAddressFromPK(pubKey)
 	}
 }

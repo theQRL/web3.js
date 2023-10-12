@@ -73,6 +73,7 @@ import type {
 /**
  * Get the private key Uint8Array after the validation
  */
+// TODO(rgeraldes): review
 export const parseAndValidatePrivateKey = (data: Bytes, ignoreLength?: boolean): Uint8Array => {
 	let privateKeyUint8Array: Uint8Array;
 
@@ -142,6 +143,7 @@ export const hashMessage = (message: string): string => {
  * }
  * ```
  */
+// TODO(rgeraldes): review
 export const sign = (data: string, privateKey: Bytes): SignResult => {
 	const privateKeyUint8Array = parseAndValidatePrivateKey(privateKey);
 
@@ -245,6 +247,7 @@ export const sign = (data: string, privateKey: Bytes): SignResult => {
  * }
  * ```
  */
+// TODO(rgeraldes): review docs
 export const signTransaction = async (
 	transaction: TypedTransaction,
 	privateKey: HexString,
@@ -252,7 +255,7 @@ export const signTransaction = async (
 	// eslint-disable-next-line @typescript-eslint/require-await
 ): Promise<SignTransactionResult> => {
 	const signedTx = transaction.sign(hexToBytes(privateKey));
-	if (isNullish(signedTx.v) || isNullish(signedTx.r) || isNullish(signedTx.s))
+	if (isNullish(signedTx.signature) || isNullish(signedTx.publicKey))
 		throw new TransactionSigningError('Signer Error');
 
 	const validationErrors = signedTx.validate(true);

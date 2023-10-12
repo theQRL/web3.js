@@ -17,14 +17,16 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 import { Numbers } from 'web3-types';
 import { bytesToHex } from 'web3-utils';
-import { MAX_INTEGER, MAX_UINT64, SECP256K1_ORDER_DIV_2, secp256k1 } from './constants.js';
+import {
+	bigIntToUnpaddedUint8Array,
+} from '../common/utils.js';
+import { MAX_INTEGER, MAX_UINT64 } from './constants.js';
 import {
 	Chain,
 	Common,
 	Hardfork,
 	toUint8Array,
 	uint8ArrayToBigInt,
-	unpadUint8Array,
 } from '../common/index.js';
 import type {
 	AccessListEIP2930TxData,
@@ -36,9 +38,10 @@ import type {
 	TxOptions,
 	TxValuesArray,
 } from './types.js';
-import { Capability, ECDSASignature } from './types.js';
+import { Capability, Dilithium5Signature } from './types.js';
 import { Address } from './address.js';
 import { checkMaxInitCodeSize } from './utils.js';
+import { cryptoSign, CryptoBytes, cryptoSignVerify } from '@theqrl/dilithium5';
 
 interface TransactionCache {
 	hash: Uint8Array | undefined;
@@ -64,9 +67,12 @@ export abstract class BaseTransaction<TransactionObject> {
 	public readonly value: bigint;
 	public readonly data: Uint8Array;
 
-	public readonly v?: bigint;
-	public readonly r?: bigint;
-	public readonly s?: bigint;
+	// public readonly v?: bigint;
+	// public readonly r?: bigint;
+	// public readonly s?: bigint;
+
+	public readonly signature?: bigint;
+	public readonly publicKey?: bigint;
 
 	public readonly common!: Common;
 
@@ -106,15 +112,14 @@ export abstract class BaseTransaction<TransactionObject> {
 		txData: TxData | AccessListEIP2930TxData | FeeMarketEIP1559TxData,
 		opts: TxOptions,
 	) {
-		const { nonce, gasLimit, to, value, data, v, r, s, type } = txData;
+		const { nonce, gasLimit, to, value, data, signature, publicKey, type } = txData;
 		this._type = Number(uint8ArrayToBigInt(toUint8Array(type)));
 
 		this.txOptions = opts;
 
 		const toB = toUint8Array(to === '' ? '0x' : to);
-		const vB = toUint8Array(v === '' ? '0x' : v);
-		const rB = toUint8Array(r === '' ? '0x' : r);
-		const sB = toUint8Array(s === '' ? '0x' : s);
+		const signatureB = toUint8Array(signature === '' ? '0x' : signature);
+		const publicKeyB = toUint8Array(publicKey === '' ? '0x' : publicKey);
 
 		this.nonce = uint8ArrayToBigInt(toUint8Array(nonce === '' ? '0x' : nonce));
 		this.gasLimit = uint8ArrayToBigInt(toUint8Array(gasLimit === '' ? '0x' : gasLimit));
@@ -122,11 +127,10 @@ export abstract class BaseTransaction<TransactionObject> {
 		this.value = uint8ArrayToBigInt(toUint8Array(value === '' ? '0x' : value));
 		this.data = toUint8Array(data === '' ? '0x' : data);
 
-		this.v = vB.length > 0 ? uint8ArrayToBigInt(vB) : undefined;
-		this.r = rB.length > 0 ? uint8ArrayToBigInt(rB) : undefined;
-		this.s = sB.length > 0 ? uint8ArrayToBigInt(sB) : undefined;
+		this.signature = signatureB.length > 0 ? uint8ArrayToBigInt(signatureB) : undefined;
+		this.publicKey = publicKeyB.length > 0 ? uint8ArrayToBigInt(publicKeyB) : undefined;
 
-		this._validateCannotExceedMaxInteger({ value: this.value, r: this.r, s: this.s });
+		this._validateCannotExceedMaxInteger({ value: this.value, signature: this.signature, publicKey: this.publicKey });
 
 		// geth limits gasLimit to 2^64-1
 		this._validateCannotExceedMaxInteger({ gasLimit: this.gasLimit }, 64);
@@ -192,28 +196,6 @@ export abstract class BaseTransaction<TransactionObject> {
 		}
 
 		return stringError ? errors : errors.length === 0;
-	}
-
-	protected _validateYParity() {
-		const { v } = this;
-		if (v !== undefined && v !== BigInt(0) && v !== BigInt(1)) {
-			const msg = this._errorMsg('The y-parity of the transaction should either be 0 or 1');
-			throw new Error(msg);
-		}
-	}
-
-	/**
-	 * EIP-2: All transaction signatures whose s-value is greater than secp256k1n/2are considered invalid.
-	 * Reasoning: https://ethereum.stackexchange.com/a/55728
-	 */
-	protected _validateHighS() {
-		const { s } = this;
-		if (this.common.gteHardfork('homestead') && s !== undefined && s > SECP256K1_ORDER_DIV_2) {
-			const msg = this._errorMsg(
-				'Invalid Signature: s-values greater than secp256k1n/2 are considered invalid',
-			);
-			throw new Error(msg);
-		}
 	}
 
 	/**
@@ -297,8 +279,8 @@ export abstract class BaseTransaction<TransactionObject> {
 	public abstract getMessageToVerifySignature(): Uint8Array;
 
 	public isSigned(): boolean {
-		const { v, r, s } = this;
-		if (v === undefined || r === undefined || s === undefined) {
+		const { signature, publicKey } = this;
+		if (signature === undefined || publicKey === undefined) {
 			return false;
 		}
 		return true;
@@ -308,10 +290,12 @@ export abstract class BaseTransaction<TransactionObject> {
 	 * Determines if the signature is valid
 	 */
 	public verifySignature(): boolean {
+		const msgHash = this.getMessageToVerifySignature();
+		const { signature, publicKey } = this;
+		
 		try {
-			// Main signature verification is done in `getSenderPublicKey()`
-			const publicKey = this.getSenderPublicKey();
-			return unpadUint8Array(publicKey).length !== 0;
+			cryptoSignVerify(bigIntToUnpaddedUint8Array(signature!), msgHash, bigIntToUnpaddedUint8Array(publicKey!))
+			return true;
 		} catch (e: any) {
 			return false;
 		}
@@ -321,13 +305,9 @@ export abstract class BaseTransaction<TransactionObject> {
 	 * Returns the sender's address
 	 */
 	public getSenderAddress(): Address {
-		return new Address(Address.publicToAddress(this.getSenderPublicKey()));
+		const { publicKey } = this;
+		return new Address(Address.publicToAddress(bigIntToUnpaddedUint8Array(publicKey!)));
 	}
-
-	/**
-	 * Returns the public key of the sender
-	 */
-	public abstract getSenderPublicKey(): Uint8Array;
 
 	/**
 	 * Signs a transaction.
@@ -359,8 +339,8 @@ export abstract class BaseTransaction<TransactionObject> {
 		}
 
 		const msgHash = this.getMessageToSign(true);
-		const { v, r, s } = this._ecsign(msgHash, privateKey);
-		const tx = this._processSignature(v, r, s);
+		const { signature, publicKey } = this._dilithium5sign(msgHash, privateKey);
+		const tx = this._processSignature(signature, publicKey);
 
 		// Hack part 2
 		if (hackApplied) {
@@ -378,11 +358,10 @@ export abstract class BaseTransaction<TransactionObject> {
 	 */
 	public abstract toJSON(): JsonTx;
 
-	// Accept the v,r,s values from the `sign` method, and convert this into a TransactionObject
+	// Accept the signature and public key values from the `sign` method, and convert this into a TransactionObject
 	protected abstract _processSignature(
-		v: bigint,
-		r: Uint8Array,
-		s: Uint8Array,
+		signature: Uint8Array,
+		publicKey: Uint8Array,
 	): TransactionObject;
 
 	/**
@@ -550,19 +529,15 @@ export abstract class BaseTransaction<TransactionObject> {
 
 		return postfix;
 	}
+
+	// TODO(rgeraldes): chain id
 	// eslint-disable-next-line class-methods-use-this
-	private _ecsign(msgHash: Uint8Array, privateKey: Uint8Array, chainId?: bigint): ECDSASignature {
-		const signature = secp256k1.sign(msgHash, privateKey);
-		const signatureBytes = signature.toCompactRawBytes();
-
-		const r = signatureBytes.subarray(0, 32);
-		const s = signatureBytes.subarray(32, 64);
-
-		const v =
-			chainId === undefined
-				? BigInt(signature.recovery! + 27)
-				: BigInt(signature.recovery! + 35) + BigInt(chainId) * BigInt(2);
-
-		return { r, s, v };
+	private _dilithium5sign(msgHash: Uint8Array, privateKey: Uint8Array /*, chainId?: bigint */): Dilithium5Signature {
+		const sm = cryptoSign(msgHash, privateKey)
+		
+		let signature = new Uint8Array(CryptoBytes);
+		signature = sm.slice(0, CryptoBytes);
+		
+		return { signature, publicKey } ;
 	}
 }

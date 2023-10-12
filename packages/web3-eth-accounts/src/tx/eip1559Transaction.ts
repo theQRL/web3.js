@@ -29,7 +29,6 @@ import {
 import {
 	bigIntToHex,
 	toUint8Array,
-	ecrecover,
 	uint8ArrayToBigInt,
 	bigIntToUnpaddedUint8Array,
 } from '../common/utils.js';
@@ -74,7 +73,7 @@ export class FeeMarketEIP1559Transaction extends BaseTransaction<FeeMarketEIP155
 	 * Instantiate a transaction from a data dictionary.
 	 *
 	 * Format: { chainId, nonce, maxPriorityFeePerGas, maxFeePerGas, gasLimit, to, value, data,
-	 * accessList, v, r, s }
+	 * accessList, signature, publicKey }
 	 *
 	 * Notes:
 	 * - `chainId` will be set automatically if not provided
@@ -130,21 +129,19 @@ export class FeeMarketEIP1559Transaction extends BaseTransaction<FeeMarketEIP155
 			value,
 			data,
 			accessList,
-			v,
-			r,
-			s,
+			signature,
+			publicKey,
 		] = values;
 
-		this._validateNotArray({ chainId, v });
+		this._validateNotArray({ chainId });
 		validateNoLeadingZeroes({
 			nonce,
 			maxPriorityFeePerGas,
 			maxFeePerGas,
 			gasLimit,
 			value,
-			v,
-			r,
-			s,
+			signature,
+			publicKey,
 		});
 
 		return new FeeMarketEIP1559Transaction(
@@ -158,9 +155,8 @@ export class FeeMarketEIP1559Transaction extends BaseTransaction<FeeMarketEIP155
 				value,
 				data,
 				accessList: accessList ?? [],
-				v: v !== undefined ? uint8ArrayToBigInt(v) : undefined, // EIP2930 supports v's with value 0 (empty Uint8Array)
-				r,
-				s,
+				signature,
+				publicKey,
 			},
 			opts,
 		);
@@ -219,9 +215,6 @@ export class FeeMarketEIP1559Transaction extends BaseTransaction<FeeMarketEIP155
 			);
 			throw new Error(msg);
 		}
-
-		this._validateYParity();
-		this._validateHighS();
 
 		const freeze = opts?.freeze ?? true;
 		if (freeze) {
@@ -286,9 +279,8 @@ export class FeeMarketEIP1559Transaction extends BaseTransaction<FeeMarketEIP155
 			bigIntToUnpaddedUint8Array(this.value),
 			this.data,
 			this.accessList,
-			this.v !== undefined ? bigIntToUnpaddedUint8Array(this.v) : Uint8Array.from([]),
-			this.r !== undefined ? bigIntToUnpaddedUint8Array(this.r) : Uint8Array.from([]),
-			this.s !== undefined ? bigIntToUnpaddedUint8Array(this.s) : Uint8Array.from([]),
+			this.signature !== undefined ? bigIntToUnpaddedUint8Array(this.signature) : Uint8Array.from([]),
+			this.publicKey !== undefined ? bigIntToUnpaddedUint8Array(this.publicKey) : Uint8Array.from([]),
 		];
 	}
 
@@ -358,34 +350,7 @@ export class FeeMarketEIP1559Transaction extends BaseTransaction<FeeMarketEIP155
 		return this.getMessageToSign();
 	}
 
-	/**
-	 * Returns the public key of the sender
-	 */
-	public getSenderPublicKey(): Uint8Array {
-		if (!this.isSigned()) {
-			const msg = this._errorMsg('Cannot call this method if transaction is not signed');
-			throw new Error(msg);
-		}
-
-		const msgHash = this.getMessageToVerifySignature();
-		const { v, r, s } = this;
-
-		this._validateHighS();
-
-		try {
-			return ecrecover(
-				msgHash,
-				v! + BigInt(27), // Recover the 27 which was stripped from ecsign
-				bigIntToUnpaddedUint8Array(r!),
-				bigIntToUnpaddedUint8Array(s!),
-			);
-		} catch (e: any) {
-			const msg = this._errorMsg('Invalid Signature');
-			throw new Error(msg);
-		}
-	}
-
-	public _processSignature(v: bigint, r: Uint8Array, s: Uint8Array) {
+	public _processSignature(signature: Uint8Array, publicKey: Uint8Array) {
 		const opts = { ...this.txOptions, common: this.common };
 
 		return FeeMarketEIP1559Transaction.fromTxData(
@@ -399,9 +364,8 @@ export class FeeMarketEIP1559Transaction extends BaseTransaction<FeeMarketEIP155
 				value: this.value,
 				data: this.data,
 				accessList: this.accessList,
-				v: v - BigInt(27), // This looks extremely hacky: /util actually adds 27 to the value, the recovery bit is either 0 or 1.
-				r: uint8ArrayToBigInt(r),
-				s: uint8ArrayToBigInt(s),
+				signature: uint8ArrayToBigInt(signature),
+				publicKey: uint8ArrayToBigInt(publicKey),
 			},
 			opts,
 		);
@@ -423,9 +387,8 @@ export class FeeMarketEIP1559Transaction extends BaseTransaction<FeeMarketEIP155
 			value: bigIntToHex(this.value),
 			data: bytesToHex(this.data),
 			accessList: accessListJSON,
-			v: this.v !== undefined ? bigIntToHex(this.v) : undefined,
-			r: this.r !== undefined ? bigIntToHex(this.r) : undefined,
-			s: this.s !== undefined ? bigIntToHex(this.s) : undefined,
+			signature: this.signature !== undefined ? bigIntToHex(this.signature) : undefined,
+			publicKey: this.publicKey !== undefined ? bigIntToHex(this.publicKey) : undefined,
 		};
 	}
 

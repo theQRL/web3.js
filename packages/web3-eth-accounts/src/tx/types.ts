@@ -119,10 +119,9 @@ export function isAccessList(input: AccessListUint8Array | AccessList): input is
 	return !isAccessListUint8Array(input); // This is exactly the same method, except the output is negated.
 }
 
-export interface ECDSASignature {
-	v: bigint;
-	r: Uint8Array;
-	s: Uint8Array;
+export interface Dilithium5Signature {
+	signature: Uint8Array;
+	publicKey: Uint8Array;
 }
 
 /**
@@ -161,19 +160,14 @@ export type TxData = {
 	data?: Uint8ArrayLike;
 
 	/**
-	 * EC recovery ID.
+	 * Dilithium5 signature.
 	 */
-	v?: Numbers | Uint8Array;
+	signature?: Numbers | Uint8Array;
 
 	/**
-	 * EC signature parameter.
+	 * Dilithium5 public key.
 	 */
-	r?: Numbers | Uint8Array;
-
-	/**
-	 * EC signature parameter.
-	 */
-	s?: Numbers | Uint8Array;
+	publicKey?: Numbers | Uint8Array;
 
 	/**
 	 * The transaction type
@@ -237,7 +231,6 @@ export type AccessListEIP2930ValuesArray = [
 	AccessListUint8Array,
 	Uint8Array?,
 	Uint8Array?,
-	Uint8Array?,
 ];
 
 /**
@@ -274,9 +267,8 @@ export interface JsonTx {
 	gasLimit?: string;
 	to?: string;
 	data?: string;
-	v?: string;
-	r?: string;
-	s?: string;
+	signature?: string;
+	publicKey?: string;
 	value?: string;
 	chainId?: string;
 	accessList?: JsonAccessListItem[];

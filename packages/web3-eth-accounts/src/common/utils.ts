@@ -16,7 +16,6 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import { isHexPrefixed, isHexString } from 'web3-validator';
 import { bytesToHex, hexToBytes, numberToHex } from 'web3-utils';
-import { secp256k1 } from '../tx/constants.js';
 import { Hardfork } from './enums.js';
 import { ToBytesInputTypes, TypeOutput, TypeOutputReturnType } from './types.js';
 
@@ -493,30 +492,6 @@ function calculateSigRecovery(v: bigint, chainId?: bigint): bigint {
 function isValidSigRecovery(recovery: bigint): boolean {
 	return recovery === BigInt(0) || recovery === BigInt(1);
 }
-
-/**
- * ECDSA public key recovery from signature.
- * NOTE: Accepts `v === 0 | v === 1` for EIP1559 transactions
- * @returns Recovered public key
- */
-export const ecrecover = function (
-	msgHash: Uint8Array,
-	v: bigint,
-	r: Uint8Array,
-	s: Uint8Array,
-	chainId?: bigint,
-): Uint8Array {
-	const recovery = calculateSigRecovery(v, chainId);
-	if (!isValidSigRecovery(recovery)) {
-		throw new Error('Invalid signature v value');
-	}
-
-	const senderPubKey = new secp256k1.Signature(uint8ArrayToBigInt(r), uint8ArrayToBigInt(s))
-		.addRecoveryBit(Number(recovery))
-		.recoverPublicKey(msgHash)
-		.toRawBytes(false);
-	return senderPubKey.slice(1);
-};
 
 /**
  * Convert an input to a specified type.

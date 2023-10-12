@@ -59,6 +59,7 @@
 	},
 	"dependencies": {
 		"@ethereumjs/rlp": "^4.0.1",
+		"@theqrl/wallet.js": "^0.1.1",
 		"crc-32": "^1.2.2",
 		"ethereum-cryptography": "^2.0.0",
 		"web3-errors": "^1.1.2",

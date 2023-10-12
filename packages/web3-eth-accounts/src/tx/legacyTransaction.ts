@@ -21,7 +21,6 @@ import { validateNoLeadingZeroes } from 'web3-validator';
 import {
 	bigIntToHex,
 	bigIntToUnpaddedUint8Array,
-	ecrecover,
 	toUint8Array,
 	uint8ArrayToBigInt,
 	unpadUint8Array,
@@ -54,7 +53,7 @@ export class Transaction extends BaseTransaction<Transaction> {
 	/**
 	 * Instantiate a transaction from a data dictionary.
 	 *
-	 * Format: { nonce, gasPrice, gasLimit, to, value, data, v, r, s }
+	 * Format: { nonce, gasPrice, gasLimit, to, value, data, signature, publicKey }
 	 *
 	 * Notes:
 	 * - All parameters are optional and have some basic default values
@@ -66,7 +65,7 @@ export class Transaction extends BaseTransaction<Transaction> {
 	/**
 	 * Instantiate a transaction from the serialized tx.
 	 *
-	 * Format: `rlp([nonce, gasPrice, gasLimit, to, value, data, v, r, s])`
+	 * Format: `rlp([nonce, gasPrice, gasLimit, to, value, data, signature, publicKey])`
 	 */
 	public static fromSerializedTx(serialized: Uint8Array, opts: TxOptions = {}) {
 		const values = RLP.decode(serialized);
@@ -81,20 +80,20 @@ export class Transaction extends BaseTransaction<Transaction> {
 	/**
 	 * Create a transaction from a values array.
 	 *
-	 * Format: `[nonce, gasPrice, gasLimit, to, value, data, v, r, s]`
+	 * Format: `[nonce, gasPrice, gasLimit, to, value, data, signature, publicKey]`
 	 */
 	public static fromValuesArray(values: TxValuesArray, opts: TxOptions = {}) {
-		// If length is not 6, it has length 9. If v/r/s are empty Uint8Array, it is still an unsigned transaction
+		// If length is not 6, it has length 9. If signature/publicKey are empty Uint8Array, it is still an unsigned transaction
 		// This happens if you get the RLP data from `raw()`
-		if (values.length !== 6 && values.length !== 9) {
+		if (values.length !== 6 && values.length !== 8) {
 			throw new Error(
-				'Invalid transaction. Only expecting 6 values (for unsigned tx) or 9 values (for signed tx).',
+				'Invalid transaction. Only expecting 6 values (for unsigned tx) or 8 values (for signed tx).',
 			);
 		}
 
-		const [nonce, gasPrice, gasLimit, to, value, data, v, r, s] = values;
+		const [nonce, gasPrice, gasLimit, to, value, data, signature, publicKey] = values;
 
-		validateNoLeadingZeroes({ nonce, gasPrice, gasLimit, value, v, r, s });
+		validateNoLeadingZeroes({ nonce, gasPrice, gasLimit, value, signature, publicKey });
 
 		return new Transaction(
 			{
@@ -104,9 +103,8 @@ export class Transaction extends BaseTransaction<Transaction> {
 				to,
 				value,
 				data,
-				v,
-				r,
-				s,
+				signature,
+				publicKey,
 			},
 			opts,
 		);
@@ -121,8 +119,6 @@ export class Transaction extends BaseTransaction<Transaction> {
 	 */
 	public constructor(txData: TxData, opts: TxOptions = {}) {
 		super({ ...txData, type: TRANSACTION_TYPE }, opts);
-
-		this.common = this._validateTxV(this.v, opts.common);
 
 		this.gasPrice = uint8ArrayToBigInt(
 			toUint8Array(txData.gasPrice === '' ? '0x' : txData.gasPrice),
@@ -146,9 +142,11 @@ export class Transaction extends BaseTransaction<Transaction> {
 				// hash nine elements, with v replaced by CHAIN_ID, r = 0 and s = 0.
 				// v and chain ID meet EIP-155 conditions
 				// eslint-disable-next-line no-lonely-if
-				if (meetsEIP155(this.v!, this.common.chainId())) {
-					this.activeCapabilities.push(Capability.EIP155ReplayProtection);
-				}
+				
+				// TODO(rgeraldes): review
+				// if (meetsEIP155(this.v!, this.common.chainId())) {
+				// 	this.activeCapabilities.push(Capability.EIP155ReplayProtection);
+				// }
 			}
 		}
 
@@ -161,7 +159,7 @@ export class Transaction extends BaseTransaction<Transaction> {
 	/**
 	 * Returns a Uint8Array Array of the raw Uint8Arrays of the legacy transaction, in order.
 	 *
-	 * Format: `[nonce, gasPrice, gasLimit, to, value, data, v, r, s]`
+	 * Format: `[nonce, gasPrice, gasLimit, to, value, data, signature, publicKey]`
 	 *
 	 * For legacy txs this is also the correct format to add transactions
 	 * to a block with {@link Block.fromValuesArray} (use the `serialize()` method
@@ -179,16 +177,15 @@ export class Transaction extends BaseTransaction<Transaction> {
 			this.to !== undefined ? this.to.buf : Uint8Array.from([]),
 			bigIntToUnpaddedUint8Array(this.value),
 			this.data,
-			this.v !== undefined ? bigIntToUnpaddedUint8Array(this.v) : Uint8Array.from([]),
-			this.r !== undefined ? bigIntToUnpaddedUint8Array(this.r) : Uint8Array.from([]),
-			this.s !== undefined ? bigIntToUnpaddedUint8Array(this.s) : Uint8Array.from([]),
+			this.signature !== undefined ? bigIntToUnpaddedUint8Array(this.signature) : Uint8Array.from([]),
+			this.publicKey !== undefined ? bigIntToUnpaddedUint8Array(this.publicKey) : Uint8Array.from([]),
 		];
 	}
 
 	/**
 	 * Returns the serialized encoding of the legacy transaction.
 	 *
-	 * Format: `rlp([nonce, gasPrice, gasLimit, to, value, data, v, r, s])`
+	 * Format: `rlp([nonce, gasPrice, gasLimit, to, value, data, signature, publicKey])`
 	 *
 	 * For an unsigned tx this method uses the empty Uint8Array values for the
 	 * signature parameters `v`, `r` and `s` for encoding. For an EIP-155 compliant
@@ -208,8 +205,8 @@ export class Transaction extends BaseTransaction<Transaction> {
 			this.data,
 		];
 
+		// TODO(rgeraldes): this check is probably not necessary
 		if (this.supports(Capability.EIP155ReplayProtection)) {
-			values.push(toUint8Array(this.common.chainId()));
 			values.push(unpadUint8Array(toUint8Array(0)));
 			values.push(unpadUint8Array(toUint8Array(0)));
 		}
@@ -303,40 +300,9 @@ export class Transaction extends BaseTransaction<Transaction> {
 	}
 
 	/**
-	 * Returns the public key of the sender
+	 * Process the signature and public key values from the `sign` method of the base transaction.
 	 */
-	public getSenderPublicKey(): Uint8Array {
-		const msgHash = this.getMessageToVerifySignature();
-
-		const { v, r, s } = this;
-
-		this._validateHighS();
-
-		try {
-			return ecrecover(
-				msgHash,
-				v!,
-				bigIntToUnpaddedUint8Array(r!),
-				bigIntToUnpaddedUint8Array(s!),
-				this.supports(Capability.EIP155ReplayProtection)
-					? this.common.chainId()
-					: undefined,
-			);
-		} catch (e: any) {
-			const msg = this._errorMsg('Invalid Signature');
-			throw new Error(msg);
-		}
-	}
-
-	/**
-	 * Process the v, r, s values from the `sign` method of the base transaction.
-	 */
-	protected _processSignature(_v: bigint, r: Uint8Array, s: Uint8Array) {
-		let v = _v;
-		if (this.supports(Capability.EIP155ReplayProtection)) {
-			v += this.common.chainId() * BigInt(2) + BigInt(8);
-		}
-
+	protected _processSignature(signature: Uint8Array, publicKey: Uint8Array) {
 		const opts = { ...this.txOptions, common: this.common };
 
 		return Transaction.fromTxData(
@@ -347,9 +313,8 @@ export class Transaction extends BaseTransaction<Transaction> {
 				to: this.to,
 				value: this.value,
 				data: this.data,
-				v,
-				r: uint8ArrayToBigInt(r),
-				s: uint8ArrayToBigInt(s),
+				signature: uint8ArrayToBigInt(signature),
+				publicKey: uint8ArrayToBigInt(publicKey),
 			},
 			opts,
 		);
@@ -366,56 +331,9 @@ export class Transaction extends BaseTransaction<Transaction> {
 			to: this.to !== undefined ? this.to.toString() : undefined,
 			value: bigIntToHex(this.value),
 			data: bytesToHex(this.data),
-			v: this.v !== undefined ? bigIntToHex(this.v) : undefined,
-			r: this.r !== undefined ? bigIntToHex(this.r) : undefined,
-			s: this.s !== undefined ? bigIntToHex(this.s) : undefined,
+			signature: this.signature !== undefined ? bigIntToHex(this.signature) : undefined,
+			publicKey: this.publicKey !== undefined ? bigIntToHex(this.publicKey) : undefined,
 		};
-	}
-
-	/**
-	 * Validates tx's `v` value
-	 */
-	private _validateTxV(_v?: bigint, common?: Common): Common {
-		let chainIdBigInt;
-		const v = _v !== undefined ? Number(_v) : undefined;
-		// Check for valid v values in the scope of a signed legacy tx
-		if (v !== undefined) {
-			// v is 1. not matching the EIP-155 chainId included case and...
-			// v is 2. not matching the classic v=27 or v=28 case
-			if (v < 37 && v !== 27 && v !== 28) {
-				throw new Error(
-					`Legacy txs need either v = 27/28 or v >= 37 (EIP-155 replay protection), got v = ${v}`,
-				);
-			}
-		}
-
-		// No unsigned tx and EIP-155 activated and chain ID included
-		if (
-			v !== undefined &&
-			v !== 0 &&
-			(!common || common.gteHardfork('spuriousDragon')) &&
-			v !== 27 &&
-			v !== 28
-		) {
-			if (common) {
-				if (!meetsEIP155(BigInt(v), common.chainId())) {
-					throw new Error(
-						`Incompatible EIP155-based V ${v} and chain id ${common.chainId()}. See the Common parameter of the Transaction constructor to set the chain id.`,
-					);
-				}
-			} else {
-				// Derive the original chain ID
-				let numSub;
-				if ((v - 35) % 2 === 0) {
-					numSub = 35;
-				} else {
-					numSub = 36;
-				}
-				// Use derived chain ID to create a proper Common
-				chainIdBigInt = BigInt(v - numSub) / BigInt(2);
-			}
-		}
-		return this._getCommon(common, chainIdBigInt);
 	}
 
 	/**
