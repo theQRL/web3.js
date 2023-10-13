@@ -17,9 +17,9 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import { Web3Context } from '@theqrl/web3-core';
 import {
 	DEFAULT_RETURN_FORMAT,
-	ETH_DATA_FORMAT,
+	ZOND_DATA_FORMAT,
 	SignedTransactionInfoAPI,
-	Web3EthExecutionAPI,
+	Web3ZondExecutionAPI,
 } from '@theqrl/web3-types';
 import { isString } from '@theqrl/web3-validator';
 import { ethRpcMethods } from '@theqrl/web3-rpc-methods';
@@ -31,7 +31,7 @@ import { formatTransaction } from '../../../src';
 jest.mock('web3-rpc-methods');
 
 describe('signTransaction', () => {
-	let web3Context: Web3Context<Web3EthExecutionAPI>;
+	let web3Context: Web3Context<Web3ZondExecutionAPI>;
 
 	beforeAll(() => {
 		web3Context = new Web3Context('http://127.0.0.1:8545');
@@ -41,7 +41,7 @@ describe('signTransaction', () => {
 		`should call rpcMethods.signTransaction with expected parameters\nTitle: %s\nInput parameters: %s\n`,
 		async (_, inputParameters) => {
 			const [inputTransaction, signedTransactionInfo] = inputParameters;
-			const inputTransactionFormatted = formatTransaction(inputTransaction, ETH_DATA_FORMAT);
+			const inputTransactionFormatted = formatTransaction(inputTransaction, ZOND_DATA_FORMAT);
 
 			(ethRpcMethods.signTransaction as jest.Mock).mockResolvedValueOnce(
 				isString(signedTransactionInfo as string)

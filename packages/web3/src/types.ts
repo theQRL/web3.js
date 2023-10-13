@@ -45,13 +45,13 @@ import { Personal } from '@theqrl/web3-zond-personal';
 /**
  * The Zond interface for main web3 object. It provides extra methods in addition to `web3-zond` interface.
  *
- * {@link web3_zond.Web3Zond} for details about the `Eth` interface.
+ * {@link web3_zond.Web3Zond} for details about the `Zond` interface.
  */
 export interface Web3ZondInterface extends Zond {
 	/**
 	 * Extended [Contract](/api/web3-eth-contract/class/Contract) constructor for main `web3` object. See [Contract](/api/web3-eth-contract/class/Contract) for further details.
 	 *
-	 * You can use `.setProvider` on this constructor to set provider for **all the instances** of the contracts which were created by `web3.eth.Contract`.
+	 * You can use `.setProvider` on this constructor to set provider for **all the instances** of the contracts which were created by `web3.zond.Contract`.
 	 * Please check the {@doclink guides/web3_upgrade_guide/x/providers_migration_guide | following guide} to understand more about setting provider.
 	 *
 	 * ```ts

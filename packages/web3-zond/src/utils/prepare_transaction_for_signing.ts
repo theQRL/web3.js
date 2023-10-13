@@ -16,7 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import {
-	EthExecutionAPI,
+	ZondExecutionAPI,
 	HexString,
 	PopulatedUnsignedEip1559Transaction,
 	PopulatedUnsignedEip2930Transaction,
@@ -24,7 +24,7 @@ import {
 	Transaction,
 	ValidChains,
 	FormatType,
-	ETH_DATA_FORMAT,
+	ZOND_DATA_FORMAT,
 } from '@theqrl/web3-types';
 import { Web3Context } from '@theqrl/web3-core';
 import { toNumber } from '@theqrl/web3-utils';
@@ -35,7 +35,7 @@ import { formatTransaction } from './format_transaction.js';
 import { transactionBuilder } from './transaction_builder.js';
 
 const getEthereumjsTxDataFromTransaction = (
-	transaction: FormatType<PopulatedUnsignedTransaction, typeof ETH_DATA_FORMAT>,
+	transaction: FormatType<PopulatedUnsignedTransaction, typeof ZOND_DATA_FORMAT>,
 ) => ({
 	nonce: transaction.nonce,
 	gasPrice: transaction.gasPrice,
@@ -46,19 +46,19 @@ const getEthereumjsTxDataFromTransaction = (
 	type: transaction.type,
 	chainId: transaction.chainId,
 	accessList: (
-		transaction as FormatType<PopulatedUnsignedEip2930Transaction, typeof ETH_DATA_FORMAT>
+		transaction as FormatType<PopulatedUnsignedEip2930Transaction, typeof ZOND_DATA_FORMAT>
 	).accessList,
 	maxPriorityFeePerGas: (
-		transaction as FormatType<PopulatedUnsignedEip1559Transaction, typeof ETH_DATA_FORMAT>
+		transaction as FormatType<PopulatedUnsignedEip1559Transaction, typeof ZOND_DATA_FORMAT>
 	).maxPriorityFeePerGas,
 	maxFeePerGas: (
-		transaction as FormatType<PopulatedUnsignedEip1559Transaction, typeof ETH_DATA_FORMAT>
+		transaction as FormatType<PopulatedUnsignedEip1559Transaction, typeof ZOND_DATA_FORMAT>
 	).maxFeePerGas,
 });
 
 const getEthereumjsTransactionOptions = (
-	transaction: FormatType<PopulatedUnsignedTransaction, typeof ETH_DATA_FORMAT>,
-	web3Context: Web3Context<EthExecutionAPI>,
+	transaction: FormatType<PopulatedUnsignedTransaction, typeof ZOND_DATA_FORMAT>,
+	web3Context: Web3Context<ZondExecutionAPI>,
 ) => {
 	const hasTransactionSigningOptions =
 		(!isNullish(transaction.chain) && !isNullish(transaction.hardfork)) ||
@@ -122,7 +122,7 @@ const getEthereumjsTransactionOptions = (
 
 export const prepareTransactionForSigning = async (
 	transaction: Transaction,
-	web3Context: Web3Context<EthExecutionAPI>,
+	web3Context: Web3Context<ZondExecutionAPI>,
 	privateKey?: HexString | Uint8Array,
 	fillGasPrice = false,
 	fillGasLimit = true,
@@ -136,10 +136,10 @@ export const prepareTransactionForSigning = async (
 	})) as unknown as PopulatedUnsignedTransaction;
 	const formattedTransaction = formatTransaction(
 		populatedTransaction,
-		ETH_DATA_FORMAT,
-	) as unknown as FormatType<PopulatedUnsignedTransaction, typeof ETH_DATA_FORMAT>;
+		ZOND_DATA_FORMAT,
+	) as unknown as FormatType<PopulatedUnsignedTransaction, typeof ZOND_DATA_FORMAT>;
 	validateTransactionForSigning(
-		formattedTransaction as unknown as FormatType<Transaction, typeof ETH_DATA_FORMAT>,
+		formattedTransaction as unknown as FormatType<Transaction, typeof ZOND_DATA_FORMAT>,
 	);
 
 	return TransactionFactory.fromTxData(

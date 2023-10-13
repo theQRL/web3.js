@@ -16,7 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import { Web3Context } from '@theqrl/web3-core';
 import { format } from '@theqrl/web3-utils';
-import { DEFAULT_RETURN_FORMAT, Web3EthExecutionAPI } from '@theqrl/web3-types';
+import { DEFAULT_RETURN_FORMAT, Web3ZondExecutionAPI } from '@theqrl/web3-types';
 import { ethRpcMethods } from '@theqrl/web3-rpc-methods';
 import * as rpcMethodWrappers from '../../../src/rpc_method_wrappers';
 import * as WaitForTransactionReceipt from '../../../src/utils/wait_for_transaction_receipt';
@@ -41,7 +41,7 @@ const testMessage =
 	'Title: %s\ninputSignedTransaction: %s\nexpectedTransactionHash: %s\nexpectedTransactionReceipt: %s\n';
 describe('watchTransactionByPolling', () => {
 	describe('should call getBlockByNumber', () => {
-		let web3Context: Web3Context<Web3EthExecutionAPI>;
+		let web3Context: Web3Context<Web3ZondExecutionAPI>;
 
 		beforeAll(() => {
 			web3Context = new Web3Context(

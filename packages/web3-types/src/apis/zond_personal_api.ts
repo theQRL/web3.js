@@ -14,10 +14,10 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { Address, Transaction } from '../eth_types.js';
+import { Address, Transaction } from '../zond_types.js';
 import { HexString } from '../primitives_types.js';
 
-export type EthPersonalAPI = {
+export type ZondPersonalAPI = {
 	personal_listAccounts: () => Address[];
 	personal_newAccount: (password: string) => Address;
 	personal_unlockAccount: (address: Address, password: string, unlockDuration: number) => boolean;

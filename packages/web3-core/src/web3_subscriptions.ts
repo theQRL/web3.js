@@ -20,7 +20,7 @@ import {
 	BlockOutput,
 	DEFAULT_RETURN_FORMAT,
 	DataFormat,
-	EthExecutionAPI,
+	ZondExecutionAPI,
 	JsonRpcSubscriptionResult,
 	JsonRpcSubscriptionResultOld,
 	JsonRpcNotification,
@@ -47,7 +47,7 @@ export abstract class Web3Subscription<
 	EventMap extends Web3EventMap,
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	ArgsType = any,
-	API extends Web3APISpec = EthExecutionAPI,
+	API extends Web3APISpec = ZondExecutionAPI,
 	// The following generic type is just to define the type `CombinedEventMap` and use it inside the class
 	// 	it combines the user passed `EventMap` with the `CommonSubscriptionEvents`
 	//	However, this type definition could be refactored depending on the closure of

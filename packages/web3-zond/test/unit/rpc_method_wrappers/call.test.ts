@@ -16,8 +16,8 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import { Web3Context } from '@theqrl/web3-core';
 import {
-	Web3EthExecutionAPI,
-	ETH_DATA_FORMAT,
+	Web3ZondExecutionAPI,
+	ZOND_DATA_FORMAT,
 	DEFAULT_RETURN_FORMAT,
 	FMT_NUMBER,
 	FMT_BYTES,
@@ -33,7 +33,7 @@ import { formatTransaction } from '../../../src';
 jest.mock('web3-rpc-methods');
 
 describe('call', () => {
-	let web3Context: Web3Context<Web3EthExecutionAPI>;
+	let web3Context: Web3Context<Web3ZondExecutionAPI>;
 
 	beforeAll(() => {
 		web3Context = new Web3Context('http://127.0.0.1:8545');
@@ -43,7 +43,7 @@ describe('call', () => {
 		`should call rpcMethods.call with expected parameters\nTitle: %s\nInput parameters: %s\n`,
 		async (_, inputParameters) => {
 			const [inputTransaction, inputBlockNumber] = inputParameters;
-			const inputTransactionFormatted = formatTransaction(inputTransaction, ETH_DATA_FORMAT);
+			const inputTransactionFormatted = formatTransaction(inputTransaction, ZOND_DATA_FORMAT);
 
 			let inputBlockNumberFormatted;
 
@@ -53,7 +53,7 @@ describe('call', () => {
 				inputBlockNumberFormatted = format(
 					{ format: 'uint' },
 					inputBlockNumber,
-					ETH_DATA_FORMAT,
+					ZOND_DATA_FORMAT,
 				);
 			}
 

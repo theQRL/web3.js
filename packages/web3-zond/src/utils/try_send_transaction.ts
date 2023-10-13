@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import { Web3Context } from '@theqrl/web3-core';
-import { EthExecutionAPI, Bytes } from '@theqrl/web3-types';
+import { ZondExecutionAPI, Bytes } from '@theqrl/web3-types';
 import { AsyncFunction, rejectIfTimeout } from '@theqrl/web3-utils';
 import { TransactionSendTimeoutError } from '@theqrl/web3-errors';
 
@@ -30,7 +30,7 @@ import { rejectIfBlockTimeout } from './reject_if_block_timeout.js';
  * @returns the Promise<string> returned by the `sendTransactionFunc`.
  */
 export async function trySendTransaction(
-	web3Context: Web3Context<EthExecutionAPI>,
+	web3Context: Web3Context<ZondExecutionAPI>,
 	sendTransactionFunc: AsyncFunction<string>,
 	transactionHash?: Bytes,
 ): Promise<string> {

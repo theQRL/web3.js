@@ -14,7 +14,7 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { EthExecutionAPI } from './eth_execution_api.js';
+import { ZondExecutionAPI } from './zond_execution_api.js';
 import {
 	AccountObject,
 	Address,
@@ -24,9 +24,9 @@ import {
 	HexString32Bytes,
 	TransactionInfo,
 	Uint,
-} from '../eth_types.js';
+} from '../zond_types.js';
 
-export type Web3EthExecutionAPI = EthExecutionAPI & {
+export type Web3ZondExecutionAPI = ZondExecutionAPI & {
 	zond_pendingTransactions: () => TransactionInfo[];
 
 	// https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1102.md

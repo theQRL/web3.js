@@ -17,7 +17,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 import fetch from 'cross-fetch';
 import {
-	EthExecutionAPI,
+	ZondExecutionAPI,
 	JsonRpcResponseWithResult,
 	Web3APIMethod,
 	Web3APIPayload,
@@ -32,7 +32,7 @@ import { HttpProviderOptions } from './types.js';
 export { HttpProviderOptions } from './types.js';
 
 export default class HttpProvider<
-	API extends Web3APISpec = EthExecutionAPI,
+	API extends Web3APISpec = ZondExecutionAPI,
 > extends Web3BaseProvider<API> {
 	private readonly clientUrl: string;
 	private readonly httpProviderOptions: HttpProviderOptions | undefined;

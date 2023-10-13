@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import { Web3Context } from '@theqrl/web3-core';
-import { Web3EthExecutionAPI, ETH_DATA_FORMAT, FMT_BYTES, FMT_NUMBER } from '@theqrl/web3-types';
+import { Web3ZondExecutionAPI, ZOND_DATA_FORMAT, FMT_BYTES, FMT_NUMBER } from '@theqrl/web3-types';
 import { isNullish } from '@theqrl/web3-validator';
 import { format } from '@theqrl/web3-utils';
 import { ethRpcMethods } from '@theqrl/web3-rpc-methods';
@@ -27,7 +27,7 @@ import { formatTransaction } from '../../../src';
 jest.mock('web3-rpc-methods');
 
 describe('createAccessList', () => {
-	let web3Context: Web3Context<Web3EthExecutionAPI>;
+	let web3Context: Web3Context<Web3ZondExecutionAPI>;
 
 	beforeAll(() => {
 		web3Context = new Web3Context('http://127.0.0.1:8545');
@@ -37,7 +37,7 @@ describe('createAccessList', () => {
 		`should call rpcMethods.createAccessList with expected parameters\nTitle: %s\nInput parameters: %s\n`,
 		async (_, inputParameters) => {
 			const [inputTransaction, inputBlockNumber] = inputParameters;
-			const inputTransactionFormatted = formatTransaction(inputTransaction, ETH_DATA_FORMAT);
+			const inputTransactionFormatted = formatTransaction(inputTransaction, ZOND_DATA_FORMAT);
 
 			let inputBlockNumberFormatted;
 
@@ -47,7 +47,7 @@ describe('createAccessList', () => {
 				inputBlockNumberFormatted = format(
 					{ format: 'uint' },
 					inputBlockNumber,
-					ETH_DATA_FORMAT,
+					ZOND_DATA_FORMAT,
 				);
 			}
 

@@ -16,7 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import {
-	EthExecutionAPI,
+	ZondExecutionAPI,
 	Address,
 	HexString,
 	ValidChains,
@@ -31,7 +31,7 @@ import {
 	DataFormat,
 	DEFAULT_RETURN_FORMAT,
 	FormatType,
-	ETH_DATA_FORMAT,
+	ZOND_DATA_FORMAT,
 } from '@theqrl/web3-types';
 import { Web3Context } from '@theqrl/web3-core';
 import { publicKeyToAddress } from '@theqrl/web3-zond-accounts';
@@ -56,7 +56,7 @@ import { getTransactionGasPricing } from './get_transaction_gas_pricing.js';
 
 export const getTransactionFromOrToAttr = (
 	attr: 'from' | 'to',
-	web3Context: Web3Context<EthExecutionAPI>,
+	web3Context: Web3Context<ZondExecutionAPI>,
 	transaction?:
 		| Transaction
 		| TransactionWithFromLocalWalletIndex
@@ -97,7 +97,7 @@ export const getTransactionFromOrToAttr = (
 };
 
 export const getTransactionNonce = async <ReturnFormat extends DataFormat>(
-	web3Context: Web3Context<EthExecutionAPI>,
+	web3Context: Web3Context<ZondExecutionAPI>,
 	address?: Address,
 	returnFormat: ReturnFormat = DEFAULT_RETURN_FORMAT as ReturnFormat,
 ) => {
@@ -110,14 +110,14 @@ export const getTransactionNonce = async <ReturnFormat extends DataFormat>(
 };
 
 export const getTransactionType = (
-	transaction: FormatType<Transaction, typeof ETH_DATA_FORMAT>,
-	web3Context: Web3Context<EthExecutionAPI>,
+	transaction: FormatType<Transaction, typeof ZOND_DATA_FORMAT>,
+	web3Context: Web3Context<ZondExecutionAPI>,
 ) => {
 	const inferredType = detectTransactionType(transaction, web3Context);
 
 	if (!isNullish(inferredType)) return inferredType;
 	if (!isNullish(web3Context.defaultTransactionType))
-		return format({ format: 'uint' }, web3Context.defaultTransactionType, ETH_DATA_FORMAT);
+		return format({ format: 'uint' }, web3Context.defaultTransactionType, ZOND_DATA_FORMAT);
 
 	return undefined;
 };
@@ -126,7 +126,7 @@ export const getTransactionType = (
 // as some of the properties are dependent on others
 export async function defaultTransactionBuilder<ReturnType = Transaction>(options: {
 	transaction: Transaction;
-	web3Context: Web3Context<EthExecutionAPI & Web3NetAPI>;
+	web3Context: Web3Context<ZondExecutionAPI & Web3NetAPI>;
 	privateKey?: HexString | Uint8Array;
 	fillGasPrice?: boolean;
 	fillGasLimit?: boolean;
@@ -151,7 +151,7 @@ export async function defaultTransactionBuilder<ReturnType = Transaction>(option
 		populatedTransaction.nonce = await getTransactionNonce(
 			options.web3Context,
 			populatedTransaction.from,
-			ETH_DATA_FORMAT,
+			ZOND_DATA_FORMAT,
 		);
 	}
 
@@ -202,13 +202,13 @@ export async function defaultTransactionBuilder<ReturnType = Transaction>(option
 		isNullish(populatedTransaction.chainId) &&
 		isNullish(populatedTransaction.common?.customChain.chainId)
 	) {
-		populatedTransaction.chainId = await getChainId(options.web3Context, ETH_DATA_FORMAT);
+		populatedTransaction.chainId = await getChainId(options.web3Context, ZOND_DATA_FORMAT);
 	}
 
 	if (isNullish(populatedTransaction.networkId)) {
 		populatedTransaction.networkId =
 			(options.web3Context.defaultNetworkId as string) ??
-			(await getId(options.web3Context, ETH_DATA_FORMAT));
+			(await getId(options.web3Context, ZOND_DATA_FORMAT));
 	}
 
 	if (isNullish(populatedTransaction.gasLimit) && !isNullish(populatedTransaction.gas)) {
@@ -228,7 +228,7 @@ export async function defaultTransactionBuilder<ReturnType = Transaction>(option
 			...(await getTransactionGasPricing(
 				populatedTransaction,
 				options.web3Context,
-				ETH_DATA_FORMAT,
+				ZOND_DATA_FORMAT,
 			)),
 		};
 	if (
@@ -240,11 +240,11 @@ export async function defaultTransactionBuilder<ReturnType = Transaction>(option
 			options.web3Context,
 			populatedTransaction,
 			'latest',
-			ETH_DATA_FORMAT,
+			ZOND_DATA_FORMAT,
 		);
 		populatedTransaction = {
 			...populatedTransaction,
-			gas: format({ format: 'uint' }, fillGasLimit as Numbers, ETH_DATA_FORMAT),
+			gas: format({ format: 'uint' }, fillGasLimit as Numbers, ZOND_DATA_FORMAT),
 		};
 	}
 	return populatedTransaction as ReturnType;
@@ -253,7 +253,7 @@ export async function defaultTransactionBuilder<ReturnType = Transaction>(option
 export const transactionBuilder = async <ReturnType = Transaction>(
 	options: {
 		transaction: Transaction;
-		web3Context: Web3Context<EthExecutionAPI>;
+		web3Context: Web3Context<ZondExecutionAPI>;
 		privateKey?: HexString | Uint8Array;
 		fillGasPrice?: boolean;
 		fillGasLimit?: boolean;

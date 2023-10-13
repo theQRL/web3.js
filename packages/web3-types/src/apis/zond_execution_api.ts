@@ -31,7 +31,7 @@ import {
 	TransactionReceiptBase,
 	BlockBase,
 	LogBase,
-} from '../eth_types.js';
+} from '../zond_types.js';
 import { HexString } from '../primitives_types.js';
 
 // The types are generated manually by referring to following doc
@@ -176,7 +176,7 @@ export interface CompileResultAPI {
 }
 
 /* eslint-disable camelcase */
-export type EthExecutionAPI = {
+export type ZondExecutionAPI = {
 	// https://github.com/ethereum/execution-apis/blob/main/src/eth/block.yaml
 	zond_getBlockByHash: (blockHash: HexString32Bytes, hydrated: boolean) => BlockAPI;
 	zond_getBlockByNumber: (blockNumber: BlockNumberOrTag, hydrated: boolean) => BlockAPI;

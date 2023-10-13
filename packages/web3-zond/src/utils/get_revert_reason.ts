@@ -23,7 +23,7 @@ import {
 	ContractAbi,
 	DataFormat,
 	DEFAULT_RETURN_FORMAT,
-	EthExecutionAPI,
+	ZondExecutionAPI,
 	TransactionCall,
 } from '@theqrl/web3-types';
 
@@ -80,7 +80,7 @@ export const parseTransactionError = (error: unknown, contractAbi?: ContractAbi)
 export async function getRevertReason<
 	ReturnFormat extends DataFormat = typeof DEFAULT_RETURN_FORMAT,
 >(
-	web3Context: Web3Context<EthExecutionAPI>,
+	web3Context: Web3Context<ZondExecutionAPI>,
 	transaction: TransactionCall,
 	contractAbi?: ContractAbi,
 	returnFormat: ReturnFormat = DEFAULT_RETURN_FORMAT as ReturnFormat,

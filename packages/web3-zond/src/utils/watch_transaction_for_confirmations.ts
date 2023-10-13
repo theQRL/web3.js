@@ -14,7 +14,7 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { Bytes, EthExecutionAPI, Web3BaseProvider, TransactionReceipt } from '@theqrl/web3-types';
+import { Bytes, ZondExecutionAPI, Web3BaseProvider, TransactionReceipt } from '@theqrl/web3-types';
 import { Web3Context, Web3PromiEvent } from '@theqrl/web3-core';
 import { format } from '@theqrl/web3-utils';
 import { isNullish } from '@theqrl/web3-validator';
@@ -36,7 +36,7 @@ export function watchTransactionForConfirmations<
 	Web3PromiEventEventType extends Web3PromiEventEventTypeBase<ReturnFormat>,
 	ResolveType = TransactionReceipt,
 >(
-	web3Context: Web3Context<EthExecutionAPI>,
+	web3Context: Web3Context<ZondExecutionAPI>,
 	transactionPromiEvent: Web3PromiEvent<ResolveType, Web3PromiEventEventType>,
 	transactionReceipt: TransactionReceipt,
 	transactionHash: Bytes,

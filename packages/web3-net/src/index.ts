@@ -16,7 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /**
- * The web3-net package allows you to interact with an Ethereum node’s network properties.
+ * The web3-net package allows you to interact with an Zond node’s network properties.
  *
  * ```ts
  * import Net from '@theqrl/web3-net';
@@ -26,18 +26,18 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
  * import Web3 from 'web3';
  * const web3 = new Web3(Web3.givenProvider || 'ws://some.local-or-remote.node:8546');
  *
- * // -> web3.eth.net
+ * // -> web3.zond.net
  *
  * // get the ID of the network
- * await web3.eth.net.getId();
+ * await web3.zond.net.getId();
  * > 5777n
  *
  * // get the peer count
- * await web3.eth.net.getPeerCount();
+ * await web3.zond.net.getPeerCount();
  * > 0n
  *
  * // Check if the node is listening for peers
- * await web3.eth.net.isListening();
+ * await web3.zond.net.isListening();
  * > true
  * ```
  */

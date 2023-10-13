@@ -14,7 +14,7 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { EthExecutionAPI, Bytes, Web3BaseProvider, BlockHeaderOutput } from '@theqrl/web3-types';
+import { ZondExecutionAPI, Bytes, Web3BaseProvider, BlockHeaderOutput } from '@theqrl/web3-types';
 import { Web3Context } from '@theqrl/web3-core';
 import { rejectIfConditionAtInterval } from '@theqrl/web3-utils';
 
@@ -29,7 +29,7 @@ export interface ResourceCleaner {
 }
 
 function resolveByPolling(
-	web3Context: Web3Context<EthExecutionAPI>,
+	web3Context: Web3Context<ZondExecutionAPI>,
 	starterBlockNumber: number,
 	transactionHash?: Bytes,
 ): [Promise<never>, ResourceCleaner] {
@@ -62,7 +62,7 @@ function resolveByPolling(
 }
 
 async function resolveBySubscription(
-	web3Context: Web3Context<EthExecutionAPI>,
+	web3Context: Web3Context<ZondExecutionAPI>,
 	starterBlockNumber: number,
 	transactionHash?: Bytes,
 ): Promise<[Promise<never>, ResourceCleaner]> {
@@ -158,7 +158,7 @@ async function resolveBySubscription(
 for POS NWs, we can skip checking getBlockNumber(); after interval and calculate only based on time  that certain num of blocked are mined after that for internal double check, can do one getBlockNumber() call and timeout. 
 */
 export async function rejectIfBlockTimeout(
-	web3Context: Web3Context<EthExecutionAPI>,
+	web3Context: Web3Context<ZondExecutionAPI>,
 	transactionHash?: Bytes,
 ): Promise<[Promise<never>, ResourceCleaner]> {
 	const { provider } = web3Context.requestManager;

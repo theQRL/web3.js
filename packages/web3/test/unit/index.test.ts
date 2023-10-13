@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { Web3Eth } from '@theqrl/web3-zond';
+import { Web3Zond } from '@theqrl/web3-zond';
 
 import * as abi from '@theqrl/web3-zond-abi';
 import * as accounts from '@theqrl/web3-zond-accounts';
@@ -27,7 +27,7 @@ import * as iban from '@theqrl/web3-zond-iban';
 import * as http from '@theqrl/web3-providers-http';
 import * as ws from '@theqrl/web3-providers-ws';
 
-import Web3Default, { Web3, providers, eth } from '../../src/index';
+import Web3Default, { Web3, providers, zond } from '../../src/index';
 
 describe('exports of web3 package', () => {
 	describe('eth exports', () => {
@@ -36,16 +36,16 @@ describe('exports of web3 package', () => {
 		});
 
 		it('`Web3Eth` is available under `eth`', () => {
-			expect(eth.Web3Eth).toEqual(Web3Eth);
+			expect(zond.Web3Zond).toEqual(Web3Zond);
 		});
 
 		it('eth sub-namespaces are available under `eth`', () => {
-			expect(eth.abi).toEqual(abi);
-			expect(eth.accounts).toEqual(accounts);
-			expect(eth.contract).toEqual(contract);
-			expect(eth.ens).toEqual(ens);
-			expect(eth.personal).toEqual(personal);
-			expect(eth.iban).toEqual(iban);
+			expect(zond.abi).toEqual(abi);
+			expect(zond.accounts).toEqual(accounts);
+			expect(zond.contract).toEqual(contract);
+			expect(zond.ens).toEqual(ens);
+			expect(zond.personal).toEqual(personal);
+			expect(zond.iban).toEqual(iban);
 		});
 	});
 

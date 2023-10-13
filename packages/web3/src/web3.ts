@@ -34,7 +34,7 @@ import {
 	Address,
 	ContractAbi,
 	ContractInitOptions,
-	EthExecutionAPI,
+	ZondExecutionAPI,
 	SupportedProviders,
 } from '@theqrl/web3-types';
 import { InvalidMethodParamsError } from '@theqrl/web3-errors';
@@ -45,9 +45,9 @@ import { Web3PkgInfo } from './version.js';
 
 export class Web3<
 	CustomRegisteredSubscription extends {
-		[key: string]: Web3SubscriptionConstructor<EthExecutionAPI>;
+		[key: string]: Web3SubscriptionConstructor<ZondExecutionAPI>;
 	} = RegisteredSubscription,
-> extends Web3Context<EthExecutionAPI, CustomRegisteredSubscription & RegisteredSubscription> {
+> extends Web3Context<ZondExecutionAPI, CustomRegisteredSubscription & RegisteredSubscription> {
 	public static version = Web3PkgInfo.version;
 	public static utils = utils;
 	public static modules = {
@@ -65,14 +65,14 @@ export class Web3<
 	public constructor(
 		providerOrContext?:
 			| string
-			| SupportedProviders<EthExecutionAPI>
-			| Web3ContextInitOptions<EthExecutionAPI, CustomRegisteredSubscription>,
+			| SupportedProviders<ZondExecutionAPI>
+			| Web3ContextInitOptions<ZondExecutionAPI, CustomRegisteredSubscription>,
 	) {
 		if (
 			isNullish(providerOrContext) ||
 			(typeof providerOrContext === 'string' && providerOrContext.trim() === '') ||
 			(typeof providerOrContext !== 'string' &&
-				!isSupportedProvider(providerOrContext as SupportedProviders<EthExecutionAPI>) &&
+				!isSupportedProvider(providerOrContext as SupportedProviders<ZondExecutionAPI>) &&
 				!(providerOrContext as Web3ContextInitOptions).provider)
 		) {
 			console.warn(
@@ -80,7 +80,7 @@ export class Web3<
 			);
 		}
 
-		let contextInitOptions: Web3ContextInitOptions<EthExecutionAPI> = {};
+		let contextInitOptions: Web3ContextInitOptions<ZondExecutionAPI> = {};
 		if (
 			typeof providerOrContext === 'string' ||
 			isSupportedProvider(providerOrContext as SupportedProviders)
@@ -96,7 +96,7 @@ export class Web3<
 		}
 
 		contextInitOptions.registeredSubscriptions = {
-			// all the Eth standard subscriptions
+			// all the Zond standard subscriptions
 			...registeredSubscriptions,
 			// overridden and combined with any custom subscriptions
 			...(contextInitOptions.registeredSubscriptions ?? {}),
@@ -153,10 +153,10 @@ export class Web3<
 			}
 		}
 
-		const eth = self.use(Web3Zond);
+		const zond = self.use(Web3Zond);
 
 		// Zond Module
-		this.zond = Object.assign(eth, {
+		this.zond = Object.assign(zond, {
 			// ENS module
 			ens: self.use(ENS, registryAddresses.main), // registry address defaults to main network
 

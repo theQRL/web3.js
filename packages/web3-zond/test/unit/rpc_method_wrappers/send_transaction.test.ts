@@ -16,7 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import { Web3Context } from '@theqrl/web3-core';
 import { format } from '@theqrl/web3-utils';
-import { DEFAULT_RETURN_FORMAT, ETH_DATA_FORMAT, Web3EthExecutionAPI } from '@theqrl/web3-types';
+import { DEFAULT_RETURN_FORMAT, ZOND_DATA_FORMAT, Web3ZondExecutionAPI } from '@theqrl/web3-types';
 import { isNullish } from '@theqrl/web3-validator';
 import { ethRpcMethods } from '@theqrl/web3-rpc-methods';
 
@@ -40,7 +40,7 @@ describe('sendTransaction', () => {
 	const testMessage =
 		'Title: %s\ninputTransaction: %s\nsendTransactionOptions: %s\nexpectedTransactionHash: %s\nexpectedTransactionReceipt: %s\n';
 
-	let web3Context: Web3Context<Web3EthExecutionAPI>;
+	let web3Context: Web3Context<Web3ZondExecutionAPI>;
 
 	beforeAll(() => {
 		web3Context = new Web3Context('http://127.0.0.1:8545');
@@ -81,7 +81,7 @@ describe('sendTransaction', () => {
 	it.each(testData)(
 		`sending event should emit with formattedTransaction\n ${testMessage}`,
 		async (_, inputTransaction, sendTransactionOptions) => {
-			const formattedTransaction = formatTransaction(inputTransaction, ETH_DATA_FORMAT);
+			const formattedTransaction = formatTransaction(inputTransaction, ZOND_DATA_FORMAT);
 			(WaitForTransactionReceipt.waitForTransactionReceipt as jest.Mock).mockResolvedValue(
 				expectedTransactionReceipt,
 			);
@@ -101,7 +101,7 @@ describe('sendTransaction', () => {
 	it.each(testData)(
 		`should call ethRpcMethods.sendTransaction with expected parameters\n ${testMessage}`,
 		async (_, inputTransaction, sendTransactionOptions) => {
-			const formattedTransaction = formatTransaction(inputTransaction, ETH_DATA_FORMAT);
+			const formattedTransaction = formatTransaction(inputTransaction, ZOND_DATA_FORMAT);
 			(WaitForTransactionReceipt.waitForTransactionReceipt as jest.Mock).mockResolvedValue(
 				expectedTransactionReceipt,
 			);
@@ -121,7 +121,7 @@ describe('sendTransaction', () => {
 	it.each(testData)(
 		`sent event should emit with formattedTransaction\n ${testMessage}`,
 		async (_, inputTransaction, sendTransactionOptions) => {
-			const formattedTransaction = formatTransaction(inputTransaction, ETH_DATA_FORMAT);
+			const formattedTransaction = formatTransaction(inputTransaction, ZOND_DATA_FORMAT);
 			(WaitForTransactionReceipt.waitForTransactionReceipt as jest.Mock).mockResolvedValue(
 				expectedTransactionReceipt,
 			);

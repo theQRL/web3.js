@@ -18,11 +18,11 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 // Disabling because returnTypes must be last param to match 1.x params
 /* eslint-disable default-param-last */
 import {
-	ETH_DATA_FORMAT,
+	ZOND_DATA_FORMAT,
 	FormatType,
 	DataFormat,
 	DEFAULT_RETURN_FORMAT,
-	EthExecutionAPI,
+	ZondExecutionAPI,
 	TransactionWithSenderAPI,
 	SignedTransactionInfoAPI,
 	Web3BaseWalletAccount,
@@ -41,7 +41,7 @@ import {
 	TransactionReceipt,
 	Transaction,
 	TransactionCall,
-	Web3EthExecutionAPI,
+	Web3ZondExecutionAPI,
 	TransactionWithFromLocalWalletIndex,
 	TransactionWithToLocalWalletIndex,
 	TransactionWithFromAndToLocalWalletIndex,
@@ -99,7 +99,7 @@ import { getRevertReason } from './utils/get_revert_reason.js';
  * View additional documentations here: {@link Web3Eth.getProtocolVersion}
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
-export const getProtocolVersion = async (web3Context: Web3Context<EthExecutionAPI>) =>
+export const getProtocolVersion = async (web3Context: Web3Context<ZondExecutionAPI>) =>
 	ethRpcMethods.getProtocolVersion(web3Context.requestManager);
 
 // TODO Add returnFormat parameter
@@ -107,7 +107,7 @@ export const getProtocolVersion = async (web3Context: Web3Context<EthExecutionAP
  * View additional documentations here: {@link Web3Eth.isSyncing}
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
-export const isSyncing = async (web3Context: Web3Context<EthExecutionAPI>) =>
+export const isSyncing = async (web3Context: Web3Context<ZondExecutionAPI>) =>
 	ethRpcMethods.getSyncing(web3Context.requestManager);
 
 // TODO consider adding returnFormat parameter (to format address as bytes)
@@ -115,14 +115,14 @@ export const isSyncing = async (web3Context: Web3Context<EthExecutionAPI>) =>
  * View additional documentations here: {@link Web3Eth.getCoinbase}
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
-export const getCoinbase = async (web3Context: Web3Context<EthExecutionAPI>) =>
+export const getCoinbase = async (web3Context: Web3Context<ZondExecutionAPI>) =>
 	ethRpcMethods.getCoinbase(web3Context.requestManager);
 
 /**
  * View additional documentations here: {@link Web3Eth.isMining}
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
-export const isMining = async (web3Context: Web3Context<EthExecutionAPI>) =>
+export const isMining = async (web3Context: Web3Context<ZondExecutionAPI>) =>
 	ethRpcMethods.getMining(web3Context.requestManager);
 
 /**
@@ -130,7 +130,7 @@ export const isMining = async (web3Context: Web3Context<EthExecutionAPI>) =>
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function getHashRate<ReturnFormat extends DataFormat>(
-	web3Context: Web3Context<EthExecutionAPI>,
+	web3Context: Web3Context<ZondExecutionAPI>,
 	returnFormat: ReturnFormat,
 ) {
 	const response = await ethRpcMethods.getHashRate(web3Context.requestManager);
@@ -143,7 +143,7 @@ export async function getHashRate<ReturnFormat extends DataFormat>(
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function getGasPrice<ReturnFormat extends DataFormat>(
-	web3Context: Web3Context<EthExecutionAPI>,
+	web3Context: Web3Context<ZondExecutionAPI>,
 	returnFormat: ReturnFormat,
 ) {
 	const response = await ethRpcMethods.getGasPrice(web3Context.requestManager);
@@ -156,7 +156,7 @@ export async function getGasPrice<ReturnFormat extends DataFormat>(
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function getBlockNumber<ReturnFormat extends DataFormat>(
-	web3Context: Web3Context<EthExecutionAPI>,
+	web3Context: Web3Context<ZondExecutionAPI>,
 	returnFormat: ReturnFormat,
 ) {
 	const response = await ethRpcMethods.getBlockNumber(web3Context.requestManager);
@@ -169,14 +169,14 @@ export async function getBlockNumber<ReturnFormat extends DataFormat>(
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function getBalance<ReturnFormat extends DataFormat>(
-	web3Context: Web3Context<EthExecutionAPI>,
+	web3Context: Web3Context<ZondExecutionAPI>,
 	address: Address,
 	blockNumber: BlockNumberOrTag = web3Context.defaultBlock,
 	returnFormat: ReturnFormat,
 ) {
 	const blockNumberFormatted = isBlockTag(blockNumber as string)
 		? (blockNumber as BlockTag)
-		: format({ format: 'uint' }, blockNumber as Numbers, ETH_DATA_FORMAT);
+		: format({ format: 'uint' }, blockNumber as Numbers, ZOND_DATA_FORMAT);
 	const response = await ethRpcMethods.getBalance(
 		web3Context.requestManager,
 		address,
@@ -190,16 +190,16 @@ export async function getBalance<ReturnFormat extends DataFormat>(
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function getStorageAt<ReturnFormat extends DataFormat>(
-	web3Context: Web3Context<EthExecutionAPI>,
+	web3Context: Web3Context<ZondExecutionAPI>,
 	address: Address,
 	storageSlot: Numbers,
 	blockNumber: BlockNumberOrTag = web3Context.defaultBlock,
 	returnFormat: ReturnFormat,
 ) {
-	const storageSlotFormatted = format({ format: 'uint' }, storageSlot, ETH_DATA_FORMAT);
+	const storageSlotFormatted = format({ format: 'uint' }, storageSlot, ZOND_DATA_FORMAT);
 	const blockNumberFormatted = isBlockTag(blockNumber as string)
 		? (blockNumber as BlockTag)
-		: format({ format: 'uint' }, blockNumber as Numbers, ETH_DATA_FORMAT);
+		: format({ format: 'uint' }, blockNumber as Numbers, ZOND_DATA_FORMAT);
 	const response = await ethRpcMethods.getStorageAt(
 		web3Context.requestManager,
 		address,
@@ -214,14 +214,14 @@ export async function getStorageAt<ReturnFormat extends DataFormat>(
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function getCode<ReturnFormat extends DataFormat>(
-	web3Context: Web3Context<EthExecutionAPI>,
+	web3Context: Web3Context<ZondExecutionAPI>,
 	address: Address,
 	blockNumber: BlockNumberOrTag = web3Context.defaultBlock,
 	returnFormat: ReturnFormat,
 ) {
 	const blockNumberFormatted = isBlockTag(blockNumber as string)
 		? (blockNumber as BlockTag)
-		: format({ format: 'uint' }, blockNumber as Numbers, ETH_DATA_FORMAT);
+		: format({ format: 'uint' }, blockNumber as Numbers, ZOND_DATA_FORMAT);
 	const response = await ethRpcMethods.getCode(
 		web3Context.requestManager,
 		address,
@@ -235,14 +235,14 @@ export async function getCode<ReturnFormat extends DataFormat>(
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function getBlock<ReturnFormat extends DataFormat>(
-	web3Context: Web3Context<EthExecutionAPI>,
+	web3Context: Web3Context<ZondExecutionAPI>,
 	block: Bytes | BlockNumberOrTag = web3Context.defaultBlock,
 	hydrated = false,
 	returnFormat: ReturnFormat,
 ) {
 	let response;
 	if (isBytes(block)) {
-		const blockHashFormatted = format({ format: 'bytes32' }, block, ETH_DATA_FORMAT);
+		const blockHashFormatted = format({ format: 'bytes32' }, block, ZOND_DATA_FORMAT);
 		response = await ethRpcMethods.getBlockByHash(
 			web3Context.requestManager,
 			blockHashFormatted as HexString,
@@ -251,7 +251,7 @@ export async function getBlock<ReturnFormat extends DataFormat>(
 	} else {
 		const blockNumberFormatted = isBlockTag(block as string)
 			? (block as BlockTag)
-			: format({ format: 'uint' }, block as Numbers, ETH_DATA_FORMAT);
+			: format({ format: 'uint' }, block as Numbers, ZOND_DATA_FORMAT);
 		response = await ethRpcMethods.getBlockByNumber(
 			web3Context.requestManager,
 			blockNumberFormatted,
@@ -266,13 +266,13 @@ export async function getBlock<ReturnFormat extends DataFormat>(
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function getBlockTransactionCount<ReturnFormat extends DataFormat>(
-	web3Context: Web3Context<EthExecutionAPI>,
+	web3Context: Web3Context<ZondExecutionAPI>,
 	block: Bytes | BlockNumberOrTag = web3Context.defaultBlock,
 	returnFormat: ReturnFormat,
 ) {
 	let response;
 	if (isBytes(block)) {
-		const blockHashFormatted = format({ format: 'bytes32' }, block, ETH_DATA_FORMAT);
+		const blockHashFormatted = format({ format: 'bytes32' }, block, ZOND_DATA_FORMAT);
 		response = await ethRpcMethods.getBlockTransactionCountByHash(
 			web3Context.requestManager,
 			blockHashFormatted as HexString,
@@ -280,7 +280,7 @@ export async function getBlockTransactionCount<ReturnFormat extends DataFormat>(
 	} else {
 		const blockNumberFormatted = isBlockTag(block as string)
 			? (block as BlockTag)
-			: format({ format: 'uint' }, block as Numbers, ETH_DATA_FORMAT);
+			: format({ format: 'uint' }, block as Numbers, ZOND_DATA_FORMAT);
 		response = await ethRpcMethods.getBlockTransactionCountByNumber(
 			web3Context.requestManager,
 			blockNumberFormatted,
@@ -295,13 +295,13 @@ export async function getBlockTransactionCount<ReturnFormat extends DataFormat>(
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function getBlockUncleCount<ReturnFormat extends DataFormat>(
-	web3Context: Web3Context<EthExecutionAPI>,
+	web3Context: Web3Context<ZondExecutionAPI>,
 	block: Bytes | BlockNumberOrTag = web3Context.defaultBlock,
 	returnFormat: ReturnFormat,
 ) {
 	let response;
 	if (isBytes(block)) {
-		const blockHashFormatted = format({ format: 'bytes32' }, block, ETH_DATA_FORMAT);
+		const blockHashFormatted = format({ format: 'bytes32' }, block, ZOND_DATA_FORMAT);
 		response = await ethRpcMethods.getUncleCountByBlockHash(
 			web3Context.requestManager,
 			blockHashFormatted as HexString,
@@ -309,7 +309,7 @@ export async function getBlockUncleCount<ReturnFormat extends DataFormat>(
 	} else {
 		const blockNumberFormatted = isBlockTag(block as string)
 			? (block as BlockTag)
-			: format({ format: 'uint' }, block as Numbers, ETH_DATA_FORMAT);
+			: format({ format: 'uint' }, block as Numbers, ZOND_DATA_FORMAT);
 		response = await ethRpcMethods.getUncleCountByBlockNumber(
 			web3Context.requestManager,
 			blockNumberFormatted,
@@ -324,16 +324,16 @@ export async function getBlockUncleCount<ReturnFormat extends DataFormat>(
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function getUncle<ReturnFormat extends DataFormat>(
-	web3Context: Web3Context<EthExecutionAPI>,
+	web3Context: Web3Context<ZondExecutionAPI>,
 	block: Bytes | BlockNumberOrTag = web3Context.defaultBlock,
 	uncleIndex: Numbers,
 	returnFormat: ReturnFormat,
 ) {
-	const uncleIndexFormatted = format({ format: 'uint' }, uncleIndex, ETH_DATA_FORMAT);
+	const uncleIndexFormatted = format({ format: 'uint' }, uncleIndex, ZOND_DATA_FORMAT);
 
 	let response;
 	if (isBytes(block)) {
-		const blockHashFormatted = format({ format: 'bytes32' }, block, ETH_DATA_FORMAT);
+		const blockHashFormatted = format({ format: 'bytes32' }, block, ZOND_DATA_FORMAT);
 		response = await ethRpcMethods.getUncleByBlockHashAndIndex(
 			web3Context.requestManager,
 			blockHashFormatted as HexString,
@@ -342,7 +342,7 @@ export async function getUncle<ReturnFormat extends DataFormat>(
 	} else {
 		const blockNumberFormatted = isBlockTag(block as string)
 			? (block as BlockTag)
-			: format({ format: 'uint' }, block as Numbers, ETH_DATA_FORMAT);
+			: format({ format: 'uint' }, block as Numbers, ZOND_DATA_FORMAT);
 		response = await ethRpcMethods.getUncleByBlockNumberAndIndex(
 			web3Context.requestManager,
 			blockNumberFormatted,
@@ -358,7 +358,7 @@ export async function getUncle<ReturnFormat extends DataFormat>(
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function getTransaction<ReturnFormat extends DataFormat>(
-	web3Context: Web3Context<EthExecutionAPI>,
+	web3Context: Web3Context<ZondExecutionAPI>,
 	transactionHash: Bytes,
 	returnFormat: ReturnFormat,
 ) {
@@ -382,7 +382,7 @@ export async function getTransaction<ReturnFormat extends DataFormat>(
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function getPendingTransactions<ReturnFormat extends DataFormat>(
-	web3Context: Web3Context<EthExecutionAPI>,
+	web3Context: Web3Context<ZondExecutionAPI>,
 	returnFormat: ReturnFormat,
 ) {
 	const response = await ethRpcMethods.getPendingTransactions(web3Context.requestManager);
@@ -399,16 +399,16 @@ export async function getPendingTransactions<ReturnFormat extends DataFormat>(
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function getTransactionFromBlock<ReturnFormat extends DataFormat>(
-	web3Context: Web3Context<EthExecutionAPI>,
+	web3Context: Web3Context<ZondExecutionAPI>,
 	block: Bytes | BlockNumberOrTag = web3Context.defaultBlock,
 	transactionIndex: Numbers,
 	returnFormat: ReturnFormat,
 ) {
-	const transactionIndexFormatted = format({ format: 'uint' }, transactionIndex, ETH_DATA_FORMAT);
+	const transactionIndexFormatted = format({ format: 'uint' }, transactionIndex, ZOND_DATA_FORMAT);
 
 	let response;
 	if (isBytes(block)) {
-		const blockHashFormatted = format({ format: 'bytes32' }, block, ETH_DATA_FORMAT);
+		const blockHashFormatted = format({ format: 'bytes32' }, block, ZOND_DATA_FORMAT);
 		response = await ethRpcMethods.getTransactionByBlockHashAndIndex(
 			web3Context.requestManager,
 			blockHashFormatted as HexString,
@@ -417,7 +417,7 @@ export async function getTransactionFromBlock<ReturnFormat extends DataFormat>(
 	} else {
 		const blockNumberFormatted = isBlockTag(block as string)
 			? (block as BlockTag)
-			: format({ format: 'uint' }, block as Numbers, ETH_DATA_FORMAT);
+			: format({ format: 'uint' }, block as Numbers, ZOND_DATA_FORMAT);
 		response = await ethRpcMethods.getTransactionByBlockNumberAndIndex(
 			web3Context.requestManager,
 			blockNumberFormatted,
@@ -435,7 +435,7 @@ export async function getTransactionFromBlock<ReturnFormat extends DataFormat>(
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function getTransactionReceipt<ReturnFormat extends DataFormat>(
-	web3Context: Web3Context<EthExecutionAPI>,
+	web3Context: Web3Context<ZondExecutionAPI>,
 	transactionHash: Bytes,
 	returnFormat: ReturnFormat,
 ) {
@@ -463,14 +463,14 @@ export async function getTransactionReceipt<ReturnFormat extends DataFormat>(
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function getTransactionCount<ReturnFormat extends DataFormat>(
-	web3Context: Web3Context<EthExecutionAPI>,
+	web3Context: Web3Context<ZondExecutionAPI>,
 	address: Address,
 	blockNumber: BlockNumberOrTag = web3Context.defaultBlock,
 	returnFormat: ReturnFormat,
 ) {
 	const blockNumberFormatted = isBlockTag(blockNumber as string)
 		? (blockNumber as BlockTag)
-		: format({ format: 'uint' }, blockNumber as Numbers, ETH_DATA_FORMAT);
+		: format({ format: 'uint' }, blockNumber as Numbers, ZOND_DATA_FORMAT);
 	const response = await ethRpcMethods.getTransactionCount(
 		web3Context.requestManager,
 		address,
@@ -488,7 +488,7 @@ export function sendTransaction<
 	ReturnFormat extends DataFormat,
 	ResolveType = FormatType<TransactionReceipt, ReturnFormat>,
 >(
-	web3Context: Web3Context<EthExecutionAPI>,
+	web3Context: Web3Context<ZondExecutionAPI>,
 	transaction:
 		| Transaction
 		| TransactionWithFromLocalWalletIndex
@@ -507,7 +507,7 @@ export function sendTransaction<
 							from: getTransactionFromOrToAttr('from', web3Context, transaction),
 							to: getTransactionFromOrToAttr('to', web3Context, transaction),
 						},
-						ETH_DATA_FORMAT,
+						ZOND_DATA_FORMAT,
 					);
 
 					if (
@@ -523,7 +523,7 @@ export function sendTransaction<
 							...(await getTransactionGasPricing(
 								transactionFormatted,
 								web3Context,
-								ETH_DATA_FORMAT,
+								ZOND_DATA_FORMAT,
 							)),
 						};
 					}
@@ -698,7 +698,7 @@ export function sendSignedTransaction<
 	ReturnFormat extends DataFormat,
 	ResolveType = FormatType<TransactionReceipt, ReturnFormat>,
 >(
-	web3Context: Web3Context<EthExecutionAPI>,
+	web3Context: Web3Context<ZondExecutionAPI>,
 	signedTransaction: Bytes,
 	returnFormat: ReturnFormat,
 	options: SendSignedTransactionOptions<ResolveType> = { checkRevertBeforeSending: true },
@@ -713,7 +713,7 @@ export function sendSignedTransaction<
 					const signedTransactionFormattedHex = format(
 						{ format: 'bytes' },
 						signedTransaction,
-						ETH_DATA_FORMAT,
+						ZOND_DATA_FORMAT,
 					);
 					const unSerializedTransaction = TransactionFactory.fromSerializedData(
 						bytesToUint8Array(hexToBytes(signedTransactionFormattedHex)),
@@ -873,7 +873,7 @@ export function sendSignedTransaction<
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function sign<ReturnFormat extends DataFormat>(
-	web3Context: Web3Context<EthExecutionAPI>,
+	web3Context: Web3Context<ZondExecutionAPI>,
 	message: Bytes,
 	addressOrIndex: Address | number,
 	returnFormat: ReturnFormat,
@@ -906,13 +906,13 @@ export async function sign<ReturnFormat extends DataFormat>(
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function signTransaction<ReturnFormat extends DataFormat>(
-	web3Context: Web3Context<EthExecutionAPI>,
+	web3Context: Web3Context<ZondExecutionAPI>,
 	transaction: Transaction,
 	returnFormat: ReturnFormat,
 ) {
 	const response = await ethRpcMethods.signTransaction(
 		web3Context.requestManager,
-		formatTransaction(transaction, ETH_DATA_FORMAT),
+		formatTransaction(transaction, ZOND_DATA_FORMAT),
 	);
 	// Some clients only return the encoded signed transaction (e.g. Ganache)
 	// while clients such as Geth return the desired SignedTransactionInfoAPI object
@@ -939,18 +939,18 @@ export async function signTransaction<ReturnFormat extends DataFormat>(
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function call<ReturnFormat extends DataFormat>(
-	web3Context: Web3Context<EthExecutionAPI>,
+	web3Context: Web3Context<ZondExecutionAPI>,
 	transaction: TransactionCall,
 	blockNumber: BlockNumberOrTag = web3Context.defaultBlock,
 	returnFormat: ReturnFormat,
 ) {
 	const blockNumberFormatted = isBlockTag(blockNumber as string)
 		? (blockNumber as BlockTag)
-		: format({ format: 'uint' }, blockNumber as Numbers, ETH_DATA_FORMAT);
+		: format({ format: 'uint' }, blockNumber as Numbers, ZOND_DATA_FORMAT);
 
 	const response = await ethRpcMethods.call(
 		web3Context.requestManager,
-		formatTransaction(transaction, ETH_DATA_FORMAT),
+		formatTransaction(transaction, ZOND_DATA_FORMAT),
 		blockNumberFormatted,
 	);
 
@@ -963,15 +963,15 @@ export async function call<ReturnFormat extends DataFormat>(
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function estimateGas<ReturnFormat extends DataFormat>(
-	web3Context: Web3Context<EthExecutionAPI>,
+	web3Context: Web3Context<ZondExecutionAPI>,
 	transaction: Transaction,
 	blockNumber: BlockNumberOrTag = web3Context.defaultBlock,
 	returnFormat: ReturnFormat,
 ) {
-	const transactionFormatted = formatTransaction(transaction, ETH_DATA_FORMAT);
+	const transactionFormatted = formatTransaction(transaction, ZOND_DATA_FORMAT);
 	const blockNumberFormatted = isBlockTag(blockNumber as string)
 		? (blockNumber as BlockTag)
-		: format({ format: 'uint' }, blockNumber as Numbers, ETH_DATA_FORMAT);
+		: format({ format: 'uint' }, blockNumber as Numbers, ZOND_DATA_FORMAT);
 
 	const response = await ethRpcMethods.estimateGas(
 		web3Context.requestManager,
@@ -988,7 +988,7 @@ export async function estimateGas<ReturnFormat extends DataFormat>(
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function getLogs<ReturnFormat extends DataFormat>(
-	web3Context: Web3Context<Web3EthExecutionAPI>,
+	web3Context: Web3Context<Web3ZondExecutionAPI>,
 	filter: Filter,
 	returnFormat: ReturnFormat,
 ) {
@@ -1025,7 +1025,7 @@ export async function getLogs<ReturnFormat extends DataFormat>(
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function getChainId<ReturnFormat extends DataFormat>(
-	web3Context: Web3Context<EthExecutionAPI>,
+	web3Context: Web3Context<ZondExecutionAPI>,
 	returnFormat: ReturnFormat,
 ) {
 	const response = await ethRpcMethods.getChainId(web3Context.requestManager);
@@ -1043,19 +1043,19 @@ export async function getChainId<ReturnFormat extends DataFormat>(
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function getProof<ReturnFormat extends DataFormat>(
-	web3Context: Web3Context<Web3EthExecutionAPI>,
+	web3Context: Web3Context<Web3ZondExecutionAPI>,
 	address: Address,
 	storageKeys: Bytes[],
 	blockNumber: BlockNumberOrTag = web3Context.defaultBlock,
 	returnFormat: ReturnFormat,
 ) {
 	const storageKeysFormatted = storageKeys.map(storageKey =>
-		format({ format: 'bytes' }, storageKey, ETH_DATA_FORMAT),
+		format({ format: 'bytes' }, storageKey, ZOND_DATA_FORMAT),
 	);
 
 	const blockNumberFormatted = isBlockTag(blockNumber as string)
 		? (blockNumber as BlockTag)
-		: format({ format: 'uint' }, blockNumber as Numbers, ETH_DATA_FORMAT);
+		: format({ format: 'uint' }, blockNumber as Numbers, ZOND_DATA_FORMAT);
 
 	const response = await ethRpcMethods.getProof(
 		web3Context.requestManager,
@@ -1074,17 +1074,17 @@ export async function getProof<ReturnFormat extends DataFormat>(
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function getFeeHistory<ReturnFormat extends DataFormat>(
-	web3Context: Web3Context<EthExecutionAPI>,
+	web3Context: Web3Context<ZondExecutionAPI>,
 	blockCount: Numbers,
 	newestBlock: BlockNumberOrTag = web3Context.defaultBlock,
 	rewardPercentiles: Numbers[],
 	returnFormat: ReturnFormat,
 ) {
-	const blockCountFormatted = format({ format: 'uint' }, blockCount, ETH_DATA_FORMAT);
+	const blockCountFormatted = format({ format: 'uint' }, blockCount, ZOND_DATA_FORMAT);
 
 	const newestBlockFormatted = isBlockTag(newestBlock as string)
 		? (newestBlock as BlockTag)
-		: format({ format: 'uint' }, newestBlock as Numbers, ETH_DATA_FORMAT);
+		: format({ format: 'uint' }, newestBlock as Numbers, ZOND_DATA_FORMAT);
 
 	const rewardPercentilesFormatted = format(
 		{
@@ -1112,18 +1112,18 @@ export async function getFeeHistory<ReturnFormat extends DataFormat>(
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function createAccessList<ReturnFormat extends DataFormat>(
-	web3Context: Web3Context<EthExecutionAPI>,
+	web3Context: Web3Context<ZondExecutionAPI>,
 	transaction: TransactionForAccessList,
 	blockNumber: BlockNumberOrTag = web3Context.defaultBlock,
 	returnFormat: ReturnFormat,
 ) {
 	const blockNumberFormatted = isBlockTag(blockNumber as string)
 		? (blockNumber as BlockTag)
-		: format({ format: 'uint' }, blockNumber as Numbers, ETH_DATA_FORMAT);
+		: format({ format: 'uint' }, blockNumber as Numbers, ZOND_DATA_FORMAT);
 
 	const response = (await ethRpcMethods.createAccessList(
 		web3Context.requestManager,
-		formatTransaction(transaction, ETH_DATA_FORMAT),
+		formatTransaction(transaction, ZOND_DATA_FORMAT),
 		blockNumberFormatted,
 	)) as unknown as AccessListResult;
 
@@ -1135,7 +1135,7 @@ export async function createAccessList<ReturnFormat extends DataFormat>(
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function signTypedData<ReturnFormat extends DataFormat>(
-	web3Context: Web3Context<EthExecutionAPI>,
+	web3Context: Web3Context<ZondExecutionAPI>,
 	address: Address,
 	typedData: Eip712TypedData,
 	useLegacy: boolean,

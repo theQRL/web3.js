@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { EthExecutionAPI, Bytes, Transaction, /*KeyStore,*/ ETH_DATA_FORMAT } from '@theqrl/web3-types';
+import { ZondExecutionAPI, Bytes, Transaction, /*KeyStore,*/ ZOND_DATA_FORMAT } from '@theqrl/web3-types';
 import { format } from '@theqrl/web3-utils';
 import { Web3Context } from '@theqrl/web3-core';
 import { prepareTransactionForSigning } from '@theqrl/web3-zond';
@@ -39,12 +39,12 @@ import {
  * this function in `web3` package. In future the actual `web3-eth-accounts` package
  * should be converted to context aware.
  */
-export const initAccountsForContext = (context: Web3Context<EthExecutionAPI>) => {
+export const initAccountsForContext = (context: Web3Context<ZondExecutionAPI>) => {
 	const signTransactionWithContext = async (transaction: Transaction, privateKey: Bytes, publicKey: Bytes) => {
 		const tx = await prepareTransactionForSigning(transaction, context);
 
-		const privateKeyBytes = format({ format: 'bytes' }, privateKey, ETH_DATA_FORMAT);
-		const publicKeyBytes = format({ format: 'bytes' }, publicKey, ETH_DATA_FORMAT);
+		const privateKeyBytes = format({ format: 'bytes' }, privateKey, ZOND_DATA_FORMAT);
+		const publicKeyBytes = format({ format: 'bytes' }, publicKey, ZOND_DATA_FORMAT);
 
 		return signTransaction(tx, privateKeyBytes, publicKeyBytes);
 	};

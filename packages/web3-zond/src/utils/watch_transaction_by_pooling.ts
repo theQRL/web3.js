@@ -14,7 +14,7 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { Bytes, EthExecutionAPI, TransactionReceipt } from '@theqrl/web3-types';
+import { Bytes, ZondExecutionAPI, TransactionReceipt } from '@theqrl/web3-types';
 import { Web3Context, Web3PromiEvent } from '@theqrl/web3-core';
 import { format, numberToHex } from '@theqrl/web3-utils';
 import { ethRpcMethods } from '@theqrl/web3-rpc-methods';
@@ -28,7 +28,7 @@ export type Web3PromiEventEventTypeBase<ReturnFormat extends DataFormat> =
 	| SendSignedTransactionEvents<ReturnFormat>;
 
 export type WaitProps<ReturnFormat extends DataFormat, ResolveType = TransactionReceipt> = {
-	web3Context: Web3Context<EthExecutionAPI>;
+	web3Context: Web3Context<ZondExecutionAPI>;
 	transactionReceipt: TransactionReceipt;
 	transactionPromiEvent: Web3PromiEvent<ResolveType, Web3PromiEventEventTypeBase<ReturnFormat>>;
 	returnFormat: ReturnFormat;

@@ -63,7 +63,7 @@ import {
 	BlockNumberOrTag,
 	BlockTags,
 	Bytes,
-	EthExecutionAPI,
+	ZondExecutionAPI,
 	Filter,
 	FilterAbis,
 	HexString,
@@ -188,10 +188,10 @@ const contractSubscriptions = {
 };
 
 /**
- * The class designed to interact with smart contracts on the Ethereum blockchain.
+ * The class designed to interact with smart contracts on the Zond blockchain.
  */
 export class Contract<Abi extends ContractAbi>
-	extends Web3Context<EthExecutionAPI, typeof contractSubscriptions>
+	extends Web3Context<ZondExecutionAPI, typeof contractSubscriptions>
 	implements Web3EventEmitter<ContractEventEmitterInterface<Abi>>
 {
 	/**
@@ -246,7 +246,7 @@ export class Contract<Abi extends ContractAbi>
 	 * Creates a new contract instance with all its methods and events defined in its {@doclink glossary/json_interface | json interface} object.
 	 *
 	 * ```ts
-	 * new web3.eth.Contract(jsonInterface[, address][, options])
+	 * new web3.zond.Contract(jsonInterface[, address][, options])
 	 * ```
 	 *
 	 * @param jsonInterface - The JSON interface for the contract to instantiate.
@@ -256,7 +256,7 @@ export class Contract<Abi extends ContractAbi>
 	 * @returns - The contract instance with all its methods and events.
 	 *
 	 * ```ts title="Example"
-	 * var myContract = new web3.eth.Contract([...], '0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe', {
+	 * var myContract = new web3.zond.Contract([...], '0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe', {
 	 *   from: '0x1234567890123456789012345678901234567891', // default from address
 	 *   gasPrice: '20000000000' // default gas price in wei, 20 gwei in this case
 	 * });
@@ -266,7 +266,7 @@ export class Contract<Abi extends ContractAbi>
 	 *
 	 * ```ts title="Example"
 	 * const myContractAbi = [....] as const; // ABI definitions
-	 * const myContract = new web3.eth.Contract(myContractAbi, '0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe');
+	 * const myContract = new web3.zond.Contract(myContractAbi, '0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe');
 	 * ```
 	 */
 	public constructor(
@@ -476,7 +476,7 @@ export class Contract<Abi extends ContractAbi>
 	 * @returns - The new contract instance.
 	 *
 	 * ```ts
-	 * const contract1 = new eth.Contract(abi, address, {gasPrice: '12345678', from: fromAddress});
+	 * const contract1 = new zond.Contract(abi, address, {gasPrice: '12345678', from: fromAddress});
 	 *
 	 * const contract2 = contract1.clone();
 	 * contract2.options.address = address2;

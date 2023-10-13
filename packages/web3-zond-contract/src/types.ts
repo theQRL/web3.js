@@ -20,7 +20,7 @@ import { NewHeadsSubscription, SendTransactionEvents } from '@theqrl/web3-zond';
 import {
 	AccessListResult,
 	BlockNumberOrTag,
-	EthExecutionAPI,
+	ZondExecutionAPI,
 	HexString,
 	Numbers,
 	TransactionReceipt,
@@ -167,7 +167,7 @@ export interface NonPayableMethodObject<Inputs = unknown[], Outputs = unknown[]>
 	 * }
 	 *
 	 * // web3.js
-	 * var MyContract = new web3.eth.Contract(abi, address);
+	 * var MyContract = new web3.zond.Contract(abi, address);
 	 * const result = MyContract.methods.myFunction().call()
 	 * console.log(result)
 	 * > Result {
@@ -187,7 +187,7 @@ export interface NonPayableMethodObject<Inputs = unknown[], Outputs = unknown[]>
 	 * }
 	 *
 	 * // web3.js
-	 * const MyContract = new web3.eth.Contract(abi, address);
+	 * const MyContract = new web3.zond.Contract(abi, address);
 	 * const result = await MyContract.methods.myFunction().call();
 	 * console.log(result);
 	 * > "Hello!%"
@@ -300,7 +300,7 @@ export interface NonPayableMethodObject<Inputs = unknown[], Outputs = unknown[]>
 	/**
 	 * Encodes the ABI for this method. The resulting hex string is 32-bit function signature hash plus the passed parameters in Solidity tightly packed format.
 	 * This can be used to send a transaction, call a method, or pass it into another smart contract’s method as arguments.
-	 * Set the data field on `web3.eth.sendTransaction` options as the encodeABI() result and it is the same as calling the contract method with `contract.myMethod.send()`.
+	 * Set the data field on `web3.zond.sendTransaction` options as the encodeABI() result and it is the same as calling the contract method with `contract.myMethod.send()`.
 	 *
 	 * Some use cases for encodeABI() include: preparing a smart contract transaction for a multi signature wallet,
 	 * working with offline wallets and cold storage and creating transaction payload for complex smart contract proxy calls.
@@ -357,7 +357,7 @@ export interface PayableMethodObject<Inputs = unknown[], Outputs = unknown[]> {
 	 * }
 	 *
 	 * // web3.js
-	 * var MyContract = new web3.eth.Contract(abi, address);
+	 * var MyContract = new web3.zond.Contract(abi, address);
 	 * const result = MyContract.methods.myFunction().call()
 	 * console.log(result)
 	 * > Result {
@@ -377,7 +377,7 @@ export interface PayableMethodObject<Inputs = unknown[], Outputs = unknown[]> {
 	 * }
 	 *
 	 * // web3.js
-	 * const MyContract = new web3.eth.Contract(abi, address);
+	 * const MyContract = new web3.zond.Contract(abi, address);
 	 * const result = await MyContract.methods.myFunction().call();
 	 * console.log(result);
 	 * > "Hello!%"
@@ -489,7 +489,7 @@ export interface PayableMethodObject<Inputs = unknown[], Outputs = unknown[]> {
 	/**
 	 * Encodes the ABI for this method. The resulting hex string is 32-bit function signature hash plus the passed parameters in Solidity tightly packed format.
 	 * This can be used to send a transaction, call a method, or pass it into another smart contract’s method as arguments.
-	 * Set the data field on `web3.eth.sendTransaction` options as the encodeABI() result and it is the same as calling the contract method with `contract.myMethod.send()`.
+	 * Set the data field on `web3.zond.sendTransaction` options as the encodeABI() result and it is the same as calling the contract method with `contract.myMethod.send()`.
 	 *
 	 * Some use cases for encodeABI() include: preparing a smart contract transaction for a multi signature wallet,
 	 * working with offline wallets and cold storage and creating transaction payload for complex smart contract proxy calls.
@@ -527,7 +527,7 @@ export interface PayableMethodObject<Inputs = unknown[], Outputs = unknown[]> {
 
 export type Web3ContractContext = Partial<
 	Web3ContextInitOptions<
-		EthExecutionAPI,
+		ZondExecutionAPI,
 		{
 			logs: typeof LogsSubscription;
 			newHeads: typeof NewHeadsSubscription;

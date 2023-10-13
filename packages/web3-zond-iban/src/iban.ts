@@ -22,7 +22,7 @@ import { InvalidAddressError } from '@theqrl/web3-errors';
 import { IbanOptions } from './types.js';
 
 /**
- * Converts Ethereum addresses to IBAN or BBAN addresses and vice versa.
+ * Converts Zond addresses to IBAN or BBAN addresses and vice versa.
  */
 export class Iban {
 	private readonly _iban: string;
@@ -84,7 +84,7 @@ export class Iban {
 	 *
 	 * @example
 	 * ```ts
-	 * web3.eth.Iban.isDirect("XE81ETHXREGGAVOFYORK");
+	 * web3.zond.Iban.isDirect("XE81ETHXREGGAVOFYORK");
 	 * > false
 	 * ```
 	 */
@@ -101,7 +101,7 @@ export class Iban {
 	 *
 	 * @example
 	 * ```ts
-	 * const iban = new web3.eth.Iban("XE81ETHXREGGAVOFYORK");
+	 * const iban = new web3.zond.Iban("XE81ETHXREGGAVOFYORK");
 	 * iban.isDirect();
 	 * > false
 	 * ```
@@ -119,7 +119,7 @@ export class Iban {
 	 *
 	 * @example
 	 * ```ts
-	 * web3.eth.Iban.isIndirect("XE81ETHXREGGAVOFYORK");
+	 * web3.zond.Iban.isIndirect("XE81ETHXREGGAVOFYORK");
 	 * > true
 	 * ```
 	 */
@@ -136,7 +136,7 @@ export class Iban {
 	 *
 	 * @example
 	 * ```ts
-	 * const iban = new web3.eth.Iban("XE81ETHXREGGAVOFYORK");
+	 * const iban = new web3.zond.Iban("XE81ETHXREGGAVOFYORK");
 	 * iban.isIndirect();
 	 * > true
 	 * ```
@@ -154,10 +154,10 @@ export class Iban {
 	 *
 	 * @example
 	 * ```ts
-	 * web3.eth.Iban.isValid("XE81ETHXREGGAVOFYORK");
+	 * web3.zond.Iban.isValid("XE81ETHXREGGAVOFYORK");
 	 * > true
 	 *
-	 * web3.eth.Iban.isValid("XE82ETHXREGGAVOFYORK");
+	 * web3.zond.Iban.isValid("XE82ETHXREGGAVOFYORK");
 	 * > false // because the checksum is incorrect
 	 * ```
 	 */
@@ -174,11 +174,11 @@ export class Iban {
 	 *
 	 * @example
 	 * ```ts
-	 * const iban = new web3.eth.Iban("XE81ETHXREGGAVOFYORK");
+	 * const iban = new web3.zond.Iban("XE81ETHXREGGAVOFYORK");
 	 * iban.isValid();
 	 * > true
 	 *
-	 * const iban = new web3.eth.Iban("XE82ETHXREGGAVOFYORK");
+	 * const iban = new web3.zond.Iban("XE82ETHXREGGAVOFYORK");
 	 * iban.isValid();
 	 * > false // because the checksum is incorrect
 	 * ```
@@ -197,7 +197,7 @@ export class Iban {
 	 *
 	 * @example
 	 * ```ts
-	 * const iban = new web3.eth.Iban("XE7338O073KYGTWWZN0F2WZ0R8PX5ZPPZS");
+	 * const iban = new web3.zond.Iban("XE7338O073KYGTWWZN0F2WZ0R8PX5ZPPZS");
 	 * > Iban { _iban: 'XE7338O073KYGTWWZN0F2WZ0R8PX5ZPPZS' }
 	 * ```
 	 */
@@ -219,7 +219,7 @@ export class Iban {
 	 *
 	 * @example
 	 * ```ts
-	 * web3.eth.Iban.fromBban('ETHXREGGAVOFYORK');
+	 * web3.zond.Iban.fromBban('ETHXREGGAVOFYORK');
 	 * > Iban {_iban: "XE7338O073KYGTWWZN0F2WZ0R8PX5ZPPZS"}
 	 * ```
 	 */
@@ -240,7 +240,7 @@ export class Iban {
 	 *
 	 * @example
 	 * ```ts
-	 * web3.eth.Iban.createIndirect({
+	 * web3.zond.Iban.createIndirect({
 	 *     institution: "XREG",
 	 *     identifier: "GAVOFYORK"
 	 * });
@@ -252,14 +252,14 @@ export class Iban {
 	}
 
 	/**
-	 * This method should be used to create iban object from an Ethereum address.
+	 * This method should be used to create iban object from an Zond address.
 	 *
-	 * @param address - an Ethereum address
+	 * @param address - an Zond address
 	 * @returns an Iban class instance that holds the equivalent IBAN
 	 *
 	 * @example
 	 * ```ts
-	 * web3.eth.Iban.fromAddress("0x00c5496aEe77C1bA1f0854206A26DdA82a81D6D8");
+	 * web3.zond.Iban.fromAddress("0x00c5496aEe77C1bA1f0854206A26DdA82a81D6D8");
 	 * > Iban {_iban: "XE7338O073KYGTWWZN0F2WZ0R8PX5ZPPZS"}
 	 * ```
 	 */
@@ -275,17 +275,17 @@ export class Iban {
 	}
 
 	/**
-	 * This method should be used to create an ethereum address from a Direct IBAN address.
+	 * This method should be used to create an zond address from a Direct IBAN address.
 	 * If the provided string was not a direct IBAN (has the length of 34 or 35), an Error will be thrown:
 	 * ('Iban is indirect and cannot be converted. Must be length of 34 or 35').
 	 * Note: this is also available as a method at an Iban instance.
 	 *
 	 * @param iban - a Direct IBAN address
-	 * @return the equivalent ethereum address
+	 * @return the equivalent zond address
 	 *
 	 * @example
 	 * ```ts
-	 * web3.eth.Iban.toAddress("XE7338O073KYGTWWZN0F2WZ0R8PX5ZPPZS");
+	 * web3.zond.Iban.toAddress("XE7338O073KYGTWWZN0F2WZ0R8PX5ZPPZS");
 	 * > "0x00c5496aEe77C1bA1f0854206A26DdA82a81D6D8"
 	 * ```
 	 */
@@ -295,16 +295,16 @@ export class Iban {
 	};
 
 	/**
-	 * This method should be used to create the equivalent ethereum address for the early provided Direct IBAN address.
+	 * This method should be used to create the equivalent zond address for the early provided Direct IBAN address.
 	 * If the provided string was not a direct IBAN (has the length of 34 or 35), an Error will be thrown:
 	 * ('Iban is indirect and cannot be converted. Must be length of 34 or 35').
 	 * Note: this is also available as a static method.
 	 *
-	 * @return the equivalent ethereum address
+	 * @return the equivalent zond address
 	 *
 	 * @example
 	 * ```ts
-	 * const iban = new web3.eth.Iban("XE7338O073KYGTWWZN0F2WZ0R8PX5ZPPZS");
+	 * const iban = new web3.zond.Iban("XE7338O073KYGTWWZN0F2WZ0R8PX5ZPPZS");
 	 * iban.toAddress();
 	 * > "0x00c5496aEe77C1bA1f0854206A26DdA82a81D6D8"
 	 * ```
@@ -321,14 +321,14 @@ export class Iban {
 	};
 
 	/**
-	 * This method should be used to create IBAN address from an Ethereum address
+	 * This method should be used to create IBAN address from an Zond address
 	 *
-	 * @param address - an Ethereum address
+	 * @param address - an Zond address
 	 * @return the equivalent IBAN address
 	 *
 	 * @example
 	 * ```ts
-	 * web3.eth.Iban.toIban("0x00c5496aEe77C1bA1f0854206A26DdA82a81D6D8");
+	 * web3.zond.Iban.toIban("0x00c5496aEe77C1bA1f0854206A26DdA82a81D6D8");
 	 * > "XE7338O073KYGTWWZN0F2WZ0R8PX5ZPPZS"
 	 * ```
 	 */
@@ -343,7 +343,7 @@ export class Iban {
 	 *
 	 * @example
 	 * ```ts
-	 * const iban = new web3.eth.Iban("XE81ETHXREGGAVOFYORK");
+	 * const iban = new web3.zond.Iban("XE81ETHXREGGAVOFYORK");
 	 * iban.client();
 	 * > 'GAVOFYORK'
 	 * ```
@@ -357,7 +357,7 @@ export class Iban {
 	 *
 	 * @example
 	 * ```ts
-	 * const iban = new web3.eth.Iban("XE81ETHXREGGAVOFYORK");
+	 * const iban = new web3.zond.Iban("XE81ETHXREGGAVOFYORK");
 	 * iban.checksum();
 	 * > "81"
 	 * ```
@@ -372,7 +372,7 @@ export class Iban {
 	 *
 	 * @example
 	 * ```ts
-	 * const iban = new web3.eth.Iban("XE81ETHXREGGAVOFYORK");
+	 * const iban = new web3.zond.Iban("XE81ETHXREGGAVOFYORK");
 	 * iban.institution();
 	 * > 'XREG'
 	 * ```
@@ -386,7 +386,7 @@ export class Iban {
 	 *
 	 * @example
 	 * ```ts
-	 * const iban = new web3.eth.Iban('XE7338O073KYGTWWZN0F2WZ0R8PX5ZPPZS');
+	 * const iban = new web3.zond.Iban('XE7338O073KYGTWWZN0F2WZ0R8PX5ZPPZS');
 	 * iban.toString();
 	 * > 'XE7338O073KYGTWWZN0F2WZ0R8PX5ZPPZS'
 	 * ```

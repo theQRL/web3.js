@@ -17,11 +17,11 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import { Web3Context } from '@theqrl/web3-core';
 import { format } from '@theqrl/web3-utils';
 import {
-	ETH_DATA_FORMAT,
+	ZOND_DATA_FORMAT,
 	DEFAULT_RETURN_FORMAT,
 	FMT_NUMBER,
 	FMT_BYTES,
-	Web3EthExecutionAPI,
+	Web3ZondExecutionAPI,
 } from '@theqrl/web3-types';
 import { isNullish } from '@theqrl/web3-validator';
 import { ethRpcMethods } from '@theqrl/web3-rpc-methods';
@@ -34,7 +34,7 @@ import { NUMBER_DATA_FORMAT } from '../../../src/constants';
 jest.mock('web3-rpc-methods');
 
 describe('getFeeHistory', () => {
-	let web3Context: Web3Context<Web3EthExecutionAPI>;
+	let web3Context: Web3Context<Web3ZondExecutionAPI>;
 
 	beforeAll(() => {
 		web3Context = new Web3Context('http://127.0.0.1:8545');
@@ -47,7 +47,7 @@ describe('getFeeHistory', () => {
 			const inputBlockCountFormatted = format(
 				{ format: 'uint' },
 				inputBlockCount,
-				ETH_DATA_FORMAT,
+				ZOND_DATA_FORMAT,
 			);
 			const inputRewardPercentilesFormatted = format(
 				{
@@ -68,7 +68,7 @@ describe('getFeeHistory', () => {
 				inputNewestBlockFormatted = format(
 					{ format: 'uint' },
 					inputNewestBlock,
-					ETH_DATA_FORMAT,
+					ZOND_DATA_FORMAT,
 				);
 			}
 

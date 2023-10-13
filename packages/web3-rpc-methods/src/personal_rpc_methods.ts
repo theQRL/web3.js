@@ -15,16 +15,16 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import { Web3RequestManager } from '@theqrl/web3-core';
-import { Address, EthPersonalAPI, HexString, Transaction } from '@theqrl/web3-types';
+import { Address, ZondPersonalAPI, HexString, Transaction } from '@theqrl/web3-types';
 
-export const getAccounts = async (requestManager: Web3RequestManager<EthPersonalAPI>) =>
+export const getAccounts = async (requestManager: Web3RequestManager<ZondPersonalAPI>) =>
 	requestManager.send({
 		method: 'personal_listAccounts',
 		params: [],
 	});
 
 export const newAccount = async (
-	requestManager: Web3RequestManager<EthPersonalAPI>,
+	requestManager: Web3RequestManager<ZondPersonalAPI>,
 	password: string,
 ) =>
 	requestManager.send({
@@ -33,7 +33,7 @@ export const newAccount = async (
 	});
 
 export const unlockAccount = async (
-	requestManager: Web3RequestManager<EthPersonalAPI>,
+	requestManager: Web3RequestManager<ZondPersonalAPI>,
 	address: Address,
 	password: string,
 	unlockDuration: number,
@@ -44,7 +44,7 @@ export const unlockAccount = async (
 	});
 
 export const lockAccount = async (
-	requestManager: Web3RequestManager<EthPersonalAPI>,
+	requestManager: Web3RequestManager<ZondPersonalAPI>,
 	address: Address,
 ) =>
 	requestManager.send({
@@ -53,7 +53,7 @@ export const lockAccount = async (
 	});
 
 export const importRawKey = async (
-	requestManager: Web3RequestManager<EthPersonalAPI>,
+	requestManager: Web3RequestManager<ZondPersonalAPI>,
 	keyData: HexString,
 	passphrase: string,
 ) =>
@@ -63,7 +63,7 @@ export const importRawKey = async (
 	});
 
 export const sendTransaction = async (
-	requestManager: Web3RequestManager<EthPersonalAPI>,
+	requestManager: Web3RequestManager<ZondPersonalAPI>,
 	tx: Transaction,
 	passphrase: string,
 ) =>
@@ -73,7 +73,7 @@ export const sendTransaction = async (
 	});
 
 export const signTransaction = async (
-	requestManager: Web3RequestManager<EthPersonalAPI>,
+	requestManager: Web3RequestManager<ZondPersonalAPI>,
 	tx: Transaction,
 	passphrase: string,
 ) =>
@@ -83,7 +83,7 @@ export const signTransaction = async (
 	});
 
 export const sign = async (
-	requestManager: Web3RequestManager<EthPersonalAPI>,
+	requestManager: Web3RequestManager<ZondPersonalAPI>,
 	data: HexString,
 	address: Address,
 	passphrase: string,
@@ -94,7 +94,7 @@ export const sign = async (
 	});
 
 export const ecRecover = async (
-	requestManager: Web3RequestManager<EthPersonalAPI>,
+	requestManager: Web3RequestManager<ZondPersonalAPI>,
 	signedData: HexString,
 	signature: string,
 ) =>

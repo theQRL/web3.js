@@ -15,10 +15,10 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { Address, Uint } from './eth_types.js';
+import { Address, Uint } from './zond_types.js';
 import { SupportedProviders } from './web3_base_provider.js';
 import { Bytes, HexString } from './primitives_types.js';
-import { EthExecutionAPI } from './apis/eth_execution_api.js';
+import { ZondExecutionAPI } from './apis/zond_execution_api.js';
 
 export interface ContractInitOptions {
 	/**
@@ -40,7 +40,7 @@ export interface ContractInitOptions {
 	readonly data?: Bytes;
 	readonly input?: Bytes;
 
-	readonly provider?: SupportedProviders<EthExecutionAPI> | string;
+	readonly provider?: SupportedProviders<ZondExecutionAPI> | string;
 	/**
 	 * If `true`, the defaults of the contract instance will be updated automatically based on the changes of the context used to instantiate the contract.
 	 */

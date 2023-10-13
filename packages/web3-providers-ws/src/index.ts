@@ -18,7 +18,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import { ClientRequestArgs } from 'http';
 import WebSocket, { ClientOptions, CloseEvent } from 'isomorphic-ws';
 import {
-	EthExecutionAPI,
+	ZondExecutionAPI,
 	Web3APIMethod,
 	Web3APIPayload,
 	Web3APISpec,
@@ -67,7 +67,7 @@ export { ClientOptions } from 'isomorphic-ws';
  * ```
  */
 export default class WebSocketProvider<
-	API extends Web3APISpec = EthExecutionAPI,
+	API extends Web3APISpec = ZondExecutionAPI,
 > extends SocketProvider<WebSocket.MessageEvent, WebSocket.CloseEvent, WebSocket.ErrorEvent, API> {
 	protected readonly _socketOptions?: ClientOptions | ClientRequestArgs;
 

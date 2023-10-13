@@ -24,7 +24,7 @@ import {
 } from '@theqrl/web3-errors';
 import {
 	FormatType,
-	ETH_DATA_FORMAT,
+	ZOND_DATA_FORMAT,
 	DataFormat,
 	Bytes,
 	ContractAbi,
@@ -34,11 +34,11 @@ import {
 	TransactionReceipt,
 } from '@theqrl/web3-types';
 
-export type InternalTransaction = FormatType<Transaction, typeof ETH_DATA_FORMAT>;
+export type InternalTransaction = FormatType<Transaction, typeof ZOND_DATA_FORMAT>;
 
 export type SendTransactionEvents<ReturnFormat extends DataFormat> = {
-	sending: FormatType<Transaction, typeof ETH_DATA_FORMAT>;
-	sent: FormatType<Transaction, typeof ETH_DATA_FORMAT>;
+	sending: FormatType<Transaction, typeof ZOND_DATA_FORMAT>;
+	sent: FormatType<Transaction, typeof ZOND_DATA_FORMAT>;
 	transactionHash: FormatType<Bytes, ReturnFormat>;
 	receipt: FormatType<TransactionReceipt, ReturnFormat>;
 	confirmation: {
@@ -55,8 +55,8 @@ export type SendTransactionEvents<ReturnFormat extends DataFormat> = {
 };
 
 export type SendSignedTransactionEvents<ReturnFormat extends DataFormat> = {
-	sending: FormatType<Bytes, typeof ETH_DATA_FORMAT>;
-	sent: FormatType<Bytes, typeof ETH_DATA_FORMAT>;
+	sending: FormatType<Bytes, typeof ZOND_DATA_FORMAT>;
+	sent: FormatType<Bytes, typeof ZOND_DATA_FORMAT>;
 	transactionHash: FormatType<Bytes, ReturnFormat>;
 	receipt: FormatType<TransactionReceipt, ReturnFormat>;
 	confirmation: {

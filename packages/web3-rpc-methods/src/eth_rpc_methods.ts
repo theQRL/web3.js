@@ -26,7 +26,7 @@ import {
 	TransactionWithSenderAPI,
 	Uint,
 	Uint256,
-	Web3EthExecutionAPI,
+	Web3ZondExecutionAPI,
 } from '@theqrl/web3-types';
 import { Eip712TypedData } from 'web3-types/src/eth_types';
 import { validator } from '@theqrl/web3-validator';
@@ -518,7 +518,7 @@ export async function getFeeHistory(
 }
 
 export async function getPendingTransactions(
-	requestManager: Web3RequestManager<Web3EthExecutionAPI>,
+	requestManager: Web3RequestManager<Web3ZondExecutionAPI>,
 ) {
 	return requestManager.send({
 		method: 'zond_pendingTransactions',
@@ -526,14 +526,14 @@ export async function getPendingTransactions(
 	});
 }
 
-export async function requestAccounts(requestManager: Web3RequestManager<Web3EthExecutionAPI>) {
+export async function requestAccounts(requestManager: Web3RequestManager<Web3ZondExecutionAPI>) {
 	return requestManager.send({
 		method: 'zond_requestAccounts',
 		params: [],
 	});
 }
 
-export async function getChainId(requestManager: Web3RequestManager<Web3EthExecutionAPI>) {
+export async function getChainId(requestManager: Web3RequestManager<Web3ZondExecutionAPI>) {
 	return requestManager.send({
 		method: 'zond_chainId',
 		params: [],
@@ -541,7 +541,7 @@ export async function getChainId(requestManager: Web3RequestManager<Web3EthExecu
 }
 
 export async function getProof(
-	requestManager: Web3RequestManager<Web3EthExecutionAPI>,
+	requestManager: Web3RequestManager<Web3ZondExecutionAPI>,
 	address: Address,
 	storageKeys: HexString32Bytes[],
 	blockNumber: BlockNumberOrTag,
@@ -557,7 +557,7 @@ export async function getProof(
 	});
 }
 
-export async function getNodeInfo(requestManager: Web3RequestManager<Web3EthExecutionAPI>) {
+export async function getNodeInfo(requestManager: Web3RequestManager<Web3ZondExecutionAPI>) {
 	return requestManager.send({
 		method: 'web3_clientVersion',
 		params: [],

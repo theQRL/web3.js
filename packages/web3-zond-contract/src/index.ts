@@ -16,7 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /**
- * The `web3.eth.Contract` object makes it easy to interact with smart contracts on the Ethereum blockchain.
+ * The `web3.zond.Contract` object makes it easy to interact with smart contracts on the Zond blockchain.
  * When you create a new contract object you give it the JSON interface of the respective smart contract and
  * web3 will auto convert all calls into low level ABI calls over RPC for you.
  * This allows you to interact with smart contracts as if they were JavaScript objects.
@@ -24,7 +24,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
  * To use it standalone:
  *
  * ```ts
- * const Contract = require('web3-eth-contract');
+ * const Contract = require('web3-zond-contract');
  *
  * // set provider for all later instances to use
  * Contract.setProvider('ws://localhost:8546');

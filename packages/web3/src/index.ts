@@ -41,20 +41,20 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
  *  `Object` A list of module constructors:
  *
  *
- *  + `Eth` - `Constructor`: The Eth module for interacting with the Ethereum network
+ *  + `Zond` - `Constructor`: The Zond module for interacting with the Zond network
  *
  *
  *  + `Net` - `Constructor`: The Net module for interacting with network properties.
  *
  *
- *  + `Personal` - `constructor`: The Personal module for interacting with the Ethereum accounts (web3.eth.personal).
+ *  + `Personal` - `constructor`: The Personal module for interacting with the Zond accounts (web3.zond.personal).
  *
  * #### Example
  *
  * ```ts
  * Web3.modules
  * > {
- *   	Eth: Eth(provider),
+ *   	Zond: Zond(provider),
  *   	Net: Net(provider),
  *   	Personal: Personal(provider),
  *   }
@@ -64,15 +64,15 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
  *
  * # Web3 Instance
  *
- * The Web3 class is an umbrella package to house all Ethereum related modules.
+ * The Web3 class is an umbrella package to house all Zond related modules.
  *
  * ```ts
  * import Web3 from 'web3';
  *
- * // "Web3.givenProvider" will be set if in an Ethereum supported browser.
+ * // "Web3.givenProvider" will be set if in an Zond supported browser.
  * const web3 = new Web3(Web3.givenProvider || 'ws://some.local-or-remote.node:8546');
  *
- * > web3.eth
+ * > web3.zond
  * > web3.utils
  * > web3.version
  * ```
@@ -103,13 +103,13 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
  *
  * ```ts
  * web3.setProvider(myProvider)
- * web3.eth.setProvider(myProvider)
+ * web3.zond.setProvider(myProvider)
  * ...
  * ```
  *
  * Will change the provider for its module.
  *
- * **_NOTE:_** When called on the umbrella package web3 it will also set the provider for all sub modules web3.eth  etc.
+ * **_NOTE:_** When called on the umbrella package web3 it will also set the provider for all sub modules web3.zond  etc.
  *
  * #### Parameters
  *  `Object`  - `myProvider`: a valid provider.
@@ -119,7 +119,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
  *
  * See details: {@link Web3.setProvider}
  *
- * #### Example: Local Geth Node
+ * #### Example: Local Zond Node
  * ```ts
  * import Web3 from "web3";
  * let web3: Web3 = new Web3('http://localhost:8545');
@@ -134,7 +134,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
  * //todo add IPC provider
  * ```
  *
- * #### Example: Remote Geth Node
+ * #### Example: Remote Zond Node
  *
  * ```ts
  * // Using a remote node provider, like Alchemy (https://www.alchemyapi.io/supernode), is simple.
@@ -146,7 +146,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
  *
  * ```ts
  * web3.providers
- * web3.eth.providers
+ * web3.zond.providers
  * ```
  * Contains the current available providers.
  *
@@ -250,10 +250,10 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
  *
  * ```ts
  * web3.givenProvider
- * web3.eth.givenProvider
+ * web3.zond.givenProvider
  * ...
  * ```
- * When using web3.js in an Ethereum compatible browser, it will set with the current native provider by that browser.
+ * When using web3.js in an Zond compatible browser, it will set with the current native provider by that browser.
  * Will return the given provider by the (browser) environment, otherwise `undefined`.
  *
  * #### Returns
@@ -265,7 +265,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
  *
  * ```ts
  * web3.currentProvider
- * web3.eth.currentProvider
+ * web3.zond.currentProvider
  * ...
  * ```
  * Will return the current provider, otherwise `undefined`.
@@ -331,7 +331,7 @@ export default Web3;
  * Named exports for all objects which are the default-exported-object in their packages
  */
 export { Web3 };
-export { Web3Context, Web3PluginBase, Web3EthPluginBase } from '@theqrl/web3-core';
+export { Web3Context, Web3PluginBase, Web3ZondPluginBase } from '@theqrl/web3-core';
 export { Web3Zond } from '@theqrl/web3-zond';
 export { Contract } from '@theqrl/web3-zond-contract';
 export { Iban } from '@theqrl/web3-zond-iban';
@@ -346,7 +346,7 @@ export { Web3Validator } from '@theqrl/web3-validator';
  */
 export * as core from '@theqrl/web3-core';
 export * as errors from '@theqrl/web3-errors';
-export * as eth from './eth.exports.js';
+export * as zond from './zond.exports.js';
 export * as net from '@theqrl/web3-net';
 export * as providers from './providers.exports.js';
 export * as rpcMethods from '@theqrl/web3-rpc-methods';

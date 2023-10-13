@@ -17,18 +17,18 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import { Web3RequestManager } from '@theqrl/web3-core';
 import { toChecksumAddress, utf8ToHex } from '@theqrl/web3-utils';
 import { formatTransaction } from '@theqrl/web3-zond';
-import { Address, EthPersonalAPI, ETH_DATA_FORMAT, HexString, Transaction } from '@theqrl/web3-types';
+import { Address, ZondPersonalAPI, ZOND_DATA_FORMAT, HexString, Transaction } from '@theqrl/web3-types';
 import { validator, isHexStrict } from '@theqrl/web3-validator';
 import { personalRpcMethods } from '@theqrl/web3-rpc-methods';
 
-export const getAccounts = async (requestManager: Web3RequestManager<EthPersonalAPI>) => {
+export const getAccounts = async (requestManager: Web3RequestManager<ZondPersonalAPI>) => {
 	const result = await personalRpcMethods.getAccounts(requestManager);
 
 	return result.map(toChecksumAddress);
 };
 
 export const newAccount = async (
-	requestManager: Web3RequestManager<EthPersonalAPI>,
+	requestManager: Web3RequestManager<ZondPersonalAPI>,
 	password: string,
 ) => {
 	validator.validate(['string'], [password]);
@@ -39,7 +39,7 @@ export const newAccount = async (
 };
 
 export const unlockAccount = async (
-	requestManager: Web3RequestManager<EthPersonalAPI>,
+	requestManager: Web3RequestManager<ZondPersonalAPI>,
 	address: Address,
 	password: string,
 	unlockDuration: number,
@@ -50,7 +50,7 @@ export const unlockAccount = async (
 };
 
 export const lockAccount = async (
-	requestManager: Web3RequestManager<EthPersonalAPI>,
+	requestManager: Web3RequestManager<ZondPersonalAPI>,
 	address: Address,
 ) => {
 	validator.validate(['address'], [address]);
@@ -59,7 +59,7 @@ export const lockAccount = async (
 };
 
 export const importRawKey = async (
-	requestManager: Web3RequestManager<EthPersonalAPI>,
+	requestManager: Web3RequestManager<ZondPersonalAPI>,
 	keyData: HexString,
 	passphrase: string,
 ) => {
@@ -69,27 +69,27 @@ export const importRawKey = async (
 };
 
 export const sendTransaction = async (
-	requestManager: Web3RequestManager<EthPersonalAPI>,
+	requestManager: Web3RequestManager<ZondPersonalAPI>,
 	tx: Transaction,
 	passphrase: string,
 ) => {
-	const formattedTx = formatTransaction(tx, ETH_DATA_FORMAT);
+	const formattedTx = formatTransaction(tx, ZOND_DATA_FORMAT);
 
 	return personalRpcMethods.sendTransaction(requestManager, formattedTx, passphrase);
 };
 
 export const signTransaction = async (
-	requestManager: Web3RequestManager<EthPersonalAPI>,
+	requestManager: Web3RequestManager<ZondPersonalAPI>,
 	tx: Transaction,
 	passphrase: string,
 ) => {
-	const formattedTx = formatTransaction(tx, ETH_DATA_FORMAT);
+	const formattedTx = formatTransaction(tx, ZOND_DATA_FORMAT);
 
 	return personalRpcMethods.signTransaction(requestManager, formattedTx, passphrase);
 };
 
 export const sign = async (
-	requestManager: Web3RequestManager<EthPersonalAPI>,
+	requestManager: Web3RequestManager<ZondPersonalAPI>,
 	data: HexString,
 	address: Address,
 	passphrase: string,
@@ -101,14 +101,14 @@ export const sign = async (
 	return personalRpcMethods.sign(requestManager, dataToSign, address, passphrase);
 };
 
-export const ecRecover = async (
-	requestManager: Web3RequestManager<EthPersonalAPI>,
-	signedData: HexString,
-	signature: string,
-) => {
-	validator.validate(['string', 'string'], [signedData, signature]);
+// export const ecRecover = async (
+// 	requestManager: Web3RequestManager<ZondPersonalAPI>,
+// 	signedData: HexString,
+// 	signature: string,
+// ) => {
+// 	validator.validate(['string', 'string'], [signedData, signature]);
 
-	const signedDataString = isHexStrict(signedData) ? signedData : utf8ToHex(signedData);
+// 	const signedDataString = isHexStrict(signedData) ? signedData : utf8ToHex(signedData);
 
-	return personalRpcMethods.ecRecover(requestManager, signedDataString, signature);
-};
+// 	return personalRpcMethods.ecRecover(requestManager, signedDataString, signature);
+// };

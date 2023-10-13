@@ -17,12 +17,12 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import { Web3Context } from '@theqrl/web3-core';
 import { format } from '@theqrl/web3-utils';
 import {
-	ETH_DATA_FORMAT,
+	ZOND_DATA_FORMAT,
 	DEFAULT_RETURN_FORMAT,
 	FMT_NUMBER,
 	FMT_BYTES,
 	Bytes,
-	Web3EthExecutionAPI,
+	Web3ZondExecutionAPI,
 } from '@theqrl/web3-types';
 import { isBytes, isNullish } from '@theqrl/web3-validator';
 import { ethRpcMethods } from '@theqrl/web3-rpc-methods';
@@ -34,7 +34,7 @@ import { blockSchema } from '../../../src/schemas';
 jest.mock('web3-rpc-methods');
 
 describe('getBlock', () => {
-	let web3Context: Web3Context<Web3EthExecutionAPI>;
+	let web3Context: Web3Context<Web3ZondExecutionAPI>;
 
 	beforeAll(() => {
 		web3Context = new Web3Context('http://127.0.0.1:8545');
@@ -49,11 +49,11 @@ describe('getBlock', () => {
 			let inputBlockFormatted;
 
 			if (inputBlockIsBytes) {
-				inputBlockFormatted = format({ format: 'bytes32' }, inputBlock, ETH_DATA_FORMAT);
+				inputBlockFormatted = format({ format: 'bytes32' }, inputBlock, ZOND_DATA_FORMAT);
 			} else if (isNullish(inputBlock)) {
 				inputBlockFormatted = web3Context.defaultBlock;
 			} else {
-				inputBlockFormatted = format({ format: 'uint' }, inputBlock, ETH_DATA_FORMAT);
+				inputBlockFormatted = format({ format: 'uint' }, inputBlock, ZOND_DATA_FORMAT);
 			}
 			await getBlock(web3Context, ...inputParameters, DEFAULT_RETURN_FORMAT);
 			expect(

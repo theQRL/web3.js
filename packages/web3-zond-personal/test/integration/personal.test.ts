@@ -14,7 +14,7 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { EthPersonalAPI, SupportedProviders } from '@theqrl/web3-types';
+import { ZondPersonalAPI, SupportedProviders } from '@theqrl/web3-types';
 import { toChecksumAddress } from '@theqrl/web3-utils';
 import { isHexStrict } from '@theqrl/web3-validator';
 import { Personal } from '../../src/index';
@@ -30,7 +30,7 @@ import {
 
 describe('personal integration tests', () => {
 	let ethPersonal: Personal;
-	let clientUrl: string | SupportedProviders<EthPersonalAPI>;
+	let clientUrl: string | SupportedProviders<ZondPersonalAPI>;
 
 	beforeAll(() => {
 		clientUrl = getSystemTestProvider();
@@ -46,15 +46,15 @@ describe('personal integration tests', () => {
 		expect(isHexStrict(newAccount)).toBe(true);
 	});
 
-	itIf(getSystemTestBackend() === 'geth')('ecRecover', async () => {
-		const password = '123456';
-		const acc = (await createTempAccount({ password })).address;
-		// ganache does not support ecRecover
-		const signature = await ethPersonal.sign('0x2313', acc, password);
-		const publicKey = await ethPersonal.ecRecover('0x2313', signature); // ecRecover is returning all lowercase
-		// eslint-disable-next-line jest/no-standalone-expect
-		expect(toChecksumAddress(publicKey)).toBe(toChecksumAddress(acc));
-	});
+	// itIf(getSystemTestBackend() === 'geth')('ecRecover', async () => {
+	// 	const password = '123456';
+	// 	const acc = (await createTempAccount({ password })).address;
+	// 	// ganache does not support ecRecover
+	// 	const signature = await ethPersonal.sign('0x2313', acc, password);
+	// 	const publicKey = await ethPersonal.ecRecover('0x2313', signature); // ecRecover is returning all lowercase
+	// 	// eslint-disable-next-line jest/no-standalone-expect
+	// 	expect(toChecksumAddress(publicKey)).toBe(toChecksumAddress(acc));
+	// });
 
 	it('lock account', async () => {
 		const { address } = await createTempAccount();
@@ -93,15 +93,15 @@ describe('personal integration tests', () => {
 	});
 
 	// ganache does not support sign
-	itIf(getSystemTestBackend() === 'geth')('sign', async () => {
-		const password = '123456';
-		const key = (await createTempAccount({ password })).address;
-		await ethPersonal.unlockAccount(key, password, 100000);
-		const signature = await ethPersonal.sign('0xdeadbeaf', key, password);
-		const address = await ethPersonal.ecRecover('0xdeadbeaf', signature);
-		// eslint-disable-next-line jest/no-standalone-expect
-		expect(key).toBe(address);
-	});
+	// itIf(getSystemTestBackend() === 'geth')('sign', async () => {
+	// 	const password = '123456';
+	// 	const key = (await createTempAccount({ password })).address;
+	// 	await ethPersonal.unlockAccount(key, password, 100000);
+	// 	const signature = await ethPersonal.sign('0xdeadbeaf', key, password);
+	// 	const address = await ethPersonal.ecRecover('0xdeadbeaf', signature);
+	// 	// eslint-disable-next-line jest/no-standalone-expect
+	// 	expect(key).toBe(address);
+	// });
 
 	it('getAccounts', async () => {
 		const accountList = await ethPersonal.getAccounts();

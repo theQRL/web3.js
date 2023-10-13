@@ -17,7 +17,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 import { Web3Context } from '@theqrl/web3-core';
 import { TransactionPollingTimeoutError } from '@theqrl/web3-errors';
-import { EthExecutionAPI, Bytes, TransactionReceipt, DataFormat } from '@theqrl/web3-types';
+import { ZondExecutionAPI, Bytes, TransactionReceipt, DataFormat } from '@theqrl/web3-types';
 
 // eslint-disable-next-line import/no-cycle
 import { pollTillDefined, rejectIfTimeout } from '@theqrl/web3-utils';
@@ -27,7 +27,7 @@ import { rejectIfBlockTimeout } from './reject_if_block_timeout.js';
 import { getTransactionReceipt } from '../rpc_method_wrappers.js';
 
 export async function waitForTransactionReceipt<ReturnFormat extends DataFormat>(
-	web3Context: Web3Context<EthExecutionAPI>,
+	web3Context: Web3Context<ZondExecutionAPI>,
 	transactionHash: Bytes,
 	returnFormat: ReturnFormat,
 ): Promise<TransactionReceipt> {

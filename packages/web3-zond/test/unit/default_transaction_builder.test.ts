@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import {
-	EthExecutionAPI,
+	ZondExecutionAPI,
 	PopulatedUnsignedEip1559Transaction,
 	PopulatedUnsignedEip2930Transaction,
 	Transaction,
@@ -111,7 +111,7 @@ describe('defaultTransactionBuilder', () => {
 		hash: '0xdc0818cf78f21a8e70579cb46a43643f78291264dda342ae31049421c82d21ae',
 		baseFeePerGas: expectedBaseFeePerGas,
 	};
-	let web3Context: Web3Context<EthExecutionAPI>;
+	let web3Context: Web3Context<ZondExecutionAPI>;
 	let getTransactionCountSpy: jest.SpyInstance;
 
 	beforeEach(() => {
@@ -122,7 +122,7 @@ describe('defaultTransactionBuilder', () => {
 		jest.spyOn(ethRpcMethods, 'getGasPrice').mockResolvedValue(expectedGasPrice);
 		jest.spyOn(ethRpcMethods, 'getChainId').mockResolvedValue(expectedChainId);
 
-		web3Context = new Web3Context<EthExecutionAPI>(new HttpProvider('http://127.0.0.1'));
+		web3Context = new Web3Context<ZondExecutionAPI>(new HttpProvider('http://127.0.0.1'));
 	});
 
 	it.skip('should call override method', async () => {
@@ -156,7 +156,7 @@ describe('defaultTransactionBuilder', () => {
 		});
 
 		it('should use web3Context.defaultAccount to populate', async () => {
-			web3Context = new Web3Context<EthExecutionAPI>({
+			web3Context = new Web3Context<ZondExecutionAPI>({
 				provider: new HttpProvider('http://127.0.0.1'),
 				config: {
 					defaultAccount: expectedFrom,
@@ -323,7 +323,7 @@ describe('defaultTransactionBuilder', () => {
 		});
 
 		it('should use web3Context.defaultChain to populate', async () => {
-			web3Context = new Web3Context<EthExecutionAPI>(new HttpProvider('http://127.0.0.1'));
+			web3Context = new Web3Context<ZondExecutionAPI>(new HttpProvider('http://127.0.0.1'));
 
 			const input = { ...transaction };
 			delete input.chain;
@@ -357,7 +357,7 @@ describe('defaultTransactionBuilder', () => {
 		});
 
 		it('should use web3Context.defaultHardfork to populate', async () => {
-			web3Context = new Web3Context<EthExecutionAPI>(new HttpProvider('http://127.0.0.1'));
+			web3Context = new Web3Context<ZondExecutionAPI>(new HttpProvider('http://127.0.0.1'));
 
 			const input = { ...transaction };
 			delete input.hardfork;
@@ -386,7 +386,7 @@ describe('defaultTransactionBuilder', () => {
 				hardfork,
 			};
 
-			web3Context = new Web3Context<EthExecutionAPI>({
+			web3Context = new Web3Context<ZondExecutionAPI>({
 				provider: new HttpProvider('http://127.0.0.1'),
 				config: {
 					defaultCommon: customCommon,
@@ -467,7 +467,7 @@ describe('defaultTransactionBuilder', () => {
 		});
 
 		it('should use web3Context.defaultTransactionType to populate', async () => {
-			web3Context = new Web3Context<EthExecutionAPI>({
+			web3Context = new Web3Context<ZondExecutionAPI>({
 				provider: new HttpProvider('http://127.0.0.1'),
 				config: {
 					defaultTransactionType,
@@ -646,7 +646,7 @@ describe('defaultTransactionBuilder', () => {
 			delete input.gasPrice;
 			input.type = '0x2';
 
-			web3Context = new Web3Context<EthExecutionAPI>({
+			web3Context = new Web3Context<ZondExecutionAPI>({
 				provider: new HttpProvider('http://127.0.0.1'),
 				config: {
 					defaultMaxPriorityFeePerGas: expectedMaxPriorityFeePerGas,
@@ -668,7 +668,7 @@ describe('defaultTransactionBuilder', () => {
 			delete input.gasPrice;
 			input.type = '0x2';
 
-			web3Context = new Web3Context<EthExecutionAPI>({
+			web3Context = new Web3Context<ZondExecutionAPI>({
 				provider: new HttpProvider('http://127.0.0.1'),
 				config: {
 					defaultMaxPriorityFeePerGas: expectedMaxPriorityFeePerGas,
@@ -690,7 +690,7 @@ describe('defaultTransactionBuilder', () => {
 			delete input.gasPrice;
 			input.type = '0x2';
 
-			web3Context = new Web3Context<EthExecutionAPI>({
+			web3Context = new Web3Context<ZondExecutionAPI>({
 				provider: new HttpProvider('http://127.0.0.1'),
 				config: {
 					defaultMaxPriorityFeePerGas: expectedMaxPriorityFeePerGas,

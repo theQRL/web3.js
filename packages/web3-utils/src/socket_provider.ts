@@ -17,7 +17,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import {
 	ConnectionEvent,
 	Eip1193EventName,
-	EthExecutionAPI,
+	ZondExecutionAPI,
 	JsonRpcBatchRequest,
 	JsonRpcBatchResponse,
 	JsonRpcId,
@@ -72,7 +72,7 @@ export abstract class SocketProvider<
 	MessageEvent,
 	CloseEvent,
 	ErrorEvent,
-	API extends Web3APISpec = EthExecutionAPI,
+	API extends Web3APISpec = ZondExecutionAPI,
 > extends Eip1193Provider<API> {
 	protected isReconnecting: boolean;
 	protected readonly _socketPath: string;

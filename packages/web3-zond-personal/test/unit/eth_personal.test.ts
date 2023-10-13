@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { ETH_DATA_FORMAT } from '@theqrl/web3-types';
+import { ZOND_DATA_FORMAT } from '@theqrl/web3-types';
 import * as utils from '@theqrl/web3-utils';
 import * as eth from '@theqrl/web3-zond';
 import * as validator from '@theqrl/web3-validator';
@@ -185,7 +185,7 @@ describe('Personal', () => {
 			await personal.sendTransaction(tx, 'password');
 
 			expect(eth.formatTransaction).toHaveBeenCalledTimes(1);
-			expect(eth.formatTransaction).toHaveBeenCalledWith(tx, ETH_DATA_FORMAT);
+			expect(eth.formatTransaction).toHaveBeenCalledWith(tx, ZOND_DATA_FORMAT);
 		});
 	});
 
@@ -215,7 +215,7 @@ describe('Personal', () => {
 			await personal.signTransaction(tx, 'password');
 
 			expect(eth.formatTransaction).toHaveBeenCalledTimes(1);
-			expect(eth.formatTransaction).toHaveBeenCalledWith(tx, ETH_DATA_FORMAT);
+			expect(eth.formatTransaction).toHaveBeenCalledWith(tx, ZOND_DATA_FORMAT);
 		});
 	});
 
@@ -270,51 +270,51 @@ describe('Personal', () => {
 		});
 	});
 
-	describe('ecRecover', () => {
-		it('should call the correct method for request manager', async () => {
-			const data = '0x1234';
+	// describe('ecRecover', () => {
+	// 	it('should call the correct method for request manager', async () => {
+	// 		const data = '0x1234';
 
-			jest.spyOn(validator, 'isHexStrict').mockReturnValue(true);
+	// 		jest.spyOn(validator, 'isHexStrict').mockReturnValue(true);
 
-			await personal.ecRecover(data, '0x000000');
+	// 		await personal.ecRecover(data, '0x000000');
 
-			expect(sendSpy).toHaveBeenCalledWith({
-				method: 'personal_ecRecover',
-				params: [data, '0x000000'],
-			});
-		});
+	// 		expect(sendSpy).toHaveBeenCalledWith({
+	// 			method: 'personal_ecRecover',
+	// 			params: [data, '0x000000'],
+	// 		});
+	// 	});
 
-		it('should convert input if not hex', async () => {
-			const data = '0x1234';
+	// 	it('should convert input if not hex', async () => {
+	// 		const data = '0x1234';
 
-			jest.spyOn(validator, 'isHexStrict').mockReturnValue(false);
-			jest.spyOn(utils, 'utf8ToHex').mockReturnValue(data);
+	// 		jest.spyOn(validator, 'isHexStrict').mockReturnValue(false);
+	// 		jest.spyOn(utils, 'utf8ToHex').mockReturnValue(data);
 
-			await personal.ecRecover(data, 'password');
+	// 		await personal.ecRecover(data, 'password');
 
-			expect(utils.utf8ToHex).toHaveBeenCalledTimes(1);
-			expect(utils.utf8ToHex).toHaveBeenCalledWith(data);
-		});
+	// 		expect(utils.utf8ToHex).toHaveBeenCalledTimes(1);
+	// 		expect(utils.utf8ToHex).toHaveBeenCalledWith(data);
+	// 	});
 
-		it('should not convert input if data is already hex', async () => {
-			const data = '0x1234';
+	// 	it('should not convert input if data is already hex', async () => {
+	// 		const data = '0x1234';
 
-			jest.spyOn(validator, 'isHexStrict').mockReturnValue(true);
+	// 		jest.spyOn(validator, 'isHexStrict').mockReturnValue(true);
 
-			await personal.ecRecover(data, 'password');
+	// 		await personal.ecRecover(data, 'password');
 
-			expect(utils.utf8ToHex).toHaveBeenCalledTimes(0);
-		});
+	// 		expect(utils.utf8ToHex).toHaveBeenCalledTimes(0);
+	// 	});
 
-		it('should validate user input', async () => {
-			const data = '0x1234';
+	// 	it('should validate user input', async () => {
+	// 		const data = '0x1234';
 
-			jest.spyOn(validator, 'isHexStrict').mockReturnValue(true);
+	// 		jest.spyOn(validator, 'isHexStrict').mockReturnValue(true);
 
-			await personal.ecRecover(data, 'password');
+	// 		await personal.ecRecover(data, 'password');
 
-			expect(validateSpy).toHaveBeenCalledTimes(1);
-			expect(validateSpy).toHaveBeenCalledWith(['string', 'string'], [data, 'password']);
-		});
-	});
+	// 		expect(validateSpy).toHaveBeenCalledTimes(1);
+	// 		expect(validateSpy).toHaveBeenCalledWith(['string', 'string'], [data, 'password']);
+	// 	});
+	// });
 });

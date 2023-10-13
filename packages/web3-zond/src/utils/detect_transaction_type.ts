@@ -17,7 +17,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 import { format, toHex } from '@theqrl/web3-utils';
 import { TransactionTypeParser, Web3Context } from '@theqrl/web3-core';
-import { EthExecutionAPI, HardforksOrdered, Transaction, ETH_DATA_FORMAT } from '@theqrl/web3-types';
+import { ZondExecutionAPI, HardforksOrdered, Transaction, ZOND_DATA_FORMAT } from '@theqrl/web3-types';
 import { Web3ValidatorError, isNullish, validator } from '@theqrl/web3-validator';
 import { InvalidPropertiesForTransactionTypeError } from '@theqrl/web3-errors';
 
@@ -92,12 +92,12 @@ export const defaultTransactionTypeParser: TransactionTypeParser = transaction =
 				break;
 
 			default:
-				return format({ format: 'uint' }, tx.type, ETH_DATA_FORMAT);
+				return format({ format: 'uint' }, tx.type, ZOND_DATA_FORMAT);
 		}
 
 		validateTxTypeAndHandleErrors(txSchema, tx, tx.type);
 
-		return format({ format: 'uint' }, tx.type, ETH_DATA_FORMAT);
+		return format({ format: 'uint' }, tx.type, ZOND_DATA_FORMAT);
 	}
 
 	if (!isNullish(tx.maxFeePerGas) || !isNullish(tx.maxPriorityFeePerGas)) {
@@ -143,7 +143,7 @@ export const defaultTransactionTypeParser: TransactionTypeParser = transaction =
 
 export const detectTransactionType = (
 	transaction: InternalTransaction,
-	web3Context?: Web3Context<EthExecutionAPI>,
+	web3Context?: Web3Context<ZondExecutionAPI>,
 ) =>
 	(web3Context?.transactionTypeParser ?? defaultTransactionTypeParser)(
 		transaction as unknown as Record<string, unknown>,

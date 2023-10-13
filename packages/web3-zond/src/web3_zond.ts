@@ -30,7 +30,7 @@ import {
 	LogsOutput,
 	Transaction,
 	TransactionCall,
-	Web3EthExecutionAPI,
+	Web3ZondExecutionAPI,
 	TransactionWithFromLocalWalletIndex,
 	TransactionWithToLocalWalletIndex,
 	TransactionWithFromAndToLocalWalletIndex,
@@ -71,7 +71,7 @@ export const registeredSubscriptions = {
 	newBlockHeaders: NewHeadsSubscription, // the same as newHeads. just for support API like in version 1.x
 };
 
-export class Web3Zond extends Web3Context<Web3EthExecutionAPI, RegisteredSubscription> {
+export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscription> {
 	public constructor(
 		providerOrContext?: SupportedProviders<any> | Web3ContextInitOptions | string,
 	) {

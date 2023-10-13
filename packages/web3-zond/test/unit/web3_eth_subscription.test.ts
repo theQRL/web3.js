@@ -18,14 +18,14 @@ import { Web3SubscriptionManager } from '@theqrl/web3-core';
 import { Web3BaseProvider } from '@theqrl/web3-types';
 import * as rpcMethodWrappers from '../../src/rpc_method_wrappers';
 import { LogsSubscription } from '../../src';
-import { Web3Eth } from '../../src/web3_eth';
+import { Web3Zond } from '../../src/web3_zond';
 import { mockRpcResponse as mockGetLogsRpcResponse } from './rpc_method_wrappers/fixtures/get_logs';
 import { sleep } from '../shared_fixtures/utils';
 
 jest.mock('../../src/rpc_method_wrappers');
 
-describe('Web3Eth subscribe and clear subscriptions', () => {
-	let web3Eth: Web3Eth;
+describe('Web3Zond subscribe and clear subscriptions', () => {
+	let web3Zond: Web3Zond;
 
 	it('should return the subscription data provided by the Subscription Manager', async () => {
 		const requestManager = { send: jest.fn(), on: jest.fn(), provider: { on: jest.fn() } };
@@ -34,14 +34,14 @@ describe('Web3Eth subscribe and clear subscriptions', () => {
 		const dummyLogs = { logs: { test1: 'test1' } };
 
 		jest.spyOn(subManager, 'subscribe').mockResolvedValueOnce(dummyLogs);
-		web3Eth = new Web3Eth({
+		web3Zond = new Web3Zond({
 			provider: {
 				on: jest.fn(),
 			} as unknown as Web3BaseProvider,
 			subscriptionManager: subManager,
 		});
 
-		const logs = await web3Eth.subscribe('logs');
+		const logs = await web3Zond.subscribe('logs');
 		expect(logs).toStrictEqual(dummyLogs);
 	});
 
@@ -53,7 +53,7 @@ describe('Web3Eth subscribe and clear subscriptions', () => {
 		jest.spyOn(subManager, 'subscribe').mockResolvedValueOnce(dummyLogs);
 		jest.spyOn(rpcMethodWrappers, 'getLogs').mockResolvedValueOnce(mockGetLogsRpcResponse);
 
-		web3Eth = new Web3Eth({
+		web3Zond = new Web3Zond({
 			provider: {
 				on: jest.fn(),
 			} as unknown as Web3BaseProvider,
@@ -61,7 +61,7 @@ describe('Web3Eth subscribe and clear subscriptions', () => {
 		});
 		jest.spyOn(dummyLogs, '_processSubscriptionResult');
 
-		const logs = await web3Eth.subscribe('logs', {
+		const logs = await web3Zond.subscribe('logs', {
 			fromBlock: 0,
 		});
 		await sleep(100);
@@ -76,14 +76,14 @@ describe('Web3Eth subscribe and clear subscriptions', () => {
 
 		jest.spyOn(subManager, 'unsubscribe');
 
-		web3Eth = new Web3Eth({
+		web3Zond = new Web3Zond({
 			provider: {
 				on: jest.fn(),
 			} as unknown as Web3BaseProvider,
 			subscriptionManager: subManager,
 		});
 
-		await web3Eth.clearSubscriptions();
+		await web3Zond.clearSubscriptions();
 
 		expect(subManager.unsubscribe).toHaveBeenCalledWith(undefined);
 	});
@@ -94,15 +94,15 @@ describe('Web3Eth subscribe and clear subscriptions', () => {
 
 		jest.spyOn(subManager, 'unsubscribe');
 
-		web3Eth = new Web3Eth({
+		web3Zond = new Web3Zond({
 			provider: {
 				on: jest.fn(),
 			} as unknown as Web3BaseProvider,
 			subscriptionManager: subManager,
 		});
 
-		await web3Eth.clearSubscriptions(true);
+		await web3Zond.clearSubscriptions(true);
 
-		expect(subManager.unsubscribe).toHaveBeenCalledWith(Web3Eth['shouldClearSubscription']);
+		expect(subManager.unsubscribe).toHaveBeenCalledWith(Web3Zond['shouldClearSubscription']);
 	});
 });

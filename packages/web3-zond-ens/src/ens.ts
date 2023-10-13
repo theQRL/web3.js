@@ -22,7 +22,7 @@ import { Contract } from '@theqrl/web3-zond-contract';
 import { getId } from '@theqrl/web3-net';
 import {
 	DEFAULT_RETURN_FORMAT,
-	EthExecutionAPI,
+	ZondExecutionAPI,
 	FMT_NUMBER,
 	SupportedProviders,
 	Web3NetAPI,
@@ -33,10 +33,10 @@ import { Registry } from './registry.js';
 import { Resolver } from './resolver.js';
 
 /**
- * This class is designed to interact with the ENS system on the Ethereum blockchain.
+ * This class is designed to interact with the ENS system on the Zond blockchain.
  *
  */
-export class ENS extends Web3Context<EthExecutionAPI & Web3NetAPI> {
+export class ENS extends Web3Context<ZondExecutionAPI & Web3NetAPI> {
 	/**
 	 * The registryAddress property can be used to define a custom registry address when you are connected to an unknown chain. It defaults to the main registry address.
 	 */
@@ -64,8 +64,8 @@ export class ENS extends Web3Context<EthExecutionAPI & Web3NetAPI> {
 	public constructor(
 		registryAddr?: string,
 		provider?:
-			| SupportedProviders<EthExecutionAPI & Web3NetAPI>
-			| Web3ContextObject<EthExecutionAPI & Web3NetAPI>
+			| SupportedProviders<ZondExecutionAPI & Web3NetAPI>
+			| Web3ContextObject<ZondExecutionAPI & Web3NetAPI>
 			| string,
 	) {
 		super(provider ?? '');
@@ -97,7 +97,7 @@ export class ENS extends Web3Context<EthExecutionAPI & Web3NetAPI> {
 	 * @returns - Returns `true` if node exists in this ENS registry. This will return `false` for records that are in the legacy ENS registry but have not yet been migrated to the new one.
 	 * @example
 	 * ```ts
-	 * const exists = await web3.eth.ens.recordExists('ethereum.eth');
+	 * const exists = await web3.zond.ens.recordExists('zond.znd');
 	 * ```
 	 */
 	public async recordExists(name: string): Promise<unknown> {
@@ -110,7 +110,7 @@ export class ENS extends Web3Context<EthExecutionAPI & Web3NetAPI> {
 	 * @returns - Returns the caching TTL (time-to-live) of a name.
 	 * @example
 	 * ```ts
-	 * const owner = await web3.eth.ens.getTTL('ethereum.eth');
+	 * const owner = await web3.zond.ens.getTTL('zond.znd');
 	 * ```
 	 */
 	public async getTTL(name: string): Promise<unknown> {
@@ -123,7 +123,7 @@ export class ENS extends Web3Context<EthExecutionAPI & Web3NetAPI> {
 	 * @returns - Returns the address of the owner of the name.
 	 * @example
 	 * ```ts
-	 * const owner = await web3.eth.ens.getOwner('ethereum.eth');
+	 * const owner = await web3.zond.ens.getOwner('zond.znd');
 	 * ```
 	 */
 	public async getOwner(name: string): Promise<unknown> {
@@ -131,12 +131,12 @@ export class ENS extends Web3Context<EthExecutionAPI & Web3NetAPI> {
 	}
 
 	/**
-	 * Resolves an ENS name to an Ethereum address.
+	 * Resolves an ENS name to an Zond address.
 	 * @param ENSName - The ENS name to resolve
 	 * @param coinType - (Optional) The coin type, defaults to 60 (ETH)
-	 * @returns - The Ethereum address of the given name
+	 * @returns - The Zond address of the given name
 	 * ```ts
-	 * const address = await web3.eth.ens.getAddress('ethereum.eth');
+	 * const address = await web3.zond.ens.getAddress('zond.znd');
 	 * console.log(address);
 	 * > '0xfB6916095ca1df60bB79Ce92cE3Ea74c37c5d359'
 	 * ```
@@ -151,7 +151,7 @@ export class ENS extends Web3Context<EthExecutionAPI & Web3NetAPI> {
 	 * @returns - The X and Y coordinates of the curve point for the public key
 	 * @example
 	 * ```ts
-	 * const key = await web3.eth.ens.getPubkey('ethereum.eth');
+	 * const key = await web3.zond.ens.getPubkey('zond.znd');
 	 * console.log(key);
 	 * > {
 	 * "0": "0x0000000000000000000000000000000000000000000000000000000000000000",
@@ -171,7 +171,7 @@ export class ENS extends Web3Context<EthExecutionAPI & Web3NetAPI> {
 	 * @returns - The content hash object associated with an ENS node
 	 * @example
 	 * ```ts
-	 * const hash = await web3.eth.ens.getContenthash('ethereum.eth');
+	 * const hash = await web3.zond.ens.getContenthash('zond.znd');
 	 * console.log(hash);
 	 * > 'QmaEBknbGT4bTQiQoe2VNgBJbRfygQGktnaW5TbuKixjYL'
 	 * ```
@@ -186,7 +186,7 @@ export class ENS extends Web3Context<EthExecutionAPI & Web3NetAPI> {
 	 * @returns - The address of the ENS registry if the network has been detected successfully
 	 * @example
 	 * ```ts
-	 * console.log(await web3.eth.ens.checkNetwork());
+	 * console.log(await web3.zond.ens.checkNetwork());
 	 * > '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e'
 	 * ```
 	 */
@@ -226,7 +226,7 @@ export class ENS extends Web3Context<EthExecutionAPI & Web3NetAPI> {
 	 * @returns - `true` if the related Resolver does support the given signature or interfaceId.
 	 * @example
 	 * ```ts
-	 * const supports = await web3.eth.ens.supportsInterface('ethereum.eth', 'addr(bytes32');
+	 * const supports = await web3.zond.ens.supportsInterface('zond.znd', 'addr(bytes32');
 	 * console.log(supports);
 	 * > true
 	 * ```

@@ -32,8 +32,8 @@ describe('Web3 object', () => {
 			httpProviderOptions: undefined,
 		});
 	});
-	describe('creating a Contract object with the constructor at Web3 -> eth.Contract', () => {
-		const Web3Contract = new Web3().eth.Contract;
+	describe('creating a Contract object with the constructor at Web3 -> zond.Contract', () => {
+		const Web3Contract = new Web3().zond.Contract;
 		const abi = [{ name: 'any', type: 'function' }];
 		const address = '0x0000000000000000000000000000000000000000';
 		const options = { gas: '100' };

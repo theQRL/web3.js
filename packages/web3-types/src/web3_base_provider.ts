@@ -17,7 +17,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import { Socket } from 'net';
 
 import { Web3Error } from './error_types.js';
-import { EthExecutionAPI } from './apis/eth_execution_api.js';
+import { ZondExecutionAPI } from './apis/zond_execution_api.js';
 // eslint-disable-next-line require-extensions/require-extensions
 import {
 	JsonRpcNotification,
@@ -39,7 +39,7 @@ import {
 	ProviderMessage,
 } from './web3_api_types';
 // eslint-disable-next-line require-extensions/require-extensions
-import { Web3EthExecutionAPI } from './apis/web3_eth_execution_api';
+import { Web3ZondExecutionAPI } from './apis/web3_zond_execution_api';
 // eslint-disable-next-line require-extensions/require-extensions
 import { Web3DeferredPromiseInterface } from './web3_deferred_promise_type';
 
@@ -133,7 +133,7 @@ export interface EIP1193Provider<API extends Web3APISpec> extends SimpleProvider
 	removeListener(event: 'accountsChanged', listener: (accounts: ProviderAccounts) => void): void;
 }
 
-export type Eip1193Compatible<API extends Web3APISpec = EthExecutionAPI> = Omit<
+export type Eip1193Compatible<API extends Web3APISpec = ZondExecutionAPI> = Omit<
 	// eslint-disable-next-line no-use-before-define
 	Omit<Web3BaseProvider, 'request'>,
 	'asEIP1193Provider'
@@ -148,7 +148,7 @@ export type Eip1193Compatible<API extends Web3APISpec = EthExecutionAPI> = Omit<
 
 // Provider interface compatible with EIP-1193
 // https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1193.md
-export abstract class Web3BaseProvider<API extends Web3APISpec = EthExecutionAPI>
+export abstract class Web3BaseProvider<API extends Web3APISpec = ZondExecutionAPI>
 	implements LegacySendProvider, LegacySendAsyncProvider, EIP1193Provider<API>
 {
 	public static isWeb3Provider(provider: unknown) {
@@ -214,7 +214,7 @@ export abstract class Web3BaseProvider<API extends Web3APISpec = EthExecutionAPI
 	 * ```ts
 	 * const provider = new Web3HttpProvider('http://localhost:8545');
 	 * const fullyCompatibleProvider = provider.asEIP1193Provider();
-	 * const result = await fullyCompatibleProvider.request({ method: 'eth_getBalance' });
+	 * const result = await fullyCompatibleProvider.request({ method: 'zond_getBalance' });
 	 * console.log(result); // '0x0234c8a3397aab58' or something like that
 	 * ```
 	 */
@@ -319,7 +319,7 @@ export abstract class Web3BaseProvider<API extends Web3APISpec = EthExecutionAPI
 	public abstract reset(): void;
 }
 
-export type SupportedProviders<API extends Web3APISpec = Web3EthExecutionAPI> =
+export type SupportedProviders<API extends Web3APISpec = Web3ZondExecutionAPI> =
 	| EIP1193Provider<API>
 	| Web3BaseProvider<API>
 	| LegacyRequestProvider

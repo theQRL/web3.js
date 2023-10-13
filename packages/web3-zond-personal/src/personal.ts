@@ -16,13 +16,13 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { Web3Context } from '@theqrl/web3-core';
-import { Address, EthPersonalAPI, HexString, Transaction } from '@theqrl/web3-types';
+import { Address, ZondPersonalAPI, HexString, Transaction } from '@theqrl/web3-types';
 
 import * as rpcWrappers from './rpc_method_wrappers.js';
 
-export class Personal extends Web3Context<EthPersonalAPI> {
+export class Personal extends Web3Context<ZondPersonalAPI> {
 	/**
-	 *Returns a list of accounts the node controls by using the provider and calling the RPC method personal_listAccounts. Using `web3.eth.accounts.create()` will not add accounts into this list. For that use `web3.eth.personal.newAccount()`.
+	 *Returns a list of accounts the node controls by using the provider and calling the RPC method personal_listAccounts. Using `web3.zond.accounts.create()` will not add accounts into this list. For that use `web3.zond.personal.newAccount()`.
 	 * @returns - An array of addresses controlled by the node.
 	 * @example
 	 * ```ts
@@ -54,7 +54,7 @@ export class Personal extends Web3Context<EthPersonalAPI> {
 	 * @returns - The address of the new account.
 	 * @example
 	 * ```ts
-	 * const addr = await web3.eth.personal.newAccount('password');
+	 * const addr = await web3.zond.personal.newAccount('password');
 	 * console.log(addr);
 	 * > '0x1234567891011121314151617181920212223456'
 	 * ```
@@ -185,6 +185,7 @@ export class Personal extends Web3Context<EthPersonalAPI> {
 	public async signTransaction(tx: Transaction, passphrase: string) {
 		return rpcWrappers.signTransaction(this.requestManager, tx, passphrase);
 	}
+	// @TODO(rgeraldes24): review docs
 	/**
 	 * Calculates an Ethereum specific signature with:
 	 * sign(keccak256("\x19Ethereum Signed Message:\n" + dataToSign.length + dataToSign)))
@@ -222,7 +223,7 @@ export class Personal extends Web3Context<EthPersonalAPI> {
 	 * > 0x0d4aa485ecbc499c70860feb7e5aaeaf5fd8172e
 	 * ```
 	 */
-	public async ecRecover(signedData: HexString, signature: string) {
-		return rpcWrappers.ecRecover(this.requestManager, signedData, signature);
-	}
+	// public async ecRecover(signedData: HexString, signature: string) {
+	// 	return rpcWrappers.ecRecover(this.requestManager, signedData, signature);
+	// }
 }

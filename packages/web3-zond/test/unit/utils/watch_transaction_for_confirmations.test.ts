@@ -16,7 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import { Web3Context, Web3PromiEvent } from '@theqrl/web3-core';
 import { format } from '@theqrl/web3-utils';
-import { DEFAULT_RETURN_FORMAT, TransactionReceipt, Web3EthExecutionAPI } from '@theqrl/web3-types';
+import { DEFAULT_RETURN_FORMAT, TransactionReceipt, Web3ZondExecutionAPI } from '@theqrl/web3-types';
 import { ethRpcMethods } from '@theqrl/web3-rpc-methods';
 import {
 	TransactionMissingReceiptOrBlockHashError,
@@ -45,7 +45,7 @@ const testMessage =
 	'Title: %s\ninputSignedTransaction: %s\nexpectedTransactionHash: %s\nexpectedTransactionReceipt: %s\n';
 describe('watchTransactionForConfirmations', () => {
 	describe('should throw when transaction receipt has something wrong', () => {
-		let web3Context: Web3Context<Web3EthExecutionAPI>;
+		let web3Context: Web3Context<Web3ZondExecutionAPI>;
 
 		beforeAll(() => {
 			web3Context = new Web3Context(
@@ -100,7 +100,7 @@ describe('watchTransactionForConfirmations', () => {
 	});
 
 	describe('should call watchTransactionBySubscription when the provider supports subscription', () => {
-		let web3Context: Web3Context<Web3EthExecutionAPI>;
+		let web3Context: Web3Context<Web3ZondExecutionAPI>;
 
 		beforeAll(() => {
 			web3Context = new Web3Context(
@@ -165,7 +165,7 @@ describe('watchTransactionForConfirmations', () => {
 	});
 
 	describe('should call watchTransactionByPooling when the provider does not support subscription', () => {
-		let web3Context: Web3Context<Web3EthExecutionAPI>;
+		let web3Context: Web3Context<Web3ZondExecutionAPI>;
 
 		beforeAll(() => {
 			web3Context = new Web3Context(

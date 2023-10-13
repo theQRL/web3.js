@@ -17,12 +17,12 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 import { Web3Context } from '@theqrl/web3-core';
 import {
-	EthExecutionAPI,
+	ZondExecutionAPI,
 	Numbers,
 	Transaction,
 	DataFormat,
 	FormatType,
-	ETH_DATA_FORMAT,
+	ZOND_DATA_FORMAT,
 } from '@theqrl/web3-types';
 import { isNullish } from '@theqrl/web3-validator';
 import { Eip1559NotSupportedError, UnsupportedTransactionTypeError } from '@theqrl/web3-errors';
@@ -34,8 +34,8 @@ import { InternalTransaction } from '../types.js';
 import { getTransactionType } from './transaction_builder.js';
 
 async function getEip1559GasPricing<ReturnFormat extends DataFormat>(
-	transaction: FormatType<Transaction, typeof ETH_DATA_FORMAT>,
-	web3Context: Web3Context<EthExecutionAPI>,
+	transaction: FormatType<Transaction, typeof ZOND_DATA_FORMAT>,
+	web3Context: Web3Context<ZondExecutionAPI>,
 	returnFormat: ReturnFormat,
 ): Promise<FormatType<{ maxPriorityFeePerGas?: Numbers; maxFeePerGas?: Numbers }, ReturnFormat>> {
 	const block = await getBlock(web3Context, web3Context.defaultBlock, false, returnFormat);
@@ -74,7 +74,7 @@ async function getEip1559GasPricing<ReturnFormat extends DataFormat>(
 
 export async function getTransactionGasPricing<ReturnFormat extends DataFormat>(
 	transaction: InternalTransaction,
-	web3Context: Web3Context<EthExecutionAPI>,
+	web3Context: Web3Context<ZondExecutionAPI>,
 	returnFormat: ReturnFormat,
 ): Promise<
 	| FormatType<

@@ -16,7 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import {
-	EthExecutionAPI,
+	ZondExecutionAPI,
 	JsonRpcResponseWithResult,
 	Web3APIMethod,
 	Web3APIPayload,
@@ -28,10 +28,10 @@ import {
 class Web3ChildProvider extends Web3BaseProvider {
 	// eslint-disable-next-line class-methods-use-this
 	public async request<
-		Method extends Web3APIMethod<EthExecutionAPI>,
-		ResultType = Web3APIReturnType<EthExecutionAPI, Method> | unknown,
+		Method extends Web3APIMethod<ZondExecutionAPI>,
+		ResultType = Web3APIReturnType<ZondExecutionAPI, Method> | unknown,
 		// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	>(_: Web3APIPayload<EthExecutionAPI, Method>): Promise<JsonRpcResponseWithResult<ResultType>> {
+	>(_: Web3APIPayload<ZondExecutionAPI, Method>): Promise<JsonRpcResponseWithResult<ResultType>> {
 		return new Promise(resolve =>
 			// eslint-disable-next-line no-promise-executor-return
 			resolve({

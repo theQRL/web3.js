@@ -25,7 +25,7 @@ import {
 	TransactionLegacyUnsignedAPI,
 	Transaction,
 	TransactionWithSenderAPI,
-	ETH_DATA_FORMAT,
+	ZOND_DATA_FORMAT,
 } from '@theqrl/web3-types';
 import { isAddress, isHexStrict, isHexString32Bytes, isNullish, isUInt } from '@theqrl/web3-validator';
 import {
@@ -296,7 +296,7 @@ export const validateTransactionForSigning = (
 	validateBaseChain(transaction);
 	validateHardfork(transaction);
 
-	const formattedTransaction = formatTransaction(transaction as Transaction, ETH_DATA_FORMAT);
+	const formattedTransaction = formatTransaction(transaction as Transaction, ZOND_DATA_FORMAT);
 	validateGas(formattedTransaction);
 
 	if (
