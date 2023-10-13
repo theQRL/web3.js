@@ -16,7 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { hexToNumber } from 'web3-utils';
-import { HexString, ProviderConnectInfo, ProviderRpcError } from 'web3-types';
+import { HexString, ProviderConnectInfo, ProviderRpcError } from '@theqrl/web3-types';
 import WebSocketProvider from '../../src/index';
 
 import {

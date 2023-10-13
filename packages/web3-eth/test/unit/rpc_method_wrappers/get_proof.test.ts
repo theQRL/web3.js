@@ -22,7 +22,7 @@ import {
 	FMT_NUMBER,
 	FMT_BYTES,
 	Web3EthExecutionAPI,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 import { isNullish } from 'web3-validator';
 import { ethRpcMethods } from 'web3-rpc-methods';
 

@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { JsonRpcError } from 'web3-types';
+import { JsonRpcError } from '@theqrl/web3-types';
 import * as accountErrors from '../../src/errors/account_errors';
 import * as connectionErrors from '../../src/errors/connection_errors';
 import * as contractErrors from '../../src/errors/contract_errors';

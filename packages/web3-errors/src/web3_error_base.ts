@@ -17,7 +17,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 /* eslint-disable max-classes-per-file */
 
-import { Web3Error } from 'web3-types';
+import { Web3Error } from '@theqrl/web3-types';
 
 export abstract class BaseWeb3Error extends Error implements Web3Error {
 	public readonly name: string;

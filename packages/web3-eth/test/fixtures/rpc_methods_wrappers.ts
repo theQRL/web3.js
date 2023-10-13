@@ -22,7 +22,7 @@ import {
 	Numbers,
 	Uint,
 	TransactionWithSenderAPI,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 
 // Array consists of: returnType parameter, mock RPC result, expected output
 export const getHashRateValidData: [DataFormat, Numbers, Numbers][] = [

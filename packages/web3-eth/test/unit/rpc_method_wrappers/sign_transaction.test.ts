@@ -20,7 +20,7 @@ import {
 	ETH_DATA_FORMAT,
 	SignedTransactionInfoAPI,
 	Web3EthExecutionAPI,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 import { isString } from 'web3-validator';
 import { ethRpcMethods } from 'web3-rpc-methods';
 

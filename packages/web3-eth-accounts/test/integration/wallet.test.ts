@@ -17,7 +17,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 /* eslint-disable @typescript-eslint/no-magic-numbers */
 
-import { Web3AccountProvider, KeyStore } from 'web3-types';
+import { Web3AccountProvider, KeyStore } from '@theqrl/web3-types';
 import { isBrowser, isElectron, itIf } from '../fixtures/system_test_utils';
 import { Wallet } from '../../src';
 import * as accountProvider from '../../src/account';

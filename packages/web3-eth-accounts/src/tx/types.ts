@@ -14,7 +14,7 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import type { HexString, Numbers } from 'web3-types';
+import type { HexString, Numbers } from '@theqrl/web3-types';
 
 import type { Common } from '../common/common.js';
 // eslint-disable-next-line require-extensions/require-extensions
@@ -121,7 +121,6 @@ export function isAccessList(input: AccessListUint8Array | AccessList): input is
 
 export interface Dilithium5Signature {
 	signature: Uint8Array;
-	publicKey: Uint8Array;
 }
 
 /**

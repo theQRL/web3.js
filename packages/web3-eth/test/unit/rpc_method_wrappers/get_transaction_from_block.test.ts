@@ -23,7 +23,7 @@ import {
 	FMT_BYTES,
 	Bytes,
 	Web3EthExecutionAPI,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 import { isBytes, isNullish } from 'web3-validator';
 import { ethRpcMethods } from 'web3-rpc-methods';
 

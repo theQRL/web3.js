@@ -25,7 +25,7 @@ import {
 	EthExecutionAPI,
 	Web3BaseProvider,
 	Transaction,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 import { isNullish } from 'web3-utils';
 import { ExistingPluginNamespaceError } from 'web3-errors';
 

@@ -20,7 +20,7 @@ import {
 	TransactionInfo,
 	TransactionReceipt,
 	FMT_NUMBER,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import Web3 from 'web3';
 import { BasicAbi } from '../shared_fixtures/build/Basic';

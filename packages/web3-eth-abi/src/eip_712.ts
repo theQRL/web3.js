@@ -19,7 +19,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
  * @note This code was taken from: https://github.com/Mrtenz/eip-712/tree/master
  */
 
-import { Eip712TypedData } from 'web3-types';
+import { Eip712TypedData } from '@theqrl/web3-types';
 import { isNullish, keccak256 } from 'web3-utils';
 
 import ethersAbiCoder from './ethers_abi_coder.js';

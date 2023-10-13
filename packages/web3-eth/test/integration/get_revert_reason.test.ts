@@ -17,7 +17,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 /* eslint-disable jest/no-conditional-expect */
 
-import { Address, Transaction, TransactionCall } from 'web3-types';
+import { Address, Transaction, TransactionCall } from '@theqrl/web3-types';
 
 import Web3Eth from '../../src';
 import { getRevertReason } from '../../src/utils/get_revert_reason';

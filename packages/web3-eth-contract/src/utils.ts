@@ -26,7 +26,7 @@ import {
 	NonPayableCallOptions,
 	PayableCallOptions,
 	ContractInitOptions,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 import { isNullish, mergeDeep } from 'web3-utils';
 import { encodeMethodABI } from './encoding.js';
 import { ContractOptions, Web3ContractContext } from './types.js';

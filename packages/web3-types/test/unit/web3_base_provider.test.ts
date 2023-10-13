@@ -46,12 +46,12 @@ class Web3ChildProvider extends Web3BaseProvider {
 describe('Web3BaseProvider', () => {
 	it('asEIP1193Provider will fix the returned result of the request method', async () => {
 		const childProvider = new Web3ChildProvider();
-		const returnValue = await childProvider.request({ method: 'eth_getBalance' });
+		const returnValue = await childProvider.request({ method: 'zond_getBalance' });
 		expect(returnValue.result).toBe('result');
 
 		const eip1193CompatibleClass = childProvider.asEIP1193Provider();
 		const returnValue2 = await eip1193CompatibleClass.request({
-			method: 'eth_getBalance',
+			method: 'zond_getBalance',
 		});
 		expect(returnValue2).toBe('result');
 	});

@@ -25,7 +25,7 @@ import {
 	ValidChains,
 	FormatType,
 	ETH_DATA_FORMAT,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 import { Web3Context } from 'web3-core';
 import { toNumber } from 'web3-utils';
 import { TransactionFactory, TxOptions, Common } from 'web3-eth-accounts';

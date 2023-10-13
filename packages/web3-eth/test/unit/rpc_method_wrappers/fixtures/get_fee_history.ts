@@ -14,7 +14,7 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { FeeHistoryResultAPI, BlockNumberOrTag, BlockTags, Numbers } from 'web3-types';
+import { FeeHistoryResultAPI, BlockNumberOrTag, BlockTags, Numbers } from '@theqrl/web3-types';
 
 export const mockRpcResponse: FeeHistoryResultAPI = {
 	oldestBlock: '0xa30950',

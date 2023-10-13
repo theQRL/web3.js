@@ -21,7 +21,7 @@ import {
 	Bytes,
 	MatchPrimitiveType,
 	Numbers,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 import { expectTypeOf, typecheck } from '@humeris/espresso-shot';
 
 describe('types', () => {

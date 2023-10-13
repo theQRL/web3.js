@@ -15,11 +15,11 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { SupportedProviders } from 'web3-types';
+import { SupportedProviders } from '@theqrl/web3-types';
 import Web3 from '../../../src/index';
 
 /**
- * Performs basic RPC calls (like `eth_accounts`, `eth_blockNumber` and `eth_sendTransaction`)
+ * Performs basic RPC calls (like `zond_accounts`, `zond_blockNumber` and `zond_sendTransaction`)
  * @param provider - an instance of a compatible provider
  */
 export async function performBasicRpcCalls(provider: SupportedProviders) {

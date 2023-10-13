@@ -27,7 +27,7 @@ import {
 	Uint,
 	Uint256,
 	Web3EthExecutionAPI,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 import { Eip712TypedData } from 'web3-types/src/eth_types';
 import { validator } from 'web3-validator';
 

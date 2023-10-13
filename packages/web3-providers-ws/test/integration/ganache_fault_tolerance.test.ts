@@ -17,7 +17,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 import { ProviderRpcError } from 'web3-types/src/web3_api_types';
 import ganache from 'ganache';
-import { EthExecutionAPI, Web3APIPayload, SocketRequestItem, JsonRpcResponse } from 'web3-types';
+import { EthExecutionAPI, Web3APIPayload, SocketRequestItem, JsonRpcResponse } from '@theqrl/web3-types';
 import { InvalidResponseError, ConnectionNotOpenError } from 'web3-errors';
 import { Web3DeferredPromise } from 'web3-utils';
 import {
@@ -37,8 +37,8 @@ describeIf(getSystemTestBackend() === 'ganache')('ganache tests', () => {
 		const jsonRpcPayload = {
 			jsonrpc: '2.0',
 			id: 43,
-			method: 'eth_mining',
-		} as Web3APIPayload<EthExecutionAPI, 'eth_mining'>;
+			method: 'zond_mining',
+		} as Web3APIPayload<EthExecutionAPI, 'zond_mining'>;
 
 		// simulate abrupt disconnection, ganache server always closes with code 1000 so we need to simulate closing with different error code
 		const changeCloseCode = async (webSocketProvider: WebSocketProvider) =>

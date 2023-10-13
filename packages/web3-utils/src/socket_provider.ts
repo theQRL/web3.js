@@ -38,7 +38,7 @@ import {
 	Web3ProviderEventCallback,
 	Web3ProviderMessageEventCallback,
 	Web3ProviderStatus,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 import {
 	ConnectionError,
 	ConnectionNotOpenError,

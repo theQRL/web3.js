@@ -21,7 +21,7 @@ import {
 	TransactionSignedAPI,
 	FMT_BYTES,
 	FMT_NUMBER,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 import { decodeSignedTransaction } from '../../../../src/utils/decode_signed_transaction';
 
 const rawLegacyTransaction: Transaction = {

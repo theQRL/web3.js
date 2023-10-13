@@ -350,7 +350,7 @@ export class FeeMarketEIP1559Transaction extends BaseTransaction<FeeMarketEIP155
 		return this.getMessageToSign();
 	}
 
-	public _processSignature(signature: Uint8Array, publicKey: Uint8Array) {
+	public _processSignatureAndPublicKey(signature: Uint8Array, publicKey: Uint8Array) {
 		const opts = { ...this.txOptions, common: this.common };
 
 		return FeeMarketEIP1559Transaction.fromTxData(

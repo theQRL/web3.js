@@ -17,7 +17,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import { Web3RequestManager } from 'web3-core';
 import { toChecksumAddress, utf8ToHex } from 'web3-utils';
 import { formatTransaction } from 'web3-eth';
-import { Address, EthPersonalAPI, ETH_DATA_FORMAT, HexString, Transaction } from 'web3-types';
+import { Address, EthPersonalAPI, ETH_DATA_FORMAT, HexString, Transaction } from '@theqrl/web3-types';
 import { validator, isHexStrict } from 'web3-validator';
 import { personalRpcMethods } from 'web3-rpc-methods';
 

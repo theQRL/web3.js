@@ -38,7 +38,7 @@ describe(`${getSystemTestBackend()} tests - Web3 extend`, () => {
 			methods: [
 				{
 					name: 'getL2BlockInfo',
-					call: 'eth_blockNumber',
+					call: 'zond_blockNumber',
 				},
 			],
 		});

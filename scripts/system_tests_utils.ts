@@ -46,7 +46,7 @@ import {
 	SupportedProviders,
 	Web3APISpec,
 	Web3EthExecutionAPI,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { Personal } from 'web3-eth-personal';
 // eslint-disable-next-line import/no-extraneous-dependencies

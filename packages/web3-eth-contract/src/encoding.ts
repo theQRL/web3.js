@@ -29,7 +29,7 @@ import {
 	FMT_BYTES,
 	DataFormat,
 	DEFAULT_RETURN_FORMAT,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 
 import {
 	decodeLog,

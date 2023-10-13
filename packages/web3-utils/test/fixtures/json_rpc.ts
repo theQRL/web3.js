@@ -14,7 +14,7 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { JsonRpcNotification, SubscriptionParams } from 'web3-types';
+import { JsonRpcNotification, SubscriptionParams } from '@theqrl/web3-types';
 
 const responseWithResult = { jsonrpc: '2.0', id: 1, result: '' };
 const responseWithError = { jsonrpc: '2.0', id: 1, error: { code: 1, message: 'string' } };

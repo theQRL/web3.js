@@ -14,7 +14,7 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { AbiEventFragment, LogsInput } from 'web3-types';
+import { AbiEventFragment, LogsInput } from '@theqrl/web3-types';
 import { decodeEventABI } from '../../src/encoding';
 import { decodeEventABIData } from '../fixtures/encoding';
 

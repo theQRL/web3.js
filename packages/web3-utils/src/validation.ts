@@ -30,7 +30,7 @@ import {
 	isTopicInBloom as isTopicInBloomValidator,
 	isUserEthereumAddressInBloom as isUserEthereumAddressInBloomValidator,
 } from 'web3-validator';
-import { BlockNumberOrTag, BlockTags } from 'web3-types';
+import { BlockNumberOrTag, BlockTags } from '@theqrl/web3-types';
 
 /**
  * @deprecated Will be removed in next release. Please use `web3-validator` package instead.

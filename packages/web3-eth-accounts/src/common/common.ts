@@ -16,7 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import pkg from 'crc-32';
 import { EventEmitter } from 'events';
-import type { Numbers } from 'web3-types';
+import type { Numbers } from '@theqrl/web3-types';
 import { bytesToHex, hexToBytes, uint8ArrayConcat } from 'web3-utils';
 import { TypeOutput } from './types.js';
 import { intToUint8Array, toType, parseGethGenesis } from './utils.js';

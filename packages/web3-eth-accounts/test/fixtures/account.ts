@@ -24,7 +24,7 @@ import {
 	IVLengthError,
 	PBKDF2IterationsError,
 } from 'web3-errors';
-import { CipherOptions, KeyStore } from 'web3-types';
+import { CipherOptions, KeyStore } from '@theqrl/web3-types';
 import { hexToBytes } from 'web3-utils';
 import { AccessListEIP2930TxData, FeeMarketEIP1559TxData, TxData } from '../../src/tx/types';
 import { sign, signTransaction, encrypt } from '../../src/account';

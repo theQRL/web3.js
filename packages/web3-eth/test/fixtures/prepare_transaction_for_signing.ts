@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { AccessList, Block, HexString, Common, Transaction } from 'web3-types';
+import { AccessList, Block, HexString, Common, Transaction } from '@theqrl/web3-types';
 
 export const preEip1559Block: Block = {
 	parentHash: '0xe99e022112df268087ea7eafaf4790497fd21dbeeb6bd7a1721df161a6657a54',

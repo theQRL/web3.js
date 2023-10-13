@@ -76,7 +76,7 @@ import {
 	DEFAULT_RETURN_FORMAT,
 	Numbers,
 	Web3ValidationErrorObject,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 import { format, isDataFormat, keccak256, toChecksumAddress } from 'web3-utils';
 import {
 	isNullish,

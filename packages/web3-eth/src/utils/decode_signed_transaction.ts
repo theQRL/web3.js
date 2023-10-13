@@ -19,7 +19,7 @@ import {
 	HexStringBytes,
 	SignedTransactionInfoAPI,
 	TransactionSignedAPI,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 import { bytesToHex, format, hexToBytes, keccak256 } from 'web3-utils';
 import { TransactionFactory } from 'web3-eth-accounts';
 import { detectRawTransactionType } from './detect_transaction_type.js';

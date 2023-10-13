@@ -60,7 +60,7 @@ describe('Web3 Custom Subscriptions', () => {
 							/[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}/i,
 						),
 						jsonrpc: '2.0',
-						method: 'eth_subscribe',
+						method: 'zond_subscribe',
 						params: ['someCustomSubscription', args],
 					});
 					resolve(true);

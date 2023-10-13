@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import WebSocket from 'isomorphic-ws';
-import { EthExecutionAPI, Web3APIPayload } from 'web3-types';
+import { EthExecutionAPI, Web3APIPayload } from '@theqrl/web3-types';
 import WebSocketProvider from '../../src/index';
 import {
 	invalidConnectionStrings,
@@ -27,7 +27,7 @@ jest.mock('isomorphic-ws');
 
 describe('WebSocketProvider', () => {
 	let wsProvider: WebSocketProvider;
-	let jsonRpcPayload: Web3APIPayload<EthExecutionAPI, 'eth_getBalance'>;
+	let jsonRpcPayload: Web3APIPayload<EthExecutionAPI, 'zond_getBalance'>;
 	let jsonRpcResponse: Record<string, unknown>;
 
 	beforeEach(() => {
@@ -38,7 +38,7 @@ describe('WebSocketProvider', () => {
 		jsonRpcPayload = {
 			jsonrpc: '2.0',
 			id: 42,
-			method: 'eth_getBalance',
+			method: 'zond_getBalance',
 			params: ['0x407d73d8a49eeb85d32cf465507dd71d507100c1', 'latest'],
 		};
 		jsonRpcResponse = { ...jsonRpcPayload, result: JSON.stringify(jsonRpcPayload) };

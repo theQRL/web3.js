@@ -48,7 +48,7 @@ import {
 	TransactionForAccessList,
 	AccessListResult,
 	Eip712TypedData,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 import { Web3Context, Web3PromiEvent } from 'web3-core';
 import { format, hexToBytes, bytesToUint8Array, numberToHex } from 'web3-utils';
 import { TransactionFactory } from 'web3-eth-accounts';

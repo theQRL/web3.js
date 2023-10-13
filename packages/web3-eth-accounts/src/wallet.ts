@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { Web3BaseWallet, Web3BaseWalletAccount, KeyStore } from 'web3-types';
+import { Web3BaseWallet, Web3BaseWalletAccount, /*KeyStore*/ } from '@theqrl/web3-types';
 import { isNullish } from 'web3-validator';
 import { WebStorage } from './types.js';
 
@@ -47,7 +47,7 @@ export class Wallet<
 	T extends Web3BaseWalletAccount = Web3BaseWalletAccount,
 > extends Web3BaseWallet<T> {
 	private readonly _addressMap = new Map<string, number>();
-	private readonly _defaultKeyName = 'web3js_wallet';
+	//private readonly _defaultKeyName = 'web3js_wallet';
 
 	/**
 	 * Get the storage object of the browser
@@ -128,7 +128,7 @@ export class Wallet<
 	}
 
 	/**
-	 * Adds an account using a private key or account object to the wallet.
+	 * Adds an account using a seed or account object to the wallet.
 	 *
 	 * @param account - A private key or account object
 	 * @returns The wallet
@@ -155,7 +155,7 @@ export class Wallet<
 	 */
 	public add(account: T | string): this {
 		if (typeof account === 'string') {
-			return this.add(this._accountProvider.privateKeyToAccount(account));
+			return this.add(this._accountProvider.seedToAccount(account));
 		}
 		let index = this.length;
 		const existAccount = this.get(account.address);
@@ -279,12 +279,12 @@ export class Wallet<
 	 * ]
 	 * ```
 	 */
-	public async encrypt(
-		password: string,
-		options?: Record<string, unknown> | undefined,
-	): Promise<KeyStore[]> {
-		return Promise.all(this.map(async (account: T) => account.encrypt(password, options)));
-	}
+	// public async encrypt(
+	// 	password: string,
+	// 	options?: Record<string, unknown> | undefined,
+	// ): Promise<KeyStore[]> {
+	// 	return Promise.all(this.map(async (account: T) => account.encrypt(password, options)));
+	// }
 
 	/**
 	 * Decrypts keystore v3 objects.
@@ -360,21 +360,21 @@ export class Wallet<
 	 * }
 	 * ```
 	 */
-	public async decrypt(
-		encryptedWallets: KeyStore[],
-		password: string,
-		options?: Record<string, unknown> | undefined,
-	) {
-		const results = await Promise.all(
-			encryptedWallets.map(async (wallet: KeyStore) =>
-				this._accountProvider.decrypt(wallet, password, options),
-			),
-		);
-		for (const res of results) {
-			this.add(res);
-		}
-		return this;
-	}
+	// public async decrypt(
+	// 	encryptedWallets: KeyStore[],
+	// 	password: string,
+	// 	options?: Record<string, unknown> | undefined,
+	// ) {
+	// 	const results = await Promise.all(
+	// 		encryptedWallets.map(async (wallet: KeyStore) =>
+	// 			this._accountProvider.decrypt(wallet, password, options),
+	// 		),
+	// 	);
+	// 	for (const res of results) {
+	// 		this.add(res);
+	// 	}
+	// 	return this;
+	// }
 
 	/**
 	 * Stores the wallet encrypted and as string in local storage.
@@ -388,20 +388,20 @@ export class Wallet<
 	 * >true
 	 * ```
 	 */
-	public async save(password: string, keyName?: string) {
-		const storage = Wallet.getStorage();
+	// public async save(password: string, keyName?: string) {
+	// 	const storage = Wallet.getStorage();
 
-		if (!storage) {
-			throw new Error('Local storage not available.');
-		}
+	// 	if (!storage) {
+	// 		throw new Error('Local storage not available.');
+	// 	}
 
-		storage.setItem(
-			keyName ?? this._defaultKeyName,
-			JSON.stringify(await this.encrypt(password)),
-		);
+	// 	storage.setItem(
+	// 		keyName ?? this._defaultKeyName,
+	// 		JSON.stringify(await this.encrypt(password)),
+	// 	);
 
-		return true;
-	}
+	// 	return true;
+	// }
 
 	/**
 	 * Loads a wallet from local storage and decrypts it.
@@ -422,19 +422,19 @@ export class Wallet<
 	 * }
 	 * ```
 	 */
-	public async load(password: string, keyName?: string) {
-		const storage = Wallet.getStorage();
+	// public async load(password: string, keyName?: string) {
+	// 	const storage = Wallet.getStorage();
 
-		if (!storage) {
-			throw new Error('Local storage not available.');
-		}
+	// 	if (!storage) {
+	// 		throw new Error('Local storage not available.');
+	// 	}
 
-		const keystore = storage.getItem(keyName ?? this._defaultKeyName);
+	// 	const keystore = storage.getItem(keyName ?? this._defaultKeyName);
 
-		if (keystore) {
-			await this.decrypt((JSON.parse(keystore) as KeyStore[]) || [], password);
-		}
+	// 	if (keystore) {
+	// 		await this.decrypt((JSON.parse(keystore) as KeyStore[]) || [], password);
+	// 	}
 
-		return this;
-	}
+	// 	return this;
+	// }
 }

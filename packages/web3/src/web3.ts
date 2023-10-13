@@ -36,7 +36,7 @@ import {
 	ContractInitOptions,
 	EthExecutionAPI,
 	SupportedProviders,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 import { InvalidMethodParamsError } from 'web3-errors';
 import abi from './abi.js';
 import { initAccountsForContext } from './accounts.js';
@@ -60,7 +60,7 @@ export class Web3<
 
 	public utils: typeof utils;
 
-	public eth: Web3EthInterface;
+	public zond: Web3EthInterface;
 
 	public constructor(
 		providerOrContext?:
@@ -155,8 +155,8 @@ export class Web3<
 
 		const eth = self.use(Web3Eth);
 
-		// Eth Module
-		this.eth = Object.assign(eth, {
+		// Zond Module
+		this.zond = Object.assign(eth, {
 			// ENS module
 			ens: self.use(ENS, registryAddresses.main), // registry address defaults to main network
 

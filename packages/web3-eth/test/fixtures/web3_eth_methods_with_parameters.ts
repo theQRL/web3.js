@@ -30,7 +30,7 @@ import {
 	Uint256,
 	TransactionWithSenderAPI,
 	TransactionReceipt,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 import { transactionWithSender } from './rpc_methods_wrappers';
 
 /**

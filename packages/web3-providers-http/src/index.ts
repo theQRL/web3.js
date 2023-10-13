@@ -25,7 +25,7 @@ import {
 	Web3APISpec,
 	Web3BaseProvider,
 	Web3ProviderStatus,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 import { InvalidClientError, MethodNotImplementedError, ResponseError } from 'web3-errors';
 import { HttpProviderOptions } from './types.js';
 

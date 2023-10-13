@@ -23,7 +23,7 @@ import {
 	JsonRpcResponseWithError,
 	JsonRpcResponseWithResult,
 	JsonRpcIdentifier,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 import { jsonRpc } from 'web3-utils';
 import {
 	InvalidResponseError,

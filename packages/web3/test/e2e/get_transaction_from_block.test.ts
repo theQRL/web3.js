@@ -16,7 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 /* eslint-disable jest/no-conditional-expect */
 
-import { Numbers, TransactionInfo } from 'web3-types';
+import { Numbers, TransactionInfo } from '@theqrl/web3-types';
 
 import Web3 from '../../src';
 import { getSystemE2ETestProvider } from './e2e_utils';

@@ -25,7 +25,7 @@ import {
 	Topic,
 	BlockHeaderOutput,
 	LogsOutput,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 import { Web3Subscription } from 'web3-core';
 import { blockHeaderSchema, logSchema, syncSchema } from './schemas.js';
 

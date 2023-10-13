@@ -178,109 +178,109 @@ export interface CompileResultAPI {
 /* eslint-disable camelcase */
 export type EthExecutionAPI = {
 	// https://github.com/ethereum/execution-apis/blob/main/src/eth/block.yaml
-	eth_getBlockByHash: (blockHash: HexString32Bytes, hydrated: boolean) => BlockAPI;
-	eth_getBlockByNumber: (blockNumber: BlockNumberOrTag, hydrated: boolean) => BlockAPI;
-	eth_getBlockTransactionCountByHash: (blockHash: HexString32Bytes) => Uint;
-	eth_getBlockTransactionCountByNumber: (blockNumber: BlockNumberOrTag) => Uint;
-	eth_getUncleCountByBlockHash: (blockHash: HexString32Bytes) => Uint;
-	eth_getUncleCountByBlockNumber: (blockNumber: BlockNumberOrTag) => Uint;
-	eth_getUncleByBlockHashAndIndex: (blockHash: HexString32Bytes, uncleIndex: Uint) => BlockAPI;
-	eth_getUncleByBlockNumberAndIndex: (
+	zond_getBlockByHash: (blockHash: HexString32Bytes, hydrated: boolean) => BlockAPI;
+	zond_getBlockByNumber: (blockNumber: BlockNumberOrTag, hydrated: boolean) => BlockAPI;
+	zond_getBlockTransactionCountByHash: (blockHash: HexString32Bytes) => Uint;
+	zond_getBlockTransactionCountByNumber: (blockNumber: BlockNumberOrTag) => Uint;
+	zond_getUncleCountByBlockHash: (blockHash: HexString32Bytes) => Uint;
+	zond_getUncleCountByBlockNumber: (blockNumber: BlockNumberOrTag) => Uint;
+	zond_getUncleByBlockHashAndIndex: (blockHash: HexString32Bytes, uncleIndex: Uint) => BlockAPI;
+	zond_getUncleByBlockNumberAndIndex: (
 		blockNumber: BlockNumberOrTag,
 		uncleIndex: Uint,
 	) => BlockAPI;
 
 	// https://github.com/ethereum/execution-apis/blob/main/src/eth/transaction.yaml
-	eth_getTransactionByHash: (transactionHash: HexString32Bytes) => TransactionInfoAPI | undefined;
-	eth_getTransactionByBlockHashAndIndex: (
+	zond_getTransactionByHash: (transactionHash: HexString32Bytes) => TransactionInfoAPI | undefined;
+	zond_getTransactionByBlockHashAndIndex: (
 		blockHash: HexString32Bytes,
 		transactionIndex: Uint,
 	) => TransactionInfoAPI | undefined;
-	eth_getTransactionByBlockNumberAndIndex: (
+	zond_getTransactionByBlockNumberAndIndex: (
 		blockNumber: BlockNumberOrTag,
 		transactionIndex: Uint,
 	) => TransactionInfoAPI | undefined;
-	eth_getTransactionReceipt: (
+	zond_getTransactionReceipt: (
 		transactionHash: HexString32Bytes,
 	) => TransactionReceiptAPI | undefined;
 
 	// https://github.com/ethereum/execution-apis/blob/main/src/eth/client.yaml
-	eth_protocolVersion: () => string;
-	eth_syncing: () => SyncingStatusAPI;
-	eth_coinbase: () => Address;
-	eth_accounts: () => Address[];
-	eth_blockNumber: () => Uint;
+	zond_protocolVersion: () => string;
+	zond_syncing: () => SyncingStatusAPI;
+	zond_coinbase: () => Address;
+	zond_accounts: () => Address[];
+	zond_blockNumber: () => Uint;
 
 	// https://github.com/ethereum/execution-apis/blob/main/src/eth/execute.yaml
-	eth_call: (transaction: TransactionCallAPI, blockNumber: BlockNumberOrTag) => HexStringBytes;
-	eth_estimateGas: (
+	zond_call: (transaction: TransactionCallAPI, blockNumber: BlockNumberOrTag) => HexStringBytes;
+	zond_estimateGas: (
 		transaction: Partial<TransactionWithSenderAPI>,
 		blockNumber: BlockNumberOrTag,
 	) => Uint;
 
 	// https://github.com/ethereum/execution-apis/blob/main/src/eth/fee_market.yaml
-	eth_gasPrice: () => Uint;
-	eth_feeHistory: (
+	zond_gasPrice: () => Uint;
+	zond_feeHistory: (
 		blockCount: Uint,
 		newestBlock: BlockNumberOrTag,
 		rewardPercentiles: number[],
 	) => FeeHistoryResultAPI;
 
 	// https://github.com/ethereum/execution-apis/blob/main/src/eth/filter.yaml
-	eth_newFilter: (filter: Filter) => Uint;
-	eth_newBlockFilter: () => Uint;
-	eth_newPendingTransactionFilter: () => Uint;
-	eth_uninstallFilter: (filterIdentifier: Uint) => boolean;
-	eth_getFilterChanges: (filterIdentifier: Uint) => FilterResultsAPI;
-	eth_getFilterLogs: (filterIdentifier: Uint) => FilterResultsAPI;
-	eth_getLogs: (filter: Filter) => FilterResultsAPI;
+	zond_newFilter: (filter: Filter) => Uint;
+	zond_newBlockFilter: () => Uint;
+	zond_newPendingTransactionFilter: () => Uint;
+	zond_uninstallFilter: (filterIdentifier: Uint) => boolean;
+	zond_getFilterChanges: (filterIdentifier: Uint) => FilterResultsAPI;
+	zond_getFilterLogs: (filterIdentifier: Uint) => FilterResultsAPI;
+	zond_getLogs: (filter: Filter) => FilterResultsAPI;
 
 	// https://github.com/ethereum/execution-apis/blob/main/src/eth/mining.yaml
-	eth_mining: () => boolean;
-	eth_hashrate: () => Uint;
-	eth_getWork: () => [HexString32Bytes, HexString32Bytes, HexString32Bytes];
-	eth_submitWork: (
+	zond_mining: () => boolean;
+	zond_hashrate: () => Uint;
+	zond_getWork: () => [HexString32Bytes, HexString32Bytes, HexString32Bytes];
+	zond_submitWork: (
 		nonce: HexString8Bytes,
 		hash: HexString32Bytes,
 		digest: HexString32Bytes,
 	) => boolean;
-	eth_submitHashrate: (hashRate: HexString32Bytes, id: HexString32Bytes) => boolean;
+	zond_submitHashrate: (hashRate: HexString32Bytes, id: HexString32Bytes) => boolean;
 
 	// https://github.com/ethereum/execution-apis/blob/main/src/eth/sign.yaml
-	eth_sign: (address: Address, message: HexStringBytes) => HexString256Bytes;
-	eth_signTransaction: (
+	zond_sign: (address: Address, message: HexStringBytes) => HexString256Bytes;
+	zond_signTransaction: (
 		transaction: TransactionWithSenderAPI | Partial<TransactionWithSenderAPI>,
 	) => HexStringBytes | SignedTransactionInfoAPI;
 
 	// https://github.com/ethereum/execution-apis/blob/main/src/eth/state.yaml
-	eth_getBalance: (address: Address, blockNumber: BlockNumberOrTag) => Uint;
-	eth_getStorageAt: (
+	zond_getBalance: (address: Address, blockNumber: BlockNumberOrTag) => Uint;
+	zond_getStorageAt: (
 		address: Address,
 		storageSlot: Uint256,
 		blockNumber: BlockNumberOrTag,
 	) => HexStringBytes;
-	eth_getTransactionCount: (address: Address, blockNumber: BlockNumberOrTag) => Uint;
-	eth_getCode: (address: Address, blockNumber: BlockNumberOrTag) => HexStringBytes;
+	zond_getTransactionCount: (address: Address, blockNumber: BlockNumberOrTag) => Uint;
+	zond_getCode: (address: Address, blockNumber: BlockNumberOrTag) => HexStringBytes;
 
 	// https://github.com/ethereum/execution-apis/blob/main/src/eth/submit.yaml
-	eth_sendTransaction: (
+	zond_sendTransaction: (
 		transaction: TransactionWithSenderAPI | Partial<TransactionWithSenderAPI>,
 	) => HexString32Bytes;
-	eth_sendRawTransaction: (transaction: HexStringBytes) => HexString32Bytes;
+	zond_sendRawTransaction: (transaction: HexStringBytes) => HexString32Bytes;
 
 	// https://geth.ethereum.org/docs/rpc/pubsub
-	eth_subscribe: (
+	zond_subscribe: (
 		...params:
 			| ['newHeads']
 			| ['newPendingTransactions']
 			| ['syncing']
 			| ['logs', { address?: HexString; topics?: HexString[] }]
 	) => HexString;
-	eth_unsubscribe: (subscriptionId: HexString) => HexString;
-	eth_clearSubscriptions: (keepSyncing?: boolean) => void;
+	zond_unsubscribe: (subscriptionId: HexString) => HexString;
+	zond_clearSubscriptions: (keepSyncing?: boolean) => void;
 	// Non-supported by execution-apis specs
-	eth_getCompilers: () => string[];
-	eth_compileSolidity: (code: string) => CompileResultAPI;
-	eth_compileLLL: (code: string) => HexStringBytes;
-	eth_compileSerpent: (code: string) => HexStringBytes;
+	zond_getCompilers: () => string[];
+	zond_compileSolidity: (code: string) => CompileResultAPI;
+	zond_compileLLL: (code: string) => HexStringBytes;
+	zond_compileSerpent: (code: string) => HexStringBytes;
 };

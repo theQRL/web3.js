@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { SupportedProviders } from 'web3-types';
+import { SupportedProviders } from '@theqrl/web3-types';
 import { hexToNumber } from 'web3-utils';
 import { Web3Eth } from '../../src';
 
@@ -47,7 +47,7 @@ describe('eth', () => {
 			const batch = new web3Eth.BatchRequest();
 			const request1 = {
 				id: 10,
-				method: 'eth_getBalance',
+				method: 'zond_getBalance',
 				params: [acc1.address, 'latest'],
 			};
 			const r1 = batch.add(request1).catch(console.error);
@@ -68,12 +68,12 @@ describe('eth', () => {
 			const batch = new web3Eth.BatchRequest();
 			const request1 = {
 				id: 10,
-				method: 'eth_getBalance',
+				method: 'zond_getBalance',
 				params: [acc1.address, 'latest'],
 			};
 			const request2 = {
 				id: 11,
-				method: 'eth_getBalance',
+				method: 'zond_getBalance',
 				params: [acc2.address, 'latest'],
 			};
 			const r1 = batch.add(request1).catch(console.error);

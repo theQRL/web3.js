@@ -310,7 +310,7 @@ export class AccessListEIP2930Transaction extends BaseTransaction<AccessListEIP2
 		return this.getMessageToSign();
 	}
 
-	public _processSignature(signature: Uint8Array, publicKey: Uint8Array) {
+	public _processSignatureAndPublicKey(signature: Uint8Array, publicKey: Uint8Array) {
 		const opts = { ...this.txOptions, common: this.common };
 
 		return AccessListEIP2930Transaction.fromTxData(

@@ -22,7 +22,7 @@ import {
 	SupportedProviders,
 	FMT_BYTES,
 	FMT_NUMBER,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { Contract, decodeEventABI } from 'web3-eth-contract';
 import { hexToNumber, hexToString, numberToHex, getStorageSlotNumForLongString } from 'web3-utils';
@@ -90,7 +90,7 @@ describe('rpc', () => {
 			expect(parseInt(version, 16)).toBeGreaterThan(0);
 		});
 
-		// TODO:in beta,  test eth_syncing during sync mode with return obj having ( startingblock, currentBlock, heighestBlock )
+		// TODO:in beta,  test zond_syncing during sync mode with return obj having ( startingblock, currentBlock, heighestBlock )
 		it('isSyncing', async () => {
 			const isSyncing = await web3Eth.isSyncing();
 			expect(isSyncing).toBe(false);

@@ -27,7 +27,7 @@ import {
 	FMT_BYTES,
 	FMT_NUMBER,
 	DEFAULT_RETURN_FORMAT,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 import { format, hexToNumber } from 'web3-utils';
 import { isHexStrict } from 'web3-validator';
 import { Web3Eth, InternalTransaction, transactionSchema } from '../../../src';

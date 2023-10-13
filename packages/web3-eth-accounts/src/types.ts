@@ -15,15 +15,13 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { Web3BaseWalletAccount, HexString } from 'web3-types';
+import { Web3BaseWalletAccount, HexString } from '@theqrl/web3-types';
 import { FeeMarketEIP1559TxData, AccessListEIP2930TxData, TxData } from './tx/types.js';
 import { AccessListEIP2930Transaction, FeeMarketEIP1559Transaction, Transaction } from './tx';
 
 export type SignatureObject = {
 	messageHash: string;
-	r: string;
-	s: string;
-	v: string;
+	signature: string;
 };
 
 export type SignTransactionResult = SignatureObject & {
@@ -41,7 +39,6 @@ export type SignTransactionFunction = (
 
 export type SignResult = SignatureObject & {
 	message?: string;
-	signature: string;
 };
 
 export type SignFunction = (data: string, privateKey: string) => SignResult;
@@ -51,6 +48,8 @@ export type SignFunction = (data: string, privateKey: string) => SignResult;
 export interface Web3Account extends Web3BaseWalletAccount {
 	address: HexString;
 	privateKey: HexString;
+	publicKey: HexString;
+	seed?: HexString;
 }
 
 // To avoid dependency of "dom" library for TS, copying this interface within project

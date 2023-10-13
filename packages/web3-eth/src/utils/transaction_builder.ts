@@ -32,9 +32,9 @@ import {
 	DEFAULT_RETURN_FORMAT,
 	FormatType,
 	ETH_DATA_FORMAT,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 import { Web3Context } from 'web3-core';
-import { privateKeyToAddress } from 'web3-eth-accounts';
+import { publicKeyToAddress } from 'web3-eth-accounts';
 import { getId } from 'web3-net';
 import { isNullish, isNumber, isHexStrict, isAddress } from 'web3-validator';
 import {
@@ -62,7 +62,7 @@ export const getTransactionFromOrToAttr = (
 		| TransactionWithFromLocalWalletIndex
 		| TransactionWithToLocalWalletIndex
 		| TransactionWithFromAndToLocalWalletIndex,
-	privateKey?: HexString | Uint8Array,
+	publicKey?: HexString | Uint8Array,
 ): Address | undefined => {
 	if (transaction !== undefined && attr in transaction && transaction[attr] !== undefined) {
 		if (typeof transaction[attr] === 'string' && isAddress(transaction[attr] as string)) {
@@ -89,7 +89,7 @@ export const getTransactionFromOrToAttr = (
 		}
 	}
 	if (attr === 'from') {
-		if (!isNullish(privateKey)) return privateKeyToAddress(privateKey);
+		if (!isNullish(publicKey)) return publicKeyToAddress(publicKey);
 		if (!isNullish(web3Context.defaultAccount)) return web3Context.defaultAccount;
 	}
 

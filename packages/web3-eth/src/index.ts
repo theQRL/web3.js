@@ -21,8 +21,8 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
  * To use this package standalone and use its methods use:
  * ```ts
  * import { Web3Context } from 'web3-core';
- * import { BlockTags } from 'web3-types';
- * import { DEFAULT_RETURN_FORMAT } from 'web3-types';
+ * import { BlockTags } from '@theqrl/web3-types';
+ * import { DEFAULT_RETURN_FORMAT } from '@theqrl/web3-types';
  * import { getBalance} from 'web3-eth';
  *
  * getBalance(

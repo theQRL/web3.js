@@ -19,7 +19,7 @@ import Contract from 'web3-eth-contract';
 import HttpProvider from 'web3-providers-http';
 import { IpcProvider } from 'web3-providers-ipc';
 import WebSocketProvider from 'web3-providers-ws';
-import { JsonRpcOptionalRequest, SupportedProviders, Web3BaseProvider } from 'web3-types';
+import { JsonRpcOptionalRequest, SupportedProviders, Web3BaseProvider } from '@theqrl/web3-types';
 import Web3 from '../../src/index';
 import { BasicAbi } from '../shared_fixtures/Basic';
 import { GreeterAbi, GreeterBytecode } from '../shared_fixtures/build/Greeter';
@@ -261,12 +261,12 @@ describe('Web3 instance', () => {
 		beforeEach(() => {
 			request1 = {
 				id: 10,
-				method: 'eth_getBalance',
+				method: 'zond_getBalance',
 				params: [accounts[0], 'latest'],
 			};
 			request2 = {
 				id: 11,
-				method: 'eth_getBalance',
+				method: 'zond_getBalance',
 				params: [accounts[1], 'latest'],
 			};
 		});

@@ -24,7 +24,7 @@ import {
 	Web3APIPayload,
 	Web3APISpec,
 	Web3ProviderStatus,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 import { existsSync } from 'fs';
 
 /**

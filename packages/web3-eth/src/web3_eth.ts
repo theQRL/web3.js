@@ -38,7 +38,7 @@ import {
 	DataFormat,
 	DEFAULT_RETURN_FORMAT,
 	Eip712TypedData,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 import { isSupportedProvider, Web3Context, Web3ContextInitOptions } from 'web3-core';
 import { TransactionNotFound } from 'web3-errors';
 import { toChecksumAddress, isNullish } from 'web3-utils';

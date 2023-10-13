@@ -25,7 +25,7 @@ import {
 	ValidChains,
 	Web3BaseProvider,
 	DEFAULT_RETURN_FORMAT,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 import {
 	detectTransactionType,
 	prepareTransactionForSigning,

@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import { Web3SubscriptionManager } from 'web3-core';
-import { Web3BaseProvider } from 'web3-types';
+import { Web3BaseProvider } from '@theqrl/web3-types';
 import * as rpcMethodWrappers from '../../src/rpc_method_wrappers';
 import { LogsSubscription } from '../../src';
 import { Web3Eth } from '../../src/web3_eth';

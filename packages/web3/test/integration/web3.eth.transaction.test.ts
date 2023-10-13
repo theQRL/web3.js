@@ -60,16 +60,16 @@ describe('signTransaction', () => {
 							response.result = '1';
 							break;
 
-						case 'eth_chainId':
+						case 'zond_chainId':
 							response.result = '0x1';
 							break;
 
-						case 'eth_blockNumber':
+						case 'zond_blockNumber':
 							blockNum += 10;
 							response.result = `0x${blockNum.toString(16)}`;
 							break;
 
-						case 'eth_getTransactionReceipt':
+						case 'zond_getTransactionReceipt':
 							response.result = {
 								blockHash:
 									'0xa957d47df264a31badc3ae823e10ac1d444b098d9b73d204c40426e57f47e8c3',
@@ -89,7 +89,7 @@ describe('signTransaction', () => {
 							};
 							break;
 
-						case 'eth_sendRawTransaction':
+						case 'zond_sendRawTransaction':
 							if (txObj.transaction.maxPriorityFeePerGas !== undefined) {
 								// eslint-disable-next-line jest/no-conditional-expect
 								expect(payload.params[0]).toBe(txObj.signedLondon); // validate transaction for London HF

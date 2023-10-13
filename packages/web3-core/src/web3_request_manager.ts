@@ -42,7 +42,7 @@ import {
 	Web3APISpec,
 	Web3BaseProvider,
 	Web3BaseProviderConstructor,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 import { isNullish, isPromise, jsonRpc, isResponseRpcError } from 'web3-utils';
 import {
 	isEIP1193Provider,

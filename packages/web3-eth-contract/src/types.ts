@@ -35,7 +35,7 @@ import {
 	ContractAbi,
 	HexString32Bytes,
 	Uint,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 // eslint-disable-next-line import/no-cycle
 import { LogsSubscription } from './log_subscription.js';
 

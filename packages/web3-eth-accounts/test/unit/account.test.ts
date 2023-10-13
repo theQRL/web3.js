@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { Address } from 'web3-types';
+import { Address } from '@theqrl/web3-types';
 import { Web3ValidatorError, isHexStrict } from 'web3-validator';
 import {
 	create,

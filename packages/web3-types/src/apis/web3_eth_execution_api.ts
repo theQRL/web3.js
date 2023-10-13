@@ -27,32 +27,32 @@ import {
 } from '../eth_types.js';
 
 export type Web3EthExecutionAPI = EthExecutionAPI & {
-	eth_pendingTransactions: () => TransactionInfo[];
+	zond_pendingTransactions: () => TransactionInfo[];
 
 	// https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1102.md
-	eth_requestAccounts: () => Address[];
+	zond_requestAccounts: () => Address[];
 
 	// https://github.com/ethereum/EIPs/blob/master/EIPS/eip-695.md
-	eth_chainId: () => Uint;
+	zond_chainId: () => Uint;
 
 	web3_clientVersion: () => string;
 
 	// https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1186.md
-	eth_getProof: (
+	zond_getProof: (
 		address: Address,
 		storageKeys: HexString32Bytes[],
 		blockNumber: BlockNumberOrTag,
 	) => AccountObject;
 
 	// https://github.com/ethereum/EIPs/blob/master/EIPS/eip-712.md
-	eth_signTypedData: (
+	zond_signTypedData: (
 		address: Address,
 		typedData: Eip712TypedData,
 		useLegacy: true,
 	) => HexString256Bytes;
 
 	// https://github.com/ethereum/EIPs/blob/master/EIPS/eip-712.md
-	eth_signTypedData_v4: (
+	zond_signTypedData_v4: (
 		address: Address,
 		typedData: Eip712TypedData,
 		useLegacy: false | undefined,

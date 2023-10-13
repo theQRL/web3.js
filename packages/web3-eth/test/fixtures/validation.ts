@@ -24,7 +24,7 @@ import {
 	TransactionLegacyUnsignedAPI,
 	TransactionCall,
 	TransactionWithSenderAPI,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 import { InvalidTransactionCall, InvalidTransactionWithSender } from 'web3-errors';
 
 export const isBaseTransactionValidData: [BaseTransactionAPI, true][] = [

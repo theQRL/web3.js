@@ -26,7 +26,7 @@ import {
 	Transaction,
 	TransactionWithSenderAPI,
 	ETH_DATA_FORMAT,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 import { isAddress, isHexStrict, isHexString32Bytes, isNullish, isUInt } from 'web3-validator';
 import {
 	ChainMismatchError,

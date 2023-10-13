@@ -25,7 +25,7 @@ import {
 	Log,
 	Web3APISpec,
 	Web3BaseProvider,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 import { ProviderError, SubscriptionError } from 'web3-errors';
 import { isNullish } from 'web3-utils';
 import { isSupportSubscriptions } from './utils.js';

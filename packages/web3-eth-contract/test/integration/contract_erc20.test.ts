@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { LogsOutput } from 'web3-types';
+import { LogsOutput } from '@theqrl/web3-types';
 import { Contract } from '../../src';
 import { ERC20TokenAbi, ERC20TokenBytecode } from '../shared_fixtures/build/ERC20Token';
 import {

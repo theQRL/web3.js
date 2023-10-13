@@ -26,7 +26,7 @@ import {
 	FMT_NUMBER,
 	SupportedProviders,
 	Web3NetAPI,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 import { PublicResolverAbi } from './abi/ens/PublicResolver.js';
 import { networkIds, registryAddresses } from './config.js';
 import { Registry } from './registry.js';

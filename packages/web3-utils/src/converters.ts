@@ -17,7 +17,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 import { keccak256 } from 'ethereum-cryptography/keccak.js';
 import { bytesToUtf8, utf8ToBytes } from 'ethereum-cryptography/utils.js';
-import { Address, Bytes, HexString, Numbers, ValueTypes } from 'web3-types';
+import { Address, Bytes, HexString, Numbers, ValueTypes } from '@theqrl/web3-types';
 import {
 	isAddress,
 	isHex,

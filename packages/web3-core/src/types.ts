@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { HexString, Transaction } from 'web3-types';
+import { HexString, Transaction } from '@theqrl/web3-types';
 
 export type TransactionTypeParser = (transaction: Transaction) => HexString | undefined;
 

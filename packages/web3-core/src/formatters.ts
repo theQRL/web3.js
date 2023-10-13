@@ -36,7 +36,7 @@ import {
 	SyncOutput,
 	TransactionInput,
 	TransactionOutput,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 import {
 	fromUtf8,
 	hexToNumber,
@@ -223,7 +223,7 @@ export const inputTransactionFormatter = (options: TransactionInput, defaultAcco
 
 /**
  * @deprecated Use format function from web3-utils package instead
- * Hex encodes the data passed to eth_sign and personal_sign
+ * Hex encodes the data passed to zond_sign and personal_sign
  */
 export const inputSignFormatter = (data: string) => (isHexStrict(data) ? data : utf8ToHex(data));
 

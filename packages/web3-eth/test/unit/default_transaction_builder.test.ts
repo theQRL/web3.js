@@ -21,7 +21,7 @@ import {
 	Transaction,
 	ValidChains,
 	Hardfork,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 import { Web3Context } from 'web3-core';
 import HttpProvider from 'web3-providers-http';
 import { isNullish } from 'web3-validator';

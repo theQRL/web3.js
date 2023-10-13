@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { Numbers } from 'web3-types';
+import { Numbers } from '@theqrl/web3-types';
 import { bytesToHex } from 'web3-utils';
 import {
 	bigIntToUnpaddedUint8Array,
@@ -41,7 +41,13 @@ import type {
 import { Capability, Dilithium5Signature } from './types.js';
 import { Address } from './address.js';
 import { checkMaxInitCodeSize } from './utils.js';
-import { cryptoSign, CryptoBytes, cryptoSignVerify } from '@theqrl/dilithium5';
+import { 
+	cryptoSign,
+	CryptoSecretKeyBytes, 
+	CryptoPublicKeyBytes, 
+	CryptoBytes, 
+	cryptoSignVerify 
+} from '@theqrl/dilithium5';
 
 interface TransactionCache {
 	hash: Uint8Array | undefined;
@@ -66,10 +72,6 @@ export abstract class BaseTransaction<TransactionObject> {
 	public readonly to?: Address;
 	public readonly value: bigint;
 	public readonly data: Uint8Array;
-
-	// public readonly v?: bigint;
-	// public readonly r?: bigint;
-	// public readonly s?: bigint;
 
 	public readonly signature?: bigint;
 	public readonly publicKey?: bigint;
@@ -315,12 +317,16 @@ export abstract class BaseTransaction<TransactionObject> {
 	 * Note that the signed tx is returned as a new object,
 	 * use as follows:
 	 * ```javascript
-	 * const signedTx = tx.sign(privateKey)
+	 * const signedTx = tx.sign(privateKey, publicKey)
 	 * ```
 	 */
-	public sign(privateKey: Uint8Array): TransactionObject {
-		if (privateKey.length !== 32) {
-			const msg = this._errorMsg('Private key must be 32 bytes in length.');
+	public sign(privateKey: Uint8Array, publicKey: Uint8Array): TransactionObject {
+		if (privateKey.length !== CryptoSecretKeyBytes) {
+			const msg = this._errorMsg(`Private key must be ${CryptoSecretKeyBytes} bytes in length.`);
+			throw new Error(msg);
+		}
+		if (publicKey.length !== CryptoPublicKeyBytes) {
+			const msg = this._errorMsg(`Publick key must be ${CryptoPublicKeyBytes} bytes in length.`);
 			throw new Error(msg);
 		}
 
@@ -339,8 +345,8 @@ export abstract class BaseTransaction<TransactionObject> {
 		}
 
 		const msgHash = this.getMessageToSign(true);
-		const { signature, publicKey } = this._dilithium5sign(msgHash, privateKey);
-		const tx = this._processSignature(signature, publicKey);
+		const { signature } = this._dilithium5sign(msgHash, privateKey);
+		const tx = this._processSignatureAndPublicKey(signature, publicKey);
 
 		// Hack part 2
 		if (hackApplied) {
@@ -359,7 +365,7 @@ export abstract class BaseTransaction<TransactionObject> {
 	public abstract toJSON(): JsonTx;
 
 	// Accept the signature and public key values from the `sign` method, and convert this into a TransactionObject
-	protected abstract _processSignature(
+	protected abstract _processSignatureAndPublicKey(
 		signature: Uint8Array,
 		publicKey: Uint8Array,
 	): TransactionObject;
@@ -534,10 +540,8 @@ export abstract class BaseTransaction<TransactionObject> {
 	// eslint-disable-next-line class-methods-use-this
 	private _dilithium5sign(msgHash: Uint8Array, privateKey: Uint8Array /*, chainId?: bigint */): Dilithium5Signature {
 		const sm = cryptoSign(msgHash, privateKey)
-		
 		let signature = new Uint8Array(CryptoBytes);
 		signature = sm.slice(0, CryptoBytes);
-		
-		return { signature, publicKey } ;
+		return { signature } ;
 	}
 }

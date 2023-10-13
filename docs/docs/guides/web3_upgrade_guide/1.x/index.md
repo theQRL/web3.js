@@ -77,13 +77,13 @@ batch.add(
 const request1 = {
 	jsonrpc: '2.0',
 	id: 10,
-	method: 'eth_getBalance',
+	method: 'zond_getBalance',
 	params: ['0xf4ffff492596ac13fee6126846350433bf9a5021', 'latest'],
 };
 const request2 = {
 	jsonrpc: '2.0',
 	id: 12,
-	method: 'eth_getBalance',
+	method: 'zond_getBalance',
 	params: ['0xdc6bad79dab7ea733098f66f6c6f9dd008da3258', 'latest'],
 };
 batch.add(request1);
@@ -148,7 +148,7 @@ web3.extend({
 	methods: [
 		{
 			name: 'getBalance',
-			call: 'eth_getBalance',
+			call: 'zond_getBalance',
 			params: 2,
 			inputFormatter: [
 				web3.extend.formatters.inputAddressFormatter,
@@ -158,7 +158,7 @@ web3.extend({
 		},
 		{
 			name: 'getGasPriceSuperFunction',
-			call: 'eth_gasPriceSuper',
+			call: 'zond_gasPriceSuper',
 			params: 2,
 			inputFormatter: [null, web3.utils.numberToHex],
 		},
@@ -180,11 +180,11 @@ web3.extend({
 	methods: [
 		{
 			name: 'getBalance',
-			call: 'eth_getBalance',
+			call: 'zond_getBalance',
 		},
 		{
 			name: 'getGasPriceSuperFunction',
-			call: 'eth_gasPriceSuper',
+			call: 'zond_gasPriceSuper',
 		},
 	],
 });

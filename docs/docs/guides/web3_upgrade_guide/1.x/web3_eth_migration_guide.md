@@ -183,7 +183,7 @@ await web3.eth.getFeeHistory('0x1', 'latest', []);
 web3.eth.sendTransaction({ ... }).on('sending', (payload) => { ... });
 // payload would be:
 // {
-//   method: 'eth_sendTransaction',
+//   method: 'zond_sendTransaction',
 //   params: [
 //     {
 //       from: '0x6e599da0bff7a6598ac1224e4985430bf16458a4',
@@ -218,7 +218,7 @@ web3.eth.sendTransaction({ ... }).on('sending', (sendTransactionObject) => { ...
 web3.eth.sendTransaction({ ... }).on('sent', (payload) => { ... });
 // payload would be:
 // {
-//   method: 'eth_sendTransaction',
+//   method: 'zond_sendTransaction',
 //   params: [
 //     {
 //       from: '0x6e599da0bff7a6598ac1224e4985430bf16458a4',

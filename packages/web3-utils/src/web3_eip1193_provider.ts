@@ -22,7 +22,7 @@ import {
 	Web3APIPayload,
 	Web3APISpec,
 	Web3BaseProvider,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 import { EventEmitter } from 'events';
 import { EIP1193ProviderRpcError } from 'web3-errors';
 import { toPayload } from './json_rpc.js';
@@ -43,7 +43,7 @@ export abstract class Eip1193Provider<
 			ResponseType
 		>(
 			toPayload({
-				method: 'eth_chainId',
+				method: 'zond_chainId',
 				params: [],
 			}) as Web3APIPayload<API, Web3APIMethod<API>>,
 		);
@@ -53,7 +53,7 @@ export abstract class Eip1193Provider<
 	private async _getAccounts(): Promise<HexString[]> {
 		const data = await (this as Web3BaseProvider<API>).request<Web3APIMethod<API>, HexString[]>(
 			toPayload({
-				method: 'eth_accounts',
+				method: 'zond_accounts',
 				params: [],
 			}) as Web3APIPayload<API, Web3APIMethod<API>>,
 		);

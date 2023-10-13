@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { Bytes, Transaction } from 'web3-types';
+import { Bytes, Transaction } from '@theqrl/web3-types';
 import Eth from 'web3-eth';
 import {
 	decodeLog,
@@ -27,10 +27,10 @@ import {
 	encodeParameters,
 } from 'web3-eth-abi';
 import {
-	encrypt,
+	//encrypt,
 	hashMessage,
-	recover,
-	recoverTransaction,
+	//recover,
+	//recoverTransaction,
 	sign,
 	signTransaction,
 	Wallet,
@@ -74,21 +74,22 @@ export interface Web3EthInterface extends Eth {
 	};
 	accounts: {
 		create: () => Web3Account;
-		privateKeyToAccount: (privateKey: Uint8Array | string) => Web3Account;
+		seedToAccount: (seed: Uint8Array | string) => Web3Account;
 		signTransaction: (
 			transaction: Transaction,
 			privateKey: Bytes,
+			publicKey: Bytes,
 		) => ReturnType<typeof signTransaction>;
-		recoverTransaction: typeof recoverTransaction;
+		//recoverTransaction: typeof recoverTransaction;
 		hashMessage: typeof hashMessage;
 		sign: typeof sign;
-		recover: typeof recover;
-		encrypt: typeof encrypt;
-		decrypt: (
-			keystore: string,
-			password: string,
-			options?: Record<string, unknown>,
-		) => Promise<Web3Account>;
+		//recover: typeof recover;
+		//encrypt: typeof encrypt;
+		// decrypt: (
+		// 	keystore: string,
+		// 	password: string,
+		// 	options?: Record<string, unknown>,
+		// ) => Promise<Web3Account>;
 		wallet: Wallet;
 	};
 	personal: Personal;

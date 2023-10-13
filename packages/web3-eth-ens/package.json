@@ -64,7 +64,7 @@
 		"web3-eth": "^4.2.0",
 		"web3-eth-contract": "^4.1.0",
 		"web3-net": "^4.0.6",
-		"web3-types": "^1.2.0",
+		"@theqrl/web3-types": "^1.2.0",
 		"web3-utils": "^4.0.6",
 		"web3-validator": "^2.0.2"
 	}

@@ -21,7 +21,7 @@ import {
 	DEFAULT_RETURN_FORMAT,
 	FMT_NUMBER,
 	FMT_BYTES,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 import { isNullish } from 'web3-validator';
 import { format } from 'web3-utils';
 import { ethRpcMethods } from 'web3-rpc-methods';

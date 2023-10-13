@@ -85,7 +85,7 @@ describe.skip('eth', () => {
 	});
 
 	describe('handleRevert', () => {
-		// todo enable when figure out what happening in eth_call (doesn't throw error)
+		// todo enable when figure out what happening in zond_call (doesn't throw error)
 		// eslint-disable-next-line jest/expect-expect
 		it('should get revert reason', async () => {
 			contract.handleRevert = true;

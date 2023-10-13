@@ -35,12 +35,6 @@ import { Capability } from './types.js';
 
 const TRANSACTION_TYPE = 0;
 
-function meetsEIP155(_v: bigint, chainId: bigint) {
-	const v = Number(_v);
-	const chainIdDoubled = Number(chainId) * 2;
-	return v === chainIdDoubled + 35 || v === chainIdDoubled + 36;
-}
-
 /**
  * An Ethereum non-typed (legacy) transaction
  */
@@ -119,6 +113,10 @@ export class Transaction extends BaseTransaction<Transaction> {
 	 */
 	public constructor(txData: TxData, opts: TxOptions = {}) {
 		super({ ...txData, type: TRANSACTION_TYPE }, opts);
+
+		// TODO(rgeraldes24) - review chain id part
+		// https://github.com/rgeraldes24/web3.js/blob/main/packages/web3-eth-accounts/src/tx/legacyTransaction.ts#L125
+		this.common = this._getCommon(opts.common)
 
 		this.gasPrice = uint8ArrayToBigInt(
 			toUint8Array(txData.gasPrice === '' ? '0x' : txData.gasPrice),
@@ -302,7 +300,7 @@ export class Transaction extends BaseTransaction<Transaction> {
 	/**
 	 * Process the signature and public key values from the `sign` method of the base transaction.
 	 */
-	protected _processSignature(signature: Uint8Array, publicKey: Uint8Array) {
+	protected _processSignatureAndPublicKey(signature: Uint8Array, publicKey: Uint8Array) {
 		const opts = { ...this.txOptions, common: this.common };
 
 		return Transaction.fromTxData(

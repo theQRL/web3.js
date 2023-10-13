@@ -46,7 +46,7 @@ describe('getTransactionError', () => {
 			{
 				jsonrpc: '2.0',
 				id: '2568856d-8ee5-43f4-a8db-dbd22cf97a53',
-				method: 'eth_sendTransaction',
+				method: 'zond_sendTransaction',
 				params: [
 					{
 						from: '0x4fec0a51024b13030d26e70904b066c6d41157a5',
@@ -163,7 +163,7 @@ describe('getTransactionError', () => {
 				{
 					jsonrpc: '2.0',
 					id: '2568856d-8ee5-43f4-a8db-dbd22cf97a53',
-					method: 'eth_sendTransaction',
+					method: 'zond_sendTransaction',
 					params: [
 						{
 							from: '0x4fec0a51024b13030d26e70904b066c6d41157a5',
@@ -219,7 +219,7 @@ describe('getTransactionError', () => {
 				{
 					jsonrpc: '2.0',
 					id: '2568856d-8ee5-43f4-a8db-dbd22cf97a53',
-					method: 'eth_sendTransaction',
+					method: 'zond_sendTransaction',
 					params: [
 						{
 							from: '0x4fec0a51024b13030d26e70904b066c6d41157a5',

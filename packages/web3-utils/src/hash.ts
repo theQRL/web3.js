@@ -33,7 +33,7 @@ import {
 	Sha3Input,
 	TypedObject,
 	TypedObjectAbbreviated,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 import { isAddress, isNullish, isHexStrict } from 'web3-validator';
 import {
 	bytesToUint8Array,

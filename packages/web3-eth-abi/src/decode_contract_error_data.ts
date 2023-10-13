@@ -16,7 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { Eip838ExecutionError } from 'web3-errors';
-import { AbiErrorFragment } from 'web3-types';
+import { AbiErrorFragment } from '@theqrl/web3-types';
 
 import { encodeErrorSignature } from './api/errors_api.js';
 import { decodeParameters } from './api/parameters_api.js';

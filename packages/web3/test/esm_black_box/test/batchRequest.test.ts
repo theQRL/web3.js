@@ -37,12 +37,12 @@ describe('ESM - Black Box Unit Tests - web3.BatchRequest', () => {
 	it('should make a batch request', async () => {
 		const request1 = {
 			id: 42,
-			method: 'eth_getBalance',
+			method: 'zond_getBalance',
 			params: ['0x4242000000000000000000000000000000000000', 'latest'],
 		};
 		const request2 = {
 			id: 24,
-			method: 'eth_getBalance',
+			method: 'zond_getBalance',
 			params: ['0x2424000000000000000000000000000000000000', 'latest'],
 		};
 

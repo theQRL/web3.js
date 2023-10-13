@@ -44,6 +44,13 @@ export class InvalidPrivateKeyError extends BaseWeb3Error {
 	}
 }
 
+export class InvalidSeedError extends BaseWeb3Error {
+	public code = ERR_INVALID_PRIVATE_KEY;
+	public constructor() {
+		super(`Invalid Seed, Not a valid string or uint8Array`);
+	}
+}
+
 export class InvalidSignatureError extends BaseWeb3Error {
 	public code = ERR_INVALID_SIGNATURE;
 	public constructor(errorDetails: string) {

@@ -23,7 +23,7 @@ import {
 	FMT_NUMBER,
 	FMT_BYTES,
 	Web3EthExecutionAPI,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 import { ethRpcMethods } from 'web3-rpc-methods';
 
 import { estimateGas } from '../../../src/rpc_method_wrappers';

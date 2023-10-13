@@ -14,9 +14,9 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { DEFAULT_RETURN_FORMAT } from 'web3-types';
+import { DEFAULT_RETURN_FORMAT } from '@theqrl/web3-types';
 import { Web3PromiEvent } from 'web3-core';
-import { SupportedProviders, TransactionReceipt } from 'web3-types';
+import { SupportedProviders, TransactionReceipt } from '@theqrl/web3-types';
 import { TransactionBlockTimeoutError } from 'web3-errors';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { Web3 } from 'web3';

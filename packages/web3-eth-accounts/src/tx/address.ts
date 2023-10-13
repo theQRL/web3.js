@@ -74,7 +74,7 @@ export class Address {
 		assertIsUint8Array(pubKey);
 
 		if (pubKey.length !== CryptoPublicKeyBytes) {
-			throw new Error('Expected pubKey to be of length 2592');
+			throw new Error(`Expected pubKey to be of length ${CryptoPublicKeyBytes}`);
 		}
 		
 		return getDilithiumAddressFromPK(pubKey)

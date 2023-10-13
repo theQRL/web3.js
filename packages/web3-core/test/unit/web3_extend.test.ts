@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { Address, BlockTag } from 'web3-types';
+import { Address, BlockTag } from '@theqrl/web3-types';
 import { Web3Context } from './reexported_web3_context';
 
 declare module './reexported_web3_context' {
@@ -40,7 +40,7 @@ describe('Web3Context extend tests', () => {
 			methods: [
 				{
 					name: 'getL2Balance',
-					call: 'eth_getBalance',
+					call: 'zond_getBalance',
 				},
 			],
 		});
@@ -48,7 +48,7 @@ describe('Web3Context extend tests', () => {
 		await web3.L2Module.getL2Balance('0x5b43746580AAF00A69019fA59D9ed7d9c85dDd70', 'latest');
 
 		expect(requestManagerSendSpy).toHaveBeenCalledWith({
-			method: 'eth_getBalance',
+			method: 'zond_getBalance',
 			params: ['0x5b43746580AAF00A69019fA59D9ed7d9c85dDd70', 'latest'],
 		});
 	});
@@ -63,7 +63,7 @@ describe('Web3Context extend tests', () => {
 			methods: [
 				{
 					name: 'getL0Balance',
-					call: 'eth_getBalance',
+					call: 'zond_getBalance',
 				},
 			],
 		});
@@ -71,7 +71,7 @@ describe('Web3Context extend tests', () => {
 		await web3.getL0Balance('0x5b43746580AAF00A69019fA59D9ed7d9c85dDd70', 'latest');
 
 		expect(requestManagerSendSpy).toHaveBeenCalledWith({
-			method: 'eth_getBalance',
+			method: 'zond_getBalance',
 			params: ['0x5b43746580AAF00A69019fA59D9ed7d9c85dDd70', 'latest'],
 		});
 	});

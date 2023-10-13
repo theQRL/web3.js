@@ -18,7 +18,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 /* eslint-disable jest/expect-expect */
 
 import { expectTypeOf, typecheck } from '@humeris/espresso-shot';
-import { Numbers } from 'web3-types';
+import { Numbers } from '@theqrl/web3-types';
 import { Contract } from '../../src/contract';
 import { erc20Abi, Erc20Interface } from '../fixtures/erc20';
 import { erc721Abi, Erc721Interface } from '../fixtures/erc721';

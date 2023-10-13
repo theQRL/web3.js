@@ -23,7 +23,7 @@ import {
 	DataFormat,
 	FormatType,
 	ETH_DATA_FORMAT,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 import { isNullish } from 'web3-validator';
 import { Eip1559NotSupportedError, UnsupportedTransactionTypeError } from 'web3-errors';
 import { format } from 'web3-utils';

@@ -16,7 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import { Web3Context } from 'web3-core';
 import { format } from 'web3-utils';
-import { DEFAULT_RETURN_FORMAT, ETH_DATA_FORMAT, Web3EthExecutionAPI } from 'web3-types';
+import { DEFAULT_RETURN_FORMAT, ETH_DATA_FORMAT, Web3EthExecutionAPI } from '@theqrl/web3-types';
 import { isNullish } from 'web3-validator';
 import { ethRpcMethods } from 'web3-rpc-methods';
 

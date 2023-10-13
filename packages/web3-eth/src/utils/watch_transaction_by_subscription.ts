@@ -14,10 +14,10 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { Bytes, Numbers, BlockHeaderOutput, TransactionReceipt } from 'web3-types';
+import { Bytes, Numbers, BlockHeaderOutput, TransactionReceipt } from '@theqrl/web3-types';
 import { format } from 'web3-utils';
 
-import { DataFormat } from 'web3-types';
+import { DataFormat } from '@theqrl/web3-types';
 import { NewHeadsSubscription } from '../web3_subscriptions.js';
 import { transactionReceiptSchema } from '../schemas.js';
 import { WaitProps, watchTransactionByPolling } from './watch_transaction_by_pooling.js';

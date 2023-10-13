@@ -16,7 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import * as utils from 'web3-utils';
-import { BlockTags } from 'web3-types';
+import { BlockTags } from '@theqrl/web3-types';
 import { Iban } from 'web3-eth-iban';
 import {
 	inputAddressFormatter,

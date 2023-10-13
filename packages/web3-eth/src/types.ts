@@ -32,7 +32,7 @@ import {
 	Numbers,
 	Transaction,
 	TransactionReceipt,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 
 export type InternalTransaction = FormatType<Transaction, typeof ETH_DATA_FORMAT>;
 

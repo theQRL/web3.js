@@ -66,31 +66,27 @@ export interface Web3BaseWalletAccount {
 	readonly privateKey: string;
 	readonly signTransaction: (tx: Transaction) => Promise<{
 		readonly messageHash: HexString;
-		readonly r: HexString;
-		readonly s: HexString;
-		readonly v: HexString;
+		readonly signature: HexString;
 		readonly rawTransaction: HexString;
 		readonly transactionHash: HexString;
 	}>;
 	readonly sign: (data: Record<string, unknown> | string) => {
 		readonly messageHash: HexString;
-		readonly r: HexString;
-		readonly s: HexString;
-		readonly v: HexString;
 		readonly message?: string;
 		readonly signature: HexString;
 	};
-	readonly encrypt: (password: string, options?: Record<string, unknown>) => Promise<KeyStore>;
+	// TODO(rgeraldes24): enable
+	// readonly encrypt: (password: string, options?: Record<string, unknown>) => Promise<KeyStore>;
 }
 
 export interface Web3AccountProvider<T> {
-	privateKeyToAccount: (privateKey: string) => T;
+	seedToAccount: (seed: string) => T;
 	create: () => T;
-	decrypt: (
-		keystore: KeyStore | string,
-		password: string,
-		options?: Record<string, unknown>,
-	) => Promise<T>;
+	// decrypt: (
+	// 	keystore: KeyStore | string,
+	// 	password: string,
+	// 	options?: Record<string, unknown>,
+	// ) => Promise<T>;
 }
 
 export abstract class Web3BaseWallet<T extends Web3BaseWalletAccount> extends Array<T> {
@@ -106,15 +102,15 @@ export abstract class Web3BaseWallet<T extends Web3BaseWalletAccount> extends Ar
 	public abstract get(addressOrIndex: string | number): T | undefined;
 	public abstract remove(addressOrIndex: string | number): boolean;
 	public abstract clear(): this;
-	public abstract encrypt(
-		password: string,
-		options?: Record<string, unknown>,
-	): Promise<KeyStore[]>;
-	public abstract decrypt(
-		encryptedWallet: KeyStore[],
-		password: string,
-		options?: Record<string, unknown>,
-	): Promise<this>;
-	public abstract save(password: string, keyName?: string): Promise<boolean | never>;
-	public abstract load(password: string, keyName?: string): Promise<this | never>;
+	// public abstract encrypt(
+	// 	password: string,
+	// 	options?: Record<string, unknown>,
+	// ): Promise<KeyStore[]>;
+	// public abstract decrypt(
+	// 	encryptedWallet: KeyStore[],
+	// 	password: string,
+	// 	options?: Record<string, unknown>,
+	// ): Promise<this>;
+	// public abstract save(password: string, keyName?: string): Promise<boolean | never>;
+	// public abstract load(password: string, keyName?: string): Promise<this | never>;
 }

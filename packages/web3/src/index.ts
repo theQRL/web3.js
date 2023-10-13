@@ -298,12 +298,12 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
  * ```ts
  * let request1: JsonRpcOptionalRequest = {
  * 	id: 10,
- * 	method: 'eth_getBalance',
+ * 	method: 'zond_getBalance',
  * 	params: ["0xdc6bad79dab7ea733098f66f6c6f9dd008da3258", 'latest'],
  * };
  * let request2: JsonRpcOptionalRequest = {
  * 	id: 11,
- * 	method: 'eth_getBalance',
+ * 	method: 'zond_getBalance',
  * 	params: ["0x962f9a9c2a6c092474d24def35eccb3d9363265e", 'latest'],
  * };
  *
@@ -350,7 +350,7 @@ export * as eth from './eth.exports.js';
 export * as net from 'web3-net';
 export * as providers from './providers.exports.js';
 export * as rpcMethods from 'web3-rpc-methods';
-export * as types from 'web3-types';
+export * as types from '@theqrl/web3-types';
 export * as utils from 'web3-utils';
 export * as validator from 'web3-validator';
 
@@ -360,4 +360,4 @@ export * as validator from 'web3-validator';
  * And the same for `web3-errors`. Because this package contains error classes and constants.
  */
 export * from 'web3-errors';
-export * from 'web3-types';
+export * from '@theqrl/web3-types';

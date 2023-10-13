@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { ETH_DATA_FORMAT } from 'web3-types';
+import { ETH_DATA_FORMAT } from '@theqrl/web3-types';
 import { Contract } from '../../src';
 import { getSystemTestProvider, createTempAccount } from '../fixtures/system_test_utils';
 

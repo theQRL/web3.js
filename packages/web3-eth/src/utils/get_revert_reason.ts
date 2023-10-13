@@ -25,7 +25,7 @@ import {
 	DEFAULT_RETURN_FORMAT,
 	EthExecutionAPI,
 	TransactionCall,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 
 // eslint-disable-next-line import/no-cycle
 import { call } from '../rpc_method_wrappers.js';

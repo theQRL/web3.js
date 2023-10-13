@@ -480,19 +480,6 @@ export function bigIntToUnpaddedUint8Array(value: bigint): Uint8Array {
 	return unpadUint8Array(bigIntToUint8Array(value));
 }
 
-function calculateSigRecovery(v: bigint, chainId?: bigint): bigint {
-	if (v === BigInt(0) || v === BigInt(1)) return v;
-
-	if (chainId === undefined) {
-		return v - BigInt(27);
-	}
-	return v - (chainId * BigInt(2) + BigInt(35));
-}
-
-function isValidSigRecovery(recovery: bigint): boolean {
-	return recovery === BigInt(0) || recovery === BigInt(1);
-}
-
 /**
  * Convert an input to a specified type.
  * Input of null/undefined returns null/undefined regardless of the output type.

@@ -27,7 +27,7 @@ import {
 	JsonRpcRequest,
 	JsonRpcBatchResponse,
 	JsonRpcSubscriptionResult,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 import { rpcErrorsMap } from 'web3-errors';
 import { uuidV4 } from './uuid.js';
 

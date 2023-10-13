@@ -26,7 +26,7 @@ import {
 	TransactionWithFromAndToLocalWalletIndex,
 	Address,
 	DEFAULT_RETURN_FORMAT,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 import { Wallet } from 'web3-eth-accounts';
 import { isHexStrict } from 'web3-validator';
 
