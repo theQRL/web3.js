@@ -14,7 +14,7 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { Web3Context } from 'web3-core';
+import { Web3Context } from '@theqrl/web3-core';
 import { DataFormat, DEFAULT_RETURN_FORMAT, Web3NetAPI } from '@theqrl/web3-types';
 
 import * as rpcMethodsWrappers from './rpc_method_wrappers.js';

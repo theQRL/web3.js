@@ -25,7 +25,7 @@ import {
 	InvalidSizeError,
 	InvalidStringError,
 	InvalidUnsignedIntegerError,
-} from 'web3-errors';
+} from '@theqrl/web3-errors';
 import {
 	Bytes,
 	EncodingTypes,
@@ -34,7 +34,7 @@ import {
 	TypedObject,
 	TypedObjectAbbreviated,
 } from '@theqrl/web3-types';
-import { isAddress, isNullish, isHexStrict } from 'web3-validator';
+import { isAddress, isNullish, isHexStrict } from '@theqrl/web3-validator';
 import {
 	bytesToUint8Array,
 	bytesToHex,

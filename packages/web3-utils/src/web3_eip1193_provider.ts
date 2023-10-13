@@ -24,7 +24,7 @@ import {
 	Web3BaseProvider,
 } from '@theqrl/web3-types';
 import { EventEmitter } from 'events';
-import { EIP1193ProviderRpcError } from 'web3-errors';
+import { EIP1193ProviderRpcError } from '@theqrl/web3-errors';
 import { toPayload } from './json_rpc.js';
 
 /**

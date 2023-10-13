@@ -16,7 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { Numbers } from '@theqrl/web3-types';
-import { InvalidBlockError } from 'web3-errors';
+import { InvalidBlockError } from '@theqrl/web3-errors';
 
 export const compareBlockNumbersValidData: [[Numbers, Numbers], number][] = [
 	[[1, 1], 0],

@@ -18,8 +18,8 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import { ProviderRpcError } from 'web3-types/src/web3_api_types';
 import ganache from 'ganache';
 import { EthExecutionAPI, Web3APIPayload, SocketRequestItem, JsonRpcResponse } from '@theqrl/web3-types';
-import { InvalidResponseError, ConnectionNotOpenError } from 'web3-errors';
-import { Web3DeferredPromise } from 'web3-utils';
+import { InvalidResponseError, ConnectionNotOpenError } from '@theqrl/web3-errors';
+import { Web3DeferredPromise } from '@theqrl/web3-utils';
 import {
 	waitForSocketConnect,
 	waitForEvent,

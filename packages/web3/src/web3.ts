@@ -21,15 +21,15 @@ import {
 	Web3ContextObject,
 	Web3SubscriptionConstructor,
 	isSupportedProvider,
-} from 'web3-core';
-import { Web3Eth, RegisteredSubscription, registeredSubscriptions } from 'web3-eth';
-import Contract from 'web3-eth-contract';
-import { ENS, registryAddresses } from 'web3-eth-ens';
-import { Iban } from 'web3-eth-iban';
-import { Personal } from 'web3-eth-personal';
-import { Net } from 'web3-net';
-import * as utils from 'web3-utils';
-import { isNullish } from 'web3-utils';
+} from '@theqrl/web3-core';
+import { Web3Zond, RegisteredSubscription, registeredSubscriptions } from '@theqrl/web3-zond';
+import Contract from '@theqrl/web3-zond-contract';
+import { ENS, registryAddresses } from '@theqrl/web3-zond-ens';
+import { Iban } from '@theqrl/web3-zond-iban';
+import { Personal } from '@theqrl/web3-zond-personal';
+import { Net } from '@theqrl/web3-net';
+import * as utils from '@theqrl/web3-utils';
+import { isNullish } from '@theqrl/web3-utils';
 import {
 	Address,
 	ContractAbi,
@@ -37,10 +37,10 @@ import {
 	EthExecutionAPI,
 	SupportedProviders,
 } from '@theqrl/web3-types';
-import { InvalidMethodParamsError } from 'web3-errors';
+import { InvalidMethodParamsError } from '@theqrl/web3-errors';
 import abi from './abi.js';
 import { initAccountsForContext } from './accounts.js';
-import { Web3EthInterface } from './types.js';
+import { Web3ZondInterface } from './types.js';
 import { Web3PkgInfo } from './version.js';
 
 export class Web3<
@@ -51,7 +51,7 @@ export class Web3<
 	public static version = Web3PkgInfo.version;
 	public static utils = utils;
 	public static modules = {
-		Web3Eth,
+		Web3Zond,
 		Iban,
 		Net,
 		ENS,
@@ -60,7 +60,7 @@ export class Web3<
 
 	public utils: typeof utils;
 
-	public zond: Web3EthInterface;
+	public zond: Web3ZondInterface;
 
 	public constructor(
 		providerOrContext?:
@@ -153,7 +153,7 @@ export class Web3<
 			}
 		}
 
-		const eth = self.use(Web3Eth);
+		const eth = self.use(Web3Zond);
 
 		// Zond Module
 		this.zond = Object.assign(eth, {

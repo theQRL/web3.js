@@ -19,7 +19,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
  * The web3-net package allows you to interact with an Ethereum node’s network properties.
  *
  * ```ts
- * import Net from 'web3-net';
+ * import Net from '@theqrl/web3-net';
  *
  * const net = new Net(Net.givenProvider || 'ws://some.local-or-remote.node:8546');
  * // or using the web3 umbrella package

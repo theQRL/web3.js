@@ -16,9 +16,9 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { EthExecutionAPI, Bytes, Transaction, /*KeyStore,*/ ETH_DATA_FORMAT } from '@theqrl/web3-types';
-import { format } from 'web3-utils';
-import { Web3Context } from 'web3-core';
-import { prepareTransactionForSigning } from 'web3-eth';
+import { format } from '@theqrl/web3-utils';
+import { Web3Context } from '@theqrl/web3-core';
+import { prepareTransactionForSigning } from '@theqrl/web3-zond';
 import {
 	create,
 	//decrypt,
@@ -30,7 +30,7 @@ import {
 	sign,
 	Wallet,
 	seedToAccount,
-} from 'web3-eth-accounts';
+} from '@theqrl/web3-zond-accounts';
 
 /**
  * Initialize the accounts module for the given context.

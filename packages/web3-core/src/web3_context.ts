@@ -26,8 +26,8 @@ import {
 	Web3BaseProvider,
 	Transaction,
 } from '@theqrl/web3-types';
-import { isNullish } from 'web3-utils';
-import { ExistingPluginNamespaceError } from 'web3-errors';
+import { isNullish } from '@theqrl/web3-utils';
+import { ExistingPluginNamespaceError } from '@theqrl/web3-errors';
 
 import { isSupportedProvider } from './utils.js';
 // eslint-disable-next-line import/no-cycle

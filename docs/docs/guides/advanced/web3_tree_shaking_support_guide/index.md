@@ -31,7 +31,7 @@ For further information about `sideEffects` see [webpack docs](https://webpack.j
     For example, if you need `web.eth`:
 
 ```ts
-import Web3Eth from 'web3-eth';
+import Web3Eth from '@theqrl/web3-zond';
 ```
 
 If you only need a few functions from `web3-utils`:

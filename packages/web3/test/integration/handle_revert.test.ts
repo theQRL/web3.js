@@ -14,9 +14,9 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { TransactionRevertInstructionError } from 'web3-errors';
-import { Contract } from 'web3-eth-contract';
-import WebSocketProvider from 'web3-providers-ws';
+import { TransactionRevertInstructionError } from '@theqrl/web3-errors';
+import { Contract } from '@theqrl/web3-zond-contract';
+import WebSocketProvider from '@theqrl/web3-providers-ws';
 import Web3 from '../../src/index';
 import { BasicAbi, BasicBytecode } from '../shared_fixtures/build/Basic';
 import {

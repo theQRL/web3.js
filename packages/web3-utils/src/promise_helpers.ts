@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { isNullish } from 'web3-validator';
+import { isNullish } from '@theqrl/web3-validator';
 
 /**
  * An alternative to the node function `isPromise` that exists in `util/types` because it is not available on the browser.

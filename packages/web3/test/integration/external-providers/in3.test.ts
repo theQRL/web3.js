@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { waitWithTimeout, setRequestIdStart } from 'web3-utils';
+import { waitWithTimeout, setRequestIdStart } from '@theqrl/web3-utils';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import In3Client from 'in3';
 

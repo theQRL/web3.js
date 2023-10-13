@@ -1,5 +1,5 @@
 {
-	"name": "web3-providers-ws",
+	"name": "@theqrl/web3-providers-ws",
 	"version": "4.0.6",
 	"description": "Websocket provider for Web3 4.x.x",
 	"main": "./lib/commonjs/index.js",
@@ -63,9 +63,9 @@
 	"dependencies": {
 		"@types/ws": "8.5.3",
 		"isomorphic-ws": "^5.0.0",
-		"web3-errors": "^1.1.2",
+		"@theqrl/web3-errors": "^1.1.2",
 		"@theqrl/web3-types": "^1.2.0",
-		"web3-utils": "^4.0.6",
+		"@theqrl/web3-utils": "^4.0.6",
 		"ws": "^8.8.1"
 	}
 }

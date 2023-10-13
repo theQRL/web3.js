@@ -1,5 +1,5 @@
 {
-	"name": "web3-utils",
+	"name": "@theqrl/web3-utils",
 	"sideEffects": false,
 	"version": "4.0.6",
 	"description": "Collection of utility functions used in web3.js.",
@@ -60,8 +60,8 @@
 	},
 	"dependencies": {
 		"ethereum-cryptography": "^2.0.0",
-		"web3-errors": "^1.1.2",
+		"@theqrl/web3-errors": "^1.1.2",
 		"@theqrl/web3-types": "^1.2.0",
-		"web3-validator": "^2.0.2"
+		"@theqrl/web3-validator": "^2.0.2"
 	}
 }

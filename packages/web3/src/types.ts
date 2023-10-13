@@ -16,7 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { Bytes, Transaction } from '@theqrl/web3-types';
-import Eth from 'web3-eth';
+import Zond from '@theqrl/web3-zond';
 import {
 	decodeLog,
 	decodeParameter,
@@ -25,7 +25,7 @@ import {
 	encodeFunctionSignature,
 	encodeParameter,
 	encodeParameters,
-} from 'web3-eth-abi';
+} from '@theqrl/web3-zond-abi';
 import {
 	//encrypt,
 	hashMessage,
@@ -35,19 +35,19 @@ import {
 	signTransaction,
 	Wallet,
 	Web3Account,
-} from 'web3-eth-accounts';
-import { Contract } from 'web3-eth-contract';
-import { ENS } from 'web3-eth-ens';
-import { Net } from 'web3-net';
-import { Iban } from 'web3-eth-iban';
-import { Personal } from 'web3-eth-personal';
+} from '@theqrl/web3-zond-accounts';
+import { Contract } from '@theqrl/web3-zond-contract';
+import { ENS } from '@theqrl/web3-zond-ens';
+import { Net } from '@theqrl/web3-net';
+import { Iban } from '@theqrl/web3-zond-iban';
+import { Personal } from '@theqrl/web3-zond-personal';
 
 /**
- * The Ethereum interface for main web3 object. It provides extra methods in addition to `web3-eth` interface.
+ * The Zond interface for main web3 object. It provides extra methods in addition to `web3-zond` interface.
  *
- * {@link web3_eth.Web3Eth} for details about the `Eth` interface.
+ * {@link web3_zond.Web3Zond} for details about the `Eth` interface.
  */
-export interface Web3EthInterface extends Eth {
+export interface Web3ZondInterface extends Zond {
 	/**
 	 * Extended [Contract](/api/web3-eth-contract/class/Contract) constructor for main `web3` object. See [Contract](/api/web3-eth-contract/class/Contract) for further details.
 	 *
@@ -55,7 +55,7 @@ export interface Web3EthInterface extends Eth {
 	 * Please check the {@doclink guides/web3_upgrade_guide/x/providers_migration_guide | following guide} to understand more about setting provider.
 	 *
 	 * ```ts
-	 * web3.eth.Contract.setProvider(myProvider)
+	 * web3.zond.Contract.setProvider(myProvider)
 	 * ```
 	 */
 	Contract: typeof Contract;

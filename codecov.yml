@@ -21,40 +21,40 @@ component_management:
     - component_id: "web3"
       paths:
           - /packages/web3/src/
-    - component_id: "web3-core"
+    - component_id: "@theqrl/web3-core"
       paths:
           - /packages/web3-core/src/
-    - component_id: "web3-errors"
+    - component_id: "@theqrl/web3-errors"
       paths:
           - /packages/web3-errors/src/
-    - component_id: "web3-eth"
+    - component_id: "@theqrl/web3-zond"
       paths:
           - /packages/web3-eth/src/
-    - component_id: "web3-eth-abi"
+    - component_id: "@theqrl/web3-zond-abi"
       paths:
           - /packages/web3-eth-abi/src/
-    - component_id: "web3-eth-accounts"
+    - component_id: "@theqrl/web3-zond-accounts"
       paths:
           - /packages/web3-eth-accounts/src/
-    - component_id: "web3-eth-contract"
+    - component_id: "@theqrl/web3-zond-contract"
       paths:
           - /packages/web3-eth-contract/src/
-    - component_id: "web3-eth-ens"
+    - component_id: "@theqrl/web3-zond-ens"
       paths:
           - /packages/web3-eth-ens/src/
-    - component_id: "web3-eth-iban"
+    - component_id: "@theqrl/web3-zond-iban"
       paths:
           - /packages/web3-eth-iban/src/
-    - component_id: "web3-eth-personal"
+    - component_id: "@theqrl/web3-zond-personal"
       paths:
           - /packages/web3-eth-personal/src/
-    - component_id: "web3-net"
+    - component_id: "@theqrl/web3-net"
       paths:
           - /packages/web3-net/src/
-    - component_id: "web3-providers-http"
+    - component_id: "@theqrl/web3-providers-http"
       paths:
           - /packages/web3-providers-http/src/
-    - component_id: "web3-providers-ipc"
+    - component_id: "@theqrl/web3-providers-ipc"
       paths:
           - /packages/web3-providers-ipc/src/
     - component_id: "web3-providers-ws"

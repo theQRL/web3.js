@@ -22,9 +22,9 @@ import {
 	ResponseError,
 	rpcErrorsMap,
 	RpcError,
-} from 'web3-errors';
-import HttpProvider from 'web3-providers-http';
-import WSProvider from 'web3-providers-ws';
+} from '@theqrl/web3-errors';
+import HttpProvider from '@theqrl/web3-providers-http';
+import WSProvider from '@theqrl/web3-providers-ws';
 import {
 	EthExecutionAPI,
 	JsonRpcBatchRequest,
@@ -43,7 +43,7 @@ import {
 	Web3BaseProvider,
 	Web3BaseProviderConstructor,
 } from '@theqrl/web3-types';
-import { isNullish, isPromise, jsonRpc, isResponseRpcError } from 'web3-utils';
+import { isNullish, isPromise, jsonRpc, isResponseRpcError } from '@theqrl/web3-utils';
 import {
 	isEIP1193Provider,
 	isLegacyRequestProvider,

@@ -15,9 +15,9 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import * as eth from 'web3-eth';
-import * as ethAccounts from 'web3-eth-accounts';
-import { SignTransactionResult, Web3Account } from 'web3-eth-accounts';
+import * as eth from '@theqrl/web3-zond';
+import * as ethAccounts from '@theqrl/web3-zond-accounts';
+import { SignTransactionResult, Web3Account } from '@theqrl/web3-zond-accounts';
 import { Web3EthInterface } from '../../src/types';
 import { Web3 } from '../../src';
 

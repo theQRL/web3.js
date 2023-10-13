@@ -15,8 +15,8 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import * as httpProvider from 'web3-providers-http';
-import { Web3Account } from 'web3-eth-accounts';
+import * as httpProvider from '@theqrl/web3-providers-http';
+import { Web3Account } from '@theqrl/web3-zond-accounts';
 import Web3, { DEFAULT_RETURN_FORMAT, Transaction } from '../../src';
 import testsData from '../fixtures/transactions.json';
 

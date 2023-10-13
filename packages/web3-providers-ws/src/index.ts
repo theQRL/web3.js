@@ -24,8 +24,8 @@ import {
 	Web3APISpec,
 	Web3ProviderStatus,
 } from '@theqrl/web3-types';
-import { isNullish, ReconnectOptions, SocketProvider } from 'web3-utils';
-import { ConnectionNotOpenError } from 'web3-errors';
+import { isNullish, ReconnectOptions, SocketProvider } from '@theqrl/web3-utils';
+import { ConnectionNotOpenError } from '@theqrl/web3-errors';
 
 export { ClientRequestArgs } from 'http';
 

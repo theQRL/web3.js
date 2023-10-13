@@ -14,8 +14,8 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { isBigInt, isHexStrict, isString } from 'web3-validator';
-import { toHex } from 'web3-utils';
+import { isBigInt, isHexStrict, isString } from '@theqrl/web3-validator';
+import { toHex } from '@theqrl/web3-utils';
 
 import Web3, { FMT_BYTES, FMT_NUMBER } from '../../src';
 import { getSystemE2ETestProvider, getE2ETestAccountAddress } from './e2e_utils';

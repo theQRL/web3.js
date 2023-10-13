@@ -26,7 +26,7 @@ import {
 	isInt,
 	utils as validatorUtils,
 	validator,
-} from 'web3-validator';
+} from '@theqrl/web3-validator';
 
 import {
 	HexProcessingError,
@@ -34,7 +34,7 @@ import {
 	InvalidBytesError,
 	InvalidNumberError,
 	InvalidUnitError,
-} from 'web3-errors';
+} from '@theqrl/web3-errors';
 
 const base = BigInt(10);
 const expo10 = (expo: number) => base ** BigInt(expo);

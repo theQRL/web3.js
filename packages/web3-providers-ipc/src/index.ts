@@ -16,8 +16,8 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { Socket, SocketConstructorOpts } from 'net';
-import { ConnectionNotOpenError, InvalidClientError } from 'web3-errors';
-import { ReconnectOptions, SocketProvider, toUtf8 } from 'web3-utils';
+import { ConnectionNotOpenError, InvalidClientError } from '@theqrl/web3-errors';
+import { ReconnectOptions, SocketProvider, toUtf8 } from '@theqrl/web3-utils';
 import {
 	EthExecutionAPI,
 	Web3APIMethod,

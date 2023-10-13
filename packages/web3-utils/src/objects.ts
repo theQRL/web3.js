@@ -16,7 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { TypedArray } from '@theqrl/web3-types';
-import { isNullish } from 'web3-validator';
+import { isNullish } from '@theqrl/web3-validator';
 
 const isIterable = (item: unknown): item is Record<string, unknown> =>
 	typeof item === 'object' &&

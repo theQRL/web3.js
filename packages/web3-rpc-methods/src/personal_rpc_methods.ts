@@ -14,7 +14,7 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { Web3RequestManager } from 'web3-core';
+import { Web3RequestManager } from '@theqrl/web3-core';
 import { Address, EthPersonalAPI, HexString, Transaction } from '@theqrl/web3-types';
 
 export const getAccounts = async (requestManager: Web3RequestManager<EthPersonalAPI>) =>

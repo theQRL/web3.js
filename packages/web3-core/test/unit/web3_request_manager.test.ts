@@ -24,7 +24,7 @@ import {
 	JsonRpcResponseWithResult,
 	JsonRpcIdentifier,
 } from '@theqrl/web3-types';
-import { jsonRpc } from 'web3-utils';
+import { jsonRpc } from '@theqrl/web3-utils';
 import {
 	InvalidResponseError,
 	ParseError,
@@ -41,9 +41,9 @@ import {
 	RpcError,
 	ResourceUnavailableError,
 	ResponseError,
-} from 'web3-errors';
-import HttpProvider from 'web3-providers-http';
-import WSProvider from 'web3-providers-ws';
+} from '@theqrl/web3-errors';
+import HttpProvider from '@theqrl/web3-providers-http';
+import WSProvider from '@theqrl/web3-providers-ws';
 import { Web3RequestManager, Web3RequestManagerEvent } from '../../src/web3_request_manager';
 import * as utils from '../../src/utils';
 

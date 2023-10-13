@@ -29,8 +29,8 @@ import {
 	Web3APIParams,
 	Web3APISpec,
 } from '@theqrl/web3-types';
-import { jsonRpc } from 'web3-utils';
-import { SubscriptionError } from 'web3-errors';
+import { jsonRpc } from '@theqrl/web3-utils';
+import { SubscriptionError } from '@theqrl/web3-errors';
 
 // eslint-disable-next-line import/no-cycle
 import { Web3SubscriptionManager } from './web3_subscription_manager.js';

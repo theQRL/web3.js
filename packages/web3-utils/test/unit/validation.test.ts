@@ -17,7 +17,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 /* eslint-disable jest/no-conditional-expect */
 
-import { InvalidBlockError } from 'web3-errors';
+import { InvalidBlockError } from '@theqrl/web3-errors';
 import { compareBlockNumbers } from '../../src/validation';
 import {
 	compareBlockNumbersInvalidData,

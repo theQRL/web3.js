@@ -130,7 +130,7 @@ Similarly some useable types from the old package `web3-core` are also moved to 
 
 ```ts
 // in 1.x
-import type { Transaction, TransactionReceipt } from 'web3-core';
+import type { Transaction, TransactionReceipt } from '@theqrl/web3-core';
 
 // in 4.x
 import type { Transaction, TransactionReceipt } from 'web3-types';
@@ -199,7 +199,7 @@ Starting 4.x releases, the package `web3-core-helpers` will not be maintained an
 import { formatters } from 'web3-core-helpers';
 
 // in 4.x
-import { formatters } from 'web3-core';
+import { formatters } from '@theqrl/web3-core';
 ```
 
 ### PromiEvent
@@ -211,7 +211,7 @@ Starting 4.x releases, the package `web3-core-promievent` will not be maintained
 import Web3PromiEvent from 'web3-core-promievent';
 
 // in 4.x
-import { Web3PromiEvent } from 'web3-core';
+import { Web3PromiEvent } from '@theqrl/web3-core';
 ```
 
 The `PromiEvent` class does not support `removeEventListener` or `addEventListener`. Instead we recommend to use `on` and `off`.

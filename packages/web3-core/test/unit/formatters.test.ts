@@ -15,9 +15,9 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import * as utils from 'web3-utils';
+import * as utils from '@theqrl/web3-utils';
 import { BlockTags } from '@theqrl/web3-types';
-import { Iban } from 'web3-eth-iban';
+import { Iban } from '@theqrl/web3-zond-iban';
 import {
 	inputAddressFormatter,
 	inputBlockNumberFormatter,

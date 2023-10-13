@@ -39,7 +39,7 @@ yarn add web3-validator
 You can use the the validator by importing as and using to validate;
 
 ```ts
-import { validator } from 'web3-validator';
+import { validator } from '@theqrl/web3-validator';
 
 // To validate and throw
 validator.validate(['uint8', 'string'], [val1, val2]);

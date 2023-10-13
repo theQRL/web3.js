@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { InvalidBytesError, InvalidNumberError } from 'web3-errors';
+import { InvalidBytesError, InvalidNumberError } from '@theqrl/web3-errors';
 import { VALID_ETH_BASE_TYPES } from './constants.js';
 import {
 	FullValidationSchema,
