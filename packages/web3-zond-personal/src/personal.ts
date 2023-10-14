@@ -187,11 +187,10 @@ export class Personal extends Web3Context<ZondPersonalAPI> {
 	}
 	// @TODO(rgeraldes24): review docs
 	/**
-	 * Calculates an Ethereum specific signature with:
-	 * sign(keccak256("\x19Ethereum Signed Message:\n" + dataToSign.length + dataToSign)))
-	 * Adding a prefix to the message makes the calculated signature recognisable as an Ethereum specific signature.
+	 * Calculates an Zond specific signature with:
+	 * sign(keccak256("\x19Zond Signed Message:\n" + dataToSign.length + dataToSign)))
+	 * Adding a prefix to the message makes the calculated signature recognisable as a Zond specific signature.
 	 *
-	 * If you have the original message and the signed message, you can discover the signing account address using web3.eth.personal.ecRecover
 	 * **_NOTE:_** Sending your account password over an unsecured HTTP RPC connection is highly unsecure.
 	 * @param data - The data to sign.
 	 * @param address - The address to sign with.
@@ -207,23 +206,4 @@ export class Personal extends Web3Context<ZondPersonalAPI> {
 	public async sign(data: HexString, address: Address, passphrase: string) {
 		return rpcWrappers.sign(this.requestManager, data, address, passphrase);
 	}
-
-	/**
-	 * Recovers the account that signed the data.
-	 * @param signedData - Data that was signed. If String it will be converted using {@link utf8ToHex}
-	 * @param signature - The signature
-	 * @returns - The address of the account that signed the data.
-	 * @example
-	 * ```ts
-	 *  const address = await personal.ecRecover(
-	 * 	"Hello world",
-	 * 	"0x5d21d01b3198ac34d0585a9d76c4d1c8123e5e06746c8962318a1c08ffb207596e6fce4a6f377b7c0fc98c5f646cd73438c80e8a1a95cbec55a84c2889dca0301b"
-	 * );
-	 * console.log(address);
-	 * > 0x0d4aa485ecbc499c70860feb7e5aaeaf5fd8172e
-	 * ```
-	 */
-	// public async ecRecover(signedData: HexString, signature: string) {
-	// 	return rpcWrappers.ecRecover(this.requestManager, signedData, signature);
-	// }
 }

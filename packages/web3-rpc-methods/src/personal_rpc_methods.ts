@@ -92,13 +92,3 @@ export const sign = async (
 		method: 'personal_sign',
 		params: [data, address, passphrase],
 	});
-
-export const ecRecover = async (
-	requestManager: Web3RequestManager<ZondPersonalAPI>,
-	signedData: HexString,
-	signature: string,
-) =>
-	requestManager.send({
-		method: 'personal_ecRecover',
-		params: [signedData, signature],
-	});

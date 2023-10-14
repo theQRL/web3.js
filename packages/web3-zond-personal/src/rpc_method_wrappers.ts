@@ -100,15 +100,3 @@ export const sign = async (
 
 	return personalRpcMethods.sign(requestManager, dataToSign, address, passphrase);
 };
-
-// export const ecRecover = async (
-// 	requestManager: Web3RequestManager<ZondPersonalAPI>,
-// 	signedData: HexString,
-// 	signature: string,
-// ) => {
-// 	validator.validate(['string', 'string'], [signedData, signature]);
-
-// 	const signedDataString = isHexStrict(signedData) ? signedData : utf8ToHex(signedData);
-
-// 	return personalRpcMethods.ecRecover(requestManager, signedDataString, signature);
-// };

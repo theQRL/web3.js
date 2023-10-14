@@ -46,16 +46,6 @@ describe('personal integration tests', () => {
 		expect(isHexStrict(newAccount)).toBe(true);
 	});
 
-	// itIf(getSystemTestBackend() === 'geth')('ecRecover', async () => {
-	// 	const password = '123456';
-	// 	const acc = (await createTempAccount({ password })).address;
-	// 	// ganache does not support ecRecover
-	// 	const signature = await ethPersonal.sign('0x2313', acc, password);
-	// 	const publicKey = await ethPersonal.ecRecover('0x2313', signature); // ecRecover is returning all lowercase
-	// 	// eslint-disable-next-line jest/no-standalone-expect
-	// 	expect(toChecksumAddress(publicKey)).toBe(toChecksumAddress(acc));
-	// });
-
 	it('lock account', async () => {
 		const { address } = await createTempAccount();
 		const lockAccount = await zondPersonal.lockAccount(address);
