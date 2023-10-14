@@ -27,7 +27,7 @@ If the version `web3@4.0.2`, was not available yet. You can use the version `web
 	"name": "web3-plugin-custom-rpc-methods",
 	"version": "0.1.0",
 	"peerDependencies": {
-		"web3": ">= 4.0.2 < 5"
+		"@theqrl/web3": ">= 4.0.2 < 5"
 	}
 }
 ```

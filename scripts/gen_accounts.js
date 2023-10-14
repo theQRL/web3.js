@@ -1,5 +1,5 @@
-const { Personal } = require('web3-eth-personal');
-const { Web3Eth } = require('web3-eth');
+const { Personal } = require('@theqrl/web3-zond-personal');
+const { Web3Zond } = require('@theqrl/web3-zond');
 const tempAccountList = require('./accounts.json');
 
 const getEnvVar = name => (global.Cypress ? Cypress.env(name) : process.env[name]);
@@ -20,7 +20,7 @@ const addAccount = async (address, privateKey) => {
 		accountList = await web3Personal.getAccounts();
 		mainAcc = accountList[0];
 	}
-	const web3Eth = new Web3Eth(clientUrl);
+	const web3Zond = new Web3Zond(clientUrl);
 
 	if (!accountList.find(acc => acc.address === address)) {
 		await web3Personal.importRawKey(

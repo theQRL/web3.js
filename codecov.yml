@@ -18,7 +18,7 @@ component_management:
         target: 80%
 
   individual_components:
-    - component_id: "web3"
+    - component_id: "@theqrl/web3"
       paths:
           - /packages/web3/src/
     - component_id: "@theqrl/web3-core"
@@ -29,25 +29,25 @@ component_management:
           - /packages/web3-errors/src/
     - component_id: "@theqrl/web3-zond"
       paths:
-          - /packages/web3-eth/src/
+          - /packages/web3-zond/src/
     - component_id: "@theqrl/web3-zond-abi"
       paths:
-          - /packages/web3-eth-abi/src/
+          - /packages/web3-zond-abi/src/
     - component_id: "@theqrl/web3-zond-accounts"
       paths:
-          - /packages/web3-eth-accounts/src/
+          - /packages/web3-zond-accounts/src/
     - component_id: "@theqrl/web3-zond-contract"
       paths:
-          - /packages/web3-eth-contract/src/
+          - /packages/web3-zond-contract/src/
     - component_id: "@theqrl/web3-zond-ens"
       paths:
-          - /packages/web3-eth-ens/src/
+          - /packages/web3-zond-ens/src/
     - component_id: "@theqrl/web3-zond-iban"
       paths:
-          - /packages/web3-eth-iban/src/
+          - /packages/web3-zond-iban/src/
     - component_id: "@theqrl/web3-zond-personal"
       paths:
-          - /packages/web3-eth-personal/src/
+          - /packages/web3-zond-personal/src/
     - component_id: "@theqrl/web3-net"
       paths:
           - /packages/web3-net/src/
