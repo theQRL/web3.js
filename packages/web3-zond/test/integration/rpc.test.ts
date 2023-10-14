@@ -265,21 +265,6 @@ describe('rpc', () => {
 			expect(res?.hash).toBe(receipt.transactionHash);
 		});
 
-		itIf(getSystemTestBackend() !== 'ganache')('getPendingTransactions', async () => {
-			const tx = web3Eth.sendTransaction({
-				to: tempAcc2.address,
-				value: '0x1',
-				from: tempAcc.address,
-			});
-
-			const res = await web3Eth.getPendingTransactions();
-			await tx;
-			// TODO: validate pending tx fields match with submitted tx
-			// TODO: investigate why res always is empty array
-			// eslint-disable-next-line jest/no-standalone-expect
-			expect(res).toBeDefined();
-		});
-
 		it('getTransactionReceipt', async () => {
 			const [receipt] = await sendFewTxes({
 				from: tempAcc.address,
@@ -310,36 +295,17 @@ describe('rpc', () => {
 			expect(res).toBeDefined();
 		});
 
-		itIf(!['ganache', 'geth'].includes(getSystemTestBackend()))('getWork', async () => {
+		itIf(!['geth'].includes(getSystemTestBackend()))('getWork', async () => {
 			const res = await web3Eth.getWork();
 			// eslint-disable-next-line jest/no-standalone-expect
 			expect(res[0]).toBeDefined();
 		});
 
-		itIf(!['geth', 'ganache'].includes(getSystemTestBackend()))('requestAccounts', () => {
+		itIf(!['geth'].includes(getSystemTestBackend()))('requestAccounts', () => {
 			// const res = await web3Eth.requestAccounts();
 			// eslint-disable-next-line jest/no-standalone-expect
 			expect(true).toBe(true);
 			// expect(res[0]).toEqual(tempAcc.address);
-		});
-
-		itIf(getSystemTestBackend() !== 'ganache')('getProof', async () => {
-			const numberData = BigInt(10);
-			const stringData = 'str';
-			const boolData = true;
-			const sendRes = await contractDeployed.methods
-				.setValues(numberData, stringData, boolData)
-				.send(sendOptions);
-			await web3Eth.getStorageAt(contractDeployed.options.address as string, 0, undefined);
-			const res = await web3Eth.getProof(
-				contractDeployed.options.address as string,
-				['0x0000000000000000000000000000000000000000000000000000000000000000'],
-				sendRes?.blockNumber,
-			);
-			// eslint-disable-next-line jest/no-standalone-expect
-			expect(res.storageProof).toBeDefined();
-			// eslint-disable-next-line jest/no-standalone-expect
-			expect(res.storageProof[0].value).toBe(numberData);
 		});
 
 		it('getPastLogs', async () => {

@@ -47,7 +47,7 @@ describe('web3.accounts', () => {
 
 	describe('create', () => {
 		it('should create account', () => {
-			const account: Web3Account = web3.eth.accounts.create();
+			const account: Web3Account = web3.zond.accounts.create();
 
 			expect(account).toEqual(
 				expect.objectContaining({
@@ -59,7 +59,7 @@ describe('web3.accounts', () => {
 
 		describe('signTransaction', () => {
 			it('should be able to sign the transaction from created account', async () => {
-				const account: Web3Account = web3.eth.accounts.create();
+				const account: Web3Account = web3.zond.accounts.create();
 				const tx = {
 					from: account.address,
 					to: tempAccount,
@@ -70,7 +70,7 @@ describe('web3.accounts', () => {
 
 				// Fund this account with some ether
 				await expect(
-					web3.eth.sendTransaction({
+					web3.zond.sendTransaction({
 						from: tempAccount,
 						to: account.address,
 						value: web3.utils.toWei('0.00005', 'ether'),
@@ -97,14 +97,14 @@ describe('web3.accounts', () => {
 
 				// The signed transaction is accepted by the node
 				await expect(
-					web3.eth.sendSignedTransaction(signedTx.rawTransaction),
+					web3.zond.sendSignedTransaction(signedTx.rawTransaction),
 				).resolves.toEqual(
 					expect.objectContaining({ transactionHash: signedTx.transactionHash }),
 				);
 			});
 
 			it('should throw error if gas is to low', async () => {
-				const account: Web3Account = web3.eth.accounts.create();
+				const account: Web3Account = web3.zond.accounts.create();
 
 				const tx = {
 					from: account.address,
@@ -121,7 +121,7 @@ describe('web3.accounts', () => {
 			// TODO This test should fail, but it's not. Need to debug further to figure out why.
 			// eslint-disable-next-line jest/no-disabled-tests
 			it.skip('should throw error if signed by private key not associated with "from" field', async () => {
-				const account: Web3Account = web3.eth.accounts.create();
+				const account: Web3Account = web3.zond.accounts.create();
 
 				const tx = {
 					from: tempAccount,
@@ -138,7 +138,7 @@ describe('web3.accounts', () => {
 
 	describe('signTransaction', () => {
 		it('should be able to sign the transaction from created account', async () => {
-			const account: Web3Account = web3.eth.accounts.create();
+			const account: Web3Account = web3.zond.accounts.create();
 
 			const tx = {
 				from: account.address,
@@ -151,7 +151,7 @@ describe('web3.accounts', () => {
 
 			// Fund this account with some ether
 			await expect(
-				web3.eth.sendTransaction({
+				web3.zond.sendTransaction({
 					from: tempAccount,
 					to: account.address,
 					value: web3.utils.toWei('0.5', 'ether'),
@@ -159,7 +159,7 @@ describe('web3.accounts', () => {
 			).resolves.toBeDefined();
 
 			// Sign the tx from that account
-			const signedTx = await web3.eth.accounts.signTransaction(tx, account.privateKey);
+			const signedTx = await web3.zond.accounts.signTransaction(tx, account.privateKey, account.publicKey);
 
 			expect(signedTx).toEqual(
 				expect.objectContaining({
@@ -173,13 +173,13 @@ describe('web3.accounts', () => {
 			);
 
 			// The signed transaction is accepted by the node
-			await expect(web3.eth.sendSignedTransaction(signedTx.rawTransaction)).resolves.toEqual(
+			await expect(web3.zond.sendSignedTransaction(signedTx.rawTransaction)).resolves.toEqual(
 				expect.objectContaining({ transactionHash: signedTx.transactionHash }),
 			);
 		});
 
 		it('should throw error if gas is to low', async () => {
-			const account: Web3Account = web3.eth.accounts.create();
+			const account: Web3Account = web3.zond.accounts.create();
 
 			const tx = {
 				from: account.address,
@@ -190,17 +190,17 @@ describe('web3.accounts', () => {
 				gasPrice: '0x1',
 			};
 
-			await expect(web3.eth.accounts.signTransaction(tx, account.privateKey)).rejects.toThrow(
+			await expect(web3.zond.accounts.signTransaction(tx, account.privateKey, account.publicKey)).rejects.toThrow(
 				'gasLimit is too low.',
 			);
 		});
 	});
 
-	describe('privateKeyToAccount', () => {
+	describe('seedToAccount', () => {
 		it('should create account from private key', async () => {
 			const acc = await createNewAccount();
-			const createdAccount: Web3Account = web3.eth.accounts.privateKeyToAccount(
-				acc.privateKey,
+			const createdAccount: Web3Account = web3.zond.accounts.seedToAccount(
+				acc.seed,
 			);
 			expect(acc.address.toLowerCase()).toBe(createdAccount.address.toLowerCase());
 		});

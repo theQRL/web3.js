@@ -48,7 +48,7 @@ describe(`${getSystemTestBackend()} tests - call`, () => {
 			format: Object.values(FMT_BYTES),
 		}),
 	)('should call retrieve method from deployed contract', async ({ format }) => {
-		const result = await web3.eth.call(
+		const result = await web3.zond.call(
 			{
 				to: getE2ETestContractAddress(),
 				input: '0x2e64cec1',
@@ -92,7 +92,7 @@ describe(`${getSystemTestBackend()} tests - call`, () => {
 		const expectedResult = `0x000000000000000000000000${getE2ETestAccountAddress()
 			.substring(2)
 			.toLowerCase()}`;
-		const result = await web3.eth.call(
+		const result = await web3.zond.call(
 			{
 				to: getE2ETestContractAddress(),
 				input: '0x893d20e8',

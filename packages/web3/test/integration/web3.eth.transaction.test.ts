@@ -26,13 +26,14 @@ describe('signTransaction', () => {
 	let blockNum = 1;
 
 	it.each(testsData)(
-		'Integration test of transaction %s with Web3, Web3.Eth, Web3.Accounts and Provider should pass',
+		'Integration test of transaction %s with Web3, Web3.Zond, Web3.Accounts and Provider should pass',
 		async txObj => {
 			const web3: Web3 = new Web3('http://127.0.0.1:8080');
 
-			const account: Web3Account = web3.eth.accounts.privateKeyToAccount(txObj.privateKey);
+			// TODO(rgeraldes24 review)
+			const account: Web3Account = web3.zond.accounts.seedToAccount(txObj.privateKey);
 
-			web3.eth.wallet?.add(txObj.privateKey);
+			web3.zond.wallet?.add(txObj.privateKey);
 
 			const normalTx: Transaction = {
 				...txObj.transaction,
@@ -111,7 +112,7 @@ describe('signTransaction', () => {
 				},
 			);
 
-			const res = await web3.eth.sendTransaction(normalTx, DEFAULT_RETURN_FORMAT, {
+			const res = await web3.zond.sendTransaction(normalTx, DEFAULT_RETURN_FORMAT, {
 				ignoreGasPricing: true,
 				checkRevertBeforeSending: false,
 			});

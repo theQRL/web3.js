@@ -18,7 +18,7 @@ import { SupportedProviders, TransactionReceipt, DEFAULT_RETURN_FORMAT } from '@
 import { Web3PromiEvent } from '@theqrl/web3-core';
 import { Web3Account } from '@theqrl/web3-zond-accounts';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { Web3 } from 'web3';
+import { Web3 } from '@theqrl/web3';
 import { SendTransactionEvents } from '../../src';
 import {
 	getSystemTestProvider,

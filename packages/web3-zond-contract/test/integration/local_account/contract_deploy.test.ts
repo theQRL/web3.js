@@ -16,7 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-import Web3 from 'web3';
+import Web3 from '@theqrl/web3';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { Web3Account } from '@theqrl/web3-zond-accounts';
 import { GreeterBytecode, GreeterAbi } from '../../shared_fixtures/build/Greeter';

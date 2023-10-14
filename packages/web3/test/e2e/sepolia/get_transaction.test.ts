@@ -57,7 +57,7 @@ describe(`${getSystemTestBackend()} tests - getTransaction`, () => {
 			],
 		}),
 	)('getTransaction', async ({ transactionHash }) => {
-		const result = await web3.eth.getTransaction(transactionHash);
+		const result = await web3.zond.getTransaction(transactionHash);
 
 		expect(result).toMatchObject<TransactionInfo>({
 			hash: '0xe3d28c23ffcd8b94b8f2fd802b4c8dd17a5f19992660acd082ac229ab410b959',

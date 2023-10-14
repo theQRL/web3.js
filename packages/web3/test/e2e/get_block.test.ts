@@ -60,7 +60,7 @@ describe(`${getSystemTestBackend()} tests - getBlock`, () => {
 		}),
 	)('getBlock', async ({ hydrated, block, format }) => {
 		const result = {
-			...(await web3.eth.getBlock(blockData[block], hydrated, {
+			...(await web3.zond.getBlock(blockData[block], hydrated, {
 				number: format as FMT_NUMBER,
 				bytes: FMT_BYTES.HEX,
 			})),

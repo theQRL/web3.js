@@ -64,7 +64,7 @@ describe(`${getSystemTestBackend()} tests - getTransactionFromBlock`, () => {
 			transactionIndex: ['0x1', '1', 1, BigInt(1)],
 		}),
 	)('getTransactionFromBlock', async ({ block, transactionIndex }) => {
-		const result = await web3.eth.getTransactionFromBlock(blockData[block], transactionIndex);
+		const result = await web3.zond.getTransactionFromBlock(blockData[block], transactionIndex);
 
 		if (blockData[block] === 'earliest') {
 			// eslint-disable-next-line no-null/no-null

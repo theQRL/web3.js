@@ -42,7 +42,7 @@ describe(`${getSystemTestBackend()} tests - getChainId`, () => {
 			format: Object.values(FMT_NUMBER),
 		}),
 	)('getChainId', async ({ format }) => {
-		const result = await web3.eth.getChainId({
+		const result = await web3.zond.getChainId({
 			number: format as FMT_NUMBER,
 			bytes: FMT_BYTES.HEX,
 		});

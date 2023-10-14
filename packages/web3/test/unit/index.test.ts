@@ -30,16 +30,16 @@ import * as ws from '@theqrl/web3-providers-ws';
 import Web3Default, { Web3, providers, zond } from '../../src/index';
 
 describe('exports of web3 package', () => {
-	describe('eth exports', () => {
+	describe('zond exports', () => {
 		it('`Web3` is the default exported class', () => {
 			expect(Web3).toEqual(Web3Default);
 		});
 
-		it('`Web3Eth` is available under `eth`', () => {
+		it('`Web3Zond` is available under `zond`', () => {
 			expect(zond.Web3Zond).toEqual(Web3Zond);
 		});
 
-		it('eth sub-namespaces are available under `eth`', () => {
+		it('zond sub-namespaces are available under `zond`', () => {
 			expect(zond.abi).toEqual(abi);
 			expect(zond.accounts).toEqual(accounts);
 			expect(zond.contract).toEqual(contract);

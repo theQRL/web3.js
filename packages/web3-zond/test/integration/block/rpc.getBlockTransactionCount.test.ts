@@ -99,12 +99,7 @@ describe('rpc with block', () => {
 			}),
 		)('getBlockTransactionCount', async ({ block }) => {
 			const res = await web3Eth.getBlockTransactionCount(blockData[block]);
-			let shouldBe: number;
-			if (getSystemTestBackend() === 'ganache') {
-				shouldBe = blockData[block] === 'earliest' ? 0 : 1;
-			} else {
-				shouldBe = ['earliest', 'pending'].includes(String(blockData[block])) ? 0 : 1;
-			}
+			const shouldBe = ['earliest', 'pending'].includes(String(blockData[block])) ? 0 : 1;
 			expect(Number(res)).toBe(shouldBe);
 		});
 	});

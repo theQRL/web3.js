@@ -67,7 +67,7 @@ describe(`${getSystemTestBackend()} tests - estimateGas`, () => {
 			format: Object.values(FMT_NUMBER),
 		}),
 	)('getFeeHistory', async ({ blockCount, newestBlock, rewardPercentiles, format }) => {
-		const result = await web3.eth.getFeeHistory(
+		const result = await web3.zond.getFeeHistory(
 			blockCount,
 			blockData[newestBlock],
 			rewardPercentiles,

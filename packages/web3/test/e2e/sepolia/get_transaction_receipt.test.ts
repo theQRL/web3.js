@@ -57,7 +57,7 @@ describe(`${getSystemTestBackend()} tests - getTransactionReceipt`, () => {
 			],
 		}),
 	)('getTransactionReceipt', async ({ transactionHash }) => {
-		const result = await web3.eth.getTransactionReceipt(transactionHash);
+		const result = await web3.zond.getTransactionReceipt(transactionHash);
 
 		expect(result).toMatchObject({
 			blockHash: '0xdb1cb1fc3867fa28e4ba2297fbb1e65b81a3212beb1b73cbcbfe40c4192ee948',

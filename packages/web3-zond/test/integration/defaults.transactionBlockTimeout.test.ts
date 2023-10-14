@@ -19,7 +19,7 @@ import { Web3PromiEvent } from '@theqrl/web3-core';
 import { SupportedProviders, TransactionReceipt } from '@theqrl/web3-types';
 import { TransactionBlockTimeoutError } from '@theqrl/web3-errors';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { Web3 } from 'web3';
+import { Web3 } from '@theqrl/web3';
 import { Web3Account } from '@theqrl/web3-zond-accounts';
 import { SendTransactionEvents } from '../../src';
 

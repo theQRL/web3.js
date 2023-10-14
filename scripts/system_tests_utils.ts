@@ -21,7 +21,7 @@ import { format, SocketProvider } from '@theqrl/web3-utils';
 import {
 	create as _createAccount,
 	//decrypt,
-	seedToAccount
+	seedToAccount,
 	signTransaction,
 } from '@theqrl/web3-zond-accounts';
 
@@ -50,7 +50,7 @@ import {
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { Personal } from '@theqrl/web3-zond-personal';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import Web3 from 'web3';
+import Web3 from '@theqrl/web3';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { NonPayableMethodObject } from '@theqrl/web3-zond-contract';
@@ -228,9 +228,9 @@ export const createAccountProvider = (context: Web3Context<ZondExecutionAPI>) =>
 };
 
 export const refillAccount = async (from: string, to: string, value: string | number) => {
-	const web3Eth = new Web3Zond(DEFAULT_SYSTEM_PROVIDER);
+	const web3Zond = new Web3Zond(DEFAULT_SYSTEM_PROVIDER);
 
-	await web3Eth.sendTransaction({
+	await web3Zond.sendTransaction({
 		from,
 		to,
 		value,
@@ -244,7 +244,7 @@ export const createNewAccount = async (config?: {
 	seed?: string;
 	password?: string;
 	doNotImport?: boolean;
-}): Promise<{ address: string; privateKey: string }> => {
+}): Promise<{ address: string; seed: string }> => {
 	const acc = config?.seed ? seedToAccount(config?.seed) : _createAccount();
 
 	const clientUrl = DEFAULT_SYSTEM_PROVIDER;
@@ -269,7 +269,7 @@ export const createNewAccount = async (config?: {
 		await refillAccount(mainAcc, acc.address, '100000000000000000');
 	}
 
-	return { address: acc.address.toLowerCase(), privateKey: acc.privateKey };
+	return { address: acc.address.toLowerCase(), seed: acc.seed! };
 };
 let tempAccountList: { address: string; seed: string }[] = [];
 const walletsOnWorker = 20;
@@ -285,7 +285,7 @@ export const createTempAccount = async (
 		seed?: string;
 		password?: string;
 	} = {},
-): Promise<{ address: string; privateKey: string }> => {
+): Promise<{ address: string; seed: string }> => {
 	if (
 		config.unlock === false ||
 		config.refill === false ||
@@ -319,7 +319,7 @@ export const createTempAccount = async (
 export const getSystemTestAccountsWithKeys = async (): Promise<
 	{
 		address: string;
-		privateKey: string;
+		seed: string;
 	}[]
 > => {
 	const acc = await createTempAccount();
@@ -334,11 +334,11 @@ export const getSystemTestAccounts = async (): Promise<string[]> =>
 export const signTxAndSendEIP1559 = async (
 	provider: unknown,
 	tx: Transaction,
-	privateKey: string,
+	seed: string,
 ) => {
 	const web3 = new Web3(provider as Web3BaseProvider);
-	const acc = web3.eth.accounts.privateKeyToAccount(privateKey);
-	web3.eth.wallet?.add(privateKey);
+	const acc = web3.zond.accounts.seedToAccount(seed);
+	web3.zond.wallet?.add(seed);
 
 	const txObj = {
 		...tx,
@@ -347,17 +347,17 @@ export const signTxAndSendEIP1559 = async (
 		from: acc.address,
 	};
 
-	return web3.eth.sendTransaction(txObj, undefined, { checkRevertBeforeSending: false });
+	return web3.zond.sendTransaction(txObj, undefined, { checkRevertBeforeSending: false });
 };
 
 export const signTxAndSendEIP2930 = async (
 	provider: unknown,
 	tx: Transaction,
-	privateKey: string,
+	seed: string,
 ) => {
 	const web3 = new Web3(provider as Web3BaseProvider);
-	const acc = web3.eth.accounts.privateKeyToAccount(privateKey);
-	web3.eth.wallet?.add(privateKey);
+	const acc = web3.zond.accounts.seedToAccount(seed);
+	web3.zond.wallet?.add(seed);
 	const txObj = {
 		...tx,
 		type: '0x1',
@@ -365,7 +365,7 @@ export const signTxAndSendEIP2930 = async (
 		from: acc.address,
 	};
 
-	return web3.eth.sendTransaction(txObj, undefined, { checkRevertBeforeSending: false });
+	return web3.zond.sendTransaction(txObj, undefined, { checkRevertBeforeSending: false });
 };
 
 export const signAndSendContractMethodEIP1559 = async (
@@ -399,9 +399,9 @@ export const signAndSendContractMethodEIP2930 = async (
 	);
 
 export const createLocalAccount = async (web3: Web3) => {
-	const account = web3.eth.accounts.create();
+	const account = web3.zond.accounts.create();
 	await refillAccount((await createTempAccount()).address, account.address, '10000000000000000');
-	web3.eth.accounts.wallet.add(account);
+	web3.zond.accounts.wallet.add(account);
 	return account;
 };
 /* eslint-disable @typescript-eslint/no-unsafe-call */

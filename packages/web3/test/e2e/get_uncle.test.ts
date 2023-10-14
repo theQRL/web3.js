@@ -63,7 +63,7 @@ describe(`${getSystemTestBackend()} tests - getUncle`, () => {
 	)('getUncle', async ({ block, uncleIndex }) => {
 		// TODO Returns Position Index is incorrect RPC error
 		// when the client is Nethermind, but not Geth
-		const result = await web3.eth.getUncle(blockData[block], uncleIndex);
+		const result = await web3.zond.getUncle(blockData[block], uncleIndex);
 
 		// eslint-disable-next-line no-null/no-null
 		expect(result).toBeNull();

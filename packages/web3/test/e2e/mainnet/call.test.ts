@@ -43,7 +43,7 @@ describe(`${getSystemTestBackend()} tests - call`, () => {
 			format: Object.values(FMT_BYTES),
 		}),
 	)('should call retrieve method from deployed contract', async ({ format }) => {
-		const result = await web3.eth.call(
+		const result = await web3.zond.call(
 			{
 				to: getE2ETestContractAddress(),
 				input: '0x18160ddd',

@@ -32,7 +32,7 @@ describe(`${getSystemTestBackend()} tests - isSyncing`, () => {
 	});
 
 	it('should get the syncing status for the connected node', async () => {
-		const result = await web3.eth.isSyncing();
+		const result = await web3.zond.isSyncing();
 		expect(typeof result).toBe('boolean');
 	});
 });

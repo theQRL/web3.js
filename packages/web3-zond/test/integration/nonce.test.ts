@@ -16,9 +16,9 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import { TransactionPollingTimeoutError, TransactionSendTimeoutError } from '@theqrl/web3-errors';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { SupportedProviders, Web3 } from 'web3';
+import { SupportedProviders, Web3 } from '@theqrl/web3';
 import { Web3Account } from '@theqrl/web3-zond-accounts';
-import { Web3Eth } from '../../src';
+import { Web3Zond } from '../../src';
 
 import {
 	closeOpenConnection,
@@ -30,25 +30,25 @@ import {
 const gas = 30000;
 
 describe('defaults', () => {
-	let web3Eth: Web3Eth;
+	let web3Zond: Web3Zond;
 	let clientUrl: string | SupportedProviders;
 	let tempAcc: Web3Account;
 	beforeEach(async () => {
 		clientUrl = getSystemTestProvider();
 		const web3 = new Web3(clientUrl);
 		tempAcc = await createLocalAccount(web3);
-		web3Eth = web3.eth as unknown as Web3Eth;
+		web3Zond = web3.zond as unknown as Web3Zond;
 	});
 
 	afterEach(async () => {
-		await closeOpenConnection(web3Eth);
+		await closeOpenConnection(web3Zond);
 	});
 
 	describe('defaults', () => {
 		it('should fail if Ethereum Node did not respond because of a high nonce', async () => {
 			// Make the test run faster by causing the timeout to happen after 0.2 second
-			web3Eth.transactionSendTimeout = 200;
-			web3Eth.transactionPollingTimeout = 200;
+			web3Zond.transactionSendTimeout = 200;
+			web3Zond.transactionPollingTimeout = 200;
 
 			const from = tempAcc.address;
 			const to = createAccount().address;
@@ -56,7 +56,7 @@ describe('defaults', () => {
 
 			try {
 				// Setting a high `nonce` when sending a transaction, to cause the RPC call to stuck at the Node
-				await web3Eth.sendTransaction({
+				await web3Zond.sendTransaction({
 					to,
 					value,
 					from,
@@ -72,7 +72,7 @@ describe('defaults', () => {
 					// eslint-disable-next-line jest/no-conditional-expect
 					expect(error.message).toContain(
 						`connected Ethereum Node did not respond within ${
-							web3Eth.transactionSendTimeout / 1000
+							web3Zond.transactionSendTimeout / 1000
 						} seconds`,
 					);
 				}
@@ -81,7 +81,7 @@ describe('defaults', () => {
 					// eslint-disable-next-line jest/no-conditional-expect
 					expect(error.message).toContain(
 						`Transaction was not mined within ${
-							web3Eth.transactionPollingTimeout / 1000
+							web3Zond.transactionPollingTimeout / 1000
 						} seconds`,
 					);
 				} else {

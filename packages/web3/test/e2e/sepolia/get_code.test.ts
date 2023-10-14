@@ -49,7 +49,7 @@ describe(`${getSystemTestBackend()} tests - getCode`, () => {
 			format: Object.values(FMT_BYTES),
 		}),
 	)('should getCode for deployed contract', async ({ block, format }) => {
-		const result = await web3.eth.getCode(
+		const result = await web3.zond.getCode(
 			getE2ETestContractAddress(),
 			sepoliaBlockData[block],
 			{

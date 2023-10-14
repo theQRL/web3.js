@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { Web3 } from 'web3';
+import { Web3 } from '@theqrl/web3';
 import { Web3Eth, NewPendingTransactionsSubscription } from '../../src';
 import {
 	closeOpenConnection,

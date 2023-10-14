@@ -41,7 +41,7 @@ describe(`${getSystemTestBackend()} tests - getBlockNumber`, () => {
 			format: Object.values(FMT_NUMBER),
 		}),
 	)('getBlockNumber', async ({ format }) => {
-		const result = await web3.eth.getBlockNumber({
+		const result = await web3.zond.getBlockNumber({
 			number: format as FMT_NUMBER,
 			bytes: FMT_BYTES.HEX,
 		});

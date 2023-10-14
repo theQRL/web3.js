@@ -22,7 +22,7 @@ import {
 	FMT_NUMBER,
 } from '@theqrl/web3-types';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import Web3 from 'web3';
+import Web3 from '@theqrl/web3';
 import { BasicAbi } from '../shared_fixtures/build/Basic';
 import {
 	closeOpenConnection,

@@ -5,7 +5,7 @@ ORIGARGS=("$@")
 . scripts/env.sh
 
 helpFunction() {
-	echo "Usage: $0 <geth | ganache | sepolia | mainnet> <http | ws> [node | electron | firefox | chrome] [coverage | sync]"
+	echo "Usage: $0 <geth | testnet | mainnet> <http | ws> [node | electron | firefox | chrome] [coverage | sync]"
 	exit 1 # Exit script after printing help
 }
 BACKEND=${ORIGARGS[0]}
@@ -13,7 +13,7 @@ MODE=${ORIGARGS[1]}
 ENGINE=${ORIGARGS[2]}
 TEST_OPTION=${ORIGARGS[3]}
 
-SUPPORTED_BACKENDS=("geth" "ganache" "sepolia" "mainnet")
+SUPPORTED_BACKENDS=("geth" "testnet" "mainnet")
 SUPPORTED_MODE=("http" "ws" "ipc")
 # if you will add a new browser please also add it in the system_test_utils.ts => isBrowser
 SUPPORTED_ENGINES=("node" "electron" "firefox" "chrome" "")
@@ -53,7 +53,7 @@ fi
 if [[ $ENGINE == "node" ]] || [[ $ENGINE == "" ]]; then
 	if [[ $TEST_OPTION == "coverage" ]]; then
 		TEST_COMMAND="test:coverage:integration"
-	elif [[ $BACKEND == "sepolia" || $BACKEND == "mainnet" ]]; then
+	elif [[ $BACKEND == "testnet" || $BACKEND == "mainnet" ]]; then
 		TEST_COMMAND="lerna run test:e2e:$BACKEND"
 	else
 		TEST_COMMAND="test:integration"
@@ -63,7 +63,7 @@ else
 fi
 
 
-if [[ $BACKEND == "geth" || $BACKEND == "ganache" || $BACKEND == "geth-binary" ]]; then
+if [[ $BACKEND == "geth" || $BACKEND == "geth-binary" ]]; then
 	yarn "$BACKEND:start:background" && yarn generate:accounts && yarn $TEST_COMMAND && yarn "$BACKEND:stop"
 else
 	yarn $TEST_COMMAND

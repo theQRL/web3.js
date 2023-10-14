@@ -16,7 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 // TODO For some reason when running this test with a WebSocket provider
 // the test takes a long time to run afterAll
-import Web3 from 'web3';
+import Web3 from '@theqrl/web3';
 import {
 	closeOpenConnection,
 	getSystemTestProvider,
@@ -26,7 +26,7 @@ import {
 
 jest.setTimeout(15000);
 
-describe('ESM - Black Box Unit Tests - web3.eth.accounts.hashMessage', () => {
+describe('ESM - Black Box Unit Tests - web3.zond.accounts.hashMessage', () => {
 	let web3: Web3;
 
 	beforeAll(() => {
@@ -38,7 +38,7 @@ describe('ESM - Black Box Unit Tests - web3.eth.accounts.hashMessage', () => {
 	});
 
 	it('should hash provided message', () => {
-		expect(web3.eth.accounts.hashMessage('Hello World')).toBe(
+		expect(web3.zond.accounts.hashMessage('Hello World')).toBe(
 			'0xa1de988600a42c4b4ab089b619297c17d53cffae5d5120d82d8a92d0bb3b78f2',
 		);
 	});

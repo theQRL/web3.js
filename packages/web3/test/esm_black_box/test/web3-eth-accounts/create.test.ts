@@ -16,7 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 // TODO For some reason when running this test with a WebSocket provider
 // the test takes a long time to run afterAll
-import Web3 from 'web3';
+import Web3 from '@theqrl/web3';
 import { validator } from '@theqrl/web3-validator';
 import {
 	closeOpenConnection,
@@ -39,7 +39,7 @@ const accountSchema = {
 	},
 };
 
-describe('Black Box Unit Tests - web3.eth.accounts.create', () => {
+describe('Black Box Unit Tests - web3.zond.accounts.create', () => {
 	let web3: Web3;
 
 	beforeAll(() => {
@@ -51,7 +51,7 @@ describe('Black Box Unit Tests - web3.eth.accounts.create', () => {
 	});
 
 	it('should create an account', () => {
-		const response = web3.eth.accounts.create();
+		const response = web3.zond.accounts.create();
 		expect(response).toBeDefined();
 		expect(response.signTransaction).toBeDefined();
 		expect(response.sign).toBeDefined();

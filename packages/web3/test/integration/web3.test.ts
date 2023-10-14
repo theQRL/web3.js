@@ -84,40 +84,40 @@ describe('Web3 instance', () => {
 
 	it('check disconnect function', async () => {
 		const web3Instance = new Web3(provider);
-		await web3Instance.eth.getBlockNumber();
+		await web3Instance.zond.getBlockNumber();
 		expect(typeof web3Instance.provider?.disconnect).toBe('function');
-		expect(typeof web3Instance.eth.provider?.disconnect).toBe('function');
+		expect(typeof web3Instance.zond.provider?.disconnect).toBe('function');
 		expect(typeof web3Instance.currentProvider?.disconnect).toBe('function');
-		expect(typeof web3Instance.eth.currentProvider?.disconnect).toBe('function');
+		expect(typeof web3Instance.zond.currentProvider?.disconnect).toBe('function');
 		if (isSocket) {
 			web3Instance.currentProvider?.disconnect();
 		}
 	});
 	itIf(isWs)('check disconnect function for WebSocket provider', async () => {
 		const web3Instance = new Web3(new WebSocketProvider(providerUrl));
-		await web3Instance.eth.getBlockNumber();
+		await web3Instance.zond.getBlockNumber();
 		expect(typeof web3Instance.provider?.disconnect).toBe('function');
-		expect(typeof web3Instance.eth.provider?.disconnect).toBe('function');
+		expect(typeof web3Instance.zond.provider?.disconnect).toBe('function');
 		expect(typeof web3Instance.currentProvider?.disconnect).toBe('function');
-		expect(typeof web3Instance.eth.currentProvider?.disconnect).toBe('function');
+		expect(typeof web3Instance.zond.currentProvider?.disconnect).toBe('function');
 		web3Instance.currentProvider?.disconnect();
 	});
 	itIf(isIpc)('check disconnect function for ipc provider', async () => {
 		const web3Instance = new Web3(new IpcProvider(providerUrl));
-		await web3Instance.eth.getBlockNumber();
+		await web3Instance.zond.getBlockNumber();
 		expect(typeof web3Instance.provider?.disconnect).toBe('function');
-		expect(typeof web3Instance.eth.provider?.disconnect).toBe('function');
+		expect(typeof web3Instance.zond.provider?.disconnect).toBe('function');
 		expect(typeof web3Instance.currentProvider?.disconnect).toBe('function');
-		expect(typeof web3Instance.eth.currentProvider?.disconnect).toBe('function');
+		expect(typeof web3Instance.zond.currentProvider?.disconnect).toBe('function');
 		web3Instance.currentProvider?.disconnect();
 	});
 	itIf(isHttp)('check disconnect function for http provider', async () => {
 		const web3Instance = new Web3(new HttpProvider(providerUrl));
-		await web3Instance.eth.getBlockNumber();
+		await web3Instance.zond.getBlockNumber();
 		expect(typeof web3Instance.provider?.disconnect).toBe('function');
-		expect(typeof web3Instance.eth.provider?.disconnect).toBe('function');
+		expect(typeof web3Instance.zond.provider?.disconnect).toBe('function');
 		expect(typeof web3Instance.currentProvider?.disconnect).toBe('function');
-		expect(typeof web3Instance.eth.currentProvider?.disconnect).toBe('function');
+		expect(typeof web3Instance.zond.currentProvider?.disconnect).toBe('function');
 	});
 
 	it('should be able use "utils" without provider', () => {
@@ -130,7 +130,7 @@ describe('Web3 instance', () => {
 		web3 = new Web3();
 		const validData = validEncodeParametersData[0];
 
-		const encodedParameters = web3.eth.abi.encodeParameters(
+		const encodedParameters = web3.zond.abi.encodeParameters(
 			validData.input[0],
 			validData.input[1],
 		);
@@ -140,7 +140,7 @@ describe('Web3 instance', () => {
 	it('should throw error when we make a request when provider not available', async () => {
 		web3 = new Web3();
 
-		await expect(web3.eth.getChainId()).rejects.toThrow('Provider not available');
+		await expect(web3.zond.getChainId()).rejects.toThrow('Provider not available');
 	});
 
 	describeIf(isHttp)('Create Web3 class instance with http string providers', () => {
@@ -167,7 +167,7 @@ describe('Web3 instance', () => {
 			if (isWs) {
 				await waitForOpenConnection(web3, 0);
 			}
-			const response = await web3.eth.getBalance(accounts[0]);
+			const response = await web3.zond.getBalance(accounts[0]);
 
 			expect(response).toEqual(expect.any(BigInt));
 		});
@@ -193,7 +193,7 @@ describe('Web3 instance', () => {
 
 			web3.setProvider(getSystemTestProvider());
 
-			await expect(web3.eth.getChainId()).resolves.toBeDefined();
+			await expect(web3.zond.getChainId()).resolves.toBeDefined();
 		});
 
 		it('should set the provider with `.provider=` of empty initialized object', async () => {
@@ -201,23 +201,23 @@ describe('Web3 instance', () => {
 
 			web3.provider = getSystemTestProvider();
 
-			await expect(web3.eth.getChainId()).resolves.toBeDefined();
+			await expect(web3.zond.getChainId()).resolves.toBeDefined();
 		});
 
 		it('should unset the provider with `.setProvider`', async () => {
 			web3 = new Web3(getSystemTestProvider());
-			await expect(web3.eth.getChainId()).resolves.toBeDefined();
+			await expect(web3.zond.getChainId()).resolves.toBeDefined();
 
 			web3.setProvider(undefined);
-			await expect(web3.eth.getChainId()).rejects.toThrow('Provider not available');
+			await expect(web3.zond.getChainId()).rejects.toThrow('Provider not available');
 		});
 
 		it('should unset the provider with `.provider=`', async () => {
 			web3 = new Web3(getSystemTestProvider());
-			await expect(web3.eth.getChainId()).resolves.toBeDefined();
+			await expect(web3.zond.getChainId()).resolves.toBeDefined();
 
 			web3.provider = undefined;
-			await expect(web3.eth.getChainId()).rejects.toThrow('Provider not available');
+			await expect(web3.zond.getChainId()).rejects.toThrow('Provider not available');
 		});
 
 		it('providers', () => {
@@ -249,7 +249,7 @@ describe('Web3 instance', () => {
 
 	describe('Module instantiations', () => {
 		it('should create contract', () => {
-			const basicContract = new web3.eth.Contract(BasicAbi);
+			const basicContract = new web3.zond.Contract(BasicAbi);
 			expect(basicContract).toBeInstanceOf(Contract);
 		});
 	});
@@ -305,7 +305,7 @@ describe('Web3 instance', () => {
 		let contract: Contract<typeof GreeterAbi>;
 		let deployOptions: Record<string, unknown>;
 		let sendOptions: Record<string, unknown>;
-		let acc: { address: string; privateKey: string };
+		let acc: { address: string; seed: string };
 
 		beforeAll(() => {
 			web3 = new Web3(provider);
@@ -326,7 +326,7 @@ describe('Web3 instance', () => {
 		it('should update defaults on contract instance', () => {
 			const hardfork = 'berlin';
 
-			contract = new web3.eth.Contract(GreeterAbi, undefined, {
+			contract = new web3.zond.Contract(GreeterAbi, undefined, {
 				provider: getSystemTestProvider(),
 				syncWithContext: true,
 			});
@@ -339,7 +339,7 @@ describe('Web3 instance', () => {
 		it('should update defaults on deployed contract instance', async () => {
 			const hardfork = 'berlin';
 
-			contract = new web3.eth.Contract(GreeterAbi, undefined, {
+			contract = new web3.zond.Contract(GreeterAbi, undefined, {
 				provider: getSystemTestProvider(),
 				syncWithContext: true,
 			});

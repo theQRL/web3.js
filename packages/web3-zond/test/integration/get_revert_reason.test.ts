@@ -65,13 +65,6 @@ describe('Web3Eth.getRevertReason', () => {
 					data: '000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000155468697320697320612063616c6c207265766572740000000000000000000000',
 				});
 				break;
-			case 'ganache':
-				expect(response).toMatchObject({
-					reason: 'VM Exception while processing transaction: revert This is a call revert',
-					signature: '0x08c379a0',
-					data: '000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000155468697320697320612063616c6c207265766572740000000000000000000000',
-				});
-				break;
 			default:
 				throw new Error(
 					`Unable to finish test, unknown backend: ${getSystemTestBackend()}`,
@@ -92,13 +85,6 @@ describe('Web3Eth.getRevertReason', () => {
 			case 'geth':
 				expect(response).toMatchObject({
 					reason: 'execution reverted: This is a send revert',
-					signature: '0x08c379a0',
-					data: '000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000155468697320697320612073656e64207265766572740000000000000000000000',
-				});
-				break;
-			case 'ganache':
-				expect(response).toMatchObject({
-					reason: 'VM Exception while processing transaction: revert This is a send revert',
 					signature: '0x08c379a0',
 					data: '000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000155468697320697320612073656e64207265766572740000000000000000000000',
 				});
@@ -124,9 +110,6 @@ describe('Web3Eth.getRevertReason', () => {
 				expect(response).toBe(
 					'err: intrinsic gas too low: have 0, want 21544 (supplied gas 0)',
 				);
-				break;
-			case 'ganache':
-				expect(response).toBe('VM Exception while processing transaction: out of gas');
 				break;
 			default:
 				throw new Error(
@@ -154,16 +137,6 @@ describe('Web3Eth.getRevertReason', () => {
 					customErrorArguments: {},
 				});
 				break;
-			case 'ganache':
-				expect(response).toMatchObject({
-					data: '',
-					reason: 'VM Exception while processing transaction: revert',
-					signature: '0x72090e4d',
-					customErrorName: 'ErrorWithNoParams',
-					customErrorDecodedSignature: 'ErrorWithNoParams()',
-					customErrorArguments: {},
-				});
-				break;
 			default:
 				throw new Error(
 					`Unable to finish test, unknown backend: ${getSystemTestBackend()}`,
@@ -184,19 +157,6 @@ describe('Web3Eth.getRevertReason', () => {
 				expect(response).toMatchObject({
 					data: '000000000000000000000000000000000000000000000000000000000000002a0000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000001c5468697320697320616e206572726f72207769746820706172616d7300000000',
 					reason: 'execution reverted',
-					signature: '0xc85bda60',
-					customErrorName: 'ErrorWithParams',
-					customErrorDecodedSignature: 'ErrorWithParams(uint256,string)',
-					customErrorArguments: {
-						code: BigInt(42),
-						message: 'This is an error with params',
-					},
-				});
-				break;
-			case 'ganache':
-				expect(response).toMatchObject({
-					data: '000000000000000000000000000000000000000000000000000000000000002a0000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000001c5468697320697320616e206572726f72207769746820706172616d7300000000',
-					reason: 'VM Exception while processing transaction: revert',
 					signature: '0xc85bda60',
 					customErrorName: 'ErrorWithParams',
 					customErrorDecodedSignature: 'ErrorWithParams(uint256,string)',

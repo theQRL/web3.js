@@ -65,7 +65,7 @@ describe(`${getSystemTestBackend()} tests - getPastLogs`, () => {
 		}),
 	)('should getPastLogs for deployed contract', async ({ byteFormat, numberFormat }) => {
 		const result = (
-			await web3.eth.getPastLogs(
+			await web3.zond.getPastLogs(
 				{
 					fromBlock: 'earliest',
 					toBlock: 'latest',

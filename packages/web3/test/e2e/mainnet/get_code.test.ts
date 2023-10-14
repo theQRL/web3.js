@@ -62,7 +62,7 @@ describe(`${getSystemTestBackend()} tests - getCode`, () => {
 			format: Object.values(FMT_BYTES),
 		}),
 	)('should getCode for deployed contract', async ({ block, format }) => {
-		const result = await web3.eth.getCode(getE2ETestContractAddress(), blockData[block], {
+		const result = await web3.zond.getCode(getE2ETestContractAddress(), blockData[block], {
 			number: FMT_NUMBER.HEX,
 			bytes: format as FMT_BYTES,
 		});

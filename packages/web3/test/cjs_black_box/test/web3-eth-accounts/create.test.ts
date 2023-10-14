@@ -16,7 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 // TODO For some reason when running this test with a WebSocket provider
 // the test takes a long time to run afterAll
-import Web3 from 'web3';
+import Web3 from '@theqrl/web3';
 import { validator } from '@theqrl/web3-validator';
 import {
 	closeOpenConnection,

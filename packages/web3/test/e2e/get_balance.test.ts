@@ -64,7 +64,7 @@ describe(`${getSystemTestBackend()} tests - getBalance`, () => {
 			format: [FMT_NUMBER.BIGINT, FMT_NUMBER.HEX, FMT_NUMBER.STR],
 		}),
 	)('getBalance', async ({ block, format }) => {
-		const result = await web3.eth.getBalance(getE2ETestAccountAddress(), blockData[block], {
+		const result = await web3.zond.getBalance(getE2ETestAccountAddress(), blockData[block], {
 			number: format as FMT_NUMBER,
 			bytes: FMT_BYTES.HEX,
 		});

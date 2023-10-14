@@ -63,7 +63,7 @@ describe(`${getSystemTestBackend()} tests - getBlockTransactionCount`, () => {
 			format: Object.values(FMT_NUMBER),
 		}),
 	)('getBlockTransactionCount', async ({ block, format }) => {
-		const result = await web3.eth.getBlockTransactionCount(blockData[block], {
+		const result = await web3.zond.getBlockTransactionCount(blockData[block], {
 			number: format as FMT_NUMBER,
 			bytes: FMT_BYTES.HEX,
 		});

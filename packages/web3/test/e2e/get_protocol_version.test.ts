@@ -34,7 +34,7 @@ describe(`${getSystemTestBackend()} tests - getProtocolVersion`, () => {
 	});
 
 	it('should get the protocol version for the connected node', async () => {
-		const result = await web3.eth.getProtocolVersion();
+		const result = await web3.zond.getProtocolVersion();
 		expect(isHexStrict(result)).toBeTruthy();
 	});
 });

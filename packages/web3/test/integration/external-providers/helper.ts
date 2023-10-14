@@ -25,23 +25,23 @@ import Web3 from '../../../src/index';
 export async function performBasicRpcCalls(provider: SupportedProviders) {
 	const web3 = new Web3(provider);
 
-	const accounts = await web3.eth.getAccounts();
+	const accounts = await web3.zond.getAccounts();
 	expect(accounts).toBeDefined();
 	expect(accounts.length).toBeGreaterThan(0);
 
 	// get the last block number
-	const blockNumber0 = await web3.eth.getBlockNumber();
+	const blockNumber0 = await web3.zond.getBlockNumber();
 	expect(typeof blockNumber0).toBe('bigint');
 
 	// send a transaction
-	const tx = await web3.eth.sendTransaction({
+	const tx = await web3.zond.sendTransaction({
 		to: accounts[1],
 		from: accounts[0],
 		value: '1',
 	});
 	expect(tx.status).toBe(BigInt(1));
 
-	const blockNumber1 = await web3.eth.getBlockNumber();
+	const blockNumber1 = await web3.zond.getBlockNumber();
 	expect(typeof blockNumber1).toBe('bigint');
 
 	// After sending a transaction, the blocknumber is supposed to be greater than or equal the block number before sending the transaction

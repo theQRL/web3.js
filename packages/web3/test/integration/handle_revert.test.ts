@@ -57,7 +57,7 @@ describe.skip('eth', () => {
 		}
 
 		if (isWs) {
-			contract = new web3.eth.Contract(BasicAbi, undefined, {
+			contract = new web3.zond.Contract(BasicAbi, undefined, {
 				provider: new WebSocketProvider(
 					clientUrl,
 					{},
@@ -65,7 +65,7 @@ describe.skip('eth', () => {
 				),
 			});
 		} else {
-			contract = new web3.eth.Contract(BasicAbi, undefined, {
+			contract = new web3.zond.Contract(BasicAbi, undefined, {
 				provider: clientUrl,
 			});
 		}
@@ -97,9 +97,9 @@ describe.skip('eth', () => {
 		});
 
 		it('should get revert reason for eth tx', async () => {
-			web3.eth.handleRevert = true;
+			web3.zond.handleRevert = true;
 			await expect(
-				web3.eth.sendTransaction({
+				web3.zond.sendTransaction({
 					from: accounts[0],
 					gas: '0x3d0900',
 					gasPrice: '0x3B9ACBF4',
@@ -120,9 +120,9 @@ describe.skip('eth', () => {
 		});
 
 		it('should execute transaction', async () => {
-			web3.eth.handleRevert = true;
+			web3.zond.handleRevert = true;
 			await expect(
-				web3.eth.sendTransaction({
+				web3.zond.sendTransaction({
 					from: accounts[0],
 					to: accounts[1],
 					gas: '0x76c0',
