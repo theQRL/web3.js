@@ -17,7 +17,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 import { parseBaseType } from '../utils.js';
 
-export const isValidEthBaseType = (type: string): boolean => {
+export const isValidZondBaseType = (type: string): boolean => {
 	const { baseType, baseTypeSize } = parseBaseType(type);
 
 	if (!baseType) {

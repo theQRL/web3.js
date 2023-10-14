@@ -96,7 +96,7 @@ export const getSendTxParams = ({
 	return txParams;
 };
 
-export const getEthTxCallParams = ({
+export const getZondTxCallParams = ({
 	abi,
 	params,
 	options,

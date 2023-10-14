@@ -87,13 +87,13 @@ const findSchemaByDataPath = (
 /**
  * Converts a value depending on the format
  * @param value - value to convert
- * @param ethType - The type of the value to be parsed
+ * @param zondType - The type of the value to be parsed
  * @param format - The format to be converted to
  * @returns - The value converted to the specified format
  */
-export const convertScalarValue = (value: unknown, ethType: string, format: DataFormat) => {
+export const convertScalarValue = (value: unknown, zondType: string, format: DataFormat) => {
 	try {
-		const { baseType, baseTypeSize } = parseBaseType(ethType);
+		const { baseType, baseTypeSize } = parseBaseType(zondType);
 		if (baseType === 'int' || baseType === 'uint') {
 			switch (format.number) {
 				case FMT_NUMBER.NUMBER:
@@ -290,7 +290,7 @@ export const format = <
 	}
 
 	// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-	const jsonSchema: JsonSchema = isObject(schema) ? schema : utils.ethAbiToJsonSchema(schema);
+	const jsonSchema: JsonSchema = isObject(schema) ? schema : utils.zondAbiToJsonSchema(schema);
 
 	if (!jsonSchema.properties && !jsonSchema.items && !jsonSchema.format) {
 		throw new FormatterError('Invalid json schema for formatting');

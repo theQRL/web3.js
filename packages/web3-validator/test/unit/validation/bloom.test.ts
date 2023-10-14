@@ -19,14 +19,14 @@ import {
 	isBloom,
 	isContractAddressInBloom,
 	isInBloom,
-	isUserEthereumAddressInBloom,
+	isUserZondAddressInBloom,
 } from '../../../src/validation/bloom';
 import {
 	validBloomData,
 	invalidInBloomData,
 	validInBloomData,
-	invalidUserEthereumAddressInBloomData,
-	validUserEthereumAddressInBloomData,
+	invalidUserZondAddressInBloomData,
+	validUserZondAddressInBloomData,
 } from '../../fixtures/validation';
 
 describe('validation', () => {
@@ -53,16 +53,16 @@ describe('validation', () => {
 			});
 		});
 
-		describe('isUserEthereumAddressInBloom', () => {
+		describe('isUserZondAddressInBloom', () => {
 			describe('valid cases', () => {
-				it.each(validUserEthereumAddressInBloomData)('%s', (bloom, address) => {
-					expect(isUserEthereumAddressInBloom(bloom, address)).toBeTruthy();
+				it.each(validUserZondAddressInBloomData)('%s', (bloom, address) => {
+					expect(isUserZondAddressInBloom(bloom, address)).toBeTruthy();
 				});
 			});
 
 			describe('invalid cases', () => {
-				it.each(invalidUserEthereumAddressInBloomData)('%s', (bloom, address) => {
-					expect(isUserEthereumAddressInBloom(bloom, address)).toBeFalsy();
+				it.each(invalidUserZondAddressInBloomData)('%s', (bloom, address) => {
+					expect(isUserZondAddressInBloom(bloom, address)).toBeFalsy();
 				});
 			});
 		});
@@ -75,7 +75,7 @@ describe('validation', () => {
 			});
 
 			describe('invalid cases', () => {
-				it.each(invalidUserEthereumAddressInBloomData)('%s', (bloom, address) => {
+				it.each(invalidUserZondAddressInBloomData)('%s', (bloom, address) => {
 					expect(isContractAddressInBloom(bloom, address)).toBeFalsy();
 				});
 			});

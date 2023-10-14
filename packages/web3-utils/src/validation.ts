@@ -28,7 +28,7 @@ import {
 	isNullish as isNullishValidator,
 	isTopic as isTopicValidator,
 	isTopicInBloom as isTopicInBloomValidator,
-	isUserEthereumAddressInBloom as isUserEthereumAddressInBloomValidator,
+	isUserZondAddressInBloom as isUserZondAddressInBloomValidator,
 } from '@theqrl/web3-validator';
 import { BlockNumberOrTag, BlockTags } from '@theqrl/web3-types';
 
@@ -52,7 +52,7 @@ export const isHex = isHexValidator;
 export const checkAddressCheckSum = checkAddressCheckSumValidator;
 
 /**
- * Checks if a given string is a valid Ethereum address. It will also check the checksum, if the address has upper and lowercase letters.
+ * Checks if a given string is a valid Zond address. It will also check the checksum, if the address has upper and lowercase letters.
  *
  * @deprecated Will be removed in next release. Please use `web3-validator` package instead.
  */
@@ -75,11 +75,11 @@ export const isBloom = isBloomValidator;
 export const isInBloom = isInBloomValidator;
 
 /**
- * Returns true if the ethereum users address is part of the given bloom note: false positives are possible.
+ * Returns true if the zond users address is part of the given bloom note: false positives are possible.
  *
  * @deprecated Will be removed in next release. Please use `web3-validator` package instead.
  */
-export const isUserEthereumAddressInBloom = isUserEthereumAddressInBloomValidator;
+export const isUserZondAddressInBloom = isUserZondAddressInBloomValidator;
 
 /**
  * Returns true if the contract address is part of the given bloom.

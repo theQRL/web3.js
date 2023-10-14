@@ -29,20 +29,20 @@ import {
 } from '../fixtures/system_test_utils';
 
 describe('personal integration tests', () => {
-	let ethPersonal: Personal;
+	let zondPersonal: Personal;
 	let clientUrl: string | SupportedProviders<ZondPersonalAPI>;
 
 	beforeAll(() => {
 		clientUrl = getSystemTestProvider();
-		ethPersonal = new Personal(clientUrl);
+		zondPersonal = new Personal(clientUrl);
 	});
 
 	afterAll(async () => {
-		await closeOpenConnection(ethPersonal);
+		await closeOpenConnection(zondPersonal);
 	});
 
 	it('new account', async () => {
-		const newAccount = await ethPersonal.newAccount('!@superpassword');
+		const newAccount = await zondPersonal.newAccount('!@superpassword');
 		expect(isHexStrict(newAccount)).toBe(true);
 	});
 
@@ -58,7 +58,7 @@ describe('personal integration tests', () => {
 
 	it('lock account', async () => {
 		const { address } = await createTempAccount();
-		const lockAccount = await ethPersonal.lockAccount(address);
+		const lockAccount = await zondPersonal.lockAccount(address);
 		expect(lockAccount).toBe(true);
 
 		const from = address;
@@ -71,12 +71,12 @@ describe('personal integration tests', () => {
 			maxPriorityFeePerGas: '0x1DCD6500',
 		};
 		// locked accounts will error
-		await expect(ethPersonal.sendTransaction(tx, '')).rejects.toThrow();
+		await expect(zondPersonal.sendTransaction(tx, '')).rejects.toThrow();
 	});
 
 	it('unlock account', async () => {
 		const { address } = await createTempAccount();
-		const unlockedAccount = await ethPersonal.unlockAccount(address, '123456', 1000);
+		const unlockedAccount = await zondPersonal.unlockAccount(address, '123456', 1000);
 		expect(unlockedAccount).toBe(true);
 
 		const tx = {
@@ -87,7 +87,7 @@ describe('personal integration tests', () => {
 			maxFeePerGas: '0x59682F00',
 			maxPriorityFeePerGas: '0x1DCD6500',
 		};
-		const receipt = await ethPersonal.sendTransaction(tx, '123456');
+		const receipt = await zondPersonal.sendTransaction(tx, '123456');
 
 		expect(isHexStrict(receipt)).toBe(true);
 	});
@@ -104,17 +104,17 @@ describe('personal integration tests', () => {
 	// });
 
 	it('getAccounts', async () => {
-		const accountList = await ethPersonal.getAccounts();
+		const accountList = await zondPersonal.getAccounts();
 		// create a new account
-		await ethPersonal.newAccount('cde');
-		const updatedAccountList = await ethPersonal.getAccounts();
+		await zondPersonal.newAccount('cde');
+		const updatedAccountList = await zondPersonal.getAccounts();
 		expect(updatedAccountList.length).toBeGreaterThan(accountList.length);
 	});
 
 	it('importRawKey', async () => {
 		const { address, privateKey } = createAccount();
 		const rawKey = getSystemTestBackend() === 'geth' ? privateKey.slice(2) : privateKey;
-		const key = await ethPersonal.importRawKey(rawKey, '123456');
+		const key = await zondPersonal.importRawKey(rawKey, '123456');
 		expect(toChecksumAddress(key).toLowerCase()).toBe(address.toLowerCase());
 	});
 
@@ -134,7 +134,7 @@ describe('personal integration tests', () => {
 			maxPriorityFeePerGas: '0x1DCD6500',
 			nonce: 0,
 		};
-		const signedTx = await ethPersonal.signTransaction(tx, '123456');
+		const signedTx = await zondPersonal.signTransaction(tx, '123456');
 		const expectedResult =
 			'0x02f86e82053980841dcd65008459682f00825208941337c75fdf978ababaacc038a1dcd580fec28ab282271080c001a0fef20ce4d8dd7e129bd52d08599988e74b0baad0692b9e316368896b22544162a07d69fac7625a925286dcf1be61d35c787f467b2b7e911181098d49c1ae041deb';
 		// eslint-disable-next-line jest/no-standalone-expect
@@ -144,7 +144,7 @@ describe('personal integration tests', () => {
 	it('sendTransaction', async () => {
 		const from = (await createNewAccount({ unlock: true, refill: true })).address;
 
-		const unlockedAccount = await ethPersonal.unlockAccount(from, '123456', 1000);
+		const unlockedAccount = await zondPersonal.unlockAccount(from, '123456', 1000);
 		expect(unlockedAccount).toBe(true);
 
 		const tx = {
@@ -155,7 +155,7 @@ describe('personal integration tests', () => {
 			maxFeePerGas: '0x59682F00',
 			maxPriorityFeePerGas: '0x1DCD6500',
 		};
-		const receipt = await ethPersonal.sendTransaction(tx, '123456');
+		const receipt = await zondPersonal.sendTransaction(tx, '123456');
 
 		expect(isHexStrict(receipt)).toBe(true);
 	});

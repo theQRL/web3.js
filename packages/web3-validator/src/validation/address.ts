@@ -44,7 +44,7 @@ export const checkAddressCheckSum = (data: string): boolean => {
 };
 
 /**
- * Checks if a given string is a valid Ethereum address. It will also check the checksum, if the address has upper and lowercase letters.
+ * Checks if a given string is a valid Zond address. It will also check the checksum, if the address has upper and lowercase letters.
  */
 export const isAddress = (value: ValidInputTypes, checkChecksum = true) => {
 	if (typeof value !== 'string' && !(value instanceof Uint8Array)) {

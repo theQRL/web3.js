@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { isValidEthBaseType } from '../../../src/validation/eth';
+import { isValidEthBaseType } from '../../../src/validation/zond';
 
 import { invalidEthTypeData, validEthTypeData } from '../../fixtures/validation';
 

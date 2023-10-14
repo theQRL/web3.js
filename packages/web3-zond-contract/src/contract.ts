@@ -102,7 +102,7 @@ import {
 import {
 	getCreateAccessListParams,
 	getEstimateGasParams,
-	getEthTxCallParams,
+	getZondTxCallParams,
 	getSendTxParams,
 	isContractInitOptions,
 	isWeb3ContractContext,
@@ -1000,7 +1000,7 @@ export class Contract<Abi extends ContractAbi>
 		options?: Options,
 		block?: BlockNumberOrTag,
 	) {
-		const tx = getEthTxCallParams({
+		const tx = getZondTxCallParams({
 			abi,
 			params,
 			options: {

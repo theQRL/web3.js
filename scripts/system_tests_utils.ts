@@ -36,7 +36,7 @@ import {
 	Bytes,
 	Web3BaseProvider,
 	Transaction,
-	KeyStore,
+	//KeyStore,
 	ProviderConnectInfo,
 	Web3ProviderEventCallback,
 	ProviderRpcError,
