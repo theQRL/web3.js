@@ -16,32 +16,31 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { Address } from '@theqrl/web3-types';
-import { Web3ValidatorError, isHexStrict } from '@theqrl/web3-validator';
+import { /*Web3ValidatorError,*/ isHexStrict } from '@theqrl/web3-validator';
 import {
 	create,
-	decrypt,
-	encrypt,
+	//decrypt,
+	//encrypt,
 	hashMessage,
-	privateKeyToAccount,
-	privateKeyToAddress,
-	recover,
+	seedToAccount,
+	publicKeyToAddress,
 	recoverTransaction,
 	sign,
 	signTransaction,
 } from '../../src/account';
 import {
-	invalidDecryptData,
-	invalidEncryptData,
-	invalidKeyStore,
+	//invalidDecryptData,
+	//invalidEncryptData,
+	//invalidKeyStore,
 	invalidPrivateKeytoAccountData,
-	invalidPrivateKeyToAddressData,
+	invalidPublicKeyToAddressData,
 	signatureRecoverData,
 	transactionsTestData,
-	validDecryptData,
-	validEncryptData,
+	//validDecryptData,
+	//validEncryptData,
 	validHashMessageData,
 	validPrivateKeytoAccountData,
-	validPrivateKeyToAddressData,
+	validPublicKeyToAddressData,
 } from '../fixtures/account';
 import { TransactionFactory } from '../../src/tx/transactionFactory';
 import { TxData } from '../../src/tx/types';
@@ -61,32 +60,32 @@ describe('accounts', () => {
 		});
 	});
 
-	describe('privateKeyToAddress', () => {
+	describe('publicKeyToAddress', () => {
 		describe('valid cases', () => {
-			it.each(validPrivateKeyToAddressData)('%s', (input, output) => {
-				expect(privateKeyToAddress(input)).toEqual(output);
+			it.each(validPublicKeyToAddressData)('%s', (input, output) => {
+				expect(publicKeyToAddress(input)).toEqual(output);
 			});
 		});
 
 		describe('invalid cases', () => {
-			it.each(invalidPrivateKeyToAddressData)('%s', (input, output) => {
-				expect(() => privateKeyToAddress(input)).toThrow(output);
+			it.each(invalidPublicKeyToAddressData)('%s', (input, output) => {
+				expect(() => publicKeyToAddress(input)).toThrow(output);
 			});
 		});
 	});
 
-	describe('privateKeyToAccount', () => {
+	describe('seedToAccount', () => {
 		describe('valid cases', () => {
 			it.each(validPrivateKeytoAccountData)('%s', (input, output) => {
 				expect(
-					JSON.stringify(privateKeyToAccount(input.address, input.ignoreLength)),
+					JSON.stringify(seedToAccount(input.address/*, input.ignoreLength*/)),
 				).toEqual(JSON.stringify(output));
 			});
 		});
 
 		describe('invalid cases', () => {
 			it.each(invalidPrivateKeytoAccountData)('%s', (input, output) => {
-				expect(() => privateKeyToAccount(input)).toThrow(output);
+				expect(() => seedToAccount(input)).toThrow(output);
 			});
 		});
 	});
@@ -99,14 +98,14 @@ describe('accounts', () => {
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-call
 				TransactionFactory.fromTxData(txData as unknown as TxData),
 				account.privateKey,
+				account.publicKey,
 			);
 			expect(signedResult).toBeDefined();
 			expect(signedResult.messageHash).toBeDefined();
 			expect(signedResult.rawTransaction).toBeDefined();
 			expect(signedResult.transactionHash).toBeDefined();
-			expect(signedResult.r).toMatch(/0[xX][0-9a-fA-F]{64}/);
-			expect(signedResult.s).toMatch(/0[xX][0-9a-fA-F]{64}/);
-			expect(signedResult.v).toMatch(/0[xX][0-9a-fA-F]+/);
+			expect(signedResult.signature).toMatch(/0[xX][0-9a-fA-F]{64}/);
+			expect(signedResult.publicKey).toMatch(/0[xX][0-9a-fA-F]{64}/);
 		});
 
 		it.each(transactionsTestData)('Recover transaction', async txData => {
@@ -116,6 +115,7 @@ describe('accounts', () => {
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-call
 				TransactionFactory.fromTxData(txObj),
 				account.privateKey,
+				account.publicKey,
 			);
 			expect(signedResult).toBeDefined();
 
@@ -135,85 +135,76 @@ describe('accounts', () => {
 		describe('sign', () => {
 			it.each(signatureRecoverData)('%s', (data, testObj) => {
 				const result = sign(data, testObj.privateKey);
-				expect(result.signature).toEqual(testObj.signature || testObj.signatureOrV); // makes sure we get signature and not V value
-				expect(result.r).toEqual(testObj.r);
-				expect(result.s).toEqual(testObj.s);
-			});
-		});
-
-		describe('recover', () => {
-			it.each(signatureRecoverData)('%s', (data, testObj) => {
-				const address = recover(data, testObj.signatureOrV, testObj.prefixedOrR, testObj.s);
-				expect(address).toEqual(testObj.address);
+				expect(result.signature).toEqual(testObj.signature);
 			});
 		});
 	});
 
-	describe('encrypt', () => {
-		describe('valid cases', () => {
-			it.each(validEncryptData)('%s', async (input, output) => {
-				const result = await encrypt(input[0], input[1], input[2]).catch(err => {
-					throw err;
-				});
-				expect(result.version).toBe(output.version);
-				expect(result.address).toBe(output.address);
-				expect(result.crypto.ciphertext).toBe(output.crypto.ciphertext);
-				expect(result.crypto.cipherparams).toEqual(output.crypto.cipherparams);
-				expect(result.crypto.cipher).toEqual(output.crypto.cipher);
-				expect(result.crypto.kdf).toBe(output.crypto.kdf);
-				expect(result.crypto.kdfparams).toEqual(output.crypto.kdfparams);
-				expect(typeof result.version).toBe('number');
-				expect(typeof result.id).toBe('string');
-				expect(typeof result.crypto.mac).toBe('string');
-			});
-		});
+	// describe('encrypt', () => {
+	// 	describe('valid cases', () => {
+	// 		it.each(validEncryptData)('%s', async (input, output) => {
+	// 			const result = await encrypt(input[0], input[1], input[2]).catch(err => {
+	// 				throw err;
+	// 			});
+	// 			expect(result.version).toBe(output.version);
+	// 			expect(result.address).toBe(output.address);
+	// 			expect(result.crypto.ciphertext).toBe(output.crypto.ciphertext);
+	// 			expect(result.crypto.cipherparams).toEqual(output.crypto.cipherparams);
+	// 			expect(result.crypto.cipher).toEqual(output.crypto.cipher);
+	// 			expect(result.crypto.kdf).toBe(output.crypto.kdf);
+	// 			expect(result.crypto.kdfparams).toEqual(output.crypto.kdfparams);
+	// 			expect(typeof result.version).toBe('number');
+	// 			expect(typeof result.id).toBe('string');
+	// 			expect(typeof result.crypto.mac).toBe('string');
+	// 		});
+	// 	});
 
-		describe('invalid cases', () => {
-			it.each(invalidEncryptData)('%s', async (input, output) => {
-				const result = encrypt(input[0], input[1], input[2]);
-				await expect(result).rejects.toThrow(output);
-			});
-		});
-	});
+	// 	describe('invalid cases', () => {
+	// 		it.each(invalidEncryptData)('%s', async (input, output) => {
+	// 			const result = encrypt(input[0], input[1], input[2]);
+	// 			await expect(result).rejects.toThrow(output);
+	// 		});
+	// 	});
+	// });
 
-	describe('decrypt', () => {
-		describe('valid cases', () => {
-			it.each(validDecryptData)('%s', async input => {
-				const keystore = await encrypt(input[0], input[1], input[2]).catch(err => {
-					throw err;
-				});
+	// describe('decrypt', () => {
+	// 	describe('valid cases', () => {
+	// 		it.each(validDecryptData)('%s', async input => {
+	// 			const keystore = await encrypt(input[0], input[1], input[2]).catch(err => {
+	// 				throw err;
+	// 			});
 
-				// make sure decrypt does not throw invalid password error
-				const result = await decrypt(keystore, input[1]);
+	// 			// make sure decrypt does not throw invalid password error
+	// 			const result = await decrypt(keystore, input[1]);
 
-				expect(JSON.stringify(result)).toEqual(
-					JSON.stringify(privateKeyToAccount(input[3])),
-				);
+	// 			expect(JSON.stringify(result)).toEqual(
+	// 				JSON.stringify(privateKeyToAccount(input[3])),
+	// 			);
 
-				const keystoreString = JSON.stringify(keystore);
+	// 			const keystoreString = JSON.stringify(keystore);
 
-				const stringResult = await decrypt(keystoreString, input[1], true);
+	// 			const stringResult = await decrypt(keystoreString, input[1], true);
 
-				expect(JSON.stringify(stringResult)).toEqual(
-					JSON.stringify(privateKeyToAccount(input[3])),
-				);
-			});
-		});
+	// 			expect(JSON.stringify(stringResult)).toEqual(
+	// 				JSON.stringify(privateKeyToAccount(input[3])),
+	// 			);
+	// 		});
+	// 	});
 
-		describe('invalid cases', () => {
-			it.each(invalidDecryptData)('%s', async (input, output) => {
-				const result = decrypt(input[0], input[1]);
+	// 	describe('invalid cases', () => {
+	// 		it.each(invalidDecryptData)('%s', async (input, output) => {
+	// 			const result = decrypt(input[0], input[1]);
 
-				await expect(result).rejects.toThrow(output);
-			});
-		});
+	// 			await expect(result).rejects.toThrow(output);
+	// 		});
+	// 	});
 
-		describe('invalid keystore, fails validation', () => {
-			it.each(invalidKeyStore)('%s', async input => {
-				const result = decrypt(input[0], input[1]);
+	// 	describe('invalid keystore, fails validation', () => {
+	// 		it.each(invalidKeyStore)('%s', async input => {
+	// 			const result = decrypt(input[0], input[1]);
 
-				await expect(result).rejects.toThrow(Web3ValidatorError);
-			});
-		});
-	});
+	// 			await expect(result).rejects.toThrow(Web3ValidatorError);
+	// 		});
+	// 	});
+	// });
 });

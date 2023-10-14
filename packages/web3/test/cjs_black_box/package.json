@@ -7,7 +7,7 @@
 	"type": "commonjs",
 	"scripts": {
 		"test:geth:http": "WEB3_SYSTEM_TEST_BACKEND=geth WEB3_SYSTEM_TEST_PROVIDER=http://localhost:8545 jest",
-		"test:geth:ws": "WEB3_SYSTEM_TEST_BACKEND=geth WEB3_SYSTEM_TEST_PROVIDER=ws://localhost:8545 jest --forceExit",
+		"test:geth:ws": "WEB3_SYSTEM_TEST_BACKEND=geth WEB3_SYSTEM_TEST_PROVIDER=ws://localhost:8545 jest --forceExit"
 	},
 	"dependencies": {
 		"@theqrl/web3": "5.0.0"

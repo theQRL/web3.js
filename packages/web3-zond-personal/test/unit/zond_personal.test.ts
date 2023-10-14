@@ -17,13 +17,13 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 import { ZOND_DATA_FORMAT } from '@theqrl/web3-types';
 import * as utils from '@theqrl/web3-utils';
-import * as eth from '@theqrl/web3-zond';
+import * as zond from '@theqrl/web3-zond';
 import * as validator from '@theqrl/web3-validator';
 import { Personal } from '../../src/index';
 
-jest.mock('web3-utils');
-jest.mock('web3-eth');
-jest.mock('web3-validator');
+jest.mock('@theqrl/web3-utils');
+jest.mock('@theqrl/web3-zond');
+jest.mock('@theqrl/web3-validator');
 describe('Personal', () => {
 	let personal: Personal;
 	let sendSpy: jest.SpyInstance;
@@ -165,7 +165,7 @@ describe('Personal', () => {
 				from: '0x528ABBBa47c33600245066398072799A9b7e2d9E',
 				to: '0x9988BBBa47c33600245066398072799A9b7e2d9E',
 			};
-			jest.spyOn(eth, 'formatTransaction').mockReturnValue(tx);
+			jest.spyOn(zond, 'formatTransaction').mockReturnValue(tx);
 
 			await personal.sendTransaction(tx, 'password');
 
@@ -180,12 +180,12 @@ describe('Personal', () => {
 				from: '0x528ABBBa47c33600245066398072799A9b7e2d9E',
 				to: '0x9988BBBa47c33600245066398072799A9b7e2d9E',
 			};
-			jest.spyOn(eth, 'formatTransaction').mockReturnValue(tx);
+			jest.spyOn(zond, 'formatTransaction').mockReturnValue(tx);
 
 			await personal.sendTransaction(tx, 'password');
 
-			expect(eth.formatTransaction).toHaveBeenCalledTimes(1);
-			expect(eth.formatTransaction).toHaveBeenCalledWith(tx, ZOND_DATA_FORMAT);
+			expect(zond.formatTransaction).toHaveBeenCalledTimes(1);
+			expect(zond.formatTransaction).toHaveBeenCalledWith(tx, ZOND_DATA_FORMAT);
 		});
 	});
 
@@ -195,7 +195,7 @@ describe('Personal', () => {
 				from: '0x528ABBBa47c33600245066398072799A9b7e2d9E',
 				to: '0x9988BBBa47c33600245066398072799A9b7e2d9E',
 			};
-			jest.spyOn(eth, 'formatTransaction').mockReturnValue(tx);
+			jest.spyOn(zond, 'formatTransaction').mockReturnValue(tx);
 
 			await personal.signTransaction(tx, 'password');
 
@@ -210,12 +210,12 @@ describe('Personal', () => {
 				from: '0x528ABBBa47c33600245066398072799A9b7e2d9E',
 				to: '0x9988BBBa47c33600245066398072799A9b7e2d9E',
 			};
-			jest.spyOn(eth, 'formatTransaction').mockReturnValue(tx);
+			jest.spyOn(zond, 'formatTransaction').mockReturnValue(tx);
 
 			await personal.signTransaction(tx, 'password');
 
-			expect(eth.formatTransaction).toHaveBeenCalledTimes(1);
-			expect(eth.formatTransaction).toHaveBeenCalledWith(tx, ZOND_DATA_FORMAT);
+			expect(zond.formatTransaction).toHaveBeenCalledTimes(1);
+			expect(zond.formatTransaction).toHaveBeenCalledWith(tx, ZOND_DATA_FORMAT);
 		});
 	});
 

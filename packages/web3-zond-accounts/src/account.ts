@@ -303,65 +303,6 @@ export const recoverTransaction = (rawTransaction: HexString): Address => {
 };
 
 /**
- * Recovers the Ethereum address which was used to sign the given data
- *
- * @param data - Either a signed message, hash, or the {@link signatureObject}
- * @param signature - The raw RLP encoded signature
- * @param signatureOrV - signatureOrV
- * @param prefixedOrR - prefixedOrR
- * @param s - s
- * @param prefixed - (default: false) If the last parameter is true, the given message will NOT automatically be prefixed with "\\x19Ethereum Signed Message:\\n" + message.length + message, and assumed to be already prefixed.
- * @returns The Ethereum address used to sign this data
- * ```ts
- * sign('Some data', '0xbe6383dad004f233317e46ddb46ad31b16064d14447a95cc1d8c8d4bc61c3728');
- * > {
- * message: 'Some data',
- * messageHash: '0x1da44b586eb0729ff70a73c326926f6ed5a25f5b056e7f47fbc6e58d86871655',
- * v: '0x1b',
- * r: '0xa8037a6116c176a25e6fc224947fde9e79a2deaa0dd8b67b366fbdfdbffc01f9',
- * s: '0x53e41351267b20d4a89ebfe9c8f03c04de9b345add4a52f15bd026b63c8fb150',
- * signature: '0xa8037a6116c176a25e6fc224947fde9e79a2deaa0dd8b67b366fbdfdbffc01f953e41351267b20d4a89ebfe9c8f03c04de9b345add4a52f15bd026b63c8fb1501b'
- * }
- * recover('0xa8037a6116c176a25e6fc224947fde9e79a2deaa0dd8b67b366fbdfdbffc01f953e41351267b20d4a89ebfe9c8f03c04de9b345add4a52f15bd026b63c8fb1501b');
- * > '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0'
- * ```
- */
-// export const recover = (
-// 	data: string | SignatureObject,
-// 	signatureOrV?: string,
-// 	prefixedOrR?: boolean | string,
-// 	s?: string,
-// 	prefixed?: boolean,
-// ): Address => {
-// 	if (typeof data === 'object') {
-// 		const signatureStr = `${data.r}${data.s.slice(2)}${data.v.slice(2)}`;
-// 		return recover(data.messageHash, signatureStr, prefixedOrR);
-// 	}
-// 	if (typeof signatureOrV === 'string' && typeof prefixedOrR === 'string' && !isNullish(s)) {
-// 		const signatureStr = `${prefixedOrR}${s.slice(2)}${signatureOrV.slice(2)}`;
-// 		return recover(data, signatureStr, prefixed);
-// 	}
-
-// 	if (isNullish(signatureOrV)) throw new InvalidSignatureError('signature string undefined');
-
-// 	const V_INDEX = 130; // r = first 32 bytes, s = second 32 bytes, v = last byte of signature
-// 	const hashedMessage = prefixedOrR ? data : hashMessage(data);
-
-// 	const v = signatureOrV.substring(V_INDEX); // 0x + r + s + v
-
-// 	const ecPublicKey = secp256k1.Signature.fromCompact(signatureOrV.slice(2, V_INDEX))
-// 		.addRecoveryBit(parseInt(v, 16) - 27)
-// 		.recoverPublicKey(hashedMessage.replace('0x', ''))
-// 		.toRawBytes(false);
-
-// 	const publicHash = sha3Raw(ecPublicKey.subarray(1));
-
-// 	const address = toChecksumAddress(`0x${publicHash.slice(-40)}`);
-
-// 	return address;
-// };
-
-/**
  * Get the dilithium5 Address from a private key
  *
  * @param privateKey - String or Uint8Array of 4864 bytes
