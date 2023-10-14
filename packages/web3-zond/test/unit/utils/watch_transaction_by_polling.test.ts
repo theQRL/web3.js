@@ -17,7 +17,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import { Web3Context } from '@theqrl/web3-core';
 import { format } from '@theqrl/web3-utils';
 import { DEFAULT_RETURN_FORMAT, Web3ZondExecutionAPI } from '@theqrl/web3-types';
-import { ethRpcMethods } from '@theqrl/web3-rpc-methods';
+import { zondRpcMethods } from '@theqrl/web3-rpc-methods';
 import * as rpcMethodWrappers from '../../../src/rpc_method_wrappers';
 import * as WaitForTransactionReceipt from '../../../src/utils/wait_for_transaction_receipt';
 
@@ -30,7 +30,7 @@ import {
 import { transactionReceiptSchema } from '../../../src/schemas';
 import { sleep } from '../../shared_fixtures/utils';
 
-jest.mock('web3-rpc-methods');
+jest.mock('@theqrl/web3-rpc-methods');
 jest.mock('../../../src/utils/wait_for_transaction_receipt');
 
 const mockBlockData = {
@@ -51,7 +51,7 @@ describe('watchTransactionByPolling', () => {
 				},
 			);
 
-			jest.spyOn(ethRpcMethods, 'getBlockByNumber').mockResolvedValue(mockBlockData as any);
+			jest.spyOn(zondRpcMethods, 'getBlockByNumber').mockResolvedValue(mockBlockData as any);
 		});
 
 		it.each(testData)(
@@ -67,7 +67,7 @@ describe('watchTransactionByPolling', () => {
 					WaitForTransactionReceipt.waitForTransactionReceipt as jest.Mock
 				).mockResolvedValueOnce(expectedTransactionReceipt);
 
-				(ethRpcMethods.sendRawTransaction as jest.Mock).mockResolvedValueOnce(
+				(zondRpcMethods.sendRawTransaction as jest.Mock).mockResolvedValueOnce(
 					expectedTransactionHash,
 				);
 
@@ -85,7 +85,7 @@ describe('watchTransactionByPolling', () => {
 				});
 
 				await sleep(1000);
-				expect(ethRpcMethods.getBlockByNumber).toHaveBeenCalled();
+				expect(zondRpcMethods.getBlockByNumber).toHaveBeenCalled();
 
 				// to clear the interval inside the polling function:
 				web3Context.transactionConfirmationBlocks = 0;

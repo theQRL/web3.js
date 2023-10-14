@@ -21,8 +21,8 @@ import { SignTransactionResult, Web3Account } from '@theqrl/web3-zond-accounts';
 import { Web3ZondInterface } from '../../src/types';
 import { Web3 } from '../../src';
 
-jest.mock('web3-zond-accounts');
-jest.mock('web3-zond');
+jest.mock('@theqrl/web3-zond-accounts');
+jest.mock('@theqrl/web3-zond');
 
 describe('test new Web3().zond.accounts', () => {
 	let accounts: Web3ZondInterface['accounts'];

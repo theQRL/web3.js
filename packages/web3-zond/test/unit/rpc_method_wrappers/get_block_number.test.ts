@@ -17,11 +17,11 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import { Web3Context } from '@theqrl/web3-core';
 import { format } from '@theqrl/web3-utils';
 import { DEFAULT_RETURN_FORMAT, FMT_BYTES, FMT_NUMBER, Web3ZondExecutionAPI } from '@theqrl/web3-types';
-import { ethRpcMethods } from '@theqrl/web3-rpc-methods';
+import { zondRpcMethods } from '@theqrl/web3-rpc-methods';
 
 import { getBlockNumber } from '../../../src/rpc_method_wrappers';
 
-jest.mock('web3-rpc-methods');
+jest.mock('@theqrl/web3-rpc-methods');
 
 describe('getBlockNumber', () => {
 	let web3Context: Web3Context<Web3ZondExecutionAPI>;
@@ -32,7 +32,7 @@ describe('getBlockNumber', () => {
 
 	it('should call rpcMethods.getBlockNumber with expected parameters', async () => {
 		await getBlockNumber(web3Context, DEFAULT_RETURN_FORMAT);
-		expect(ethRpcMethods.getBlockNumber).toHaveBeenCalledWith(web3Context.requestManager);
+		expect(zondRpcMethods.getBlockNumber).toHaveBeenCalledWith(web3Context.requestManager);
 	});
 
 	it('should format mockRpcResponse using provided return format', async () => {
@@ -43,7 +43,7 @@ describe('getBlockNumber', () => {
 			mockRpcResponse,
 			expectedReturnFormat,
 		);
-		(ethRpcMethods.getBlockNumber as jest.Mock).mockResolvedValueOnce(mockRpcResponse);
+		(zondRpcMethods.getBlockNumber as jest.Mock).mockResolvedValueOnce(mockRpcResponse);
 
 		const result = await getBlockNumber(web3Context, expectedReturnFormat);
 		expect(result).toBe(expectedFormattedResult);

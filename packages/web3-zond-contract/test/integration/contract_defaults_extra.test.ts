@@ -16,7 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { ValidChains, Hardfork, TransactionReceipt } from '@theqrl/web3-types';
-import * as Web3Eth from '@theqrl/web3-zond';
+import * as Web3Zond from '@theqrl/web3-zond';
 import { TransactionBlockTimeoutError } from '@theqrl/web3-errors';
 import { Contract } from '../../src';
 import { GreeterBytecode, GreeterAbi } from '../shared_fixtures/build/Greeter';
@@ -32,8 +32,8 @@ import {
 type Resolve = (value?: unknown) => void;
 const MAX_32_SIGNED_INTEGER = 2147483647;
 
-jest.mock('web3-eth', () => {
-	const original = jest.requireActual('web3-eth');
+jest.mock('@theqrl/web3-zond', () => {
+	const original = jest.requireActual('web3-zond');
 	// eslint-disable-next-line @typescript-eslint/no-unsafe-return
 	return {
 		...original,
@@ -77,7 +77,7 @@ describe('contract defaults (extra)', () => {
 		await contract.methods.greet().send(sendOptions);
 
 		expect(contract.defaultHardfork).toBe(hardfork);
-		const callSpy = jest.spyOn(Web3Eth, 'call');
+		const callSpy = jest.spyOn(Web3Zond, 'call');
 
 		await contract.methods.greet().call();
 
@@ -108,7 +108,7 @@ describe('contract defaults (extra)', () => {
 
 			await contract.methods.setGreeting('New Greeting').send(sendOptions);
 
-			const callSpy = jest.spyOn(Web3Eth, 'call');
+			const callSpy = jest.spyOn(Web3Zond, 'call');
 
 			await contract.methods.greet().call();
 
@@ -149,7 +149,7 @@ describe('contract defaults (extra)', () => {
 
 		it('should use "defaultCommon" on "instance" level', async () => {
 			contract.defaultCommon = common;
-			const callSpy = jest.spyOn(Web3Eth, 'call');
+			const callSpy = jest.spyOn(Web3Zond, 'call');
 
 			await contract.methods.greet().call();
 
@@ -171,7 +171,7 @@ describe('contract defaults (extra)', () => {
 			});
 			contract = await contract.deploy(deployOptions).send(sendOptions);
 
-			const sendTransactionSpy = jest.spyOn(Web3Eth, 'sendTransaction');
+			const sendTransactionSpy = jest.spyOn(Web3Zond, 'sendTransaction');
 			expect(contract.transactionBlockTimeout).toBe(50);
 
 			contract.transactionBlockTimeout = 32;
@@ -311,7 +311,7 @@ describe('contract defaults (extra)', () => {
 
 		expect(contract.handleRevert).toBe(handleRevert);
 
-		const sendTransactionSpy = jest.spyOn(Web3Eth, 'sendTransaction');
+		const sendTransactionSpy = jest.spyOn(Web3Zond, 'sendTransaction');
 
 		await contract.methods.setGreeting('New Greeting').send(sendOptions);
 

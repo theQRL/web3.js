@@ -14,7 +14,7 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { ethRpcMethods } from '@theqrl/web3-rpc-methods';
+import { zondRpcMethods } from '@theqrl/web3-rpc-methods';
 
 import Web3Eth from '../../src/index';
 import * as rpcMethodWrappers from '../../src/rpc_method_wrappers';
@@ -45,11 +45,11 @@ import {
 	submitWorkValidData,
 	tx,
 	txReceipt,
-} from '../fixtures/web3_eth_methods_with_parameters';
+} from '../fixtures/web3_zond_methods_with_parameters';
 
 import { testData as createAccessListTestData } from './rpc_method_wrappers/fixtures/createAccessList';
 
-jest.mock('web3-rpc-methods');
+jest.mock('@theqrl/web3-rpc-methods');
 jest.mock('../../src/rpc_method_wrappers');
 // eslint-disable-next-line @typescript-eslint/no-unsafe-call
 jest.spyOn(rpcMethodWrappers, 'getTransaction').mockResolvedValue(tx);
@@ -369,7 +369,7 @@ describe('web3_eth_methods_with_parameters', () => {
 				describe('submitWork', () => {
 					it.each(submitWorkValidData)('input: %s', async input => {
 						await web3Eth.submitWork(...input);
-						expect(ethRpcMethods.submitWork).toHaveBeenCalledWith(
+						expect(zondRpcMethods.submitWork).toHaveBeenCalledWith(
 							web3Eth.requestManager,
 							...input,
 						);

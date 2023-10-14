@@ -27,6 +27,7 @@ import {
 	ERR_INVALID_PASSWORD,
 	ERR_IV_LENGTH,
 	ERR_PBKDF2_ITERATIONS,
+	ERR_INVALID_SEED,
 } from '../error_codes.js';
 import { BaseWeb3Error } from '../web3_error_base.js';
 
@@ -45,7 +46,7 @@ export class InvalidPrivateKeyError extends BaseWeb3Error {
 }
 
 export class InvalidSeedError extends BaseWeb3Error {
-	public code = ERR_INVALID_PRIVATE_KEY;
+	public code = ERR_INVALID_SEED;
 	public constructor() {
 		super(`Invalid Seed, Not a valid string or uint8Array`);
 	}

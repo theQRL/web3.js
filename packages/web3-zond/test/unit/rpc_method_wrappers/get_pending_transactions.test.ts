@@ -16,13 +16,13 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import { Web3Context } from '@theqrl/web3-core';
 import { DEFAULT_RETURN_FORMAT, FMT_BYTES, FMT_NUMBER, Web3ZondExecutionAPI } from '@theqrl/web3-types';
-import { ethRpcMethods } from '@theqrl/web3-rpc-methods';
+import { zondRpcMethods } from '@theqrl/web3-rpc-methods';
 
 import { getPendingTransactions } from '../../../src/rpc_method_wrappers';
 import { formatTransaction } from '../../../src';
 import { mockRpcResponse } from './fixtures/get_pending_transactions';
 
-jest.mock('web3-rpc-methods');
+jest.mock('@theqrl/web3-rpc-methods');
 
 describe('getPendingTransactions', () => {
 	let web3Context: Web3Context<Web3ZondExecutionAPI>;
@@ -32,9 +32,9 @@ describe('getPendingTransactions', () => {
 	});
 
 	it('should call rpcMethods.getPendingTransactions with expected parameters', async () => {
-		(ethRpcMethods.getPendingTransactions as jest.Mock).mockResolvedValueOnce(mockRpcResponse);
+		(zondRpcMethods.getPendingTransactions as jest.Mock).mockResolvedValueOnce(mockRpcResponse);
 		await getPendingTransactions(web3Context, DEFAULT_RETURN_FORMAT);
-		expect(ethRpcMethods.getPendingTransactions).toHaveBeenCalledWith(
+		expect(zondRpcMethods.getPendingTransactions).toHaveBeenCalledWith(
 			web3Context.requestManager,
 		);
 	});
@@ -44,7 +44,7 @@ describe('getPendingTransactions', () => {
 		const expectedFormattedResult = mockRpcResponse.map(transaction =>
 			formatTransaction(transaction, expectedReturnFormat),
 		);
-		(ethRpcMethods.getPendingTransactions as jest.Mock).mockResolvedValueOnce(mockRpcResponse);
+		(zondRpcMethods.getPendingTransactions as jest.Mock).mockResolvedValueOnce(mockRpcResponse);
 
 		const result = await getPendingTransactions(web3Context, expectedReturnFormat);
 		expect(result).toStrictEqual(expectedFormattedResult);

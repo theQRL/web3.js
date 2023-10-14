@@ -25,12 +25,12 @@ import {
 	Web3ZondExecutionAPI,
 } from '@theqrl/web3-types';
 import { isBytes, isNullish } from '@theqrl/web3-validator';
-import { ethRpcMethods } from '@theqrl/web3-rpc-methods';
+import { zondRpcMethods } from '@theqrl/web3-rpc-methods';
 
 import { getBlockUncleCount } from '../../../src/rpc_method_wrappers';
 import { mockRpcResponse, testData } from './fixtures/get_block_uncle_count';
 
-jest.mock('web3-rpc-methods');
+jest.mock('@theqrl/web3-rpc-methods');
 
 describe('getBlockUncleCount', () => {
 	let web3Context: Web3Context<Web3ZondExecutionAPI>;
@@ -58,8 +58,8 @@ describe('getBlockUncleCount', () => {
 			await getBlockUncleCount(web3Context, inputBlock, DEFAULT_RETURN_FORMAT);
 			expect(
 				inputBlockIsBytes
-					? ethRpcMethods.getUncleCountByBlockHash
-					: ethRpcMethods.getUncleCountByBlockNumber,
+					? zondRpcMethods.getUncleCountByBlockHash
+					: zondRpcMethods.getUncleCountByBlockNumber,
 			).toHaveBeenCalledWith(web3Context.requestManager, inputBlockFormatted);
 		},
 	);
@@ -77,8 +77,8 @@ describe('getBlockUncleCount', () => {
 			const inputBlockIsBytes = isBytes(inputBlock as Bytes);
 			(
 				(inputBlockIsBytes
-					? ethRpcMethods.getUncleCountByBlockHash
-					: ethRpcMethods.getUncleCountByBlockNumber) as jest.Mock
+					? zondRpcMethods.getUncleCountByBlockHash
+					: zondRpcMethods.getUncleCountByBlockNumber) as jest.Mock
 			).mockResolvedValueOnce(mockRpcResponse);
 
 			const result = await getBlockUncleCount(web3Context, inputBlock, expectedReturnFormat);

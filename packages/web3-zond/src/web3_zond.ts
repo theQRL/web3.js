@@ -42,7 +42,7 @@ import {
 import { isSupportedProvider, Web3Context, Web3ContextInitOptions } from '@theqrl/web3-core';
 import { TransactionNotFound } from '@theqrl/web3-errors';
 import { toChecksumAddress, isNullish } from '@theqrl/web3-utils';
-import { ethRpcMethods } from '@theqrl/web3-rpc-methods';
+import { zondRpcMethods } from '@theqrl/web3-rpc-methods';
 
 import * as rpcMethodsWrappers from './rpc_method_wrappers.js';
 import { SendTransactionOptions } from './types.js';
@@ -107,7 +107,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * ```
 	 */
 	public async getProtocolVersion() {
-		return ethRpcMethods.getProtocolVersion(this.requestManager);
+		return zondRpcMethods.getProtocolVersion(this.requestManager);
 	}
 
 	// TODO Add returnFormat parameter
@@ -128,7 +128,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * ```
 	 */
 	public async isSyncing() {
-		return ethRpcMethods.getSyncing(this.requestManager);
+		return zondRpcMethods.getSyncing(this.requestManager);
 	}
 
 	// TODO consider adding returnFormat parameter (to format address as bytes)
@@ -141,7 +141,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * ```
 	 */
 	public async getCoinbase() {
-		return ethRpcMethods.getCoinbase(this.requestManager);
+		return zondRpcMethods.getCoinbase(this.requestManager);
 	}
 
 	/**
@@ -155,7 +155,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * ```
 	 */
 	public async isMining() {
-		return ethRpcMethods.getMining(this.requestManager);
+		return zondRpcMethods.getMining(this.requestManager);
 	}
 
 	/**
@@ -223,7 +223,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * ```
 	 */
 	public async getAccounts() {
-		const hexAddresses = (await ethRpcMethods.getAccounts(this.requestManager)) ?? [];
+		const hexAddresses = (await zondRpcMethods.getAccounts(this.requestManager)) ?? [];
 		return hexAddresses.map(address => toChecksumAddress(address));
 	}
 
@@ -1263,7 +1263,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * ```
 	 */
 	public async getWork() {
-		return ethRpcMethods.getWork(this.requestManager);
+		return zondRpcMethods.getWork(this.requestManager);
 	}
 
 	/**
@@ -1288,7 +1288,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 		hash: HexString32Bytes,
 		digest: HexString32Bytes,
 	) {
-		return ethRpcMethods.submitWork(this.requestManager, nonce, hash, digest);
+		return zondRpcMethods.submitWork(this.requestManager, nonce, hash, digest);
 	}
 
 	// TODO - Format addresses
@@ -1306,7 +1306,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * ```
 	 */
 	public async requestAccounts() {
-		return ethRpcMethods.requestAccounts(this.requestManager);
+		return zondRpcMethods.requestAccounts(this.requestManager);
 	}
 
 	/**
@@ -1336,7 +1336,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * ```
 	 */
 	public async getNodeInfo() {
-		return ethRpcMethods.getNodeInfo(this.requestManager);
+		return zondRpcMethods.getNodeInfo(this.requestManager);
 	}
 
 	/**

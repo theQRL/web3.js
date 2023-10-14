@@ -30,7 +30,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 // */
 import { Web3RequestManager } from '@theqrl/web3-core';
 
-import { ethRpcMethods } from '../../../src/index';
+import { zondRpcMethods } from '../../../src/index';
 
 describe('getHashRate', () => {
 	let requestManagerSendSpy: jest.Mock;
@@ -43,7 +43,7 @@ describe('getHashRate', () => {
 	});
 
 	it('should call requestManager.send with getHashRate method', async () => {
-		await ethRpcMethods.getHashRate(requestManager);
+		await zondRpcMethods.getHashRate(requestManager);
 		expect(requestManagerSendSpy).toHaveBeenCalledWith({
 			method: 'zond_hashrate',
 			params: [],

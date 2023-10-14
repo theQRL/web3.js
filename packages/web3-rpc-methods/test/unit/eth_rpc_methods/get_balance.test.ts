@@ -31,10 +31,10 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import { Web3RequestManager } from '@theqrl/web3-core';
 import { validator } from '@theqrl/web3-validator';
 
-import { ethRpcMethods } from '../../../src/index';
+import { zondRpcMethods } from '../../../src/index';
 import { testData } from './fixtures/get_balance';
 
-jest.mock('web3-validator');
+jest.mock('@theqrl/web3-validator');
 
 describe('getBalance', () => {
 	let requestManagerSendSpy: jest.Mock;
@@ -49,7 +49,7 @@ describe('getBalance', () => {
 	it.each(testData)(
 		'should call requestManager.send with getBalance method and expect parameters\n Title: %s\n Input parameters: %s',
 		async (_, inputParameters) => {
-			await ethRpcMethods.getBalance(requestManager, ...inputParameters);
+			await zondRpcMethods.getBalance(requestManager, ...inputParameters);
 			expect(requestManagerSendSpy).toHaveBeenCalledWith({
 				method: 'zond_getBalance',
 				params: inputParameters,
@@ -61,7 +61,7 @@ describe('getBalance', () => {
 		'should call validator.validate with expected params\n Title: %s\n Input parameters: %s',
 		async (_, inputParameters) => {
 			const validatorSpy = jest.spyOn(validator, 'validate');
-			await ethRpcMethods.getBalance(requestManager, ...inputParameters);
+			await zondRpcMethods.getBalance(requestManager, ...inputParameters);
 			expect(validatorSpy).toHaveBeenCalledWith(
 				['address', 'blockNumberOrTag'],
 				inputParameters,

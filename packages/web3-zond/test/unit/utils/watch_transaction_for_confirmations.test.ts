@@ -17,7 +17,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import { Web3Context, Web3PromiEvent } from '@theqrl/web3-core';
 import { format } from '@theqrl/web3-utils';
 import { DEFAULT_RETURN_FORMAT, TransactionReceipt, Web3ZondExecutionAPI } from '@theqrl/web3-types';
-import { ethRpcMethods } from '@theqrl/web3-rpc-methods';
+import { zondRpcMethods } from '@theqrl/web3-rpc-methods';
 import {
 	TransactionMissingReceiptOrBlockHashError,
 	TransactionReceiptMissingBlockNumberError,
@@ -36,7 +36,7 @@ import {
 import { transactionReceiptSchema } from '../../../src/schemas';
 import { SendSignedTransactionEvents } from '../../../src/types';
 
-jest.mock('web3-rpc-methods');
+jest.mock('@theqrl/web3-rpc-methods');
 jest.mock('../../../src/utils/wait_for_transaction_receipt');
 jest.mock('../../../src/utils/watch_transaction_by_pooling');
 jest.mock('../../../src/utils/watch_transaction_by_subscription');
@@ -127,7 +127,7 @@ describe('watchTransactionForConfirmations', () => {
 					WaitForTransactionReceipt.waitForTransactionReceipt as jest.Mock
 				).mockResolvedValueOnce(expectedTransactionReceipt);
 
-				(ethRpcMethods.sendRawTransaction as jest.Mock).mockResolvedValueOnce(
+				(zondRpcMethods.sendRawTransaction as jest.Mock).mockResolvedValueOnce(
 					expectedTransactionHash,
 				);
 
@@ -192,7 +192,7 @@ describe('watchTransactionForConfirmations', () => {
 					WaitForTransactionReceipt.waitForTransactionReceipt as jest.Mock
 				).mockResolvedValueOnce(expectedTransactionReceipt);
 
-				(ethRpcMethods.sendRawTransaction as jest.Mock).mockResolvedValueOnce(
+				(zondRpcMethods.sendRawTransaction as jest.Mock).mockResolvedValueOnce(
 					expectedTransactionHash,
 				);
 

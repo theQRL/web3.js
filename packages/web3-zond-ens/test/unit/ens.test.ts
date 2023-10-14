@@ -25,26 +25,26 @@ import { ENS } from '../../src/ens';
 
 jest.useFakeTimers().setSystemTime(new Date('2020-01-01'));
 
-jest.mock('web3-eth', () => ({
+jest.mock('@theqrl/web3-zond', () => ({
 	__esModule: true,
 	isSyncing: jest.fn(),
 }));
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
-const { isSyncing } = require('web3-eth');
+const { isSyncing } = require('@theqrl/web3-zond');
 
 const expectedNetworkId = '0x1';
-jest.mock('web3-net', () => ({
+jest.mock('@theqrl/web3-net', () => ({
 	getId: jest.fn(),
 }));
 // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
-const { getId } = require('web3-net');
+const { getId } = require('@theqrl/web3-net');
 
 describe('ens', () => {
 	let object: Web3ContextObject;
 	let resolverContract: Contract<typeof PublicResolverAbi>;
 	const mockAddress = '0x0000000000000000000000000000000000000000';
-	const ENS_NAME = 'web3js.eth';
+	const ENS_NAME = 'web3js.zond';
 	let ens: ENS;
 
 	beforeAll(() => {

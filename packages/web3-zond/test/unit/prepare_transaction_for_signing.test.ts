@@ -24,7 +24,7 @@ import {
 	FeeMarketEIP1559Transaction,
 	Transaction,
 } from '@theqrl/web3-zond-accounts';
-import { ethRpcMethods } from '@theqrl/web3-rpc-methods';
+import { zondRpcMethods } from '@theqrl/web3-rpc-methods';
 
 import { bytesToHex, hexToBytes } from '@theqrl/web3-utils';
 import { prepareTransactionForSigning } from '../../src/utils/prepare_transaction_for_signing';
@@ -52,12 +52,12 @@ describe('prepareTransactionForSigning', () => {
 				expectedS,
 			) => {
 				// (i.e. requestManager, blockNumber, hydrated params), but that doesn't matter for the test
-				jest.spyOn(ethRpcMethods, 'estimateGas').mockImplementation(
+				jest.spyOn(zondRpcMethods, 'estimateGas').mockImplementation(
 					// @ts-expect-error - Mocked implementation doesn't have correct method signature
 					() => expectedTransaction.gas,
 				);
 				// @ts-expect-error - Mocked implementation doesn't have correct method signature
-				jest.spyOn(ethRpcMethods, 'getBlockByNumber').mockImplementation(() => mockBlock);
+				jest.spyOn(zondRpcMethods, 'getBlockByNumber').mockImplementation(() => mockBlock);
 
 				const ethereumjsTx = await prepareTransactionForSigning(
 					expectedTransaction,

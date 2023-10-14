@@ -25,7 +25,7 @@ import {
 import { Web3Context } from '@theqrl/web3-core';
 import HttpProvider from '@theqrl/web3-providers-http';
 import { isNullish } from '@theqrl/web3-validator';
-import { ethRpcMethods } from '@theqrl/web3-rpc-methods';
+import { zondRpcMethods } from '@theqrl/web3-rpc-methods';
 
 import {
 	Eip1559NotSupportedError,
@@ -35,10 +35,10 @@ import {
 } from '@theqrl/web3-errors';
 import { defaultTransactionBuilder } from '../../src/utils/transaction_builder';
 
-jest.mock('web3-rpc-methods');
+jest.mock('@theqrl/web3-rpc-methods');
 
 const expectedNetworkId = '0x4';
-jest.mock('web3-net', () => ({
+jest.mock('@theqrl/web3-net', () => ({
 	getId: jest.fn().mockImplementation(() => expectedNetworkId),
 }));
 
@@ -115,12 +115,12 @@ describe('defaultTransactionBuilder', () => {
 	let getTransactionCountSpy: jest.SpyInstance;
 
 	beforeEach(() => {
-		jest.spyOn(ethRpcMethods, 'getBlockByNumber').mockResolvedValue(mockBlockData);
+		jest.spyOn(zondRpcMethods, 'getBlockByNumber').mockResolvedValue(mockBlockData);
 		getTransactionCountSpy = jest
-			.spyOn(ethRpcMethods, 'getTransactionCount')
+			.spyOn(zondRpcMethods, 'getTransactionCount')
 			.mockResolvedValue(expectedNonce);
-		jest.spyOn(ethRpcMethods, 'getGasPrice').mockResolvedValue(expectedGasPrice);
-		jest.spyOn(ethRpcMethods, 'getChainId').mockResolvedValue(expectedChainId);
+		jest.spyOn(zondRpcMethods, 'getGasPrice').mockResolvedValue(expectedGasPrice);
+		jest.spyOn(zondRpcMethods, 'getChainId').mockResolvedValue(expectedChainId);
 
 		web3Context = new Web3Context<ZondExecutionAPI>(new HttpProvider('http://127.0.0.1'));
 	});
@@ -190,7 +190,7 @@ describe('defaultTransactionBuilder', () => {
 			).rejects.toThrow(new UnableToPopulateNonceError());
 		});
 
-		it('should use web3Eth.getTransactionCount to populate nonce', async () => {
+		it('should use web3Zond.getTransactionCount to populate nonce', async () => {
 			const input = { ...transaction };
 			delete input.nonce;
 			delete input.maxPriorityFeePerGas;
@@ -209,7 +209,7 @@ describe('defaultTransactionBuilder', () => {
 			);
 		});
 
-		it('should use web3Eth.getTransactionCount to populate nonce without gas fill', async () => {
+		it('should use web3Zond.getTransactionCount to populate nonce without gas fill', async () => {
 			const input = { ...transaction };
 			delete input.nonce;
 			delete input.maxPriorityFeePerGas;
@@ -408,7 +408,7 @@ describe('defaultTransactionBuilder', () => {
 	});
 
 	describe('should populate chainId', () => {
-		it('should populate with web3Eth.getChainId', async () => {
+		it('should populate with web3Zond.getChainId', async () => {
 			const input = { ...transaction };
 			delete input.chainId;
 			delete input.common;
@@ -496,7 +496,7 @@ describe('defaultTransactionBuilder', () => {
 	});
 
 	describe('should populate gasPrice', () => {
-		it('should populate with web3Eth.getGasPrice (tx.type 0x0)', async () => {
+		it('should populate with web3Zond.getGasPrice (tx.type 0x0)', async () => {
 			const input = { ...transaction };
 			delete input.gasPrice;
 			delete input.maxFeePerGas;
@@ -511,7 +511,7 @@ describe('defaultTransactionBuilder', () => {
 			expect(result.gasPrice).toBe(expectedGasPrice);
 		});
 
-		it('should populate with web3Eth.getGasPrice (tx.type 0x1)', async () => {
+		it('should populate with web3Zond.getGasPrice (tx.type 0x1)', async () => {
 			const input = { ...transaction };
 			delete input.gasPrice;
 			delete input.maxFeePerGas;
@@ -561,7 +561,7 @@ describe('defaultTransactionBuilder', () => {
 	describe('should populate maxPriorityFeePerGas and maxFeePerGas', () => {
 		it('should throw Eip1559NotSupportedError', async () => {
 			const mockBlockDataNoBaseFeePerGas = { ...mockBlockData, baseFeePerGas: undefined };
-			jest.spyOn(ethRpcMethods, 'getBlockByNumber').mockImplementation(
+			jest.spyOn(zondRpcMethods, 'getBlockByNumber').mockImplementation(
 				// @ts-expect-error - Mocked implementation doesn't have correct method signature
 				// (i.e. requestManager, blockNumber, hydrated params), but that doesn't matter for the test
 				() => mockBlockDataNoBaseFeePerGas,

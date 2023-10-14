@@ -17,7 +17,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import { Bytes, ZondExecutionAPI, TransactionReceipt } from '@theqrl/web3-types';
 import { Web3Context, Web3PromiEvent } from '@theqrl/web3-core';
 import { format, numberToHex } from '@theqrl/web3-utils';
-import { ethRpcMethods } from '@theqrl/web3-rpc-methods';
+import { zondRpcMethods } from '@theqrl/web3-rpc-methods';
 
 import { DataFormat } from '@theqrl/web3-types';
 import { SendSignedTransactionEvents, SendTransactionEvents } from '../types.js';
@@ -56,7 +56,7 @@ export const watchTransactionByPolling = <
 			if (confirmations >= web3Context.transactionConfirmationBlocks)
 				clearInterval(intervalId);
 
-			const nextBlock = await ethRpcMethods.getBlockByNumber(
+			const nextBlock = await zondRpcMethods.getBlockByNumber(
 				web3Context.requestManager,
 				numberToHex(BigInt(transactionReceipt.blockNumber) + BigInt(confirmations)),
 				false,

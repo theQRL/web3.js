@@ -22,13 +22,13 @@ import {
 	Web3ZondExecutionAPI,
 } from '@theqrl/web3-types';
 import { isString } from '@theqrl/web3-validator';
-import { ethRpcMethods } from '@theqrl/web3-rpc-methods';
+import { zondRpcMethods } from '@theqrl/web3-rpc-methods';
 
 import { signTransaction } from '../../../src/rpc_method_wrappers';
 import { returnFormat, testData } from './fixtures/sign_transaction';
 import { formatTransaction } from '../../../src';
 
-jest.mock('web3-rpc-methods');
+jest.mock('@theqrl/web3-rpc-methods');
 
 describe('signTransaction', () => {
 	let web3Context: Web3Context<Web3ZondExecutionAPI>;
@@ -43,14 +43,14 @@ describe('signTransaction', () => {
 			const [inputTransaction, signedTransactionInfo] = inputParameters;
 			const inputTransactionFormatted = formatTransaction(inputTransaction, ZOND_DATA_FORMAT);
 
-			(ethRpcMethods.signTransaction as jest.Mock).mockResolvedValueOnce(
+			(zondRpcMethods.signTransaction as jest.Mock).mockResolvedValueOnce(
 				isString(signedTransactionInfo as string)
 					? signedTransactionInfo
 					: (signedTransactionInfo as SignedTransactionInfoAPI).raw,
 			);
 
 			await signTransaction(web3Context, inputTransaction, DEFAULT_RETURN_FORMAT);
-			expect(ethRpcMethods.signTransaction).toHaveBeenCalledWith(
+			expect(zondRpcMethods.signTransaction).toHaveBeenCalledWith(
 				web3Context.requestManager,
 				inputTransactionFormatted,
 			);
@@ -62,7 +62,7 @@ describe('signTransaction', () => {
 		async (_, inputParameters) => {
 			const [inputTransaction, signedTransactionInfo, expectedFormattedResult] =
 				inputParameters;
-			(ethRpcMethods.signTransaction as jest.Mock).mockResolvedValueOnce(
+			(zondRpcMethods.signTransaction as jest.Mock).mockResolvedValueOnce(
 				isString(signedTransactionInfo as string)
 					? signedTransactionInfo
 					: (signedTransactionInfo as SignedTransactionInfoAPI).raw,

@@ -18,13 +18,13 @@ import { Web3Context } from '@theqrl/web3-core';
 import { Web3ZondExecutionAPI, ZOND_DATA_FORMAT, FMT_BYTES, FMT_NUMBER } from '@theqrl/web3-types';
 import { isNullish } from '@theqrl/web3-validator';
 import { format } from '@theqrl/web3-utils';
-import { ethRpcMethods } from '@theqrl/web3-rpc-methods';
+import { zondRpcMethods } from '@theqrl/web3-rpc-methods';
 
 import { createAccessList } from '../../../src/rpc_method_wrappers';
 import { mockRpcResponse, testData } from './fixtures/createAccessList';
 import { formatTransaction } from '../../../src';
 
-jest.mock('web3-rpc-methods');
+jest.mock('@theqrl/web3-rpc-methods');
 
 describe('createAccessList', () => {
 	let web3Context: Web3Context<Web3ZondExecutionAPI>;
@@ -52,7 +52,7 @@ describe('createAccessList', () => {
 			}
 
 			await createAccessList(web3Context, ...inputParameters);
-			expect(ethRpcMethods.createAccessList).toHaveBeenCalledWith(
+			expect(zondRpcMethods.createAccessList).toHaveBeenCalledWith(
 				web3Context.requestManager,
 				inputTransactionFormatted,
 				inputBlockNumberFormatted,
@@ -69,7 +69,7 @@ describe('createAccessList', () => {
 				mockRpcResponse,
 				expectedReturnFormat,
 			);
-			(ethRpcMethods.createAccessList as jest.Mock).mockResolvedValueOnce(mockRpcResponse);
+			(zondRpcMethods.createAccessList as jest.Mock).mockResolvedValueOnce(mockRpcResponse);
 
 			const result = await createAccessList(
 				web3Context,

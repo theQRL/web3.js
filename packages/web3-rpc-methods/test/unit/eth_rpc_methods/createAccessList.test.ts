@@ -29,7 +29,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 // along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 // */
 import { Web3RequestManager } from '@theqrl/web3-core';
-import { ethRpcMethods } from '../../../src/index';
+import { zondRpcMethods } from '../../../src/index';
 import { testData } from './fixtures/createAccessList';
 
 describe('createAccessList', () => {
@@ -45,7 +45,7 @@ describe('createAccessList', () => {
 	it.each(testData)(
 		'should call requestManager.send with zond_createAccessList method with correct params',
 		async (_, inputParameters) => {
-			await ethRpcMethods.createAccessList(requestManager, ...inputParameters);
+			await zondRpcMethods.createAccessList(requestManager, ...inputParameters);
 			expect(requestManagerSendSpy).toHaveBeenCalledWith({
 				method: 'zond_createAccessList',
 				params: inputParameters,

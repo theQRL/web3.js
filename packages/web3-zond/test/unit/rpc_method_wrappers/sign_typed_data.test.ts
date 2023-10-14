@@ -16,13 +16,13 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import { Web3Context } from '@theqrl/web3-core';
 import { DEFAULT_RETURN_FORMAT, FMT_BYTES, FMT_NUMBER, Web3ZondExecutionAPI } from '@theqrl/web3-types';
-import { ethRpcMethods } from '@theqrl/web3-rpc-methods';
+import { zondRpcMethods } from '@theqrl/web3-rpc-methods';
 import { format } from '@theqrl/web3-utils';
 
 import { signTypedData } from '../../../src/rpc_method_wrappers';
 import { testData, mockRpcResponse } from './fixtures/sign_typed_data';
 
-jest.mock('web3-rpc-methods');
+jest.mock('@theqrl/web3-rpc-methods');
 
 describe('signTypedData', () => {
 	let web3Context: Web3Context<Web3ZondExecutionAPI>;
@@ -35,7 +35,7 @@ describe('signTypedData', () => {
 		`should call rpcMethods.signTypedData with expected parameters\nTitle: %s\nInput parameters: %s\n`,
 		async (_, inputParameters) => {
 			await signTypedData(web3Context, ...inputParameters, DEFAULT_RETURN_FORMAT);
-			expect(ethRpcMethods.signTypedData).toHaveBeenCalledWith(
+			expect(zondRpcMethods.signTypedData).toHaveBeenCalledWith(
 				web3Context.requestManager,
 				...inputParameters,
 			);
@@ -51,7 +51,7 @@ describe('signTypedData', () => {
 				mockRpcResponse,
 				expectedReturnFormat,
 			);
-			(ethRpcMethods.signTypedData as jest.Mock).mockResolvedValueOnce(mockRpcResponse);
+			(zondRpcMethods.signTypedData as jest.Mock).mockResolvedValueOnce(mockRpcResponse);
 
 			const result = await signTypedData(
 				web3Context,

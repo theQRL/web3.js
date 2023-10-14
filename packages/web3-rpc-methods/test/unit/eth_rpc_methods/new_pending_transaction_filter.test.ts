@@ -30,7 +30,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 // */
 import { Web3RequestManager } from '@theqrl/web3-core';
 
-import { ethRpcMethods } from '../../../src/index';
+import { zondRpcMethods } from '../../../src/index';
 
 describe('newPendingTransactionFilter', () => {
 	let requestManagerSendSpy: jest.Mock;
@@ -43,7 +43,7 @@ describe('newPendingTransactionFilter', () => {
 	});
 
 	it('should call requestManager.send with newPendingTransactionFilter method', async () => {
-		await ethRpcMethods.newPendingTransactionFilter(requestManager);
+		await zondRpcMethods.newPendingTransactionFilter(requestManager);
 		expect(requestManagerSendSpy).toHaveBeenCalledWith({
 			method: 'zond_newPendingTransactionFilter',
 			params: [],

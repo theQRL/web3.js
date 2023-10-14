@@ -30,7 +30,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 // */
 import { Web3RequestManager } from '@theqrl/web3-core';
 
-import { ethRpcMethods } from '../../../src/index';
+import { zondRpcMethods } from '../../../src/index';
 
 describe('getCoinbase', () => {
 	let requestManagerSendSpy: jest.Mock;
@@ -43,7 +43,7 @@ describe('getCoinbase', () => {
 	});
 
 	it('should call requestManager.send with getCoinbase method', async () => {
-		await ethRpcMethods.getCoinbase(requestManager);
+		await zondRpcMethods.getCoinbase(requestManager);
 		expect(requestManagerSendSpy).toHaveBeenCalledWith({
 			method: 'zond_coinbase',
 			params: [],

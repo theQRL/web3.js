@@ -25,12 +25,12 @@ import {
 	Web3ZondExecutionAPI,
 } from '@theqrl/web3-types';
 import { isBytes, isNullish } from '@theqrl/web3-validator';
-import { ethRpcMethods } from '@theqrl/web3-rpc-methods';
+import { zondRpcMethods } from '@theqrl/web3-rpc-methods';
 
 import { getBlockTransactionCount } from '../../../src/rpc_method_wrappers';
 import { mockRpcResponse, testData } from './fixtures/get_block_transaction_count';
 
-jest.mock('web3-rpc-methods');
+jest.mock('@theqrl/web3-rpc-methods');
 
 describe('getBlockTransactionCount', () => {
 	let web3Context: Web3Context<Web3ZondExecutionAPI>;
@@ -58,8 +58,8 @@ describe('getBlockTransactionCount', () => {
 			await getBlockTransactionCount(web3Context, ...inputParameters, DEFAULT_RETURN_FORMAT);
 			expect(
 				inputBlockIsBytes
-					? ethRpcMethods.getBlockTransactionCountByHash
-					: ethRpcMethods.getBlockTransactionCountByNumber,
+					? zondRpcMethods.getBlockTransactionCountByHash
+					: zondRpcMethods.getBlockTransactionCountByNumber,
 			).toHaveBeenCalledWith(web3Context.requestManager, inputBlockFormatted);
 		},
 	);
@@ -77,8 +77,8 @@ describe('getBlockTransactionCount', () => {
 			const inputBlockIsBytes = isBytes(inputBlock as Bytes);
 			(
 				(inputBlockIsBytes
-					? ethRpcMethods.getBlockTransactionCountByHash
-					: ethRpcMethods.getBlockTransactionCountByNumber) as jest.Mock
+					? zondRpcMethods.getBlockTransactionCountByHash
+					: zondRpcMethods.getBlockTransactionCountByNumber) as jest.Mock
 			).mockResolvedValueOnce(mockRpcResponse);
 
 			const result = await getBlockTransactionCount(

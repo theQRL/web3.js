@@ -31,10 +31,10 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import { Web3RequestManager } from '@theqrl/web3-core';
 import { validator } from '@theqrl/web3-validator';
 
-import { ethRpcMethods } from '../../../src/index';
+import { zondRpcMethods } from '../../../src/index';
 import { testData } from './fixtures/get_block_by_number';
 
-jest.mock('web3-validator');
+jest.mock('@theqrl/web3-validator');
 
 describe('getBlockByNumber', () => {
 	let requestManagerSendSpy: jest.Mock;
@@ -49,7 +49,7 @@ describe('getBlockByNumber', () => {
 	it.each(testData)(
 		'should call requestManager.send with getBlockByNumber method and expect parameters\n Title: %s\n Input parameters: %s',
 		async (_, inputParameters) => {
-			await ethRpcMethods.getBlockByNumber(requestManager, ...inputParameters);
+			await zondRpcMethods.getBlockByNumber(requestManager, ...inputParameters);
 			expect(requestManagerSendSpy).toHaveBeenCalledWith({
 				method: 'zond_getBlockByNumber',
 				params: inputParameters,
@@ -61,7 +61,7 @@ describe('getBlockByNumber', () => {
 		'should call validator.validate with expected params\n Title: %s\n Input parameters: %s',
 		async (_, inputParameters) => {
 			const validatorSpy = jest.spyOn(validator, 'validate');
-			await ethRpcMethods.getBlockByNumber(requestManager, ...inputParameters);
+			await zondRpcMethods.getBlockByNumber(requestManager, ...inputParameters);
 			expect(validatorSpy).toHaveBeenCalledWith(
 				['blockNumberOrTag', 'bool'],
 				inputParameters,

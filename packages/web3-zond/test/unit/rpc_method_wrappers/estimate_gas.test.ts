@@ -24,13 +24,13 @@ import {
 	FMT_BYTES,
 	Web3ZondExecutionAPI,
 } from '@theqrl/web3-types';
-import { ethRpcMethods } from '@theqrl/web3-rpc-methods';
+import { zondRpcMethods } from '@theqrl/web3-rpc-methods';
 
 import { estimateGas } from '../../../src/rpc_method_wrappers';
 import { mockRpcResponse, testData } from './fixtures/estimate_gas';
 import { formatTransaction } from '../../../src';
 
-jest.mock('web3-rpc-methods');
+jest.mock('@theqrl/web3-rpc-methods');
 
 describe('call', () => {
 	let web3Context: Web3Context<Web3ZondExecutionAPI>;
@@ -58,7 +58,7 @@ describe('call', () => {
 			}
 
 			await estimateGas(web3Context, ...inputParameters, DEFAULT_RETURN_FORMAT);
-			expect(ethRpcMethods.estimateGas).toHaveBeenCalledWith(
+			expect(zondRpcMethods.estimateGas).toHaveBeenCalledWith(
 				web3Context.requestManager,
 				inputTransactionFormatted,
 				inputBlockNumberFormatted,
@@ -75,7 +75,7 @@ describe('call', () => {
 				mockRpcResponse,
 				expectedReturnFormat,
 			);
-			(ethRpcMethods.estimateGas as jest.Mock).mockResolvedValueOnce(mockRpcResponse);
+			(zondRpcMethods.estimateGas as jest.Mock).mockResolvedValueOnce(mockRpcResponse);
 
 			const result = await estimateGas(web3Context, ...inputParameters, expectedReturnFormat);
 			expect(result).toStrictEqual(expectedFormattedResult);

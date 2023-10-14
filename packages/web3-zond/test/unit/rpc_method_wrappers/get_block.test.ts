@@ -25,13 +25,13 @@ import {
 	Web3ZondExecutionAPI,
 } from '@theqrl/web3-types';
 import { isBytes, isNullish } from '@theqrl/web3-validator';
-import { ethRpcMethods } from '@theqrl/web3-rpc-methods';
+import { zondRpcMethods } from '@theqrl/web3-rpc-methods';
 
 import { getBlock } from '../../../src/rpc_method_wrappers';
 import { mockRpcResponse, mockRpcResponseHydrated, testData } from './fixtures/get_block';
 import { blockSchema } from '../../../src/schemas';
 
-jest.mock('web3-rpc-methods');
+jest.mock('@theqrl/web3-rpc-methods');
 
 describe('getBlock', () => {
 	let web3Context: Web3Context<Web3ZondExecutionAPI>;
@@ -57,7 +57,7 @@ describe('getBlock', () => {
 			}
 			await getBlock(web3Context, ...inputParameters, DEFAULT_RETURN_FORMAT);
 			expect(
-				inputBlockIsBytes ? ethRpcMethods.getBlockByHash : ethRpcMethods.getBlockByNumber,
+				inputBlockIsBytes ? zondRpcMethods.getBlockByHash : zondRpcMethods.getBlockByNumber,
 			).toHaveBeenCalledWith(web3Context.requestManager, inputBlockFormatted, hydrated);
 		},
 	);
@@ -76,8 +76,8 @@ describe('getBlock', () => {
 			const inputBlockIsBytes = isBytes(inputBlock as Bytes);
 			(
 				(inputBlockIsBytes
-					? ethRpcMethods.getBlockByHash
-					: ethRpcMethods.getBlockByNumber) as jest.Mock
+					? zondRpcMethods.getBlockByHash
+					: zondRpcMethods.getBlockByNumber) as jest.Mock
 			).mockResolvedValueOnce(expectedMockRpcResponse);
 
 			const result = await getBlock(web3Context, ...inputParameters, expectedReturnFormat);

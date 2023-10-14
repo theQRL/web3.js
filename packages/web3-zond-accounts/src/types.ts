@@ -22,7 +22,6 @@ import { AccessListEIP2930Transaction, FeeMarketEIP1559Transaction, Transaction 
 export type SignatureObject = {
 	messageHash: string;
 	signature: string;
-	publicKey: string;
 };
 
 export type SignTransactionResult = SignatureObject & {

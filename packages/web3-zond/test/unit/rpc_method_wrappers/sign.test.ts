@@ -17,14 +17,14 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import { Web3Context } from '@theqrl/web3-core';
 import { format } from '@theqrl/web3-utils';
 import { DEFAULT_RETURN_FORMAT, FMT_BYTES, FMT_NUMBER, Web3ZondExecutionAPI } from '@theqrl/web3-types';
-import { ethRpcMethods } from '@theqrl/web3-rpc-methods';
+import { zondRpcMethods } from '@theqrl/web3-rpc-methods';
 import { Wallet } from '@theqrl/web3-zond-accounts';
 import { sign } from '../../../src/rpc_method_wrappers';
 import { mockRpcResponse, testData, walletTestData } from './fixtures/sign';
 import { createAccountProvider } from '../../fixtures/system_test_utils';
 import { SignatureObjectSchema } from '../../../src/schemas';
 
-jest.mock('web3-rpc-methods');
+jest.mock('@theqrl/web3-rpc-methods');
 
 describe('sign', () => {
 	let web3Context: Web3Context<Web3ZondExecutionAPI>;
@@ -43,7 +43,7 @@ describe('sign', () => {
 				DEFAULT_RETURN_FORMAT,
 			);
 			await sign(web3Context, ...inputParameters, DEFAULT_RETURN_FORMAT);
-			expect(ethRpcMethods.sign).toHaveBeenCalledWith(
+			expect(zondRpcMethods.sign).toHaveBeenCalledWith(
 				web3Context.requestManager,
 				inputAddress,
 				inputMessageFormatted,
@@ -79,7 +79,7 @@ describe('sign', () => {
 				mockRpcResponse,
 				expectedReturnFormat,
 			);
-			(ethRpcMethods.sign as jest.Mock).mockResolvedValueOnce(mockRpcResponse);
+			(zondRpcMethods.sign as jest.Mock).mockResolvedValueOnce(mockRpcResponse);
 
 			const result = await sign(web3Context, ...inputParameters, expectedReturnFormat);
 			expect(result).toStrictEqual(expectedFormattedResult);

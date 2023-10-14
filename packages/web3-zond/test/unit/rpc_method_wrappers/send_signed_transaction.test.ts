@@ -17,7 +17,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import { Web3Context } from '@theqrl/web3-core';
 import { format } from '@theqrl/web3-utils';
 import { DEFAULT_RETURN_FORMAT, Web3ZondExecutionAPI } from '@theqrl/web3-types';
-import { ethRpcMethods } from '@theqrl/web3-rpc-methods';
+import { zondRpcMethods } from '@theqrl/web3-rpc-methods';
 
 import { sendSignedTransaction } from '../../../src/rpc_method_wrappers';
 import * as WaitForTransactionReceipt from '../../../src/utils/wait_for_transaction_receipt';
@@ -29,7 +29,7 @@ import {
 } from './fixtures/send_signed_transaction';
 import { transactionReceiptSchema } from '../../../src/schemas';
 
-jest.mock('web3-rpc-methods');
+jest.mock('@theqrl/web3-rpc-methods');
 jest.mock('../../../src/utils/wait_for_transaction_receipt');
 jest.mock('../../../src/utils/watch_transaction_for_confirmations');
 
@@ -70,7 +70,7 @@ describe('sendTransaction', () => {
 	);
 
 	it.each(testData)(
-		`should call ethRpcMethods.sendRawTransaction with expected parameters\n ${testMessage}`,
+		`should call zondRpcMethods.sendRawTransaction with expected parameters\n ${testMessage}`,
 		async (_, inputSignedTransaction) => {
 			(
 				WaitForTransactionReceipt.waitForTransactionReceipt as jest.Mock
@@ -82,7 +82,7 @@ describe('sendTransaction', () => {
 				DEFAULT_RETURN_FORMAT,
 			);
 			await sendSignedTransaction(web3Context, inputSignedTransaction, DEFAULT_RETURN_FORMAT);
-			expect(ethRpcMethods.sendRawTransaction).toHaveBeenCalledWith(
+			expect(zondRpcMethods.sendRawTransaction).toHaveBeenCalledWith(
 				web3Context.requestManager,
 				inputSignedTransactionFormatted,
 			);
@@ -121,7 +121,7 @@ describe('sendTransaction', () => {
 				WaitForTransactionReceipt.waitForTransactionReceipt as jest.Mock
 			).mockResolvedValueOnce(expectedTransactionReceipt);
 
-			(ethRpcMethods.sendRawTransaction as jest.Mock).mockResolvedValueOnce(
+			(zondRpcMethods.sendRawTransaction as jest.Mock).mockResolvedValueOnce(
 				expectedTransactionHash,
 			);
 
@@ -140,7 +140,7 @@ describe('sendTransaction', () => {
 	it.each(testData)(
 		`should call WaitForTransactionReceipt.waitForTransactionReceipt with expected parameters\n ${testMessage}`,
 		async (_, inputSignedTransaction) => {
-			(ethRpcMethods.sendRawTransaction as jest.Mock).mockResolvedValueOnce(
+			(zondRpcMethods.sendRawTransaction as jest.Mock).mockResolvedValueOnce(
 				expectedTransactionHash,
 			);
 			(
@@ -163,7 +163,7 @@ describe('sendTransaction', () => {
 				.spyOn(WaitForTransactionReceipt, 'waitForTransactionReceipt')
 				.mockResolvedValueOnce(expectedTransactionReceipt);
 
-			(ethRpcMethods.sendRawTransaction as jest.Mock).mockResolvedValueOnce(
+			(zondRpcMethods.sendRawTransaction as jest.Mock).mockResolvedValueOnce(
 				expectedTransactionHash,
 			);
 
@@ -237,7 +237,7 @@ describe('sendTransaction', () => {
 				DEFAULT_RETURN_FORMAT,
 			);
 
-			(ethRpcMethods.sendRawTransaction as jest.Mock).mockResolvedValueOnce(
+			(zondRpcMethods.sendRawTransaction as jest.Mock).mockResolvedValueOnce(
 				expectedTransactionHash,
 			);
 			(

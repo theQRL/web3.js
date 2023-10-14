@@ -22,9 +22,9 @@ describe('main package', () => {
 		expect(Validator.Web3Validator).toBeDefined();
 		expect(Validator.utils).toBeDefined();
 		expect(Validator.Web3ValidatorError).toBeDefined();
-		expect(Validator.VALID_ETH_BASE_TYPES).toBeDefined();
+		expect(Validator.VALID_ZOND_BASE_TYPES).toBeDefined();
 
 		expect(Validator.validator).toBeInstanceOf(Validator.Web3Validator);
-		expect(Validator.VALID_ETH_BASE_TYPES).toBeInstanceOf(Array);
+		expect(Validator.VALID_ZOND_BASE_TYPES).toBeInstanceOf(Array);
 	});
 });

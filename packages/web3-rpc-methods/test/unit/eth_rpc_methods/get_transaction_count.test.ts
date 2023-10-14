@@ -31,10 +31,10 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import { Web3RequestManager } from '@theqrl/web3-core';
 import { validator } from '@theqrl/web3-validator';
 
-import { ethRpcMethods } from '../../../src/index';
+import { zondRpcMethods } from '../../../src/index';
 import { testData } from './fixtures/get_transaction_count';
 
-jest.mock('web3-validator');
+jest.mock('@theqrl/web3-validator');
 
 describe('getTransactionCount', () => {
 	let requestManagerSendSpy: jest.Mock;
@@ -49,7 +49,7 @@ describe('getTransactionCount', () => {
 	it.each(testData)(
 		'should call requestManager.send with getTransactionCount method and expect parameters\n Title: %s\n Input parameters: %s',
 		async (_, inputParameters) => {
-			await ethRpcMethods.getTransactionCount(requestManager, ...inputParameters);
+			await zondRpcMethods.getTransactionCount(requestManager, ...inputParameters);
 			expect(requestManagerSendSpy).toHaveBeenCalledWith({
 				method: 'zond_getTransactionCount',
 				params: inputParameters,
@@ -61,7 +61,7 @@ describe('getTransactionCount', () => {
 		'should call validator.validate with expected params\n Title: %s\n Input parameters: %s',
 		async (_, inputParameters) => {
 			const validatorSpy = jest.spyOn(validator, 'validate');
-			await ethRpcMethods.getTransactionCount(requestManager, ...inputParameters);
+			await zondRpcMethods.getTransactionCount(requestManager, ...inputParameters);
 			expect(validatorSpy).toHaveBeenCalledWith(
 				['address', 'blockNumberOrTag'],
 				inputParameters,

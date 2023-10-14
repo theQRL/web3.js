@@ -14,8 +14,8 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import * as ethRpcMethods from './eth_rpc_methods.js';
+import * as zondRpcMethods from './eth_rpc_methods.js';
 import * as netRpcMethods from './net_rpc_methods.js';
 import * as personalRpcMethods from './personal_rpc_methods.js';
 
-export { ethRpcMethods, netRpcMethods, personalRpcMethods };
+export { zondRpcMethods, netRpcMethods, personalRpcMethods };

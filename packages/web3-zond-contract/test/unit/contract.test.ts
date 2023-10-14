@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import * as eth from '@theqrl/web3-zond';
+import * as zond from '@theqrl/web3-zond';
 import { ValidChains, Hardfork, AccessListResult, Address, ZOND_DATA_FORMAT } from '@theqrl/web3-types';
 import { Web3ContractError } from '@theqrl/web3-errors';
 import { Web3Context } from '@theqrl/web3-core';
@@ -29,7 +29,7 @@ import { erc721Abi } from '../fixtures/erc721';
 import { ERC20TokenAbi } from '../shared_fixtures/build/ERC20Token';
 import { processAsync } from '../shared_fixtures/utils';
 
-jest.mock('web3-eth');
+jest.mock('@theqrl/web3-zond');
 
 describe('Contract', () => {
 	describe('constructor', () => {
@@ -221,7 +221,7 @@ describe('Contract', () => {
 
 			// eslint-disable-next-line @typescript-eslint/no-unused-vars
 			const sendTransactionSpy = jest
-				.spyOn(eth, 'sendTransaction')
+				.spyOn(zond, 'sendTransaction')
 				.mockImplementation((_objInstance, tx) => {
 					expect(tx.to).toBeUndefined();
 					expect(tx.gas).toStrictEqual(sendOptions.gas);
@@ -254,7 +254,7 @@ describe('Contract', () => {
 
 			// eslint-disable-next-line @typescript-eslint/no-unused-vars
 			const sendTransactionSpy = jest
-				.spyOn(eth, 'sendTransaction')
+				.spyOn(zond, 'sendTransaction')
 				.mockImplementation((_objInstance, tx) => {
 					expect(tx.to).toBeUndefined();
 					expect(tx.gas).toStrictEqual(sendOptions.gas);
@@ -299,7 +299,7 @@ describe('Contract', () => {
 				gas: '1000000',
 			};
 			const spyTx = jest
-				.spyOn(eth, 'sendTransaction')
+				.spyOn(zond, 'sendTransaction')
 				.mockImplementation((_objInstance, _tx) => {
 					const newContract = contract.clone();
 					newContract.options.address = deployedAddr;
@@ -339,7 +339,7 @@ describe('Contract', () => {
 				data: '0xa41368620000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000548656c6c6f000000000000000000000000000000000000000000000000000000',
 			};
 			const spyTx = jest
-				.spyOn(eth, 'sendTransaction')
+				.spyOn(zond, 'sendTransaction')
 				.mockImplementation((_objInstance, _tx) => {
 					const newContract = contract.clone();
 					newContract.options.address = deployedAddr;
@@ -386,7 +386,7 @@ describe('Contract', () => {
 				gas: '1000000',
 			};
 			const spyTx = jest
-				.spyOn(eth, 'sendTransaction')
+				.spyOn(zond, 'sendTransaction')
 				.mockImplementation((_objInstance, _tx) => {
 					const newContract = contract.clone();
 					newContract.options.address = deployedAddr;
@@ -432,7 +432,7 @@ describe('Contract', () => {
 				gas: '1000000',
 			};
 			const spyTx = jest
-				.spyOn(eth, 'sendTransaction')
+				.spyOn(zond, 'sendTransaction')
 				.mockImplementation((_objInstance, _tx) => {
 					const newContract = contract.clone();
 					newContract.options.address = deployedAddr;
@@ -482,7 +482,7 @@ describe('Contract', () => {
 				gas: '1000000',
 			};
 			const spyTx = jest
-				.spyOn(eth, 'sendTransaction')
+				.spyOn(zond, 'sendTransaction')
 				.mockImplementation((_objInstance, _tx) => {
 					const newContract = contract.clone();
 					newContract.options.address = deployedAddr;
@@ -518,14 +518,14 @@ describe('Contract', () => {
 				'0x0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000548656c6c6f000000000000000000000000000000000000000000000000000000';
 			const contract = new Contract(GreeterAbi);
 
-			const spyTx = jest.spyOn(eth, 'sendTransaction').mockImplementation(() => {
+			const spyTx = jest.spyOn(zond, 'sendTransaction').mockImplementation(() => {
 				const newContract = contract.clone();
 				newContract.options.address = deployedAddr;
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-return
 				return Promise.resolve(newContract) as any;
 			});
 
-			const spyEthCall = jest.spyOn(eth, 'call').mockImplementation((_objInstance, _tx) => {
+			const spyZondCall = jest.spyOn(zond, 'call').mockImplementation((_objInstance, _tx) => {
 				expect(_tx.to).toStrictEqual(deployedAddr);
 				expect(_tx.input).toBe('0xcfae3217');
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-return
@@ -541,7 +541,7 @@ describe('Contract', () => {
 			expect(res).toStrictEqual(arg);
 
 			spyTx.mockClear();
-			spyEthCall.mockClear();
+			spyZondCall.mockClear();
 		});
 
 		it('should clone pre deployed contract with address', () => {
@@ -746,8 +746,8 @@ describe('Contract', () => {
 				{ config: { defaultAccount: '0x00000000219ab540356cBB839Cbe05303d7705Fa' } },
 			);
 
-			const spyEthCall = jest
-				.spyOn(eth, 'call')
+			const spyZondCall = jest
+				.spyOn(zond, 'call')
 				.mockImplementation(async (_objInstance, _tx) => {
 					expect(_tx.to).toBe('0x1230B93ffd14F2F022039675fA3fc3A46eE4C701');
 					expect(_tx.input).toBe(
@@ -760,7 +760,7 @@ describe('Contract', () => {
 				contract.methods.approve('0x00000000219ab540356cBB839Cbe05303d7705Fa', 1).call(),
 			).resolves.toBeTruthy();
 
-			spyEthCall.mockClear();
+			spyZondCall.mockClear();
 		});
 
 		it('should be able to call a payable method with data as a contract init option', async () => {
@@ -771,8 +771,8 @@ describe('Contract', () => {
 				{ config: { defaultAccount: '0x00000000219ab540356cBB839Cbe05303d7705Fa' } },
 			);
 
-			const spyEthCall = jest
-				.spyOn(eth, 'call')
+			const spyZondCall = jest
+				.spyOn(zond, 'call')
 				.mockImplementation(async (_objInstance, _tx) => {
 					expect(_tx.to).toBe('0x1230B93ffd14F2F022039675fA3fc3A46eE4C701');
 					expect(_tx.data).toBe(
@@ -785,7 +785,7 @@ describe('Contract', () => {
 				contract.methods.approve('0x00000000219ab540356cBB839Cbe05303d7705Fa', 1).call(),
 			).resolves.toBeTruthy();
 
-			spyEthCall.mockClear();
+			spyZondCall.mockClear();
 		});
 
 		it('should be able to call a payable method with input as a contract init option', async () => {
@@ -796,8 +796,8 @@ describe('Contract', () => {
 				{ config: { defaultAccount: '0x00000000219ab540356cBB839Cbe05303d7705Fa' } },
 			);
 
-			const spyEthCall = jest
-				.spyOn(eth, 'call')
+			const spyZondCall = jest
+				.spyOn(zond, 'call')
 				.mockImplementation(async (_objInstance, _tx) => {
 					expect(_tx.to).toBe('0x1230B93ffd14F2F022039675fA3fc3A46eE4C701');
 					expect(_tx.input).toBe(
@@ -810,7 +810,7 @@ describe('Contract', () => {
 				contract.methods.approve('0x00000000219ab540356cBB839Cbe05303d7705Fa', 1).call(),
 			).resolves.toBeTruthy();
 
-			spyEthCall.mockClear();
+			spyZondCall.mockClear();
 		});
 
 		it('should be able to call a payable method with data as a web3Context option', async () => {
@@ -829,8 +829,8 @@ describe('Contract', () => {
 				web3Context,
 			);
 
-			const spyEthCall = jest
-				.spyOn(eth, 'call')
+			const spyZondCall = jest
+				.spyOn(zond, 'call')
 				.mockImplementation(async (_objInstance, _tx) => {
 					expect(_tx.to).toBe('0x1230B93ffd14F2F022039675fA3fc3A46eE4C701');
 					expect(_tx.data).toBe(
@@ -843,7 +843,7 @@ describe('Contract', () => {
 				contract.methods.approve('0x00000000219ab540356cBB839Cbe05303d7705Fa', 1).call(),
 			).resolves.toBeTruthy();
 
-			spyEthCall.mockClear();
+			spyZondCall.mockClear();
 		});
 
 		it('should be able to call a payable method with both data and input as a web3Context option', async () => {
@@ -862,8 +862,8 @@ describe('Contract', () => {
 				web3Context,
 			);
 
-			const spyEthCall = jest
-				.spyOn(eth, 'call')
+			const spyZondCall = jest
+				.spyOn(zond, 'call')
 				.mockImplementation(async (_objInstance, _tx) => {
 					expect(_tx.to).toBe('0x1230B93ffd14F2F022039675fA3fc3A46eE4C701');
 					expect(_tx.data).toBe(
@@ -879,13 +879,13 @@ describe('Contract', () => {
 				contract.methods.approve('0x00000000219ab540356cBB839Cbe05303d7705Fa', 1).call(),
 			).resolves.toBeTruthy();
 
-			spyEthCall.mockClear();
+			spyZondCall.mockClear();
 		});
 
 		it('getPastEvents with filter should work', async () => {
 			const contract = new Contract<typeof GreeterAbi>(GreeterAbi);
 
-			const spyTx = jest.spyOn(eth, 'sendTransaction').mockImplementation(() => {
+			const spyTx = jest.spyOn(zond, 'sendTransaction').mockImplementation(() => {
 				const newContract = contract.clone();
 				newContract.options.address = deployedAddr;
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-return
@@ -893,7 +893,7 @@ describe('Contract', () => {
 			});
 
 			const spyGetLogs = jest
-				.spyOn(eth, 'getLogs')
+				.spyOn(zond, 'getLogs')
 				.mockImplementation((_objInstance, _params) => {
 					expect(_params.address).toStrictEqual(deployedAddr.toLocaleLowerCase());
 					expect(_params.fromBlock).toStrictEqual(getLogsData.request.fromBlock);
@@ -926,7 +926,7 @@ describe('Contract', () => {
 		it('getPastEvents with filter by topics should work', async () => {
 			const contract = new Contract<typeof GreeterAbi>(GreeterAbi);
 
-			const spyTx = jest.spyOn(eth, 'sendTransaction').mockImplementation(() => {
+			const spyTx = jest.spyOn(zond, 'sendTransaction').mockImplementation(() => {
 				const newContract = contract.clone();
 				newContract.options.address = deployedAddr;
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-return
@@ -934,7 +934,7 @@ describe('Contract', () => {
 			});
 
 			const spyGetLogs = jest
-				.spyOn(eth, 'getLogs')
+				.spyOn(zond, 'getLogs')
 				.mockImplementation((_objInstance, _params) => {
 					expect(_params.address).toStrictEqual(deployedAddr.toLocaleLowerCase());
 					expect(_params.fromBlock).toStrictEqual(getLogsData.request.fromBlock);
@@ -967,7 +967,7 @@ describe('Contract', () => {
 		it('getPastEvents for all events should work', async () => {
 			const contract = new Contract<typeof GreeterAbi>(GreeterAbi);
 
-			const spyTx = jest.spyOn(eth, 'sendTransaction').mockImplementation(() => {
+			const spyTx = jest.spyOn(zond, 'sendTransaction').mockImplementation(() => {
 				const newContract = contract.clone();
 				newContract.options.address = deployedAddr;
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-return
@@ -975,7 +975,7 @@ describe('Contract', () => {
 			});
 
 			const spyGetLogs = jest
-				.spyOn(eth, 'getLogs')
+				.spyOn(zond, 'getLogs')
 				.mockImplementation((_objInstance, _params) => {
 					expect(_params.address).toStrictEqual(deployedAddr.toLocaleLowerCase());
 					expect(_params.fromBlock).toBeUndefined();
@@ -1003,7 +1003,7 @@ describe('Contract', () => {
 		it('getPastEvents for all events with filter should work', async () => {
 			const contract = new Contract<typeof GreeterAbi>(GreeterAbi);
 
-			const spyTx = jest.spyOn(eth, 'sendTransaction').mockImplementation(() => {
+			const spyTx = jest.spyOn(zond, 'sendTransaction').mockImplementation(() => {
 				const newContract = contract.clone();
 				newContract.options.address = deployedAddr;
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-return
@@ -1011,7 +1011,7 @@ describe('Contract', () => {
 			});
 
 			const spyGetLogs = jest
-				.spyOn(eth, 'getLogs')
+				.spyOn(zond, 'getLogs')
 				.mockImplementation((_objInstance, _params) => {
 					expect(_params.address).toStrictEqual(deployedAddr.toLocaleLowerCase());
 					expect(_params.fromBlock).toBeUndefined();
@@ -1070,7 +1070,7 @@ describe('Contract', () => {
 		it('getPastEvents for all events with filter by topics should work', async () => {
 			const contract = new Contract<typeof GreeterAbi>(GreeterAbi);
 
-			const spyTx = jest.spyOn(eth, 'sendTransaction').mockImplementation(() => {
+			const spyTx = jest.spyOn(zond, 'sendTransaction').mockImplementation(() => {
 				const newContract = contract.clone();
 				newContract.options.address = deployedAddr;
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-return
@@ -1078,7 +1078,7 @@ describe('Contract', () => {
 			});
 
 			const spyGetLogs = jest
-				.spyOn(eth, 'getLogs')
+				.spyOn(zond, 'getLogs')
 				.mockImplementation((_objInstance, _params) => {
 					expect(_params.address).toStrictEqual(deployedAddr.toLocaleLowerCase());
 					expect(_params.fromBlock).toBeUndefined();
@@ -1108,7 +1108,7 @@ describe('Contract', () => {
 		it('allEvents() should throw error with inner error', async () => {
 			const contract = new Contract<typeof GreeterAbi>(GreeterAbi);
 
-			const spyTx = jest.spyOn(eth, 'sendTransaction').mockImplementation(() => {
+			const spyTx = jest.spyOn(zond, 'sendTransaction').mockImplementation(() => {
 				const newContract = contract.clone();
 				newContract.options.address = deployedAddr;
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-return
@@ -1116,7 +1116,7 @@ describe('Contract', () => {
 			});
 
 			const spyGetLogs = jest
-				.spyOn(eth, 'getLogs')
+				.spyOn(zond, 'getLogs')
 				.mockImplementation((_objInstance, _params) => {
 					throw new Error('Inner error');
 				});
@@ -1148,7 +1148,7 @@ describe('Contract', () => {
 		it('encodeABI should work for the deploy function using data', () => {
 			const contract = new Contract(GreeterAbi);
 
-			const spyTx = jest.spyOn(eth, 'sendTransaction').mockImplementation(() => {
+			const spyTx = jest.spyOn(zond, 'sendTransaction').mockImplementation(() => {
 				const newContract = contract.clone();
 				newContract.options.address = deployedAddr;
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-return
@@ -1171,7 +1171,7 @@ describe('Contract', () => {
 		it('estimateGas should work for the deploy function using input', async () => {
 			const contract = new Contract(GreeterAbi);
 
-			const spyTx = jest.spyOn(eth, 'sendTransaction').mockImplementation(() => {
+			const spyTx = jest.spyOn(zond, 'sendTransaction').mockImplementation(() => {
 				const newContract = contract.clone();
 				newContract.options.address = deployedAddr;
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-return
@@ -1179,7 +1179,7 @@ describe('Contract', () => {
 			});
 
 			const spyEstimateGas = jest
-				.spyOn(eth, 'estimateGas')
+				.spyOn(zond, 'estimateGas')
 				.mockImplementationOnce((_objInstance, _tx, _block, returnFormat) => {
 					expect(_block).toBe('latest');
 					expect(_tx.to).toBeUndefined();
@@ -1208,7 +1208,7 @@ describe('Contract', () => {
 		it('estimateGas should work for the deploy function using data', async () => {
 			const contract = new Contract(GreeterAbi);
 
-			const spyTx = jest.spyOn(eth, 'sendTransaction').mockImplementation(() => {
+			const spyTx = jest.spyOn(zond, 'sendTransaction').mockImplementation(() => {
 				const newContract = contract.clone();
 				newContract.options.address = deployedAddr;
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-return
@@ -1216,7 +1216,7 @@ describe('Contract', () => {
 			});
 
 			const spyEstimateGas = jest
-				.spyOn(eth, 'estimateGas')
+				.spyOn(zond, 'estimateGas')
 				.mockImplementationOnce((_objInstance, _tx, _block, returnFormat) => {
 					expect(_block).toBe('latest');
 					expect(_tx.to).toBeUndefined();
@@ -1251,7 +1251,7 @@ describe('Contract', () => {
 
 			const contract = new Contract(GreeterAbi, web3Context);
 
-			const spyTx = jest.spyOn(eth, 'sendTransaction').mockImplementation(() => {
+			const spyTx = jest.spyOn(zond, 'sendTransaction').mockImplementation(() => {
 				const newContract = contract.clone();
 				newContract.options.address = deployedAddr;
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-return
@@ -1259,7 +1259,7 @@ describe('Contract', () => {
 			});
 
 			const spyEstimateGas = jest
-				.spyOn(eth, 'estimateGas')
+				.spyOn(zond, 'estimateGas')
 				.mockImplementationOnce((_objInstance, _tx, _block, returnFormat) => {
 					expect(_block).toBe('latest');
 					expect(_tx.to).toBeUndefined();
@@ -1296,7 +1296,7 @@ describe('Contract', () => {
 
 			const contract = new Contract(GreeterAbi, web3Context);
 
-			const spyTx = jest.spyOn(eth, 'sendTransaction').mockImplementation(() => {
+			const spyTx = jest.spyOn(zond, 'sendTransaction').mockImplementation(() => {
 				const newContract = contract.clone();
 				newContract.options.address = deployedAddr;
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-return
@@ -1304,7 +1304,7 @@ describe('Contract', () => {
 			});
 
 			const spyEstimateGas = jest
-				.spyOn(eth, 'estimateGas')
+				.spyOn(zond, 'estimateGas')
 				.mockImplementationOnce((_objInstance, _tx, _block, returnFormat) => {
 					expect(_block).toBe('latest');
 					expect(_tx.to).toBeUndefined();
@@ -1335,7 +1335,7 @@ describe('Contract', () => {
 
 			const contract = new Contract(GreeterAbi, { data: GreeterBytecode });
 
-			const spyTx = jest.spyOn(eth, 'sendTransaction').mockImplementation(() => {
+			const spyTx = jest.spyOn(zond, 'sendTransaction').mockImplementation(() => {
 				const newContract = contract.clone();
 				newContract.options.address = deployedAddr;
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-return
@@ -1343,7 +1343,7 @@ describe('Contract', () => {
 			});
 
 			const spyEstimateGas = jest
-				.spyOn(eth, 'estimateGas')
+				.spyOn(zond, 'estimateGas')
 				.mockImplementationOnce((_objInstance, _tx, _block) => {
 					expect(_block).toBe('latest');
 					expect(_tx.to).toStrictEqual(deployedAddr);
@@ -1374,7 +1374,7 @@ describe('Contract', () => {
 
 			const contract = new Contract(GreeterAbi, { data: GreeterBytecode });
 
-			const spyTx = jest.spyOn(eth, 'sendTransaction').mockImplementation(() => {
+			const spyTx = jest.spyOn(zond, 'sendTransaction').mockImplementation(() => {
 				const newContract = contract.clone();
 				newContract.options.address = deployedAddr;
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-return
@@ -1436,8 +1436,8 @@ describe('Contract', () => {
 
 			const contract = new Contract(GreeterAbi, deployedAddr);
 
-			const spyEthCall = jest
-				.spyOn(eth, 'createAccessList')
+			const spyZondCall = jest
+				.spyOn(zond, 'createAccessList')
 				.mockImplementation((_objInstance, _tx) => {
 					expect(_tx.to).toStrictEqual(deployedAddr);
 					expect(_tx.input).toBe('0xcfae3217');
@@ -1449,7 +1449,7 @@ describe('Contract', () => {
 			const res = await contract.methods.greet().createAccessList({ from: fromAddr });
 			expect(res).toStrictEqual(result);
 
-			spyEthCall.mockClear();
+			spyZondCall.mockClear();
 		});
 
 		it('contract method createAccessList should work using data with web3config', async () => {
@@ -1474,7 +1474,7 @@ describe('Contract', () => {
 			const contract = new Contract(GreeterAbi, deployedAddr, web3Context);
 
 			const spyEthCall = jest
-				.spyOn(eth, 'createAccessList')
+				.spyOn(zond, 'createAccessList')
 				.mockImplementation((_objInstance, _tx) => {
 					expect(_tx.to).toStrictEqual(deployedAddr);
 					expect(_tx.data).toBe('0xcfae3217');
@@ -1510,7 +1510,7 @@ describe('Contract', () => {
 			const contract = new Contract(GreeterAbi, deployedAddr, web3Context);
 
 			const spyEthCall = jest
-				.spyOn(eth, 'createAccessList')
+				.spyOn(zond, 'createAccessList')
 				.mockImplementation((_objInstance, _tx) => {
 					expect(_tx.to).toStrictEqual(deployedAddr);
 					expect(_tx.data).toBe('0xcfae3217');

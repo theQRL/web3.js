@@ -819,7 +819,7 @@ should use 4.0.1-alpha.0 for testing.
 #### web3-eth
 
 -   `Web3EthExecutionAPI` is now imported via `web3-types` instead of `web3_eth_execution_api.ts` (#5441)
--   Replace the imported methods from `rpc_methods.ts` with `ethRpcMethods` imports from `web3-rpc-methods` (#5441)
+-   Replace the imported methods from `rpc_methods.ts` with `zondRpcMethods` imports from `web3-rpc-methods` (#5441)
 -   `Web3NetAPI` is now imported from `web3-types` instead of `web3-net` (#5441)
 -   Moved `rpc_methods` tests to `web3-rpc-methods` (#5441)
 -   Implemented the logic for `transactionBlockTimeout` (#5294)

@@ -15,22 +15,22 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { isValidEthBaseType } from '../../../src/validation/zond';
+import { isValidZondBaseType } from '../../../src/validation/zond';
 
-import { invalidEthTypeData, validEthTypeData } from '../../fixtures/validation';
+import { invalidEthTypeData, validZondTypeData } from '../../fixtures/validation';
 
 describe('validation', () => {
 	describe('eth', () => {
 		describe('isValidEthType', () => {
 			describe('valid cases', () => {
-				it.each(validEthTypeData)('%s', input => {
-					expect(isValidEthBaseType(input)).toBeTruthy();
+				it.each(validZondTypeData)('%s', input => {
+					expect(isValidZondBaseType(input)).toBeTruthy();
 				});
 			});
 
 			describe('invalid cases', () => {
 				it.each(invalidEthTypeData)('%s', input => {
-					expect(isValidEthBaseType(input)).toBeFalsy();
+					expect(isValidZondBaseType(input)).toBeFalsy();
 				});
 			});
 		});

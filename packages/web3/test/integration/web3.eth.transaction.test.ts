@@ -20,7 +20,7 @@ import { Web3Account } from '@theqrl/web3-zond-accounts';
 import Web3, { DEFAULT_RETURN_FORMAT, Transaction } from '../../src';
 import testsData from '../fixtures/transactions.json';
 
-jest.mock('web3-providers-http');
+jest.mock('@theqrl/web3-providers-http');
 
 describe('signTransaction', () => {
 	let blockNum = 1;

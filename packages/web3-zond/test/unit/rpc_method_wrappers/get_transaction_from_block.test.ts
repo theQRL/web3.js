@@ -25,13 +25,13 @@ import {
 	Web3ZondExecutionAPI,
 } from '@theqrl/web3-types';
 import { isBytes, isNullish } from '@theqrl/web3-validator';
-import { ethRpcMethods } from '@theqrl/web3-rpc-methods';
+import { zondRpcMethods } from '@theqrl/web3-rpc-methods';
 
 import { getTransactionFromBlock } from '../../../src/rpc_method_wrappers';
 import { mockRpcResponse, testData } from './fixtures/get_transaction_from_block';
 import { formatTransaction, transactionInfoSchema } from '../../../src';
 
-jest.mock('web3-rpc-methods');
+jest.mock('@theqrl/web3-rpc-methods');
 
 describe('getTransactionFromBlock', () => {
 	let web3Context: Web3Context<Web3ZondExecutionAPI>;
@@ -64,8 +64,8 @@ describe('getTransactionFromBlock', () => {
 			await getTransactionFromBlock(web3Context, ...inputParameters, DEFAULT_RETURN_FORMAT);
 			expect(
 				inputBlockIsBytes
-					? ethRpcMethods.getTransactionByBlockHashAndIndex
-					: ethRpcMethods.getTransactionByBlockNumberAndIndex,
+					? zondRpcMethods.getTransactionByBlockHashAndIndex
+					: zondRpcMethods.getTransactionByBlockNumberAndIndex,
 			).toHaveBeenCalledWith(
 				web3Context.requestManager,
 				inputBlockFormatted,
@@ -87,8 +87,8 @@ describe('getTransactionFromBlock', () => {
 			const inputBlockIsBytes = isBytes(inputBlock as Bytes);
 			(
 				(inputBlockIsBytes
-					? ethRpcMethods.getTransactionByBlockHashAndIndex
-					: ethRpcMethods.getTransactionByBlockNumberAndIndex) as jest.Mock
+					? zondRpcMethods.getTransactionByBlockHashAndIndex
+					: zondRpcMethods.getTransactionByBlockNumberAndIndex) as jest.Mock
 			).mockResolvedValueOnce(mockRpcResponse);
 
 			const result = await getTransactionFromBlock(

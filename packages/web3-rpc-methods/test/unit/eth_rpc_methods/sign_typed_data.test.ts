@@ -17,10 +17,10 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import { Web3RequestManager } from '@theqrl/web3-core';
 import { validator } from '@theqrl/web3-validator';
 
-import { ethRpcMethods } from '../../../src/index';
+import { zondRpcMethods } from '../../../src/index';
 import { testData } from './fixtures/sign_typed_data';
 
-jest.mock('web3-validator');
+jest.mock('@theqrl/web3-validator');
 
 describe('signTypedData', () => {
 	let requestManagerSendSpy: jest.Mock;
@@ -35,7 +35,7 @@ describe('signTypedData', () => {
 	it.each(testData)(
 		'should call requestManager.send with signTypedData method and expect parameters\n Title: %s\n Input parameters: %s',
 		async (_, inputParameters) => {
-			await ethRpcMethods.signTypedData(requestManager, ...inputParameters);
+			await zondRpcMethods.signTypedData(requestManager, ...inputParameters);
 			expect(requestManagerSendSpy).toHaveBeenCalledWith({
 				method: `zond_signTypedData${inputParameters[2] ? '' : '_v4'}`,
 				params: [inputParameters[0], inputParameters[1]],
@@ -47,7 +47,7 @@ describe('signTypedData', () => {
 		'should call validator.validate with expected params\n Title: %s\n Input parameters: %s',
 		async (_, inputParameters) => {
 			const validatorSpy = jest.spyOn(validator, 'validate');
-			await ethRpcMethods.signTypedData(requestManager, ...inputParameters);
+			await zondRpcMethods.signTypedData(requestManager, ...inputParameters);
 			expect(validatorSpy).toHaveBeenCalledWith(['address'], [inputParameters[0]]);
 		},
 	);

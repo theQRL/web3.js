@@ -119,6 +119,7 @@ export const ERR_INVALID_PASSWORD = 706;
 export const ERR_IV_LENGTH = 707;
 export const ERR_INVALID_KEYSTORE = 708;
 export const ERR_PBKDF2_ITERATIONS = 709;
+export const ERR_INVALID_SEED = 710;
 
 // Signature error codes
 export const ERR_SIGNATURE_FAILED = 801;

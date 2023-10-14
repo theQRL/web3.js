@@ -24,12 +24,12 @@ import {
 	Web3ZondExecutionAPI,
 } from '@theqrl/web3-types';
 import { isNullish } from '@theqrl/web3-validator';
-import { ethRpcMethods } from '@theqrl/web3-rpc-methods';
+import { zondRpcMethods } from '@theqrl/web3-rpc-methods';
 
 import { getStorageAt } from '../../../src/rpc_method_wrappers';
 import { mockRpcResponse, testData } from './fixtures/get_storage_at';
 
-jest.mock('web3-rpc-methods');
+jest.mock('@theqrl/web3-rpc-methods');
 
 describe('getStorageAt', () => {
 	let web3Context: Web3Context<Web3ZondExecutionAPI>;
@@ -61,7 +61,7 @@ describe('getStorageAt', () => {
 			}
 
 			await getStorageAt(web3Context, ...inputParameters, DEFAULT_RETURN_FORMAT);
-			expect(ethRpcMethods.getStorageAt).toHaveBeenCalledWith(
+			expect(zondRpcMethods.getStorageAt).toHaveBeenCalledWith(
 				web3Context.requestManager,
 				inputAddress,
 				inputStorageSlotFormatted,
@@ -79,7 +79,7 @@ describe('getStorageAt', () => {
 				mockRpcResponse,
 				expectedReturnFormat,
 			);
-			(ethRpcMethods.getStorageAt as jest.Mock).mockResolvedValueOnce(mockRpcResponse);
+			(zondRpcMethods.getStorageAt as jest.Mock).mockResolvedValueOnce(mockRpcResponse);
 
 			const result = await getStorageAt(
 				web3Context,

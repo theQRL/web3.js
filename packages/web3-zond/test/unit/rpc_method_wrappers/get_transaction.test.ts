@@ -17,13 +17,13 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import { Web3Context } from '@theqrl/web3-core';
 import { format } from '@theqrl/web3-utils';
 import { DEFAULT_RETURN_FORMAT, FMT_BYTES, FMT_NUMBER, Web3ZondExecutionAPI } from '@theqrl/web3-types';
-import { ethRpcMethods } from '@theqrl/web3-rpc-methods';
+import { zondRpcMethods } from '@theqrl/web3-rpc-methods';
 
 import { getTransaction } from '../../../src/rpc_method_wrappers';
 import { mockRpcResponse, testData } from './fixtures/get_transaction';
 import { formatTransaction, transactionInfoSchema } from '../../../src';
 
-jest.mock('web3-rpc-methods');
+jest.mock('@theqrl/web3-rpc-methods');
 
 describe('getTransaction', () => {
 	let web3Context: Web3Context<Web3ZondExecutionAPI>;
@@ -43,7 +43,7 @@ describe('getTransaction', () => {
 			);
 
 			await getTransaction(web3Context, ...inputParameters, DEFAULT_RETURN_FORMAT);
-			expect(ethRpcMethods.getTransactionByHash).toHaveBeenCalledWith(
+			expect(zondRpcMethods.getTransactionByHash).toHaveBeenCalledWith(
 				web3Context.requestManager,
 				inputTransactionHashFormatted,
 			);
@@ -59,7 +59,7 @@ describe('getTransaction', () => {
 				expectedReturnFormat,
 				{ transactionSchema: transactionInfoSchema },
 			);
-			(ethRpcMethods.getTransactionByHash as jest.Mock).mockResolvedValueOnce(
+			(zondRpcMethods.getTransactionByHash as jest.Mock).mockResolvedValueOnce(
 				mockRpcResponse,
 			);
 

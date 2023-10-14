@@ -102,7 +102,7 @@ export const getTransactionNonce = async <ReturnFormat extends DataFormat>(
 	returnFormat: ReturnFormat = DEFAULT_RETURN_FORMAT as ReturnFormat,
 ) => {
 	if (isNullish(address)) {
-		// TODO if (web3.eth.accounts.wallet) use address from local wallet
+		// TODO if (web3.zond.accounts.wallet) use address from local wallet
 		throw new UnableToPopulateNonceError();
 	}
 

@@ -17,7 +17,6 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 /* eslint-disable @typescript-eslint/no-magic-numbers */
 
-import { when } from 'jest-when';
 import { Web3AccountProvider, Web3BaseWalletAccount /*, KeyStore */ } from '@theqrl/web3-types';
 import { Wallet } from '../../src/wallet';
 

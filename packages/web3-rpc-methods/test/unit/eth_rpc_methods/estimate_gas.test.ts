@@ -32,10 +32,10 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import { Web3RequestManager } from '@theqrl/web3-core';
 import { validator } from '@theqrl/web3-validator';
 
-import { ethRpcMethods } from '../../../src/index';
+import { zondRpcMethods } from '../../../src/index';
 import { testData } from './fixtures/estimate_gas';
 
-jest.mock('web3-validator');
+jest.mock('@theqrl/web3-validator');
 
 describe('estimateGas', () => {
 	let requestManagerSendSpy: jest.Mock;
@@ -50,7 +50,7 @@ describe('estimateGas', () => {
 	it.each(testData)(
 		'should call requestManager.send with estimateGas method and expect parameters\n Title: %s\n Input parameters: %s',
 		async (_, inputParameters) => {
-			await ethRpcMethods.estimateGas(requestManager, ...inputParameters);
+			await zondRpcMethods.estimateGas(requestManager, ...inputParameters);
 			expect(requestManagerSendSpy).toHaveBeenCalledWith({
 				method: 'zond_estimateGas',
 				params: inputParameters,
@@ -62,7 +62,7 @@ describe('estimateGas', () => {
 		'should call validator.validate with expected params\n Title: %s\n Input parameters: %s',
 		async (_, inputParameters) => {
 			const validatorSpy = jest.spyOn(validator, 'validate');
-			await ethRpcMethods.estimateGas(requestManager, ...inputParameters);
+			await zondRpcMethods.estimateGas(requestManager, ...inputParameters);
 			const [__, expectedBlockNumber] = inputParameters;
 			expect(validatorSpy).toHaveBeenCalledWith(['blockNumberOrTag'], [expectedBlockNumber]);
 		},

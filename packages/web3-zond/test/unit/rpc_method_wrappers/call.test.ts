@@ -24,13 +24,13 @@ import {
 } from '@theqrl/web3-types';
 import { isNullish } from '@theqrl/web3-validator';
 import { format } from '@theqrl/web3-utils';
-import { ethRpcMethods } from '@theqrl/web3-rpc-methods';
+import { zondRpcMethods } from '@theqrl/web3-rpc-methods';
 
 import { call } from '../../../src/rpc_method_wrappers';
 import { mockRpcResponse, testData } from './fixtures/call';
 import { formatTransaction } from '../../../src';
 
-jest.mock('web3-rpc-methods');
+jest.mock('@theqrl/web3-rpc-methods');
 
 describe('call', () => {
 	let web3Context: Web3Context<Web3ZondExecutionAPI>;
@@ -58,7 +58,7 @@ describe('call', () => {
 			}
 
 			await call(web3Context, ...inputParameters, DEFAULT_RETURN_FORMAT);
-			expect(ethRpcMethods.call).toHaveBeenCalledWith(
+			expect(zondRpcMethods.call).toHaveBeenCalledWith(
 				web3Context.requestManager,
 				inputTransactionFormatted,
 				inputBlockNumberFormatted,
@@ -75,7 +75,7 @@ describe('call', () => {
 				mockRpcResponse,
 				expectedReturnFormat,
 			);
-			(ethRpcMethods.call as jest.Mock).mockResolvedValueOnce(mockRpcResponse);
+			(zondRpcMethods.call as jest.Mock).mockResolvedValueOnce(mockRpcResponse);
 
 			const result = await call(web3Context, ...inputParameters, expectedReturnFormat);
 			expect(result).toStrictEqual(expectedFormattedResult);

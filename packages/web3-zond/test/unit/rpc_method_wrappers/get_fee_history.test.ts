@@ -24,14 +24,14 @@ import {
 	Web3ZondExecutionAPI,
 } from '@theqrl/web3-types';
 import { isNullish } from '@theqrl/web3-validator';
-import { ethRpcMethods } from '@theqrl/web3-rpc-methods';
+import { zondRpcMethods } from '@theqrl/web3-rpc-methods';
 
 import { getFeeHistory } from '../../../src/rpc_method_wrappers';
 import { mockRpcResponse, testData } from './fixtures/get_fee_history';
 import { feeHistorySchema } from '../../../src/schemas';
 import { NUMBER_DATA_FORMAT } from '../../../src/constants';
 
-jest.mock('web3-rpc-methods');
+jest.mock('@theqrl/web3-rpc-methods');
 
 describe('getFeeHistory', () => {
 	let web3Context: Web3Context<Web3ZondExecutionAPI>;
@@ -73,7 +73,7 @@ describe('getFeeHistory', () => {
 			}
 
 			await getFeeHistory(web3Context, ...inputParameters, DEFAULT_RETURN_FORMAT);
-			expect(ethRpcMethods.getFeeHistory).toHaveBeenCalledWith(
+			expect(zondRpcMethods.getFeeHistory).toHaveBeenCalledWith(
 				web3Context.requestManager,
 				inputBlockCountFormatted,
 				inputNewestBlockFormatted,
@@ -91,7 +91,7 @@ describe('getFeeHistory', () => {
 				mockRpcResponse,
 				expectedReturnFormat,
 			);
-			(ethRpcMethods.getFeeHistory as jest.Mock).mockResolvedValueOnce(mockRpcResponse);
+			(zondRpcMethods.getFeeHistory as jest.Mock).mockResolvedValueOnce(mockRpcResponse);
 
 			const result = await getFeeHistory(
 				web3Context,

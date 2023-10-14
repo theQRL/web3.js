@@ -24,13 +24,13 @@ import {
 	Web3ZondExecutionAPI,
 } from '@theqrl/web3-types';
 import { isNullish } from '@theqrl/web3-validator';
-import { ethRpcMethods } from '@theqrl/web3-rpc-methods';
+import { zondRpcMethods } from '@theqrl/web3-rpc-methods';
 
 import { getProof } from '../../../src/rpc_method_wrappers';
 import { mockRpcResponse, testData } from './fixtures/get_proof';
 import { accountSchema } from '../../../src/schemas';
 
-jest.mock('web3-rpc-methods');
+jest.mock('@theqrl/web3-rpc-methods');
 
 describe('getProof', () => {
 	let web3Context: Web3Context<Web3ZondExecutionAPI>;
@@ -60,7 +60,7 @@ describe('getProof', () => {
 			}
 
 			await getProof(web3Context, ...inputParameters, DEFAULT_RETURN_FORMAT);
-			expect(ethRpcMethods.getProof).toHaveBeenCalledWith(
+			expect(zondRpcMethods.getProof).toHaveBeenCalledWith(
 				web3Context.requestManager,
 				inputAddress,
 				inputStorageKeyFormatted,
@@ -78,7 +78,7 @@ describe('getProof', () => {
 				mockRpcResponse,
 				expectedReturnFormat,
 			);
-			(ethRpcMethods.getProof as jest.Mock).mockResolvedValueOnce(mockRpcResponse);
+			(zondRpcMethods.getProof as jest.Mock).mockResolvedValueOnce(mockRpcResponse);
 
 			const result = await getProof(web3Context, ...inputParameters, expectedReturnFormat);
 			expect(result).toStrictEqual(expectedFormattedResult);
