@@ -97,8 +97,7 @@ describe('accounts', () => {
 			const signedResult = await signTransaction(
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-call
 				TransactionFactory.fromTxData(txData as unknown as TxData),
-				account.privateKey,
-				account.publicKey,
+				account.seed,
 			);
 			expect(signedResult).toBeDefined();
 			expect(signedResult.messageHash).toBeDefined();
@@ -113,8 +112,7 @@ describe('accounts', () => {
 			const signedResult = await signTransaction(
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-call
 				TransactionFactory.fromTxData(txObj),
-				account.privateKey,
-				account.publicKey,
+				account.seed
 			);
 			expect(signedResult).toBeDefined();
 

@@ -20,6 +20,7 @@ import { bytesToHex } from '@theqrl/web3-utils';
 import { validateNoLeadingZeroes } from '@theqrl/web3-validator';
 import {
 	bigIntToHex,
+	bigIntToUint8Array,
 	bigIntToUnpaddedUint8Array,
 	toUint8Array,
 	uint8ArrayToBigInt,
@@ -295,6 +296,18 @@ export class Transaction extends BaseTransaction<Transaction> {
 		}
 		const message = this._getMessageToSign();
 		return keccak256(RLP.encode(message));
+	}
+
+	/**
+	 * Returns the public key of the sender
+	 */
+	public getSenderPublicKey(): Uint8Array {
+		if (!this.isSigned()) {
+			const msg = this._errorMsg('Cannot call this method if transaction is not signed');
+			throw new Error(msg);
+		}
+
+		return bigIntToUint8Array(this.publicKey!);
 	}
 
 	/**

@@ -175,13 +175,12 @@ export const closeOpenConnection = async (web3Context: Web3Context) => {
 };
 
 export const createAccountProvider = (context: Web3Context<ZondExecutionAPI>) => {
-	const signTransactionWithContext = async (transaction: Transaction, privateKey: Bytes, publicKey: Bytes) => {
+	const signTransactionWithContext = async (transaction: Transaction, seed: Bytes) => {
 		const tx = await prepareTransactionForSigning(transaction, context);
 
-		const privateKeyBytes = format({ format: 'bytes' }, privateKey, ZOND_DATA_FORMAT);
-		const publicKeyBytes = format({ format: 'bytes' }, publicKey, ZOND_DATA_FORMAT);
+		const seedBytes = format({ format: 'bytes' }, seed, ZOND_DATA_FORMAT);
 
-		return signTransaction(tx, privateKeyBytes, publicKeyBytes);
+		return signTransaction(tx, seedBytes);
 	};
 
 	const seedToAccountWithContext = (seed: Uint8Array | string) => {
@@ -190,7 +189,7 @@ export const createAccountProvider = (context: Web3Context<ZondExecutionAPI>) =>
 		return {
 			...account,
 			signTransaction: async (transaction: Transaction) =>
-				signTransactionWithContext(transaction, account.privateKey, account.publicKey),
+				signTransactionWithContext(transaction, account.seed),
 		};
 	};
 
@@ -216,7 +215,7 @@ export const createAccountProvider = (context: Web3Context<ZondExecutionAPI>) =>
 		return {
 			...account,
 			signTransaction: async (transaction: Transaction) =>
-				signTransactionWithContext(transaction, account.privateKey, account.publicKey),
+				signTransactionWithContext(transaction, account.seed),
 		};
 	};
 
@@ -252,10 +251,11 @@ export const createNewAccount = async (config?: {
 	if (config?.unlock) {
 		const web3Personal = new Personal(clientUrl);
 		if (!config?.doNotImport) {
-			await web3Personal.importRawKey(
-				getSystemTestBackend() === 'geth' ? acc.privateKey.slice(2) : acc.privateKey,
-				config.password ?? '123456',
-			);
+			// TODO(rgeraldes24)
+			// await web3Personal.importRawKey(
+			// 	getSystemTestBackend() === 'geth' ? acc.privateKey.slice(2) : acc.privateKey,
+			// 	config.password ?? '123456',
+			// );
 		}
 
 		await web3Personal.unlockAccount(acc.address, config.password ?? '123456', 100000000);

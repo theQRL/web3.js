@@ -49,12 +49,11 @@ import type {
 	Web3Account,
 	SignResult,
 } from './types.js';
-import { Dilithium } from '@theqrl/wallet.js';
 import { 
 	//CryptoSecretKeyBytes, 
 	CryptoPublicKeyBytes, 
 } from '@theqrl/dilithium5';
-import { getDilithiumAddressFromPK } from '@theqrl/wallet.js'
+import { Dilithium, getDilithiumAddressFromPK } from '@theqrl/wallet.js'
 
 /**
  * Get the private key Uint8Array after the validation
@@ -156,7 +155,8 @@ export const hashMessage = (message: string): string => {
  */
 export const sign = (data: string, seed: Bytes): SignResult => {
 	const seedUint8Array = parseAndValidateSeed(seed);
-	const acc = new Dilithium(seedUint8Array);
+	const buf = Buffer.from(seedUint8Array);
+	const acc = new Dilithium(buf);
 	const hash = hashMessage(data);
 	const signature = acc.sign(hash.substring(2));
 
@@ -312,10 +312,10 @@ export const recoverTransaction = (rawTransaction: HexString): Address => {
  */
 // TODO (rgeraldes24) - modify public key above for dilithium pub key
 export const publicKeyToAddress = (publicKey: Bytes): string => {
-	const publicKeyUint8Array = parseAndValidatePublicKey(publicKey);	
+	const publicKeyUint8Array = parseAndValidatePublicKey(publicKey, true);	
 	const address = getDilithiumAddressFromPK(publicKeyUint8Array);
 
-	return toChecksumAddress(`0x${bytesToHex(address)}`);
+	return toChecksumAddress(bytesToHex(address));
 };
 
 
@@ -551,8 +551,8 @@ export const parseAndValidateSeed = (data: Bytes/*, ignoreLength?: boolean*/): U
 // TODO (rgeraldes24): seed length validation (parseAndValidateSeed?)
 export const seedToAccount = (seed: Bytes/*, ignoreLength?: boolean*/): Web3Account => {
 	const seedUint8Array = parseAndValidateSeed(seed/*, ignoreLength*/);
-
-	const acc = new Dilithium(seedUint8Array);
+	const buf = Buffer.from(seedUint8Array);
+	const acc = new Dilithium(buf);
 
 	return {
 		address: bytesToHex(acc.getAddress()),
@@ -562,7 +562,7 @@ export const seedToAccount = (seed: Bytes/*, ignoreLength?: boolean*/): Web3Acco
 			throw new TransactionSigningError('Do not have network access to sign the transaction');
 		},
 		sign: (data: Record<string, unknown> | string) =>
-			sign(typeof data === 'string' ? data : JSON.stringify(data), acc.getSeed()),
+			sign(typeof data === 'string' ? data : JSON.stringify(data), seed),
 		// encrypt: async (password: string, options?: Record<string, unknown>) =>
 		//  	encrypt(privateKeyUint8Array, password, options),
 	};

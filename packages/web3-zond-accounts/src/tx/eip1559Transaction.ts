@@ -31,6 +31,7 @@ import {
 	toUint8Array,
 	uint8ArrayToBigInt,
 	bigIntToUnpaddedUint8Array,
+	bigIntToUint8Array,
 } from '../common/utils.js';
 import type {
 	AccessList,
@@ -348,6 +349,18 @@ export class FeeMarketEIP1559Transaction extends BaseTransaction<FeeMarketEIP155
 	 */
 	public getMessageToVerifySignature(): Uint8Array {
 		return this.getMessageToSign();
+	}
+
+	/**
+	 * Returns the public key of the sender
+	 */
+	public getSenderPublicKey(): Uint8Array {
+		if (!this.isSigned()) {
+			const msg = this._errorMsg('Cannot call this method if transaction is not signed');
+			throw new Error(msg);
+		}
+
+		return bigIntToUint8Array(this.publicKey!);
 	}
 
 	public _processSignatureAndPublicKey(signature: Uint8Array, publicKey: Uint8Array) {

@@ -1,6 +1,6 @@
 [
 	{
-		"privateKey": "e0a462586887362a18a318b128dbc1e3a0cae6d4b0739f5d0419ec25114bc722",
+		"seed": "e0a462586887362a18a318b128dbc1e3a0cae6d4b0739f5d0419ec25114bc722",
 		"sendersAddress": "d13d825eb15c87b247c4c26331d66f225a5f632e",
 		"type": "message",
 		"raw": [

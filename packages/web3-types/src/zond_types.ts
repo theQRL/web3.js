@@ -362,9 +362,8 @@ interface TransactionBase {
 	networkId?: Numbers;
 	gasLimit?: Numbers;
 	yParity?: Uint;
-	v?: Numbers;
-	r?: Bytes;
-	s?: Bytes;
+	publicKey?: Numbers;
+	signature?: Bytes;
 }
 
 export interface Transaction extends TransactionBase {

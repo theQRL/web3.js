@@ -14,7 +14,8 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { bytesToUint8Array, hexToBytes, uint8ArrayEquals } from '@theqrl/web3-utils';
+import { bytesToUint8Array, hexToBytes, uint8ArrayEquals } from '@theqrl/web3-utils'
+import { Dilithium } from '@theqrl/wallet.js';
 import {
 	AccessListEIP2930Transaction,
 	Capability,
@@ -22,16 +23,21 @@ import {
 	Transaction,
 } from '../../../src';
 import { Chain, Common, Hardfork, toUint8Array, uint8ArrayToBigInt } from '../../../src/common';
-import { MAX_INTEGER, MAX_UINT64, SECP256K1_ORDER, secp256k1 } from '../../../src/tx/constants';
+import { MAX_INTEGER, MAX_UINT64 } from '../../../src/tx/constants';
 
 import type { BaseTransaction } from '../../../src/tx/baseTransaction';
 import eip1559Fixtures from '../../fixtures/json/eip1559txs.json';
 import eip2930Fixtures from '../../fixtures/json/eip2930txs.json';
 
 import legacyFixtures from '../../fixtures/json/txs.json';
+import { HexString } from '@theqrl/web3-types';
 
-const privateToPublic = function (privateKey: Uint8Array): Uint8Array {
-	return secp256k1.getPublicKey(privateKey, false).slice(1);
+
+const seedToPublic = function (seed: HexString): Uint8Array {
+	const _seed = hexToBytes(seed);
+	const buf = Buffer.from(_seed);
+	const d = new Dilithium(buf);
+	return d.getPK();
 };
 const common = new Common({
 	chain: 5,
@@ -221,10 +227,10 @@ describe('[BaseTransaction]', () => {
 	it('sign()', () => {
 		for (const txType of txTypes) {
 			for (const [i, tx] of txType.txs.entries()) {
-				const { privateKey } = txType.fixtures[i];
-				if (privateKey !== undefined) {
+				const { seed } = txType.fixtures[i];
+				if (seed !== undefined) {
 					// eslint-disable-next-line jest/no-conditional-expect
-					expect(tx.sign(hexToBytes(privateKey))).toBeTruthy();
+					expect(tx.sign(hexToBytes(seed))).toBeTruthy();
 				}
 
 				expect(() => tx.sign(new Uint8Array(bytesToUint8Array('invalid')))).toThrow();
@@ -240,15 +246,14 @@ describe('[BaseTransaction]', () => {
 				...txType.txs.map(tx =>
 					txType.class.fromTxData({
 						...tx,
-						v: undefined,
-						r: undefined,
-						s: undefined,
+						publicKey: undefined,
+						signature: undefined,
 					}),
 				),
 			];
 			for (const tx of txs) {
 				expect(tx.isSigned()).toEqual(
-					tx.v !== undefined && tx.r !== undefined && tx.s !== undefined,
+					tx.publicKey !== undefined && tx.signature !== undefined,
 				);
 			}
 		}
@@ -257,11 +262,11 @@ describe('[BaseTransaction]', () => {
 	it('getSenderAddress()', () => {
 		for (const txType of txTypes) {
 			for (const [i, tx] of txType.txs.entries()) {
-				const { privateKey, sendersAddress } = txType.fixtures[i];
-				if (privateKey === undefined) {
+				const { seed, sendersAddress } = txType.fixtures[i];
+				if (seed === undefined) {
 					continue;
 				}
-				const signedTx = tx.sign(hexToBytes(privateKey));
+				const signedTx = tx.sign(hexToBytes(seed));
 				expect(signedTx.getSenderAddress().toString()).toBe(`0x${sendersAddress}`);
 			}
 		}
@@ -270,45 +275,46 @@ describe('[BaseTransaction]', () => {
 	it('getSenderPublicKey()', () => {
 		for (const txType of txTypes) {
 			for (const [i, tx] of txType.txs.entries()) {
-				const { privateKey } = txType.fixtures[i];
-				if (privateKey === undefined) {
+				const { seed } = txType.fixtures[i];
+				if (seed === undefined) {
 					continue;
 				}
-				const signedTx = tx.sign(hexToBytes(privateKey));
+				const signedTx = tx.sign(hexToBytes(seed));
 				const txPubKey = signedTx.getSenderPublicKey();
-				const pubKeyFromPriv = privateToPublic(hexToBytes(privateKey));
-				expect(uint8ArrayEquals(txPubKey, pubKeyFromPriv)).toBe(true);
+
+				const pubKeyFromSeed = seedToPublic(seed)
+				expect(uint8ArrayEquals(txPubKey, pubKeyFromSeed)).toBe(true);
 			}
 		}
 	});
 
-	it('getSenderPublicKey() -> should throw if s-value is greater than secp256k1n/2', () => {
-		// EIP-2: All transaction signatures whose s-value is greater than secp256k1n/2 are considered invalid.
-		// Reasoning: https://ethereum.stackexchange.com/a/55728
-		for (const txType of txTypes) {
-			for (const [i, tx] of txType.txs.entries()) {
-				const { privateKey } = txType.fixtures[i];
-				if (privateKey === undefined) {
-					continue;
-				}
-				let signedTx = tx.sign(hexToBytes(privateKey));
-				signedTx = JSON.parse(JSON.stringify(signedTx)); // deep clone
-				(signedTx as any).s = SECP256K1_ORDER + BigInt(1);
-				expect(() => {
-					signedTx.getSenderPublicKey();
-				}).toThrow();
-			}
-		}
-	});
+	// it('getSenderPublicKey() -> should throw if s-value is greater than secp256k1n/2', () => {
+	// 	// EIP-2: All transaction signatures whose s-value is greater than secp256k1n/2 are considered invalid.
+	// 	// Reasoning: https://ethereum.stackexchange.com/a/55728
+	// 	for (const txType of txTypes) {
+	// 		for (const [i, tx] of txType.txs.entries()) {
+	// 			const { privateKey } = txType.fixtures[i];
+	// 			if (privateKey === undefined) {
+	// 				continue;
+	// 			}
+	// 			let signedTx = tx.sign(hexToBytes(privateKey));
+	// 			signedTx = JSON.parse(JSON.stringify(signedTx)); // deep clone
+	// 			(signedTx as any).s = SECP256K1_ORDER + BigInt(1);
+	// 			expect(() => {
+	// 				signedTx.getSenderPublicKey();
+	// 			}).toThrow();
+	// 		}
+	// 	}
+	// });
 
 	it('verifySignature()->valid', () => {
 		for (const txType of txTypes) {
 			for (const [i, tx] of txType.txs.entries()) {
-				const { privateKey } = txType.fixtures[i];
-				if (privateKey === undefined) {
+				const { seed } = txType.fixtures[i];
+				if (seed === undefined) {
 					continue;
 				}
-				const signedTx = tx.sign(hexToBytes(privateKey));
+				const signedTx = tx.sign(hexToBytes(seed));
 				expect(signedTx.verifySignature()).toBeTruthy();
 			}
 		}
@@ -323,13 +329,11 @@ describe('[BaseTransaction]', () => {
 			to: '',
 			value: '',
 			data: '',
-			v: '',
-			r: '',
-			s: '',
+			publicKey: '',
+			signature: '',
 		});
-		expect(tx.v).toBeUndefined();
-		expect(tx.r).toBeUndefined();
-		expect(tx.s).toBeUndefined();
+		expect(tx.publicKey).toBeUndefined();
+		expect(tx.signature).toBeUndefined();
 		expect(tx.to).toBeUndefined();
 		expect(tx.value).toBe(uint8ArrayToBigInt(uInt8ArrayZero));
 		expect(tx.data).toEqual(uInt8ArrayZero);

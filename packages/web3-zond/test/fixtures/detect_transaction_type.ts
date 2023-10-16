@@ -17,7 +17,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 import { ZOND_DATA_FORMAT, FormatType, Transaction } from '@theqrl/web3-types';
 
-export const transactionType0x0: FormatType<Transaction, typeof ETH_DATA_FORMAT>[] = [
+export const transactionType0x0: FormatType<Transaction, typeof ZOND_DATA_FORMAT>[] = [
 	{
 		from: '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0',
 		to: '0x3535353535353535353535353535353535353535',

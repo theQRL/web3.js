@@ -30,6 +30,7 @@ import {
 	toUint8Array,
 	uint8ArrayToBigInt,
 	bigIntToUnpaddedUint8Array,
+	bigIntToUint8Array,
 } from '../common/utils.js';
 import { BaseTransaction } from './baseTransaction.js';
 import type {
@@ -308,6 +309,18 @@ export class AccessListEIP2930Transaction extends BaseTransaction<AccessListEIP2
 	 */
 	public getMessageToVerifySignature(): Uint8Array {
 		return this.getMessageToSign();
+	}
+
+	/**
+	 * Returns the public key of the sender
+	 */
+	public getSenderPublicKey(): Uint8Array {
+		if (!this.isSigned()) {
+			const msg = this._errorMsg('Cannot call this method if transaction is not signed');
+			throw new Error(msg);
+		}
+
+		return bigIntToUint8Array(this.publicKey!);
 	}
 
 	public _processSignatureAndPublicKey(signature: Uint8Array, publicKey: Uint8Array) {

@@ -99,7 +99,7 @@ describe('prepareTransactionForSigning', () => {
 				const signature = !isNullish(signedTransaction.signature)
 					? `0x${signedTransaction.signature.toString(16)}`
 					: '';
-				expect(publicKey).toBe(publicKey);
+				expect(publicKey).toBe(expectedPublicKey);
 				expect(signature).toBe(expectedSignature);
 			},
 		);

@@ -174,7 +174,7 @@ test('[Invalid Array Input values]', () => {
 		for (const txType of txTypes) {
 			let tx = TransactionFactory.fromTxData({ type: txType });
 			if (signed) {
-				tx = tx.sign(hexToBytes('42'.repeat(4864)), hexToBytes('42'.repeat(2592)));
+				tx = tx.sign(hexToBytes('42'.repeat(40)));
 			}
 			const rawValues = tx.raw();
 			for (let x = 0; x < rawValues.length; x += 1) {

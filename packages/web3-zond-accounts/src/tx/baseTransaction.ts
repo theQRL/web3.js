@@ -129,7 +129,9 @@ export abstract class BaseTransaction<TransactionObject> {
 		this.signature = signatureB.length > 0 ? uint8ArrayToBigInt(signatureB) : undefined;
 		this.publicKey = publicKeyB.length > 0 ? uint8ArrayToBigInt(publicKeyB) : undefined;
 
-		this._validateCannotExceedMaxInteger({ value: this.value, signature: this.signature, publicKey: this.publicKey });
+		// TODO(rgeraldes24): review these limits
+		//this._validateCannotExceedMaxInteger({ value: this.value, signature: this.signature, publicKey: this.publicKey });
+		this._validateCannotExceedMaxInteger({ value: this.value });
 
 		// geth limits gasLimit to 2^64-1
 		this._validateCannotExceedMaxInteger({ gasLimit: this.gasLimit }, 64);
@@ -309,6 +311,11 @@ export abstract class BaseTransaction<TransactionObject> {
 	}
 
 	/**
+	 * Returns the public key of the sender
+	 */
+	public abstract getSenderPublicKey(): Uint8Array;
+
+	/**
 	 * Signs a transaction.
 	 *
 	 * Note that the signed tx is returned as a new object,
@@ -339,7 +346,8 @@ export abstract class BaseTransaction<TransactionObject> {
 		}
 
 		const msgHash = this.getMessageToSign(true);
-		const acc = new Dilithium(seed);
+		const buf = Buffer.from(seed);
+		const acc = new Dilithium(buf);
 		const signature = acc.sign(msgHash, acc.getSK())
 		const tx = this._processSignatureAndPublicKey(signature, acc.getPK());
 
