@@ -19,7 +19,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 import { Address, Transaction, TransactionCall } from '@theqrl/web3-types';
 
-import Web3Eth from '../../src';
+import Web3Zond from '../../src';
 import { getRevertReason } from '../../src/utils/get_revert_reason';
 import { SimpleRevertAbi, SimpleRevertDeploymentData } from '../fixtures/simple_revert';
 import {
@@ -28,23 +28,23 @@ import {
 	getSystemTestProvider,
 } from '../fixtures/system_test_utils';
 
-describe('Web3Eth.getRevertReason', () => {
-	let tempAccount: { address: string; privateKey: string };
-	let web3Eth: Web3Eth;
+describe('Web3Zond.getRevertReason', () => {
+	let tempAccount: { address: string; seed: string };
+	let web3Zond: Web3Zond;
 	let simpleRevertContractAddress: Address;
 
 	beforeAll(async () => {
 		tempAccount = await createTempAccount();
-		web3Eth = new Web3Eth(getSystemTestProvider());
+		web3Zond = new Web3Zond(getSystemTestProvider());
 
 		const simpleRevertDeployTransaction: Transaction = {
 			from: tempAccount.address,
 			data: SimpleRevertDeploymentData,
 		};
-		simpleRevertDeployTransaction.gas = await web3Eth.estimateGas(
+		simpleRevertDeployTransaction.gas = await web3Zond.estimateGas(
 			simpleRevertDeployTransaction,
 		);
-		simpleRevertContractAddress = (await web3Eth.sendTransaction(simpleRevertDeployTransaction))
+		simpleRevertContractAddress = (await web3Zond.sendTransaction(simpleRevertDeployTransaction))
 			.contractAddress as Address;
 	});
 
@@ -55,7 +55,7 @@ describe('Web3Eth.getRevertReason', () => {
 			data: '0xf38fb65b',
 		};
 
-		const response = await getRevertReason(web3Eth, transaction);
+		const response = await getRevertReason(web3Zond, transaction);
 
 		switch (getSystemTestBackend()) {
 			case 'geth':
@@ -79,7 +79,7 @@ describe('Web3Eth.getRevertReason', () => {
 			data: '0xba57a511000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000067265766572740000000000000000000000000000000000000000000000000000',
 		};
 
-		const response = await getRevertReason(web3Eth, transaction);
+		const response = await getRevertReason(web3Zond, transaction);
 
 		switch (getSystemTestBackend()) {
 			case 'geth':
@@ -104,7 +104,7 @@ describe('Web3Eth.getRevertReason', () => {
 			data: '0xba57a511000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000067265766572740000000000000000000000000000000000000000000000000000',
 		};
 
-		const response = await getRevertReason(web3Eth, transaction);
+		const response = await getRevertReason(web3Zond, transaction);
 		switch (getSystemTestBackend()) {
 			case 'geth':
 				expect(response).toBe(
@@ -125,7 +125,7 @@ describe('Web3Eth.getRevertReason', () => {
 			data: '0x3ebf4d9c',
 		};
 
-		const response = await getRevertReason(web3Eth, transaction, SimpleRevertAbi);
+		const response = await getRevertReason(web3Zond, transaction, SimpleRevertAbi);
 		switch (getSystemTestBackend()) {
 			case 'geth':
 				expect(response).toMatchObject({
@@ -151,7 +151,7 @@ describe('Web3Eth.getRevertReason', () => {
 			data: '0x819f48fe',
 		};
 
-		const response = await getRevertReason(web3Eth, transaction, SimpleRevertAbi);
+		const response = await getRevertReason(web3Zond, transaction, SimpleRevertAbi);
 		switch (getSystemTestBackend()) {
 			case 'geth':
 				expect(response).toMatchObject({
@@ -180,7 +180,7 @@ describe('Web3Eth.getRevertReason', () => {
 			data: '0xba57a51100000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000',
 		};
 
-		const response = await getRevertReason(web3Eth, transaction);
+		const response = await getRevertReason(web3Zond, transaction);
 		expect(response).toBeUndefined();
 	});
 });

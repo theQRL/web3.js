@@ -159,7 +159,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	}
 
 	/**
-	 * @deprecated Will be removed in the future, please use {@link Web3Eth.getHashRate} method instead.
+	 * @deprecated Will be removed in the future, please use {@link Web3Zond.getHashRate} method instead.
 	 *
 	 * @param returnFormat ({@link DataFormat} defaults to {@link DEFAULT_RETURN_FORMAT}) Specifies how the return data should be formatted.
 	 * @returns The number of hashes per second that the node is mining with.
@@ -249,7 +249,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * Get the balance of an address at a given block.
 	 *
 	 * @param address The address to get the balance of.
-	 * @param blockNumber ({@link BlockNumberOrTag} defaults to {@link Web3Eth.defaultBlock}) Specifies what block to use as the current state for the balance query.
+	 * @param blockNumber ({@link BlockNumberOrTag} defaults to {@link Web3Zond.defaultBlock}) Specifies what block to use as the current state for the balance query.
 	 * @param returnFormat ({@link DataFormat} defaults to {@link DEFAULT_RETURN_FORMAT}) Specifies how the return data should be formatted.
 	 * @returns The current balance for the given address in `wei`.
 	 *
@@ -274,7 +274,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *
 	 * @param address The address to get the storage from.
 	 * @param storageSlot The index position of the storage.
-	 * @param blockNumber ({@link BlockNumberOrTag} defaults to {@link Web3Eth.defaultBlock}) Specifies what block to use as the current state for the storage query.
+	 * @param blockNumber ({@link BlockNumberOrTag} defaults to {@link Web3Zond.defaultBlock}) Specifies what block to use as the current state for the storage query.
 	 * @param returnFormat ({@link DataFormat} defaults to {@link DEFAULT_RETURN_FORMAT}) Specifies how the return data should be formatted.
 	 * @returns The value in storage at the given position.
 	 *
@@ -315,7 +315,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * Get the code at a specific address.
 	 *
 	 * @param address The address to get the code from.
-	 * @param blockNumber ({@link BlockNumberOrTag} defaults to {@link Web3Eth.defaultBlock}) Specifies what block to use as the current state for the code query.
+	 * @param blockNumber ({@link BlockNumberOrTag} defaults to {@link Web3Zond.defaultBlock}) Specifies what block to use as the current state for the code query.
 	 * @param returnFormat ({@link DataFormat} defaults to {@link DEFAULT_RETURN_FORMAT}) Specifies how the return data should be formatted.
 	 * @returns The [data](https://ethereum.org/en/developers/docs/transactions/#the-data-field) at the provided `address`.
 	 *
@@ -348,7 +348,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	/**
 	 * Retrieves a {@link Block} matching the provided block number, block hash or block tag.
 	 *
-	 * @param block The {@link BlockNumberOrTag} (defaults to {@link Web3Eth.defaultBlock}) or block hash of the desired block.
+	 * @param block The {@link BlockNumberOrTag} (defaults to {@link Web3Zond.defaultBlock}) or block hash of the desired block.
 	 * @param hydrated If specified `true`, the returned block will contain all transactions as objects. If `false` it will only contain transaction hashes.
 	 * @param returnFormat ({@link DataFormat} defaults to {@link DEFAULT_RETURN_FORMAT}) Specifies how the return data should be formatted (does not format transaction objects or hashes).
 	 * @returns A {@link Block} object matching the provided block number or block hash.
@@ -418,7 +418,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	}
 
 	/**
-	 * @param block The {@link BlockNumberOrTag} (defaults to {@link Web3Eth.defaultBlock}) or block hash of the desired block.
+	 * @param block The {@link BlockNumberOrTag} (defaults to {@link Web3Zond.defaultBlock}) or block hash of the desired block.
 	 * @param returnFormat ({@link DataFormat} defaults to {@link DEFAULT_RETURN_FORMAT}) Specifies how the return data should be formatted.
 	 * @returns The number of transactions in the provided block.
 	 *
@@ -443,7 +443,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	}
 
 	/**
-	 * @param block The {@link BlockNumberOrTag} (defaults to {@link Web3Eth.defaultBlock}) or block hash of the desired block.
+	 * @param block The {@link BlockNumberOrTag} (defaults to {@link Web3Zond.defaultBlock}) or block hash of the desired block.
 	 * @param returnFormat ({@link DataFormat} defaults to {@link DEFAULT_RETURN_FORMAT}) Specifies how the return data should be formatted.
 	 * @returns The number of [uncles](https://ethereum.org/en/glossary/#ommer) in the provided block.
 	 *
@@ -467,7 +467,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 
 	/**
 	 *
-	 * @param block The {@link BlockNumberOrTag} (defaults to {@link Web3Eth.defaultBlock}) or block hash of the desired block.
+	 * @param block The {@link BlockNumberOrTag} (defaults to {@link Web3Zond.defaultBlock}) or block hash of the desired block.
 	 * @param uncleIndex The index position of the uncle.
 	 * @param returnFormat ({@link DataFormat} defaults to {@link DEFAULT_RETURN_FORMAT}) Specifies how the return data should be formatted.
 	 * @returns A blocks [uncle](https://ethereum.org/en/glossary/#ommer) by a given uncle index position.
@@ -688,7 +688,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	}
 
 	/**
-	 * @param block The {@link BlockNumberOrTag} (defaults to {@link Web3Eth.defaultBlock}) or block hash of the desired block.
+	 * @param block The {@link BlockNumberOrTag} (defaults to {@link Web3Zond.defaultBlock}) or block hash of the desired block.
 	 * @param transactionIndex The index position of the transaction.
 	 * @param returnFormat ({@link DataFormat} defaults to {@link DEFAULT_RETURN_FORMAT}) Specifies how the return data should be formatted.
 	 * @returns The desired transaction object.
@@ -812,7 +812,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 
 	/**
 	 * @param address The address to get the number of transactions for.
-	 * @param blockNumber ({@link BlockNumberOrTag} defaults to {@link Web3Eth.defaultBlock}) Specifies what block to use as the current state for the query.
+	 * @param blockNumber ({@link BlockNumberOrTag} defaults to {@link Web3Zond.defaultBlock}) Specifies what block to use as the current state for the query.
 	 * @param returnFormat ({@link DataFormat} defaults to {@link DEFAULT_RETURN_FORMAT}) Specifies how the return data should be formatted.
 	 * @returns The number of transactions sent from the provided address.
 	 *
@@ -1093,7 +1093,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *      to: '0xe899f0130FD099c0b896B2cE4E5E15A25b23139a',
 	 *      value: '0x1',
 	 *      gas: '21000',
-	 *      gasPrice: await web3Eth.getGasPrice(),
+	 *      gasPrice: await web3Zond.getGasPrice(),
 	 *      nonce: '0x1',
 	 *      type: '0x0'
 	 * }
@@ -1147,7 +1147,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * It does not publish anything to the blockchain and does not consume any gas.
 	 *
 	 * @param transaction - A transaction object where all properties are optional except `to`, however it's recommended to include the `from` property or it may default to `0x0000000000000000000000000000000000000000` depending on your node or provider.
-	 * @param blockNumber ({@link BlockNumberOrTag} defaults to {@link Web3Eth.defaultBlock}) - Specifies what block to use as the current state of the blockchain while processing the transaction.
+	 * @param blockNumber ({@link BlockNumberOrTag} defaults to {@link Web3Zond.defaultBlock}) - Specifies what block to use as the current state of the blockchain while processing the transaction.
 	 * @param returnFormat ({@link DataFormat} defaults to {@link DEFAULT_RETURN_FORMAT}) - Specifies how the return data from the call should be formatted.
 	 * @returns The returned data of the call, e.g. a smart contract function's return value.
 	 */
@@ -1165,7 +1165,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * with a contract as a result of updating the contract's state.
 	 *
 	 * @param transaction The {@link Transaction} object to estimate the gas for.
-	 * @param blockNumber ({@link BlockNumberOrTag} defaults to {@link Web3Eth.defaultBlock}) - Specifies what block to use as the current state of the blockchain while processing the gas estimation.
+	 * @param blockNumber ({@link BlockNumberOrTag} defaults to {@link Web3Zond.defaultBlock}) - Specifies what block to use as the current state of the blockchain while processing the gas estimation.
 	 * @param returnFormat ({@link DataFormat} defaults to {@link DEFAULT_RETURN_FORMAT}) - Specifies how the return data from the call should be formatted.
 	 * @returns The used gas for the simulated transaction execution.
 	 *
@@ -1342,7 +1342,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	/**
 	 * @param address The Address of the account or contract.
 	 * @param storageKeys Array of storage-keys which should be proofed and included. See {@link web3.getStorageAt}.
-	 * @param blockNumber ({@link BlockNumberOrTag} defaults to {@link Web3Eth.defaultBlock}) - Specifies what block to use as the current state of the blockchain while processing the gas estimation.
+	 * @param blockNumber ({@link BlockNumberOrTag} defaults to {@link Web3Zond.defaultBlock}) - Specifies what block to use as the current state of the blockchain while processing the gas estimation.
 	 * @param returnFormat ({@link DataFormat} defaults to {@link DEFAULT_RETURN_FORMAT}) - Specifies how the return data from the call should be formatted.
 	 * @returns The account and storage-values of the specified account including the Merkle-proof as described in [EIP-1186](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1186.md).
 	 *
@@ -1500,7 +1500,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * This method generates an access list for a transaction.
 	 *
 	 * @param transaction - A transaction object where all properties are optional except `from`, however it's recommended to include the `to` property.
-	 * @param blockNumber ({@link BlockNumberOrTag} defaults to {@link Web3Eth.defaultBlock}) - Specifies what block to use as the current state of the blockchain while processing the transaction.
+	 * @param blockNumber ({@link BlockNumberOrTag} defaults to {@link Web3Zond.defaultBlock}) - Specifies what block to use as the current state of the blockchain while processing the transaction.
 	 * @param returnFormat ({@link DataFormat} defaults to {@link DEFAULT_RETURN_FORMAT}) - Specifies how the return data from the createAccessList should be formatted.
 	 * @returns The returned data of the createAccessList,  e.g. The generated access list for transaction.
 	 * @example

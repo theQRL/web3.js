@@ -52,7 +52,7 @@ export const sendFewTxes = async ({
 	for (let i = 0; i < times; i += 1) {
 		res.push(
 			// eslint-disable-next-line no-await-in-loop
-			await web3.eth.sendTransaction({
+			await web3.zond.sendTransaction({
 				to: toAddress,
 				value,
 				from,

@@ -16,7 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import Web3Eth from '@theqrl/web3-zond';
+import Web3Zond from '@theqrl/web3-zond';
 import { Contract, PayableTxOptions } from '@theqrl/web3-zond-contract';
 import { sha3 } from '@theqrl/web3-utils';
 
@@ -58,7 +58,7 @@ describe('ens', () => {
 	const node = namehash('resolver');
 	const label = sha3('resolver') as string;
 
-	let web3Eth: Web3Eth;
+	let web3Zond: Web3Zond;
 
 	let accounts: string[];
 	let ens: ENS;
@@ -123,8 +123,8 @@ describe('ens', () => {
 
 		ens = new ENS(registry.options.address, provider);
 
-		web3Eth = new Web3Eth(provider);
-		const block = await web3Eth.getBlock('latest', false, DEFAULT_RETURN_FORMAT);
+		web3Zond = new Web3Zond(provider);
+		const block = await web3Zond.getBlock('latest', false, DEFAULT_RETURN_FORMAT);
 		const gas = block.gasLimit.toString();
 
 		// Increase gas for contract calls

@@ -123,14 +123,14 @@ const getEthereumjsTransactionOptions = (
 export const prepareTransactionForSigning = async (
 	transaction: Transaction,
 	web3Context: Web3Context<ZondExecutionAPI>,
-	privateKey?: HexString | Uint8Array,
+	seed?: HexString | Uint8Array,
 	fillGasPrice = false,
 	fillGasLimit = true,
 ) => {
 	const populatedTransaction = (await transactionBuilder({
 		transaction,
 		web3Context,
-		privateKey,
+		seed,
 		fillGasPrice,
 		fillGasLimit,
 	})) as unknown as PopulatedUnsignedTransaction;

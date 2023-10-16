@@ -46,7 +46,7 @@ try {
 
 List of references:
 
--   [eth.sendTransaction](/api/web3-eth/class/Web3Eth#sendTransaction)
+-   [eth.sendTransaction](/api/web3-eth/class/Web3Zond#sendTransaction)
 -   [eth.personal.importRawKey](/api/web3-eth-personal/class/Personal#importRawKey)
 -   [eth.personal.unlockAccount](/api/web3-eth-personal/class/Personal#unlockAccount)
 

@@ -119,9 +119,9 @@ export function isAccessList(input: AccessListUint8Array | AccessList): input is
 	return !isAccessListUint8Array(input); // This is exactly the same method, except the output is negated.
 }
 
-export interface Dilithium5Signature {
-	signature: Uint8Array;
-}
+// export interface Dilithium5Signature {
+// 	signature: Uint8Array;
+// }
 
 /**
  * Legacy {@link Transaction} Data

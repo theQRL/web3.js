@@ -43,7 +43,7 @@ jest.mock('@theqrl/web3-net', () => ({
 }));
 
 describe('defaultTransactionBuilder', () => {
-	const expectedFrom = '0xb8CE9ab6943e0eCED004cDe8e3bBed6568B2Fa01';
+	const expectedFrom = '0x20e9508180024e874c7ae29c4212b3f5b5a84678';
 	const expectedNonce = '0x42';
 	const expectedGas = BigInt(21000);
 	const expectedGasLimit = expectedGas;
@@ -131,7 +131,7 @@ describe('defaultTransactionBuilder', () => {
 		await defaultTransactionBuilder({
 			transaction: input,
 			web3Context,
-			// VALID_ETH_BASE_TYPES.HexString,
+			// VALID_ZOND_BASE_TYPES.HexString,
 			// '0x348ce564d427a3311b6536bbcff9390d69395b06ed6c486954e971d960fe8709',
 			// overrideFunction,
 			fillGasPrice: true,
@@ -140,7 +140,7 @@ describe('defaultTransactionBuilder', () => {
 	});
 
 	describe('should populate from', () => {
-		it('should use privateKey to populate', async () => {
+		it('should use seed to populate', async () => {
 			const input = { ...transaction };
 			delete input.from;
 			delete input.maxPriorityFeePerGas;
@@ -149,7 +149,7 @@ describe('defaultTransactionBuilder', () => {
 			const result = await defaultTransactionBuilder({
 				transaction: input,
 				web3Context,
-				privateKey: '0x348ce564d427a3311b6536bbcff9390d69395b06ed6c486954e971d960fe8709',
+				seed: '0xd42a49f8a853bbf588dc0a0d0b21326bd339c959cd5b475ca1bfab396b1b71bc55e449cb0a76c30171f3c02a72a2b452',
 				fillGasPrice: true,
 			});
 			expect(result.from).toBe(expectedFrom);

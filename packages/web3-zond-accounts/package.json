@@ -42,6 +42,7 @@
 		"test:integration": "jest --config=./test/integration/jest.config.js"
 	},
 	"devDependencies": {
+		"@theqrl/web3-providers-ipc": "^4.0.6",
 		"@types/jest": "^28.1.6",
 		"@typescript-eslint/eslint-plugin": "^5.30.7",
 		"@typescript-eslint/parser": "^5.30.7",
@@ -54,18 +55,18 @@
 		"jest-when": "^3.5.1",
 		"prettier": "^2.7.1",
 		"ts-jest": "^28.0.7",
-		"typescript": "^4.7.4",
-		"@theqrl/web3-providers-ipc": "^4.0.6"
+		"typescript": "^4.7.4"
 	},
 	"dependencies": {
 		"@ethereumjs/rlp": "^4.0.1",
+		"@theqrl/dilithium5": "^0.0.9",
 		"@theqrl/wallet.js": "^0.1.1",
-		"crc-32": "^1.2.2",
-		"ethereum-cryptography": "^2.0.0",
-		"sha3": "^2.1.4",
 		"@theqrl/web3-errors": "^1.1.2",
 		"@theqrl/web3-types": "^1.2.0",
 		"@theqrl/web3-utils": "^4.0.6",
-		"@theqrl/web3-validator": "^2.0.2"
+		"@theqrl/web3-validator": "^2.0.2",
+		"crc-32": "^1.2.2",
+		"ethereum-cryptography": "^2.0.0",
+		"sha3": "^2.1.4"
 	}
 }

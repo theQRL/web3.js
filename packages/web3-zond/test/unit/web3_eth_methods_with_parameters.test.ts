@@ -16,7 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import { zondRpcMethods } from '@theqrl/web3-rpc-methods';
 
-import Web3Eth from '../../src/index';
+import Web3Zond from '../../src/index';
 import * as rpcMethodWrappers from '../../src/rpc_method_wrappers';
 import {
 	getBlockNumberValidData,
@@ -56,19 +56,19 @@ jest.spyOn(rpcMethodWrappers, 'getTransaction').mockResolvedValue(tx);
 jest.spyOn(rpcMethodWrappers, 'getTransactionReceipt').mockResolvedValue(txReceipt);
 
 describe('web3_eth_methods_with_parameters', () => {
-	let web3Eth: Web3Eth;
+	let web3Zond: Web3Zond;
 
 	beforeAll(() => {
-		web3Eth = new Web3Eth('http://127.0.0.1:8545');
+		web3Zond = new Web3Zond('http://127.0.0.1:8545');
 	});
 
 	describe('should call RPC method with expected parameters', () => {
 		describe('only has returnFormat parameter', () => {
 			describe('getHashRate', () => {
 				it.each(getHashRateValidData)('returnFormat: %s', async returnFormat => {
-					await web3Eth.getHashRate(returnFormat);
+					await web3Zond.getHashRate(returnFormat);
 					expect(rpcMethodWrappers.getHashRate).toHaveBeenCalledWith(
-						web3Eth,
+						web3Zond,
 						returnFormat,
 					);
 				});
@@ -77,9 +77,9 @@ describe('web3_eth_methods_with_parameters', () => {
 			describe('getHashrate', () => {
 				it.each(getHashRateValidData)('returnFormat: %s', async returnFormat => {
 					// eslint-disable-next-line deprecation/deprecation
-					await web3Eth.getHashrate(returnFormat);
+					await web3Zond.getHashrate(returnFormat);
 					expect(rpcMethodWrappers.getHashRate).toHaveBeenCalledWith(
-						web3Eth,
+						web3Zond,
 						returnFormat,
 					);
 				});
@@ -87,9 +87,9 @@ describe('web3_eth_methods_with_parameters', () => {
 
 			describe('getGasPrice', () => {
 				it.each(getGasPriceValidData)('returnFormat: %s', async returnFormat => {
-					await web3Eth.getGasPrice(returnFormat);
+					await web3Zond.getGasPrice(returnFormat);
 					expect(rpcMethodWrappers.getGasPrice).toHaveBeenCalledWith(
-						web3Eth,
+						web3Zond,
 						returnFormat,
 					);
 				});
@@ -97,9 +97,9 @@ describe('web3_eth_methods_with_parameters', () => {
 
 			describe('getBlockNumber', () => {
 				it.each(getBlockNumberValidData)('returnFormat: %s', async returnFormat => {
-					await web3Eth.getBlockNumber(returnFormat);
+					await web3Zond.getBlockNumber(returnFormat);
 					expect(rpcMethodWrappers.getBlockNumber).toHaveBeenCalledWith(
-						web3Eth,
+						web3Zond,
 						returnFormat,
 					);
 				});
@@ -107,9 +107,9 @@ describe('web3_eth_methods_with_parameters', () => {
 
 			describe('getChainId', () => {
 				it.each(getChainIdValidData)('returnFormat: %s', async returnFormat => {
-					await web3Eth.getChainId(returnFormat);
+					await web3Zond.getChainId(returnFormat);
 					expect(rpcMethodWrappers.getChainId).toHaveBeenCalledWith(
-						web3Eth,
+						web3Zond,
 						returnFormat,
 					);
 				});
@@ -122,9 +122,9 @@ describe('web3_eth_methods_with_parameters', () => {
 					it.each(getBalanceValidData)(
 						'input: %s\nrpcMethodParameters: %s',
 						async (input, rpcMethodParameters) => {
-							await web3Eth.getBalance(...input);
+							await web3Zond.getBalance(...input);
 							expect(rpcMethodWrappers.getBalance).toHaveBeenCalledWith(
-								web3Eth,
+								web3Zond,
 								...rpcMethodParameters,
 							);
 						},
@@ -135,9 +135,9 @@ describe('web3_eth_methods_with_parameters', () => {
 					it.each(getBlockValidData)(
 						'input: %s\nrpcMethodParameters: %s',
 						async (input, rpcMethodParameters) => {
-							await web3Eth.getBlock(...input);
+							await web3Zond.getBlock(...input);
 							expect(rpcMethodWrappers.getBlock).toHaveBeenCalledWith(
-								web3Eth,
+								web3Zond,
 								...rpcMethodParameters,
 							);
 						},
@@ -148,9 +148,9 @@ describe('web3_eth_methods_with_parameters', () => {
 					it.each(getBlockTransactionCountValidData)(
 						'input: %s\nrpcMethodParameters: %s',
 						async (input, rpcMethodParameters) => {
-							await web3Eth.getBlockTransactionCount(...input);
+							await web3Zond.getBlockTransactionCount(...input);
 							expect(rpcMethodWrappers.getBlockTransactionCount).toHaveBeenCalledWith(
-								web3Eth,
+								web3Zond,
 								...rpcMethodParameters,
 							);
 						},
@@ -161,9 +161,9 @@ describe('web3_eth_methods_with_parameters', () => {
 					it.each(getBlockUncleCountValidData)(
 						'input: %s\nrpcMethodParameters: %s',
 						async (input, rpcMethodParameters) => {
-							await web3Eth.getBlockUncleCount(...input);
+							await web3Zond.getBlockUncleCount(...input);
 							expect(rpcMethodWrappers.getBlockUncleCount).toHaveBeenCalledWith(
-								web3Eth,
+								web3Zond,
 								...rpcMethodParameters,
 							);
 						},
@@ -174,9 +174,9 @@ describe('web3_eth_methods_with_parameters', () => {
 					it.each(getUncleValidData)(
 						'input: %s\nrpcMethodParameters: %s',
 						async (input, rpcMethodParameters) => {
-							await web3Eth.getUncle(...input);
+							await web3Zond.getUncle(...input);
 							expect(rpcMethodWrappers.getUncle).toHaveBeenCalledWith(
-								web3Eth,
+								web3Zond,
 								...rpcMethodParameters,
 							);
 						},
@@ -187,9 +187,9 @@ describe('web3_eth_methods_with_parameters', () => {
 					it.each(getTransactionValidData)(
 						'input: %s\nrpcMethodParameters: %s',
 						async (input, rpcMethodParameters) => {
-							await web3Eth.getTransaction(...input);
+							await web3Zond.getTransaction(...input);
 							expect(rpcMethodWrappers.getTransaction).toHaveBeenCalledWith(
-								web3Eth,
+								web3Zond,
 								...rpcMethodParameters,
 							);
 						},
@@ -200,9 +200,9 @@ describe('web3_eth_methods_with_parameters', () => {
 					it.each(getTransactionFromBlockValidData)(
 						'input: %s\nrpcMethodParameters: %s',
 						async (input, rpcMethodParameters) => {
-							await web3Eth.getTransactionFromBlock(...input);
+							await web3Zond.getTransactionFromBlock(...input);
 							expect(rpcMethodWrappers.getTransactionFromBlock).toHaveBeenCalledWith(
-								web3Eth,
+								web3Zond,
 								...rpcMethodParameters,
 							);
 						},
@@ -213,9 +213,9 @@ describe('web3_eth_methods_with_parameters', () => {
 					it.each(getTransactionReceiptValidData)(
 						'input: %s\nrpcMethodParameters: %s',
 						async (input, rpcMethodParameters) => {
-							await web3Eth.getTransactionReceipt(...input);
+							await web3Zond.getTransactionReceipt(...input);
 							expect(rpcMethodWrappers.getTransactionReceipt).toHaveBeenCalledWith(
-								web3Eth,
+								web3Zond,
 								...rpcMethodParameters,
 							);
 						},
@@ -226,9 +226,9 @@ describe('web3_eth_methods_with_parameters', () => {
 					it.each(getTransactionCountValidData)(
 						'input: %s\rpcMethodParameters: %s',
 						async (input, rpcMethodParameters) => {
-							await web3Eth.getTransactionCount(...input);
+							await web3Zond.getTransactionCount(...input);
 							expect(rpcMethodWrappers.getTransactionCount).toHaveBeenCalledWith(
-								web3Eth,
+								web3Zond,
 								...rpcMethodParameters,
 							);
 						},
@@ -239,9 +239,9 @@ describe('web3_eth_methods_with_parameters', () => {
 					it.each(estimateGasValidData)(
 						'input: %s\nrpcMethodParameters: %s',
 						async (input, rpcMethodParameters) => {
-							await web3Eth.estimateGas(...input);
+							await web3Zond.estimateGas(...input);
 							expect(rpcMethodWrappers.estimateGas).toHaveBeenCalledWith(
-								web3Eth,
+								web3Zond,
 								...rpcMethodParameters,
 							);
 						},
@@ -252,9 +252,9 @@ describe('web3_eth_methods_with_parameters', () => {
 					it.each(getFeeHistoryValidData)(
 						'input: %s\nrpcMethodParameters: %s',
 						async (input, rpcMethodParameters) => {
-							await web3Eth.getFeeHistory(...input);
+							await web3Zond.getFeeHistory(...input);
 							expect(rpcMethodWrappers.getFeeHistory).toHaveBeenCalledWith(
-								web3Eth,
+								web3Zond,
 								...rpcMethodParameters,
 							);
 						},
@@ -265,9 +265,9 @@ describe('web3_eth_methods_with_parameters', () => {
 					it.each(getProofValidData)(
 						'input: %s\nrpcMethodParameters: %s',
 						async (input, rpcMethodParameters) => {
-							await web3Eth.getProof(...input);
+							await web3Zond.getProof(...input);
 							expect(rpcMethodWrappers.getProof).toHaveBeenCalledWith(
-								web3Eth,
+								web3Zond,
 								...rpcMethodParameters,
 							);
 						},
@@ -278,9 +278,9 @@ describe('web3_eth_methods_with_parameters', () => {
 					it.each(getStorageAtValidData)(
 						'input: %s\nrpcMethodParameters: %s',
 						async (input, rpcMethodParameters) => {
-							await web3Eth.getStorageAt(...input);
+							await web3Zond.getStorageAt(...input);
 							expect(rpcMethodWrappers.getStorageAt).toHaveBeenCalledWith(
-								web3Eth,
+								web3Zond,
 								...rpcMethodParameters,
 							);
 						},
@@ -291,9 +291,9 @@ describe('web3_eth_methods_with_parameters', () => {
 					it.each(getCodeValidData)(
 						'input: %s\nrpcMethodParameters: %s',
 						async (input, rpcMethodParameters) => {
-							await web3Eth.getCode(...input);
+							await web3Zond.getCode(...input);
 							expect(rpcMethodWrappers.getCode).toHaveBeenCalledWith(
-								web3Eth,
+								web3Zond,
 								...rpcMethodParameters,
 							);
 						},
@@ -304,9 +304,9 @@ describe('web3_eth_methods_with_parameters', () => {
 					it.each(sendSignedTransactionValidData)(
 						'input: %s\nrpcMethodParameters: %s',
 						async (input, rpcMethodParameters) => {
-							await web3Eth.sendSignedTransaction(...input);
+							await web3Zond.sendSignedTransaction(...input);
 							expect(rpcMethodWrappers.sendSignedTransaction).toHaveBeenCalledWith(
-								web3Eth,
+								web3Zond,
 								...rpcMethodParameters,
 							);
 						},
@@ -317,9 +317,9 @@ describe('web3_eth_methods_with_parameters', () => {
 					it.each(signValidData)(
 						'input: %s\nrpcMethodParameters: %s',
 						async (input, rpcMethodParameters) => {
-							await web3Eth.sign(...input);
+							await web3Zond.sign(...input);
 							expect(rpcMethodWrappers.sign).toHaveBeenCalledWith(
-								web3Eth,
+								web3Zond,
 								...rpcMethodParameters,
 							);
 						},
@@ -330,9 +330,9 @@ describe('web3_eth_methods_with_parameters', () => {
 					it.each(getPastLogsValidData)(
 						'input: %s\nrpcMethodParameters: %s',
 						async (input, rpcMethodParameters) => {
-							await web3Eth.getPastLogs(...input);
+							await web3Zond.getPastLogs(...input);
 							expect(rpcMethodWrappers.getLogs).toHaveBeenCalledWith(
-								web3Eth,
+								web3Zond,
 								...rpcMethodParameters,
 							);
 						},
@@ -342,9 +342,9 @@ describe('web3_eth_methods_with_parameters', () => {
 					it.each(getPastLogsValidData)(
 						'input: %s\nrpcMethodParameters: %s',
 						async (_, rpcMethodParameters) => {
-							await rpcMethodWrappers.getLogs(web3Eth, ...rpcMethodParameters);
+							await rpcMethodWrappers.getLogs(web3Zond, ...rpcMethodParameters);
 							expect(rpcMethodWrappers.getLogs).toHaveBeenCalledWith(
-								web3Eth,
+								web3Zond,
 								...rpcMethodParameters,
 							);
 						},
@@ -355,9 +355,9 @@ describe('web3_eth_methods_with_parameters', () => {
 					it.each(createAccessListTestData)(
 						'input: %s\nrpcMethodParameters: %s',
 						async (_, input) => {
-							await web3Eth.createAccessList(...input);
+							await web3Zond.createAccessList(...input);
 							expect(rpcMethodWrappers.createAccessList).toHaveBeenCalledWith(
-								web3Eth,
+								web3Zond,
 								...input,
 							);
 						},
@@ -368,9 +368,9 @@ describe('web3_eth_methods_with_parameters', () => {
 			describe("doesn't have returnFormat parameter", () => {
 				describe('submitWork', () => {
 					it.each(submitWorkValidData)('input: %s', async input => {
-						await web3Eth.submitWork(...input);
+						await web3Zond.submitWork(...input);
 						expect(zondRpcMethods.submitWork).toHaveBeenCalledWith(
-							web3Eth.requestManager,
+							web3Zond.requestManager,
 							...input,
 						);
 					});

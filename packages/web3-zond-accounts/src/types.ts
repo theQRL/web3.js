@@ -47,9 +47,7 @@ export type SignFunction = (data: string, privateKey: string) => SignResult;
 
 export interface Web3Account extends Web3BaseWalletAccount {
 	address: HexString;
-	privateKey: HexString;
-	publicKey: HexString;
-	seed?: HexString;
+	seed: HexString;
 }
 
 // To avoid dependency of "dom" library for TS, copying this interface within project

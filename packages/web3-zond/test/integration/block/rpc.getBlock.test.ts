@@ -24,7 +24,7 @@ import {
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { Contract } from '@theqrl/web3-zond-contract';
 import { validator } from '@theqrl/web3-validator';
-import { Web3Eth } from '../../../src';
+import { Web3Zond } from '../../../src';
 import {
 	getSystemTestProvider,
 	createTempAccount,
@@ -40,7 +40,7 @@ import { sendFewTxes } from '../helper';
 import { blockSchema } from '../../../src/schemas';
 
 describe('rpc with block', () => {
-	let web3Eth: Web3Eth;
+	let web3Zond: Web3Zond;
 	let clientUrl: string | SupportedProviders;
 
 	let contract: Contract<typeof BasicAbi>;
@@ -60,7 +60,7 @@ describe('rpc with block', () => {
 
 	beforeAll(async () => {
 		clientUrl = getSystemTestProvider();
-		web3Eth = new Web3Eth({
+		web3Zond = new Web3Zond({
 			provider: clientUrl,
 			config: {
 				transactionPollingTimeout: 2000,
@@ -103,7 +103,7 @@ describe('rpc with block', () => {
 	});
 
 	afterAll(async () => {
-		await closeOpenConnection(web3Eth);
+		await closeOpenConnection(web3Zond);
 		await closeOpenConnection(contract);
 	});
 
@@ -120,7 +120,7 @@ describe('rpc with block', () => {
 			}),
 		)('getBlock', async ({ hydrated, block, format }) => {
 			const b = {
-				...(await web3Eth.getBlock(blockData[block], hydrated, {
+				...(await web3Zond.getBlock(blockData[block], hydrated, {
 					number: format as FMT_NUMBER,
 					bytes: FMT_BYTES.HEX,
 				})),
@@ -146,7 +146,7 @@ describe('rpc with block', () => {
 				// only geth throws this error
 				'getBlock',
 				async blockTag => {
-					const request = await web3Eth.getBlock(blockTag);
+					const request = await web3Zond.getBlock(blockTag);
 
 					expect(request).toBeDefined();
 					expect(validator.validateJSONSchema(blockSchema, request)).toBeUndefined();

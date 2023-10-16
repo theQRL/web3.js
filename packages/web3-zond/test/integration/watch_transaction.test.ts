@@ -46,16 +46,16 @@ describeIf(isSocket)('watch subscription transaction', () => {
 		web3 = new Web3(clientUrl);
 		account1 = await createLocalAccount(web3);
 		account2 = createAccount();
-		await waitForOpenConnection(web3.eth);
+		await waitForOpenConnection(web3.zond);
 	});
 	describe('wait for confirmation subscription', () => {
 		it('subscription to heads', async () => {
-			web3.eth.setConfig({ transactionConfirmationBlocks: waitConfirmations });
+			web3.zond.setConfig({ transactionConfirmationBlocks: waitConfirmations });
 
 			const sentTx: Web3PromiEvent<
 				TransactionReceipt,
 				SendTransactionEvents<typeof DEFAULT_RETURN_FORMAT>
-			> = web3.eth.sendTransaction({
+			> = web3.zond.sendTransaction({
 				from: account1.address,
 				to: account2.address,
 				value: '0x1',
@@ -86,7 +86,7 @@ describeIf(isSocket)('watch subscription transaction', () => {
 			await receiptPromise;
 			await sendFewSampleTxs(isIpc ? 2 * waitConfirmations : waitConfirmations);
 			await confirmationPromise;
-			await closeOpenConnection(web3.eth);
+			await closeOpenConnection(web3.zond);
 		});
 	});
 });

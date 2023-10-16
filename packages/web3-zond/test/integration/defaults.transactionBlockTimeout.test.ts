@@ -46,17 +46,17 @@ describe('defaults', () => {
 		clientUrl = getSystemTestProvider();
 		web3 = new Web3(clientUrl);
 		// Make the test run faster by casing the polling to start after 2 blocks
-		web3.eth.transactionBlockTimeout = 2;
+		web3.zond.transactionBlockTimeout = 2;
 
 		// Increase other timeouts so only `transactionBlockTimeout` would be reached
-		web3.eth.transactionSendTimeout = MAX_32_SIGNED_INTEGER;
-		web3.eth.transactionPollingTimeout = MAX_32_SIGNED_INTEGER;
-		web3.eth.blockHeaderTimeout = MAX_32_SIGNED_INTEGER / 1000;
+		web3.zond.transactionSendTimeout = MAX_32_SIGNED_INTEGER;
+		web3.zond.transactionPollingTimeout = MAX_32_SIGNED_INTEGER;
+		web3.zond.blockHeaderTimeout = MAX_32_SIGNED_INTEGER / 1000;
 	});
 
 	afterEach(async () => {
-		web3.eth.transactionBlockTimeout = 50;
-		await closeOpenConnection(web3.eth);
+		web3.zond.transactionBlockTimeout = 50;
+		await closeOpenConnection(web3.zond);
 	});
 
 	describe('defaults', () => {
@@ -67,7 +67,7 @@ describe('defaults', () => {
 			const sentTx: Web3PromiEvent<
 				TransactionReceipt,
 				SendTransactionEvents<typeof DEFAULT_RETURN_FORMAT>
-			> = web3.eth.sendTransaction({
+			> = web3.zond.sendTransaction({
 				from: account1.address,
 				to: account2.address,
 				gas,
@@ -93,7 +93,7 @@ describe('defaults', () => {
 				// eslint-disable-next-line jest/no-conditional-expect
 				expect((error as Error).message).toMatch(/was not mined within [0-9]+ blocks/);
 			}
-			await closeOpenConnection(web3.eth);
+			await closeOpenConnection(web3.zond);
 		});
 
 		// The code of this test case is identical to the pervious one except for `eth.enableExperimentalFeatures = true`
@@ -103,16 +103,16 @@ describe('defaults', () => {
 			async () => {
 				account1 = await createLocalAccount(web3);
 				account2 = await createLocalAccount(web3);
-				await waitForOpenConnection(web3.eth);
+				await waitForOpenConnection(web3.zond);
 				// using subscription to get the new blocks and fire `TransactionBlockTimeoutError` is currently supported only
 				//	with `enableExperimentalFeatures.useSubscriptionWhenCheckingBlockTimeout` equal true.
-				web3.eth.enableExperimentalFeatures.useSubscriptionWhenCheckingBlockTimeout = true;
+				web3.zond.enableExperimentalFeatures.useSubscriptionWhenCheckingBlockTimeout = true;
 
 				// Setting a high `nonce` when sending a transaction, to cause the RPC call to stuck at the Node
 				const sentTx: Web3PromiEvent<
 					TransactionReceipt,
 					SendTransactionEvents<typeof DEFAULT_RETURN_FORMAT>
-				> = web3.eth.sendTransaction({
+				> = web3.zond.sendTransaction({
 					from: account1.address,
 					to: account2.address,
 					gas,
@@ -132,7 +132,7 @@ describe('defaults', () => {
 
 				await expect(sentTx).rejects.toThrow(TransactionBlockTimeoutError);
 
-				await closeOpenConnection(web3.eth);
+				await closeOpenConnection(web3.zond);
 			},
 		);
 	});

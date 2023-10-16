@@ -14,7 +14,7 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { Web3Eth } from '@theqrl/web3-zond';
+import { Web3Zond } from '@theqrl/web3-zond';
 import { Contract } from '../../src';
 import { sleep } from '../shared_fixtures/utils';
 import { ERC721TokenAbi, ERC721TokenBytecode } from '../shared_fixtures/build/ERC721Token';
@@ -38,10 +38,10 @@ describe('contract', () => {
 		let sendOptions: Record<string, unknown>;
 		let acc: { address: string; privateKey: string };
 		let pkAccount: { address: string; privateKey: string };
-		let web3Eth: Web3Eth;
+		let web3Zond: Web3Zond;
 
 		beforeAll(async () => {
-			web3Eth = new Web3Eth(getSystemTestProvider());
+			web3Zond = new Web3Zond(getSystemTestProvider());
 			deployOptions = {
 				data: GreeterBytecode,
 				arguments: ['My Greeting'],
@@ -56,7 +56,7 @@ describe('contract', () => {
 		});
 
 		afterAll(async () => {
-			await closeOpenConnection(web3Eth);
+			await closeOpenConnection(web3Zond);
 		});
 		describe('local account', () => {
 			it.each([signTxAndSendEIP1559, signTxAndSendEIP2930])(

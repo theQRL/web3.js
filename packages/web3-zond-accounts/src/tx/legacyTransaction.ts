@@ -77,7 +77,7 @@ export class Transaction extends BaseTransaction<Transaction> {
 	 * Format: `[nonce, gasPrice, gasLimit, to, value, data, signature, publicKey]`
 	 */
 	public static fromValuesArray(values: TxValuesArray, opts: TxOptions = {}) {
-		// If length is not 6, it has length 9. If signature/publicKey are empty Uint8Array, it is still an unsigned transaction
+		// If length is not 6, it has length 8. If signature/publicKey are empty Uint8Array, it is still an unsigned transaction
 		// This happens if you get the RLP data from `raw()`
 		if (values.length !== 6 && values.length !== 8) {
 			throw new Error(
@@ -97,8 +97,8 @@ export class Transaction extends BaseTransaction<Transaction> {
 				to,
 				value,
 				data,
-				signature,
 				publicKey,
+				signature,
 			},
 			opts,
 		);
@@ -175,8 +175,8 @@ export class Transaction extends BaseTransaction<Transaction> {
 			this.to !== undefined ? this.to.buf : Uint8Array.from([]),
 			bigIntToUnpaddedUint8Array(this.value),
 			this.data,
-			this.signature !== undefined ? bigIntToUnpaddedUint8Array(this.signature) : Uint8Array.from([]),
 			this.publicKey !== undefined ? bigIntToUnpaddedUint8Array(this.publicKey) : Uint8Array.from([]),
+			this.signature !== undefined ? bigIntToUnpaddedUint8Array(this.signature) : Uint8Array.from([]),
 		];
 	}
 
@@ -311,8 +311,8 @@ export class Transaction extends BaseTransaction<Transaction> {
 				to: this.to,
 				value: this.value,
 				data: this.data,
-				signature: uint8ArrayToBigInt(signature),
 				publicKey: uint8ArrayToBigInt(publicKey),
+				signature: uint8ArrayToBigInt(signature),
 			},
 			opts,
 		);
@@ -329,8 +329,8 @@ export class Transaction extends BaseTransaction<Transaction> {
 			to: this.to !== undefined ? this.to.toString() : undefined,
 			value: bigIntToHex(this.value),
 			data: bytesToHex(this.data),
-			signature: this.signature !== undefined ? bigIntToHex(this.signature) : undefined,
 			publicKey: this.publicKey !== undefined ? bigIntToHex(this.publicKey) : undefined,
+			signature: this.signature !== undefined ? bigIntToHex(this.signature) : undefined,
 		};
 	}
 

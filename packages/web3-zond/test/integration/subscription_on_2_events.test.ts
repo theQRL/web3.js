@@ -30,9 +30,9 @@ const checkTxCount = 2;
 describeIf(isSocket)('subscription on multiple events', () => {
 	test(`catch the data of pendingTransactions and newHeads`, async () => {
 		const web3 = new Web3(getSystemTestProvider());
-		const web3Eth = web3.eth;
-		await waitForOpenConnection(web3Eth);
-		const pendingTransactionsSub = await web3Eth.subscribe('pendingTransactions');
+		const web3Zond = web3.zond;
+		await waitForOpenConnection(web3Zond);
+		const pendingTransactionsSub = await web3Zond.subscribe('pendingTransactions');
 
 		let pendingTransactionsCount = 0;
 		const pendingTransactionsData = new Promise((resolve: Resolve, reject) => {
@@ -51,7 +51,7 @@ describeIf(isSocket)('subscription on multiple events', () => {
 			})();
 		});
 
-		const newHeadsSub = await web3.eth.subscribe('newHeads');
+		const newHeadsSub = await web3.zond.subscribe('newHeads');
 		let newHeadsCount = 0;
 		const newHeadsData = new Promise((resolve: Resolve, reject) => {
 			newHeadsSub.on('data', (data: BlockHeaderOutput) => {
@@ -72,14 +72,14 @@ describeIf(isSocket)('subscription on multiple events', () => {
 		await pendingTransactionsData;
 		await newHeadsData;
 
-		await closeOpenConnection(web3Eth);
+		await closeOpenConnection(web3Zond);
 	});
 
 	test(`catch the data of an event even after subscribing off another one`, async () => {
 		const web3 = new Web3(getSystemTestProvider());
-		const web3Eth = web3.eth;
-		await waitForOpenConnection(web3Eth);
-		const pendingTransactionsSub = await web3Eth.subscribe('pendingTransactions');
+		const web3Zond = web3.zond;
+		await waitForOpenConnection(web3Zond);
+		const pendingTransactionsSub = await web3Zond.subscribe('pendingTransactions');
 
 		// eslint-disable-next-line @typescript-eslint/no-empty-function
 		pendingTransactionsSub.on('data', () => {});
@@ -87,7 +87,7 @@ describeIf(isSocket)('subscription on multiple events', () => {
 			throw error;
 		});
 
-		const newHeadsSub = await web3.eth.subscribe('newHeads');
+		const newHeadsSub = await web3.zond.subscribe('newHeads');
 		let times = 0;
 		const newHeadsData = new Promise((resolve: Resolve, reject) => {
 			newHeadsSub.on('data', (data: BlockHeaderOutput) => {
@@ -109,6 +109,6 @@ describeIf(isSocket)('subscription on multiple events', () => {
 
 		await newHeadsData;
 
-		await closeOpenConnection(web3Eth);
+		await closeOpenConnection(web3Zond);
 	});
 });

@@ -17,7 +17,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { SupportedProviders } from '@theqrl/web3-types';
 import { hexToNumber } from '@theqrl/web3-utils';
-import { Web3Eth } from '../../src';
+import { Web3Zond } from '../../src';
 
 import {
 	closeOpenConnection,
@@ -27,24 +27,24 @@ import {
 } from '../fixtures/system_test_utils';
 
 describe('eth', () => {
-	let web3Eth: Web3Eth;
+	let web3Zond: Web3Zond;
 
 	let clientUrl: string | SupportedProviders;
 
 	beforeAll(async () => {
 		clientUrl = getSystemTestProvider();
-		web3Eth = new Web3Eth(clientUrl);
-		await waitForOpenConnection(web3Eth);
+		web3Zond = new Web3Zond(clientUrl);
+		await waitForOpenConnection(web3Zond);
 	});
 	afterAll(async () => {
-		await closeOpenConnection(web3Eth);
+		await closeOpenConnection(web3Zond);
 	});
 
 	describe('methods', () => {
 		it('executes one batch request', async () => {
 			const acc1 = await createTempAccount();
 
-			const batch = new web3Eth.BatchRequest();
+			const batch = new web3Zond.BatchRequest();
 			const request1 = {
 				id: 10,
 				method: 'zond_getBalance',
@@ -65,7 +65,7 @@ describe('eth', () => {
 			const acc1 = await createTempAccount();
 			const acc2 = await createTempAccount();
 
-			const batch = new web3Eth.BatchRequest();
+			const batch = new web3Zond.BatchRequest();
 			const request1 = {
 				id: 10,
 				method: 'zond_getBalance',

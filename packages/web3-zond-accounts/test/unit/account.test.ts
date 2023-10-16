@@ -105,7 +105,6 @@ describe('accounts', () => {
 			expect(signedResult.rawTransaction).toBeDefined();
 			expect(signedResult.transactionHash).toBeDefined();
 			expect(signedResult.signature).toMatch(/0[xX][0-9a-fA-F]{64}/);
-			expect(signedResult.publicKey).toMatch(/0[xX][0-9a-fA-F]{64}/);
 		});
 
 		it.each(transactionsTestData)('Recover transaction', async txData => {

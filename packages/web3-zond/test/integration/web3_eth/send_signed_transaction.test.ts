@@ -42,9 +42,9 @@ import { SimpleRevertAbi, SimpleRevertDeploymentData } from '../../fixtures/simp
 
 const HEX_NUMBER_DATA_FORMAT = { bytes: FMT_BYTES.HEX, number: FMT_NUMBER.HEX } as const;
 
-describe('Web3Eth.sendSignedTransaction', () => {
+describe('Web3Zond.sendSignedTransaction', () => {
 	let web3Zond: Web3Zond;
-	let tempAcc: { address: string; privateKey: string };
+	let tempAcc: { address: string; seed: string };
 
 	beforeAll(async () => {
 		web3Zond = new Web3Zond(getSystemTestProvider());

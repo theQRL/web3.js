@@ -21,7 +21,7 @@ import { AbiEventFragment, Web3BaseProvider } from '@theqrl/web3-types';
 import { numberToHex } from '@theqrl/web3-utils';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { IpcProvider } from '@theqrl/web3-providers-ipc';
-import { Web3Eth } from '../../src';
+import { Web3Zond } from '../../src';
 import { LogsSubscription } from '../../src/web3_subscriptions';
 import {
 	closeOpenConnection,
@@ -81,14 +81,14 @@ describeIf(isSocket)('subscription', () => {
 
 			const sendOptions = { from, gas: '1000000' };
 			const contractDeployed = await contract.deploy(deployOptions).send(sendOptions);
-			const web3Eth = new Web3Eth(providerWs as Web3BaseProvider);
-			const fromBlock = await web3Eth.getTransactionCount(
+			const web3Zond = new Web3Zond(providerWs as Web3BaseProvider);
+			const fromBlock = await web3Zond.getTransactionCount(
 				String(contractDeployed.options.address),
 			);
 
 			await makeFewTxToContract({ contract: contractDeployed, sendOptions, testDataString });
 
-			const sub: LogsSubscription = await web3Eth.subscribe('logs', {
+			const sub: LogsSubscription = await web3Zond.subscribe('logs', {
 				fromBlock: numberToHex(fromBlock),
 				address: contractDeployed.options.address,
 			});
@@ -111,7 +111,7 @@ describeIf(isSocket)('subscription', () => {
 			});
 
 			await pr;
-			await web3Eth.clearSubscriptions();
+			await web3Zond.clearSubscriptions();
 		});
 	});
 });

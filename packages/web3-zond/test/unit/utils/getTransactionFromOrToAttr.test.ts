@@ -26,7 +26,7 @@ import {
 } from '../../fixtures/format_transaction';
 import { createAccountProvider } from '../../fixtures/system_test_utils';
 
-import Web3Eth from '../../../src';
+import Web3Zond from '../../../src';
 
 describe('getTransactionFromOrToAttr', () => {
 	const web3Context = new Web3Context();
@@ -54,14 +54,14 @@ describe('getTransactionFromOrToAttr', () => {
 					'0x348ce564d427a3311b6536bbcff9390d69395b06ed6c486954e971d960fe8709';
 
 				// setup wallet
-				const web3Eth = new Web3Eth('http://localhost:8545');
-				const accountProvider = createAccountProvider(web3Eth);
+				const web3Zond = new Web3Zond('http://localhost:8545');
+				const accountProvider = createAccountProvider(web3Zond);
 				const wallet = new Wallet(accountProvider);
-				web3Eth.wallet?.add(privateKey);
-				web3Eth['_wallet'] = wallet;
+				web3Zond.wallet?.add(privateKey);
+				web3Zond['_wallet'] = wallet;
 
 				const { role, transaction } = input;
-				expect(() => getTransactionFromOrToAttr(role, web3Eth, transaction)).toThrow(
+				expect(() => getTransactionFromOrToAttr(role, web3Zond, transaction)).toThrow(
 					output,
 				);
 			},

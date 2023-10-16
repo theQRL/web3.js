@@ -29,7 +29,7 @@ const addAccount = async (address, privateKey) => {
 		);
 	}
 
-	await web3Eth.sendTransaction({
+	await web3Zond.sendTransaction({
 		from: mainAcc,
 		to: address,
 		gas: 1500000,

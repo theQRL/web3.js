@@ -18,7 +18,8 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import {
 	InvalidPrivateKeyError,
 	InvalidSeedError,
-	PrivateKeyLengthError,
+	//PrivateKeyLengthError,
+	PublicKeyLengthError,
 	TransactionSigningError,
 	UndefinedRawTransactionError,
 } from '@theqrl/web3-errors';
@@ -50,10 +51,8 @@ import type {
 } from './types.js';
 import { Dilithium } from '@theqrl/wallet.js';
 import { 
-	CryptoSecretKeyBytes, 
+	//CryptoSecretKeyBytes, 
 	CryptoPublicKeyBytes, 
-	cryptoSign, 
-	CryptoBytes 
 } from '@theqrl/dilithium5';
 import { getDilithiumAddressFromPK } from '@theqrl/wallet.js'
 
@@ -61,6 +60,7 @@ import { getDilithiumAddressFromPK } from '@theqrl/wallet.js'
  * Get the private key Uint8Array after the validation
  */
 // TODO(rgeraldes): review
+/*
 export const parseAndValidatePrivateKey = (data: Bytes, ignoreLength?: boolean): Uint8Array => {
 	let privateKeyUint8Array: Uint8Array;
 
@@ -82,6 +82,7 @@ export const parseAndValidatePrivateKey = (data: Bytes, ignoreLength?: boolean):
 
 	return privateKeyUint8Array;
 };
+*/
 
 export const parseAndValidatePublicKey = (data: Bytes, ignoreLength?: boolean): Uint8Array => {
 	let publicKeyUint8Array: Uint8Array;
@@ -89,7 +90,7 @@ export const parseAndValidatePublicKey = (data: Bytes, ignoreLength?: boolean): 
 	// TODO(rgeraldes24): review length
 	// To avoid the case of 1 character less in a hex string which is prefixed with '0' by using 'bytesToUint8Array'
 	if (!ignoreLength && typeof data === 'string' && isHexStrict(data) && data.length !== 66) {
-		throw new PrivateKeyLengthError();
+		throw new PublicKeyLengthError();
 	}
 
 	try {
@@ -99,7 +100,7 @@ export const parseAndValidatePublicKey = (data: Bytes, ignoreLength?: boolean): 
 	}
 
 	if (!ignoreLength && publicKeyUint8Array.byteLength !== CryptoPublicKeyBytes) {
-		throw new PrivateKeyLengthError();
+		throw new PublicKeyLengthError();
 	}
 
 	return publicKeyUint8Array;
@@ -153,14 +154,11 @@ export const hashMessage = (message: string): string => {
  * }
  * ```
  */
-export const sign = (data: string, privateKey: Bytes): SignResult => {
-	const privateKeyUint8Array = parseAndValidatePrivateKey(privateKey);
-
+export const sign = (data: string, seed: Bytes): SignResult => {
+	const seedUint8Array = parseAndValidateSeed(seed);
+	const acc = new Dilithium(seedUint8Array);
 	const hash = hashMessage(data);
-
-	const sm = cryptoSign(hash.substring(2), privateKeyUint8Array)
-	let signature = new Uint8Array(CryptoBytes);
-	signature = sm.slice(0, CryptoBytes);
+	const signature = acc.sign(hash.substring(2));
 
 	return {
 		message: data,
@@ -254,12 +252,11 @@ export const sign = (data: string, privateKey: Bytes): SignResult => {
 // TODO(rgeraldes): review docs
 export const signTransaction = async (
 	transaction: TypedTransaction,
-	privateKey: HexString,
-	publicKey: HexString,
+	seed: HexString,
 	// To make it compatible with rest of the API, have to keep it async
 	// eslint-disable-next-line @typescript-eslint/require-await
 ): Promise<SignTransactionResult> => {
-	const signedTx = transaction.sign(hexToBytes(privateKey), hexToBytes(publicKey));
+	const signedTx = transaction.sign(hexToBytes(seed));
 	if (isNullish(signedTx.signature) || isNullish(signedTx.publicKey))
 		throw new TransactionSigningError('Signer Error');
 
@@ -303,32 +300,17 @@ export const recoverTransaction = (rawTransaction: HexString): Address => {
 };
 
 /**
- * Get the dilithium5 Address from a private key
+ * Get the dilithium5 Address from a public key
  *
- * @param privateKey - String or Uint8Array of 4864 bytes
+ * @param publicKey - String or Uint8Array of 4864 bytes
  * @returns The Dilithium5 address
  * @example
  * ```ts
- * privateKeyToAddress("0xbe6383dad004f233317e46ddb46ad31b16064d14447a95cc1d8c8d4bc61c3728")
+ * publicKeyToAddress("0xbe6383dad004f233317e46ddb46ad31b16064d14447a95cc1d8c8d4bc61c3728")
  * > "0xEB014f8c8B418Db6b45774c326A0E64C78914dC0"
  * ```
  */
-// TODO(rgeraldes24) - publicKeyToAddress
-// export const privateKeyToAddress = (privateKey: Bytes): string => {
-// 	const privateKeyUint8Array = parseAndValidatePrivateKey(privateKey);
-
-// 	// Get public key from private key in compressed format
-// 	const publicKey = secp256k1.getPublicKey(privateKeyUint8Array, false);
-
-// 	// Uncompressed ECDSA public key contains the prefix `0x04` which is not used in the Ethereum public key
-// 	const publicKeyHash = sha3Raw(publicKey.slice(1));
-
-// 	// The hash is returned as 256 bits (32 bytes) or 64 hex characters
-// 	// To get the address, take the last 20 bytes of the public hash
-// 	const address = publicKeyHash.slice(-40);
-
-// 	return toChecksumAddress(`0x${address}`);
-// };
+// TODO (rgeraldes24) - modify public key above for dilithium pub key
 export const publicKeyToAddress = (publicKey: Bytes): string => {
 	const publicKeyUint8Array = parseAndValidatePublicKey(publicKey);	
 	const address = getDilithiumAddressFromPK(publicKeyUint8Array);
@@ -571,20 +553,16 @@ export const seedToAccount = (seed: Bytes/*, ignoreLength?: boolean*/): Web3Acco
 	const seedUint8Array = parseAndValidateSeed(seed/*, ignoreLength*/);
 
 	const acc = new Dilithium(seedUint8Array);
-	const secretKey = acc.getSK();
-	const publicKey = acc.getSK();
 
 	return {
 		address: bytesToHex(acc.getAddress()),
-		privateKey: bytesToHex(secretKey),
-		publicKey: bytesToHex(publicKey),
 		seed: acc.getHexSeed(),
 		// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		signTransaction: (_tx: Transaction) => {
 			throw new TransactionSigningError('Do not have network access to sign the transaction');
 		},
 		sign: (data: Record<string, unknown> | string) =>
-			sign(typeof data === 'string' ? data : JSON.stringify(data), secretKey),
+			sign(typeof data === 'string' ? data : JSON.stringify(data), acc.getSeed()),
 		// encrypt: async (password: string, options?: Record<string, unknown>) =>
 		//  	encrypt(privateKeyUint8Array, password, options),
 	};

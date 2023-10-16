@@ -16,65 +16,65 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import { zondRpcMethods } from '@theqrl/web3-rpc-methods';
 
-import Web3Eth from '../../src/index';
+import Web3Zond from '../../src/index';
 
 jest.mock('@theqrl/web3-rpc-methods');
 
 describe('web3_eth_methods_no_parameters', () => {
-	let web3Eth: Web3Eth;
+	let web3Zond: Web3Zond;
 
 	beforeAll(() => {
-		web3Eth = new Web3Eth('http://127.0.0.1:8545');
+		web3Zond = new Web3Zond('http://127.0.0.1:8545');
 	});
 
 	describe('should call RPC method with only request manager parameter', () => {
 		it('getProtocolVersion', async () => {
-			await web3Eth.getProtocolVersion();
-			expect(zondRpcMethods.getProtocolVersion).toHaveBeenCalledWith(web3Eth.requestManager);
+			await web3Zond.getProtocolVersion();
+			expect(zondRpcMethods.getProtocolVersion).toHaveBeenCalledWith(web3Zond.requestManager);
 		});
 
 		it('isSyncing', async () => {
-			await web3Eth.isSyncing();
-			expect(zondRpcMethods.getSyncing).toHaveBeenCalledWith(web3Eth.requestManager);
+			await web3Zond.isSyncing();
+			expect(zondRpcMethods.getSyncing).toHaveBeenCalledWith(web3Zond.requestManager);
 		});
 
 		it('getCoinbase', async () => {
-			await web3Eth.getCoinbase();
-			expect(zondRpcMethods.getCoinbase).toHaveBeenCalledWith(web3Eth.requestManager);
+			await web3Zond.getCoinbase();
+			expect(zondRpcMethods.getCoinbase).toHaveBeenCalledWith(web3Zond.requestManager);
 		});
 
 		it('isMining', async () => {
-			await web3Eth.isMining();
-			expect(zondRpcMethods.getMining).toHaveBeenCalledWith(web3Eth.requestManager);
+			await web3Zond.isMining();
+			expect(zondRpcMethods.getMining).toHaveBeenCalledWith(web3Zond.requestManager);
 		});
 
 		it('getAccounts', async () => {
-			await web3Eth.getAccounts();
-			expect(zondRpcMethods.getAccounts).toHaveBeenCalledWith(web3Eth.requestManager);
+			await web3Zond.getAccounts();
+			expect(zondRpcMethods.getAccounts).toHaveBeenCalledWith(web3Zond.requestManager);
 		});
 
 		it('getWork', async () => {
-			await web3Eth.getWork();
-			expect(zondRpcMethods.getWork).toHaveBeenCalledWith(web3Eth.requestManager);
+			await web3Zond.getWork();
+			expect(zondRpcMethods.getWork).toHaveBeenCalledWith(web3Zond.requestManager);
 		});
 
 		it('getPendingTransactions', async () => {
 			(zondRpcMethods.getPendingTransactions as jest.Mock).mockResolvedValueOnce([]);
 
-			await web3Eth.getPendingTransactions();
+			await web3Zond.getPendingTransactions();
 			expect(zondRpcMethods.getPendingTransactions).toHaveBeenCalledWith(
-				web3Eth.requestManager,
+				web3Zond.requestManager,
 			);
 		});
 
 		it('requestAccounts', async () => {
-			await web3Eth.requestAccounts();
-			expect(zondRpcMethods.requestAccounts).toHaveBeenCalledWith(web3Eth.requestManager);
+			await web3Zond.requestAccounts();
+			expect(zondRpcMethods.requestAccounts).toHaveBeenCalledWith(web3Zond.requestManager);
 		});
 
 		it('getNodeInfo', async () => {
-			await web3Eth.getNodeInfo();
-			expect(zondRpcMethods.getNodeInfo).toHaveBeenCalledWith(web3Eth.requestManager);
+			await web3Zond.getNodeInfo();
+			expect(zondRpcMethods.getNodeInfo).toHaveBeenCalledWith(web3Zond.requestManager);
 		});
 	});
 });

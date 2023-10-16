@@ -96,7 +96,7 @@ import { getTransactionError } from './utils/get_transaction_error.js';
 import { getRevertReason } from './utils/get_revert_reason.js';
 
 /**
- * View additional documentations here: {@link Web3Eth.getProtocolVersion}
+ * View additional documentations here: {@link Web3Zond.getProtocolVersion}
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export const getProtocolVersion = async (web3Context: Web3Context<ZondExecutionAPI>) =>
@@ -104,7 +104,7 @@ export const getProtocolVersion = async (web3Context: Web3Context<ZondExecutionA
 
 // TODO Add returnFormat parameter
 /**
- * View additional documentations here: {@link Web3Eth.isSyncing}
+ * View additional documentations here: {@link Web3Zond.isSyncing}
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export const isSyncing = async (web3Context: Web3Context<ZondExecutionAPI>) =>
@@ -112,21 +112,21 @@ export const isSyncing = async (web3Context: Web3Context<ZondExecutionAPI>) =>
 
 // TODO consider adding returnFormat parameter (to format address as bytes)
 /**
- * View additional documentations here: {@link Web3Eth.getCoinbase}
+ * View additional documentations here: {@link Web3Zond.getCoinbase}
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export const getCoinbase = async (web3Context: Web3Context<ZondExecutionAPI>) =>
 	zondRpcMethods.getCoinbase(web3Context.requestManager);
 
 /**
- * View additional documentations here: {@link Web3Eth.isMining}
+ * View additional documentations here: {@link Web3Zond.isMining}
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export const isMining = async (web3Context: Web3Context<ZondExecutionAPI>) =>
 	zondRpcMethods.getMining(web3Context.requestManager);
 
 /**
- * View additional documentations here: {@link Web3Eth.getHashRate}
+ * View additional documentations here: {@link Web3Zond.getHashRate}
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function getHashRate<ReturnFormat extends DataFormat>(
@@ -139,7 +139,7 @@ export async function getHashRate<ReturnFormat extends DataFormat>(
 }
 
 /**
- * View additional documentations here: {@link Web3Eth.getGasPrice}
+ * View additional documentations here: {@link Web3Zond.getGasPrice}
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function getGasPrice<ReturnFormat extends DataFormat>(
@@ -152,7 +152,7 @@ export async function getGasPrice<ReturnFormat extends DataFormat>(
 }
 
 /**
- * View additional documentations here: {@link Web3Eth.getBlockNumber}
+ * View additional documentations here: {@link Web3Zond.getBlockNumber}
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function getBlockNumber<ReturnFormat extends DataFormat>(
@@ -165,7 +165,7 @@ export async function getBlockNumber<ReturnFormat extends DataFormat>(
 }
 
 /**
- * View additional documentations here: {@link Web3Eth.getBalance}
+ * View additional documentations here: {@link Web3Zond.getBalance}
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function getBalance<ReturnFormat extends DataFormat>(
@@ -186,7 +186,7 @@ export async function getBalance<ReturnFormat extends DataFormat>(
 }
 
 /**
- * View additional documentations here: {@link Web3Eth.getStorageAt}
+ * View additional documentations here: {@link Web3Zond.getStorageAt}
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function getStorageAt<ReturnFormat extends DataFormat>(
@@ -210,7 +210,7 @@ export async function getStorageAt<ReturnFormat extends DataFormat>(
 }
 
 /**
- * View additional documentations here: {@link Web3Eth.getCode}
+ * View additional documentations here: {@link Web3Zond.getCode}
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function getCode<ReturnFormat extends DataFormat>(
@@ -231,7 +231,7 @@ export async function getCode<ReturnFormat extends DataFormat>(
 }
 
 /**
- * View additional documentations here: {@link Web3Eth.getBlock}
+ * View additional documentations here: {@link Web3Zond.getBlock}
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function getBlock<ReturnFormat extends DataFormat>(
@@ -262,7 +262,7 @@ export async function getBlock<ReturnFormat extends DataFormat>(
 }
 
 /**
- * View additional documentations here: {@link Web3Eth.getBlockTransactionCount}
+ * View additional documentations here: {@link Web3Zond.getBlockTransactionCount}
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function getBlockTransactionCount<ReturnFormat extends DataFormat>(
@@ -291,7 +291,7 @@ export async function getBlockTransactionCount<ReturnFormat extends DataFormat>(
 }
 
 /**
- * View additional documentations here: {@link Web3Eth.getBlockUncleCount}
+ * View additional documentations here: {@link Web3Zond.getBlockUncleCount}
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function getBlockUncleCount<ReturnFormat extends DataFormat>(
@@ -320,7 +320,7 @@ export async function getBlockUncleCount<ReturnFormat extends DataFormat>(
 }
 
 /**
- * View additional documentations here: {@link Web3Eth.getUncle}
+ * View additional documentations here: {@link Web3Zond.getUncle}
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function getUncle<ReturnFormat extends DataFormat>(
@@ -354,7 +354,7 @@ export async function getUncle<ReturnFormat extends DataFormat>(
 }
 
 /**
- * View additional documentations here: {@link Web3Eth.getTransaction}
+ * View additional documentations here: {@link Web3Zond.getTransaction}
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function getTransaction<ReturnFormat extends DataFormat>(
@@ -378,7 +378,7 @@ export async function getTransaction<ReturnFormat extends DataFormat>(
 }
 
 /**
- * View additional documentations here: {@link Web3Eth.getPendingTransactions}
+ * View additional documentations here: {@link Web3Zond.getPendingTransactions}
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function getPendingTransactions<ReturnFormat extends DataFormat>(
@@ -395,7 +395,7 @@ export async function getPendingTransactions<ReturnFormat extends DataFormat>(
 }
 
 /**
- * View additional documentations here: {@link Web3Eth.getTransactionFromBlock}
+ * View additional documentations here: {@link Web3Zond.getTransactionFromBlock}
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function getTransactionFromBlock<ReturnFormat extends DataFormat>(
@@ -431,7 +431,7 @@ export async function getTransactionFromBlock<ReturnFormat extends DataFormat>(
 }
 
 /**
- * View additional documentations here: {@link Web3Eth.getTransactionReceipt}
+ * View additional documentations here: {@link Web3Zond.getTransactionReceipt}
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function getTransactionReceipt<ReturnFormat extends DataFormat>(
@@ -459,7 +459,7 @@ export async function getTransactionReceipt<ReturnFormat extends DataFormat>(
 }
 
 /**
- * View additional documentations here: {@link Web3Eth.getTransactionCount}
+ * View additional documentations here: {@link Web3Zond.getTransactionCount}
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function getTransactionCount<ReturnFormat extends DataFormat>(
@@ -481,7 +481,7 @@ export async function getTransactionCount<ReturnFormat extends DataFormat>(
 }
 
 /**
- * View additional documentations here: {@link Web3Eth.sendTransaction}
+ * View additional documentations here: {@link Web3Zond.sendTransaction}
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export function sendTransaction<
@@ -691,7 +691,7 @@ export function sendTransaction<
 }
 
 /**
- * View additional documentations here: {@link Web3Eth.sendSignedTransaction}
+ * View additional documentations here: {@link Web3Zond.sendSignedTransaction}
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export function sendSignedTransaction<
@@ -869,7 +869,7 @@ export function sendSignedTransaction<
 }
 
 /**
- * View additional documentations here: {@link Web3Eth.sign}
+ * View additional documentations here: {@link Web3Zond.sign}
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function sign<ReturnFormat extends DataFormat>(
@@ -902,7 +902,7 @@ export async function sign<ReturnFormat extends DataFormat>(
 }
 
 /**
- * View additional documentations here: {@link Web3Eth.signTransaction}
+ * View additional documentations here: {@link Web3Zond.signTransaction}
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function signTransaction<ReturnFormat extends DataFormat>(
@@ -935,7 +935,7 @@ export async function signTransaction<ReturnFormat extends DataFormat>(
 // TODO Decide what to do with transaction.to
 // https://github.com/ChainSafe/web3.js/pull/4525#issuecomment-982330076
 /**
- * View additional documentations here: {@link Web3Eth.call}
+ * View additional documentations here: {@link Web3Zond.call}
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function call<ReturnFormat extends DataFormat>(
@@ -959,7 +959,7 @@ export async function call<ReturnFormat extends DataFormat>(
 
 // TODO - Investigate whether response is padded as 1.x docs suggest
 /**
- * View additional documentations here: {@link Web3Eth.estimateGas}
+ * View additional documentations here: {@link Web3Zond.estimateGas}
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function estimateGas<ReturnFormat extends DataFormat>(
@@ -984,7 +984,7 @@ export async function estimateGas<ReturnFormat extends DataFormat>(
 
 // TODO - Add input formatting to filter
 /**
- * View additional documentations here: {@link Web3Eth.getPastLogs}
+ * View additional documentations here: {@link Web3Zond.getPastLogs}
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function getLogs<ReturnFormat extends DataFormat>(
@@ -1021,7 +1021,7 @@ export async function getLogs<ReturnFormat extends DataFormat>(
 }
 
 /**
- * View additional documentations here: {@link Web3Eth.getChainId}
+ * View additional documentations here: {@link Web3Zond.getChainId}
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function getChainId<ReturnFormat extends DataFormat>(
@@ -1039,7 +1039,7 @@ export async function getChainId<ReturnFormat extends DataFormat>(
 }
 
 /**
- * View additional documentations here: {@link Web3Eth.getProof}
+ * View additional documentations here: {@link Web3Zond.getProof}
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function getProof<ReturnFormat extends DataFormat>(
@@ -1070,7 +1070,7 @@ export async function getProof<ReturnFormat extends DataFormat>(
 // TODO Throwing an error with Geth, but not Infura
 // TODO gasUsedRatio and reward not formatting
 /**
- * View additional documentations here: {@link Web3Eth.getFeeHistory}
+ * View additional documentations here: {@link Web3Zond.getFeeHistory}
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function getFeeHistory<ReturnFormat extends DataFormat>(
@@ -1108,7 +1108,7 @@ export async function getFeeHistory<ReturnFormat extends DataFormat>(
 }
 
 /**
- * View additional documentations here: {@link Web3Eth.createAccessList}
+ * View additional documentations here: {@link Web3Zond.createAccessList}
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function createAccessList<ReturnFormat extends DataFormat>(
@@ -1131,7 +1131,7 @@ export async function createAccessList<ReturnFormat extends DataFormat>(
 }
 
 /**
- * View additional documentations here: {@link Web3Eth.signTypedData}
+ * View additional documentations here: {@link Web3Zond.signTypedData}
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
 export async function signTypedData<ReturnFormat extends DataFormat>(

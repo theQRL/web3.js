@@ -19,7 +19,7 @@ import { Web3BaseProvider } from '@theqrl/web3-types';
 /* eslint-disable import/no-named-as-default */
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { IpcProvider } from '@theqrl/web3-providers-ipc';
-import Web3Eth, {
+import Web3Zond, {
 	LogsSubscription,
 	NewHeadsSubscription,
 	NewPendingTransactionsSubscription,
@@ -35,7 +35,7 @@ import {
 } from '../fixtures/system_test_utils';
 
 describeIf(isSocket)('subscribe', () => {
-	let web3Eth: Web3Eth;
+	let web3Zond: Web3Zond;
 	let provider: WebSocketProvider | IpcProvider;
 
 	beforeAll(() => {
@@ -45,42 +45,42 @@ describeIf(isSocket)('subscribe', () => {
 	});
 
 	afterAll(async () => {
-		await closeOpenConnection(web3Eth);
+		await closeOpenConnection(web3Zond);
 	});
 
 	afterEach(async () => {
-		await web3Eth.clearSubscriptions();
+		await web3Zond.clearSubscriptions();
 	});
 
 	describe('subscribe to', () => {
 		it('newHeads', async () => {
-			web3Eth = new Web3Eth(provider as Web3BaseProvider);
-			await web3Eth.subscribe('newHeads');
-			const subs = web3Eth?.subscriptionManager?.subscriptions;
+			web3Zond = new Web3Zond(provider as Web3BaseProvider);
+			await web3Zond.subscribe('newHeads');
+			const subs = web3Zond?.subscriptionManager?.subscriptions;
 			const inst = subs?.get(Array.from(subs.keys())[0]);
 			expect(inst).toBeInstanceOf(NewHeadsSubscription);
 		});
 		it('syncing', async () => {
-			web3Eth = new Web3Eth(provider as Web3BaseProvider);
-			await web3Eth.subscribe('syncing');
-			const subs = web3Eth?.subscriptionManager?.subscriptions;
+			web3Zond = new Web3Zond(provider as Web3BaseProvider);
+			await web3Zond.subscribe('syncing');
+			const subs = web3Zond?.subscriptionManager?.subscriptions;
 			const inst = subs?.get(Array.from(subs.keys())[0]);
 			expect(inst).toBeInstanceOf(SyncingSubscription);
 		});
 		it('newPendingTransactions', async () => {
-			web3Eth = new Web3Eth(provider as Web3BaseProvider);
-			await web3Eth.subscribe('newPendingTransactions');
-			const subs = web3Eth?.subscriptionManager?.subscriptions;
+			web3Zond = new Web3Zond(provider as Web3BaseProvider);
+			await web3Zond.subscribe('newPendingTransactions');
+			const subs = web3Zond?.subscriptionManager?.subscriptions;
 			const inst = subs?.get(Array.from(subs.keys())[0]);
 			expect(inst).toBeInstanceOf(NewPendingTransactionsSubscription);
 		});
 		it('logs', async () => {
 			const tempAcc = await createTempAccount();
-			web3Eth = new Web3Eth(provider as Web3BaseProvider);
-			await web3Eth.subscribe('logs', {
+			web3Zond = new Web3Zond(provider as Web3BaseProvider);
+			await web3Zond.subscribe('logs', {
 				address: tempAcc.address,
 			});
-			const subs = web3Eth?.subscriptionManager?.subscriptions;
+			const subs = web3Zond?.subscriptionManager?.subscriptions;
 			const inst = subs?.get(Array.from(subs.keys())[0]);
 			expect(inst).toBeInstanceOf(LogsSubscription);
 		});

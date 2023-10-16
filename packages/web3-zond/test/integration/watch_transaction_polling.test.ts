@@ -17,7 +17,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import { DEFAULT_RETURN_FORMAT } from '@theqrl/web3-types';
 import { Web3PromiEvent } from '@theqrl/web3-core';
 import { SupportedProviders, TransactionReceipt } from '@theqrl/web3-types';
-import { Web3Eth, SendTransactionEvents } from '../../src';
+import { Web3Zond, SendTransactionEvents } from '../../src';
 
 import {
 	closeOpenConnection,
@@ -33,8 +33,8 @@ type Resolve = (value?: unknown) => void;
 
 describeIf(isHttp)('watch polling transaction', () => {
 	let clientUrl: string | SupportedProviders;
-	let tempAcc: { address: string; privateKey: string };
-	let tempAcc2: { address: string; privateKey: string };
+	let tempAcc: { address: string; seed: string };
+	let tempAcc2: { address: string; seed: string };
 
 	beforeEach(async () => {
 		tempAcc = await createTempAccount();
@@ -46,8 +46,8 @@ describeIf(isHttp)('watch polling transaction', () => {
 
 	describe('wait for confirmation polling', () => {
 		it('polling', async () => {
-			const web3Eth = new Web3Eth(clientUrl);
-			web3Eth.setConfig({ transactionConfirmationBlocks: waitConfirmations });
+			const web3Zond = new Web3Zond(clientUrl);
+			web3Zond.setConfig({ transactionConfirmationBlocks: waitConfirmations });
 
 			const from = tempAcc.address;
 			const to = tempAcc2.address;
@@ -56,7 +56,7 @@ describeIf(isHttp)('watch polling transaction', () => {
 			const sentTx: Web3PromiEvent<
 				TransactionReceipt,
 				SendTransactionEvents<typeof DEFAULT_RETURN_FORMAT>
-			> = web3Eth.sendTransaction({
+			> = web3Zond.sendTransaction({
 				to,
 				value,
 				from,
@@ -71,7 +71,7 @@ describeIf(isHttp)('watch polling transaction', () => {
 							resolve();
 						} else {
 							// Send a transaction to cause dev providers creating new blocks to fire the 'confirmation' event again.
-							await web3Eth.sendTransaction({
+							await web3Zond.sendTransaction({
 								to,
 								value,
 								from,
@@ -92,7 +92,7 @@ describeIf(isHttp)('watch polling transaction', () => {
 			await sentTx;
 			await confirmationPromise;
 			sentTx.removeAllListeners();
-			await closeOpenConnection(web3Eth);
+			await closeOpenConnection(web3Zond);
 		});
 	});
 });

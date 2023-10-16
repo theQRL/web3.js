@@ -30,7 +30,7 @@ import {
 import { Wallet } from '@theqrl/web3-zond-accounts';
 import { isHexStrict } from '@theqrl/web3-validator';
 
-import Web3Eth from '../../../src';
+import Web3Zond from '../../../src';
 import {
 	closeOpenConnection,
 	createAccountProvider,
@@ -40,17 +40,17 @@ import {
 } from '../../fixtures/system_test_utils';
 import { SimpleRevertAbi, SimpleRevertDeploymentData } from '../../fixtures/simple_revert';
 
-describe('Web3Eth.sendTransaction', () => {
-	let web3Eth: Web3Eth;
-	let tempAcc: { address: string; privateKey: string };
+describe('Web3Zond.sendTransaction', () => {
+	let web3Zond: Web3Zond;
+	let tempAcc: { address: string; seed: string };
 
 	beforeAll(async () => {
-		web3Eth = new Web3Eth(getSystemTestProvider());
+		web3Zond = new Web3Zond(getSystemTestProvider());
 		tempAcc = await createTempAccount();
 	});
 
 	afterAll(async () => {
-		await closeOpenConnection(web3Eth);
+		await closeOpenConnection(web3Zond);
 	});
 
 	it('should make a simple value transfer', async () => {
@@ -59,22 +59,22 @@ describe('Web3Eth.sendTransaction', () => {
 			to: '0x0000000000000000000000000000000000000000',
 			value: BigInt(1),
 		};
-		const response = await web3Eth.sendTransaction(transaction);
+		const response = await web3Zond.sendTransaction(transaction);
 		expect(response.status).toBe(BigInt(1));
 
-		const minedTransactionData = await web3Eth.getTransaction(response.transactionHash);
+		const minedTransactionData = await web3Zond.getTransaction(response.transactionHash);
 		expect(minedTransactionData).toMatchObject(transaction);
 	});
 
 	it('should make a simple value transfer - with local wallet indexed sender', async () => {
-		const web3EthWithWallet = new Web3Eth(getSystemTestProvider());
-		const accountProvider = createAccountProvider(web3Eth);
+		const web3EthWithWallet = new Web3Zond(getSystemTestProvider());
+		const accountProvider = createAccountProvider(web3Zond);
 		const wallet = new Wallet(accountProvider);
 
 		web3EthWithWallet['_accountProvider'] = accountProvider;
 		web3EthWithWallet['_wallet'] = wallet;
 
-		web3EthWithWallet.wallet?.add(tempAcc.privateKey);
+		web3EthWithWallet.wallet?.add(tempAcc.seed);
 
 		const transaction: TransactionWithFromLocalWalletIndex = {
 			from: 0,
@@ -97,14 +97,14 @@ describe('Web3Eth.sendTransaction', () => {
 	});
 
 	it('should make a simple value transfer - with local wallet indexed receiver', async () => {
-		const web3EthWithWallet = new Web3Eth(getSystemTestProvider());
-		const accountProvider = createAccountProvider(web3Eth);
+		const web3EthWithWallet = new Web3Zond(getSystemTestProvider());
+		const accountProvider = createAccountProvider(web3Zond);
 		const wallet = new Wallet(accountProvider);
 
 		web3EthWithWallet['_accountProvider'] = accountProvider;
 		web3EthWithWallet['_wallet'] = wallet;
 
-		web3EthWithWallet.wallet?.add(tempAcc.privateKey);
+		web3EthWithWallet.wallet?.add(tempAcc.seed);
 
 		const transaction: TransactionWithToLocalWalletIndex = {
 			from: tempAcc.address,
@@ -127,8 +127,8 @@ describe('Web3Eth.sendTransaction', () => {
 	});
 
 	it('should make a simple value transfer - with local wallet indexed sender and receiver', async () => {
-		const web3EthWithWallet = new Web3Eth(getSystemTestProvider());
-		const accountProvider = createAccountProvider(web3Eth);
+		const web3EthWithWallet = new Web3Zond(getSystemTestProvider());
+		const accountProvider = createAccountProvider(web3Zond);
 		const wallet = new Wallet(accountProvider);
 
 		web3EthWithWallet['_accountProvider'] = accountProvider;
@@ -136,9 +136,9 @@ describe('Web3Eth.sendTransaction', () => {
 
 		const tempAcc2 = await createTempAccount();
 
-		web3EthWithWallet.wallet?.add(tempAcc.privateKey);
+		web3EthWithWallet.wallet?.add(tempAcc.seed);
 
-		web3EthWithWallet.wallet?.add(tempAcc2.privateKey);
+		web3EthWithWallet.wallet?.add(tempAcc2.seed);
 
 		const transaction: TransactionWithFromAndToLocalWalletIndex = {
 			from: 0,
@@ -165,10 +165,10 @@ describe('Web3Eth.sendTransaction', () => {
 			to: '0x0000000000000000000000000000000000000000',
 			value: BigInt(0),
 		};
-		const response = await web3Eth.sendTransaction(transaction);
+		const response = await web3Zond.sendTransaction(transaction);
 		expect(response.status).toBe(BigInt(1));
 
-		const minedTransactionData = await web3Eth.getTransaction(response.transactionHash);
+		const minedTransactionData = await web3Zond.getTransaction(response.transactionHash);
 		expect(minedTransactionData).toMatchObject(transaction);
 	});
 	it('should send a transaction with data', async () => {
@@ -178,10 +178,10 @@ describe('Web3Eth.sendTransaction', () => {
 			data: '0x64edfbf0e2c706ba4a09595315c45355a341a576cc17f3a19f43ac1c02f814ee',
 			value: BigInt(0),
 		};
-		const response = await web3Eth.sendTransaction(transaction);
+		const response = await web3Zond.sendTransaction(transaction);
 		expect(response.status).toBe(BigInt(1));
 
-		const minedTransactionData = await web3Eth.getTransaction(response.transactionHash);
+		const minedTransactionData = await web3Zond.getTransaction(response.transactionHash);
 		expect(minedTransactionData).toMatchObject(transaction);
 	});
 
@@ -197,11 +197,11 @@ describe('Web3Eth.sendTransaction', () => {
 				input: greeterContractDeploymentData,
 				gas: BigInt('475520'),
 			};
-			const response = await web3Eth.sendTransaction(transaction);
+			const response = await web3Zond.sendTransaction(transaction);
 			expect(response.status).toBe(BigInt(1));
 			expect(response.contractAddress).toBeDefined();
 
-			const minedTransactionData = await web3Eth.getTransaction(response.transactionHash);
+			const minedTransactionData = await web3Zond.getTransaction(response.transactionHash);
 			expect(minedTransactionData).toMatchObject({
 				from: tempAcc.address,
 				input: greeterContractDeploymentData,
@@ -220,10 +220,10 @@ describe('Web3Eth.sendTransaction', () => {
 				data: contractFunctionCall,
 				input: contractFunctionCall,
 			};
-			const response = await web3Eth.sendTransaction(transaction);
+			const response = await web3Zond.sendTransaction(transaction);
 			expect(response.status).toBe(BigInt(1));
 
-			const minedTransactionData = await web3Eth.getTransaction(response.transactionHash);
+			const minedTransactionData = await web3Zond.getTransaction(response.transactionHash);
 			expect(minedTransactionData).toMatchObject({
 				from: tempAcc.address,
 				to: greeterContractAddress,
@@ -240,11 +240,11 @@ describe('Web3Eth.sendTransaction', () => {
 				value: BigInt(1),
 				type: BigInt(0),
 			};
-			const response = await web3Eth.sendTransaction(transaction);
+			const response = await web3Zond.sendTransaction(transaction);
 			expect(response.type).toBe(BigInt(0));
 			expect(response.status).toBe(BigInt(1));
 
-			const minedTransactionData = await web3Eth.getTransaction(response.transactionHash);
+			const minedTransactionData = await web3Zond.getTransaction(response.transactionHash);
 			expect(minedTransactionData).toMatchObject(transaction);
 		});
 
@@ -259,11 +259,11 @@ describe('Web3Eth.sendTransaction', () => {
 				// with both Geth and Ganache, so I'm not sure
 				accessList: [],
 			};
-			const response = await web3Eth.sendTransaction(transaction);
+			const response = await web3Zond.sendTransaction(transaction);
 			expect(response.type).toBe(BigInt(1));
 			expect(response.status).toBe(BigInt(1));
 
-			const minedTransactionData = await web3Eth.getTransaction(response.transactionHash);
+			const minedTransactionData = await web3Zond.getTransaction(response.transactionHash);
 			expect(minedTransactionData).toMatchObject(transaction);
 		});
 
@@ -274,11 +274,11 @@ describe('Web3Eth.sendTransaction', () => {
 				value: BigInt(1),
 				type: BigInt(2),
 			};
-			const response = await web3Eth.sendTransaction(transaction);
+			const response = await web3Zond.sendTransaction(transaction);
 			expect(response.type).toBe(BigInt(2));
 			expect(response.status).toBe(BigInt(1));
 
-			const minedTransactionData = await web3Eth.getTransaction(response.transactionHash);
+			const minedTransactionData = await web3Zond.getTransaction(response.transactionHash);
 			expect(minedTransactionData).toMatchObject(transaction);
 		});
 
@@ -289,10 +289,10 @@ describe('Web3Eth.sendTransaction', () => {
 				data: '0x64edfbf0e2c706ba4a09595315c45355a341a576cc17f3a19f43ac1c02f814ee',
 				value: BigInt(1),
 			};
-			const response = await web3Eth.sendTransaction(transaction, DEFAULT_RETURN_FORMAT);
+			const response = await web3Zond.sendTransaction(transaction, DEFAULT_RETURN_FORMAT);
 			expect(response.type).toBe(BigInt(0));
 			expect(response.status).toBe(BigInt(1));
-			const minedTransactionData = await web3Eth.getTransaction(response.transactionHash);
+			const minedTransactionData = await web3Zond.getTransaction(response.transactionHash);
 			expect(minedTransactionData).toMatchObject(transaction);
 		});
 	});
@@ -303,10 +303,10 @@ describe('Web3Eth.sendTransaction', () => {
 			value: BigInt(1),
 			maxFeePerGas: BigInt(2500000016),
 		};
-		const response = await web3Eth.sendTransaction(transaction);
+		const response = await web3Zond.sendTransaction(transaction);
 		expect(response.type).toBe(BigInt(2));
 		expect(response.status).toBe(BigInt(1));
-		const minedTransactionData = await web3Eth.getTransaction(response.transactionHash);
+		const minedTransactionData = await web3Zond.getTransaction(response.transactionHash);
 		expect(minedTransactionData).toMatchObject(transaction);
 	});
 
@@ -317,10 +317,10 @@ describe('Web3Eth.sendTransaction', () => {
 			value: BigInt(1),
 			maxPriorityFeePerGas: BigInt(100),
 		};
-		const response = await web3Eth.sendTransaction(transaction);
+		const response = await web3Zond.sendTransaction(transaction);
 		expect(response.type).toBe(BigInt(2));
 		expect(response.status).toBe(BigInt(1));
-		const minedTransactionData = await web3Eth.getTransaction(response.transactionHash);
+		const minedTransactionData = await web3Zond.getTransaction(response.transactionHash);
 		expect(minedTransactionData).toMatchObject(transaction);
 	});
 
@@ -337,21 +337,21 @@ describe('Web3Eth.sendTransaction', () => {
 		});
 
 		it('should listen to the sending event', async () => {
-			await web3Eth.sendTransaction(transaction).on('sending', data => {
+			await web3Zond.sendTransaction(transaction).on('sending', data => {
 				expect(data).toMatchObject(transaction);
 			});
 			expect.assertions(1);
 		});
 
 		it('should listen to the sent event', async () => {
-			await web3Eth.sendTransaction(transaction).on('sent', data => {
+			await web3Zond.sendTransaction(transaction).on('sent', data => {
 				expect(data).toMatchObject(transaction);
 			});
 			expect.assertions(1);
 		});
 
 		it('should listen to the transactionHash event', async () => {
-			await web3Eth.sendTransaction(transaction).on('transactionHash', data => {
+			await web3Zond.sendTransaction(transaction).on('transactionHash', data => {
 				expect(isHexStrict(data)).toBe(true);
 			});
 			expect.assertions(1);
@@ -367,7 +367,7 @@ describe('Web3Eth.sendTransaction', () => {
 				to: transaction.to,
 				transactionHash: expect.any(String),
 			};
-			await web3Eth.sendTransaction(transaction).on('receipt', data => {
+			await web3Zond.sendTransaction(transaction).on('receipt', data => {
 				expect(data).toEqual(expect.objectContaining(expectedTransactionReceipt));
 
 				// To avoid issue with the `objectContaining` and `cypress` had to add
@@ -405,7 +405,7 @@ describe('Web3Eth.sendTransaction', () => {
 				latestBlockHash: expect.any(String),
 			};
 
-			await web3Eth.sendTransaction(transaction).on('confirmation', data => {
+			await web3Zond.sendTransaction(transaction).on('confirmation', data => {
 				expect(data).toEqual(expect.objectContaining(expectedTransactionConfirmation));
 			});
 
@@ -413,7 +413,7 @@ describe('Web3Eth.sendTransaction', () => {
 			// this is manually triggering the next block to be created since both
 			// Geth and Ganache wait for transaction before mining a block.
 			// This should be revisted to implement a better solution
-			await web3Eth.sendTransaction(transaction);
+			await web3Zond.sendTransaction(transaction);
 
 			// TODO: Debug why the assertions are not being called
 			// expect.assertions(1);
@@ -428,11 +428,11 @@ describe('Web3Eth.sendTransaction', () => {
 				from: tempAcc.address,
 				data: SimpleRevertDeploymentData,
 			};
-			simpleRevertDeployTransaction.gas = await web3Eth.estimateGas(
+			simpleRevertDeployTransaction.gas = await web3Zond.estimateGas(
 				simpleRevertDeployTransaction,
 			);
 			simpleRevertContractAddress = (
-				await web3Eth.sendTransaction(simpleRevertDeployTransaction)
+				await web3Zond.sendTransaction(simpleRevertDeployTransaction)
 			).contractAddress as Address;
 		});
 
@@ -454,7 +454,7 @@ describe('Web3Eth.sendTransaction', () => {
 			};
 
 			await expect(
-				web3Eth
+				web3Zond
 					.sendTransaction(transaction)
 					.on('error', error => expect(error).toMatchObject(expectedThrownError)),
 			).rejects.toMatchObject(expectedThrownError);
@@ -479,7 +479,7 @@ describe('Web3Eth.sendTransaction', () => {
 			};
 
 			await expect(
-				web3Eth
+				web3Zond
 					.sendTransaction(transaction)
 					.on('error', error => expect(error).toMatchObject(expectedThrownError)),
 			).rejects.toMatchObject(expectedThrownError);
@@ -492,7 +492,7 @@ describe('Web3Eth.sendTransaction', () => {
 				data: '0xba57a511000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000067265766572740000000000000000000000000000000000000000000000000000',
 			};
 
-			web3Eth.handleRevert = true;
+			web3Zond.handleRevert = true;
 
 			const expectedThrownError = {
 				name: 'TransactionRevertInstructionError',
@@ -507,7 +507,7 @@ describe('Web3Eth.sendTransaction', () => {
 			};
 
 			await expect(
-				web3Eth
+				web3Zond
 					.sendTransaction(transaction)
 					.on('error', error => expect(error).toMatchObject(expectedThrownError)),
 			).rejects.toMatchObject(expectedThrownError);
@@ -520,7 +520,7 @@ describe('Web3Eth.sendTransaction', () => {
 				data: '0x3ebf4d9c',
 			};
 
-			web3Eth.handleRevert = true;
+			web3Zond.handleRevert = true;
 
 			const expectedThrownError = {
 				name: 'TransactionRevertWithCustomError',
@@ -537,7 +537,7 @@ describe('Web3Eth.sendTransaction', () => {
 			};
 
 			await expect(
-				web3Eth
+				web3Zond
 					.sendTransaction(transaction, undefined, { contractAbi: SimpleRevertAbi })
 					.on('error', error => expect(error).toMatchObject(expectedThrownError)),
 			).rejects.toMatchObject(expectedThrownError);
@@ -550,7 +550,7 @@ describe('Web3Eth.sendTransaction', () => {
 				data: '0x819f48fe',
 			};
 
-			web3Eth.handleRevert = true;
+			web3Zond.handleRevert = true;
 
 			const expectedThrownError = {
 				name: 'TransactionRevertWithCustomError',
@@ -571,7 +571,7 @@ describe('Web3Eth.sendTransaction', () => {
 			};
 
 			await expect(
-				web3Eth
+				web3Zond
 					.sendTransaction(transaction, undefined, { contractAbi: SimpleRevertAbi })
 					.on('error', error => expect(error).toMatchObject(expectedThrownError)),
 			).rejects.toMatchObject(expectedThrownError);
@@ -584,7 +584,7 @@ describe('Web3Eth.sendTransaction', () => {
 				data: '0xba57a511000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000067265766572740000000000000000000000000000000000000000000000000000',
 			};
 
-			web3Eth.handleRevert = false;
+			web3Zond.handleRevert = false;
 
 			const expectedThrownError = {
 				name: 'TransactionRevertInstructionError',
@@ -598,7 +598,7 @@ describe('Web3Eth.sendTransaction', () => {
 			};
 
 			await expect(
-				web3Eth
+				web3Zond
 					.sendTransaction(transaction)
 					.on('error', error => expect(error).toMatchObject(expectedThrownError)),
 			).rejects.toMatchObject(expectedThrownError);

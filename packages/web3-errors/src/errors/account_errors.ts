@@ -19,6 +19,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 import {
 	ERR_PRIVATE_KEY_LENGTH,
+	ERR_PUBLIC_KEY_LENGTH,
 	ERR_INVALID_PRIVATE_KEY,
 	ERR_INVALID_SIGNATURE,
 	ERR_UNSUPPORTED_KDF,
@@ -34,7 +35,14 @@ import { BaseWeb3Error } from '../web3_error_base.js';
 export class PrivateKeyLengthError extends BaseWeb3Error {
 	public code = ERR_PRIVATE_KEY_LENGTH;
 	public constructor() {
-		super(`Private key must be 32 bytes.`);
+		super(`Private key must be 4864 bytes.`);
+	}
+}
+
+export class PublicKeyLengthError extends BaseWeb3Error {
+	public code = ERR_PUBLIC_KEY_LENGTH;
+	public constructor() {
+		super(`Private key must be 2592 bytes.`);
 	}
 }
 

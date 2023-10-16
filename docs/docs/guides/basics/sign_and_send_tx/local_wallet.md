@@ -39,7 +39,7 @@ try {
 List of references:
 
 -   [eth.accounts.wallet.add](/api/web3-eth-accounts/class/Wallet#add)
--   [eth.sendTransaction](/api/web3-eth/class/Web3Eth#sendTransaction)
+-   [eth.sendTransaction](/api/web3-eth/class/Web3Zond#sendTransaction)
 
 ## Contract Transaction
 

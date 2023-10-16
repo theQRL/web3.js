@@ -14,7 +14,7 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { Web3Eth } from '../../src';
+import { Web3Zond } from '../../src';
 import {
 	closeOpenConnection,
 	describeIf,
@@ -24,19 +24,19 @@ import {
 import { LogsSubscription } from '../../src/web3_subscriptions';
 
 describeIf(isSocket)('subscription', () => {
-	let web3Eth: Web3Eth;
+	let web3Zond: Web3Zond;
 	beforeAll(() => {
-		web3Eth = new Web3Eth(getSystemTestProvider());
+		web3Zond = new Web3Zond(getSystemTestProvider());
 	});
 	afterAll(async () => {
-		await closeOpenConnection(web3Eth);
+		await closeOpenConnection(web3Zond);
 	});
 
 	describe('logs', () => {
 		it(`clear`, async () => {
-			const sub: LogsSubscription = await web3Eth.subscribe('logs');
+			const sub: LogsSubscription = await web3Zond.subscribe('logs');
 			expect(sub.id).toBeDefined();
-			await web3Eth.clearSubscriptions();
+			await web3Zond.clearSubscriptions();
 			expect(sub.id).toBeUndefined();
 		});
 	});

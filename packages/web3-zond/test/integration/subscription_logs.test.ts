@@ -20,7 +20,7 @@ import { Contract, decodeEventABI } from '@theqrl/web3-zond-contract';
 import { AbiEventFragment, Web3BaseProvider } from '@theqrl/web3-types';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { IpcProvider } from '@theqrl/web3-providers-ipc';
-import { Web3Eth } from '../../src';
+import { Web3Zond } from '../../src';
 import { LogsSubscription } from '../../src/web3_subscriptions';
 import {
 	closeOpenConnection,
@@ -53,14 +53,14 @@ const makeFewTxToContract = async ({
 };
 describeIf(isSocket)('subscription', () => {
 	let clientUrl: string;
-	let web3Eth: Web3Eth;
+	let web3Zond: Web3Zond;
 	let provider: WebSocketProvider | IpcProvider;
 	let contract: Contract<typeof BasicAbi>;
 	let contractDeployed: Contract<typeof BasicAbi>;
 	let deployOptions: Record<string, unknown>;
 	let sendOptions: Record<string, unknown>;
 	const testDataString = 'someTestString';
-	let tempAcc: { address: string; privateKey: string };
+	let tempAcc: { address: string; seed: string };
 
 	beforeEach(async () => {
 		tempAcc = await createTempAccount();
@@ -72,12 +72,12 @@ describeIf(isSocket)('subscription', () => {
 	});
 	afterEach(async () => {
 		provider.disconnect();
-		await closeOpenConnection(web3Eth);
+		await closeOpenConnection(web3Zond);
 	});
 
 	describe('logs', () => {
 		it(`wait for ${checkEventCount} logs`, async () => {
-			web3Eth = new Web3Eth(provider as Web3BaseProvider);
+			web3Zond = new Web3Zond(provider as Web3BaseProvider);
 			const from = tempAcc.address;
 			deployOptions = {
 				data: BasicBytecode,
@@ -87,7 +87,7 @@ describeIf(isSocket)('subscription', () => {
 			sendOptions = { from, gas: '1000000' };
 			contractDeployed = await contract.deploy(deployOptions).send(sendOptions);
 
-			const sub: LogsSubscription = await web3Eth.subscribe('logs', {
+			const sub: LogsSubscription = await web3Zond.subscribe('logs', {
 				address: contractDeployed.options.address,
 			});
 
@@ -116,7 +116,7 @@ describeIf(isSocket)('subscription', () => {
 			});
 
 			await pr;
-			await web3Eth.clearSubscriptions();
+			await web3Zond.clearSubscriptions();
 		});
 	});
 });

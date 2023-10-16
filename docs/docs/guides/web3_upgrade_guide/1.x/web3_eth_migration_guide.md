@@ -134,7 +134,7 @@ All the API level interfaces returning or accepting `null` in 1.x, use `undefine
 -   `web3.eth.defaultChain` default is `"mainnet"` instead of `undefined`
     -   1.x has `"mainnet"` documented as default, but in implementation it's `undefined`
 
-### Web3Eth Methods
+### Web3Zond Methods
 
 #### web3.eth.getHashrate
 

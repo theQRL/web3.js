@@ -17,7 +17,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import { SupportedProviders, TransactionReceipt } from '@theqrl/web3-types';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { Contract } from '@theqrl/web3-zond-contract';
-import { Web3Eth } from '../../../src';
+import { Web3Zond } from '../../../src';
 import {
 	getSystemTestProvider,
 	createTempAccount,
@@ -28,7 +28,7 @@ import { toAllVariants } from '../../shared_fixtures/utils';
 import { sendFewTxes } from '../helper';
 
 describe('rpc with block', () => {
-	let web3Eth: Web3Eth;
+	let web3Zond: Web3Zond;
 	let clientUrl: string | SupportedProviders;
 
 	let contract: Contract<typeof BasicAbi>;
@@ -48,7 +48,7 @@ describe('rpc with block', () => {
 
 	beforeAll(() => {
 		clientUrl = getSystemTestProvider();
-		web3Eth = new Web3Eth({
+		web3Zond = new Web3Zond({
 			provider: clientUrl,
 			config: {
 				transactionPollingTimeout: 2000,
@@ -85,7 +85,7 @@ describe('rpc with block', () => {
 		};
 	});
 	afterAll(async () => {
-		await closeOpenConnection(web3Eth);
+		await closeOpenConnection(web3Zond);
 		await closeOpenConnection(contract);
 	});
 
@@ -97,7 +97,7 @@ describe('rpc with block', () => {
 				block: ['earliest', 'latest', 'pending', 'blockHash', 'blockNumber'],
 			}),
 		)('getBlockUncleCount', async ({ block }) => {
-			const res = await web3Eth.getBlockUncleCount(blockData[block]);
+			const res = await web3Zond.getBlockUncleCount(blockData[block]);
 			expect(Number(res)).toBe(0);
 		});
 	});

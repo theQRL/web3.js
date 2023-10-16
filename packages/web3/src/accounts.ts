@@ -40,23 +40,21 @@ import {
  * should be converted to context aware.
  */
 export const initAccountsForContext = (context: Web3Context<ZondExecutionAPI>) => {
-	const signTransactionWithContext = async (transaction: Transaction, privateKey: Bytes, publicKey: Bytes) => {
+	const signTransactionWithContext = async (transaction: Transaction, seed: Bytes) => {
 		const tx = await prepareTransactionForSigning(transaction, context);
 
-		const privateKeyBytes = format({ format: 'bytes' }, privateKey, ZOND_DATA_FORMAT);
-		const publicKeyBytes = format({ format: 'bytes' }, publicKey, ZOND_DATA_FORMAT);
+		const seedBytes = format({ format: 'bytes' }, seed, ZOND_DATA_FORMAT);
 
-		return signTransaction(tx, privateKeyBytes, publicKeyBytes);
+		return signTransaction(tx, seedBytes);
 	};
 
 	const seedToAccountWithContext = (seed: Uint8Array | string) => {
-		// TODO(rgeraldes24) - review seed to account parameter type
 		const account = seedToAccount(seed);
 
 		return {
 			...account,
 			signTransaction: async (transaction: Transaction) =>
-				signTransactionWithContext(transaction, account.privateKey, account.publicKey),
+				signTransactionWithContext(transaction, account.seed),
 		};
 	};
 
@@ -80,7 +78,7 @@ export const initAccountsForContext = (context: Web3Context<ZondExecutionAPI>) =
 		return {
 			...account,
 			signTransaction: async (transaction: Transaction) =>
-				signTransactionWithContext(transaction, account.privateKey, account.publicKey),
+				signTransactionWithContext(transaction, account.seed),
 		};
 	};
 

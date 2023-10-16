@@ -16,24 +16,24 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { Transaction } from '@theqrl/web3-types';
-import { Web3Eth } from '../../../src';
+import { Web3Zond } from '../../../src';
 import {
 	closeOpenConnection,
 	createTempAccount,
 	getSystemTestProvider,
 } from '../../fixtures/system_test_utils';
 
-describe('Web3Eth.estimateGas', () => {
-	let web3Eth: Web3Eth;
-	let tempAcc: { address: string; privateKey: string };
+describe('Web3Zond.estimateGas', () => {
+	let web3Zond: Web3Zond;
+	let tempAcc: { address: string; seed: string };
 
 	beforeAll(async () => {
-		web3Eth = new Web3Eth(getSystemTestProvider());
+		web3Zond = new Web3Zond(getSystemTestProvider());
 		tempAcc = await createTempAccount();
 	});
 
 	afterAll(async () => {
-		await closeOpenConnection(web3Eth);
+		await closeOpenConnection(web3Zond);
 	});
 
 	it('should estimate a simple value transfer', async () => {
@@ -42,7 +42,7 @@ describe('Web3Eth.estimateGas', () => {
 			to: '0x0000000000000000000000000000000000000000',
 			value: '0x1',
 		};
-		const response = await web3Eth.estimateGas(transaction);
+		const response = await web3Zond.estimateGas(transaction);
 		expect(response).toBe(BigInt(21000));
 	});
 
@@ -54,7 +54,7 @@ describe('Web3Eth.estimateGas', () => {
 			data: greeterContractDeploymentData,
 			gas: '0x742b8',
 		};
-		const response = await web3Eth.estimateGas(transaction);
+		const response = await web3Zond.estimateGas(transaction);
 
 		expect(response).toBe(BigInt(475494));
 	});

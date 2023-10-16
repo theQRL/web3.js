@@ -63,7 +63,7 @@ export type KeyStore = {
 export interface Web3BaseWalletAccount {
 	[key: string]: unknown;
 	readonly address: string;
-	readonly privateKey: string;
+	readonly seed: string;
 	readonly signTransaction: (tx: Transaction) => Promise<{
 		readonly messageHash: HexString;
 		readonly signature: HexString;

@@ -17,7 +17,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import { BlockHeaderOutput, SupportedProviders } from '@theqrl/web3-types';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { Web3 } from '@theqrl/web3';
-import { Web3Eth, NewHeadsSubscription } from '../../src';
+import { Web3Zond, NewHeadsSubscription } from '../../src';
 import { Resolve } from './helper';
 import {
 	closeOpenConnection,
@@ -38,8 +38,8 @@ describeIf(isSocket)('subscription', () => {
 	describe('heads', () => {
 		it(`wait for ${checkTxCount} newHeads`, async () => {
 			web3 = new Web3(clientUrl);
-			const sub = await web3.eth.subscribe('newHeads');
-			await waitForOpenConnection(web3.eth);
+			const sub = await web3.zond.subscribe('newHeads');
+			await waitForOpenConnection(web3.zond);
 			let times = 0;
 			const pr = new Promise((resolve: Resolve, reject) => {
 				sub.on('data', (data: BlockHeaderOutput) => {
@@ -82,30 +82,30 @@ describeIf(isSocket)('subscription', () => {
 			sub.off('data', () => {
 				// do nothing
 			});
-			await web3.eth.subscriptionManager?.removeSubscription(sub);
-			await closeOpenConnection(web3.eth);
+			await web3.zond.subscriptionManager?.removeSubscription(sub);
+			await closeOpenConnection(web3.zond);
 		});
 		it(`remove at subscriptionManager`, async () => {
-			const web3Eth = new Web3Eth(clientUrl);
-			await waitForOpenConnection(web3Eth);
-			const sub: NewHeadsSubscription = await web3Eth.subscribe('newHeads');
+			const web3Zond = new Web3Zond(clientUrl);
+			await waitForOpenConnection(web3Zond);
+			const sub: NewHeadsSubscription = await web3Zond.subscribe('newHeads');
 			expect(sub.id).toBeDefined();
 			const subId = sub.id as string;
-			await web3Eth.subscriptionManager?.removeSubscription(sub);
-			expect(web3Eth.subscriptionManager.subscriptions.has(subId)).toBe(false);
+			await web3Zond.subscriptionManager?.removeSubscription(sub);
+			expect(web3Zond.subscriptionManager.subscriptions.has(subId)).toBe(false);
 			expect(sub.id).toBeUndefined();
-			await closeOpenConnection(web3Eth);
+			await closeOpenConnection(web3Zond);
 		});
 		it(`remove at subscribe object`, async () => {
-			const web3Eth = new Web3Eth(clientUrl);
-			await waitForOpenConnection(web3Eth);
-			const sub: NewHeadsSubscription = await web3Eth.subscribe('newHeads');
+			const web3Zond = new Web3Zond(clientUrl);
+			await waitForOpenConnection(web3Zond);
+			const sub: NewHeadsSubscription = await web3Zond.subscribe('newHeads');
 			expect(sub.id).toBeDefined();
 			const subId = sub.id as string;
 			await sub.unsubscribe();
-			expect(web3Eth.subscriptionManager.subscriptions.has(subId)).toBe(false);
+			expect(web3Zond.subscriptionManager.subscriptions.has(subId)).toBe(false);
 			expect(sub.id).toBeUndefined();
-			await closeOpenConnection(web3Eth);
+			await closeOpenConnection(web3Zond);
 		});
 	});
 });

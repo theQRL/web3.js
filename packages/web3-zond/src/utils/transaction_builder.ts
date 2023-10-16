@@ -53,6 +53,7 @@ import { transactionSchema } from '../schemas.js';
 import { InternalTransaction } from '../types.js';
 // eslint-disable-next-line import/no-cycle
 import { getTransactionGasPricing } from './get_transaction_gas_pricing.js';
+import { Dilithium } from '@theqrl/wallet.js';
 
 export const getTransactionFromOrToAttr = (
 	attr: 'from' | 'to',
@@ -127,7 +128,7 @@ export const getTransactionType = (
 export async function defaultTransactionBuilder<ReturnType = Transaction>(options: {
 	transaction: Transaction;
 	web3Context: Web3Context<ZondExecutionAPI & Web3NetAPI>;
-	privateKey?: HexString | Uint8Array;
+	seed?: HexString | Uint8Array;
 	fillGasPrice?: boolean;
 	fillGasLimit?: boolean;
 }): Promise<ReturnType> {
@@ -138,11 +139,17 @@ export async function defaultTransactionBuilder<ReturnType = Transaction>(option
 	) as InternalTransaction;
 
 	if (isNullish(populatedTransaction.from)) {
+		let publicKey;
+		if (!isNullish(options.seed)) {
+			const d = new Dilithium(options.seed)
+			publicKey = d.getPK()
+		}
+
 		populatedTransaction.from = getTransactionFromOrToAttr(
 			'from',
 			options.web3Context,
 			undefined,
-			options.privateKey,
+			publicKey,
 		);
 	}
 
@@ -254,7 +261,7 @@ export const transactionBuilder = async <ReturnType = Transaction>(
 	options: {
 		transaction: Transaction;
 		web3Context: Web3Context<ZondExecutionAPI>;
-		privateKey?: HexString | Uint8Array;
+		seed?: HexString | Uint8Array;
 		fillGasPrice?: boolean;
 		fillGasLimit?: boolean;
 	},

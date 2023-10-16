@@ -16,7 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import { BlockNumberOrTag, Numbers, SupportedProviders } from '@theqrl/web3-types';
 
-import Web3Eth from '../../../src';
+import Web3Zond from '../../../src';
 import {
 	getSystemTestProvider,
 	describeIf,
@@ -25,17 +25,17 @@ import {
 } from '../../fixtures/system_test_utils';
 import { feeHistorySchema } from '../../../src/schemas';
 
-describeIf(getSystemTestBackend().includes('geth'))('Web3Eth.getFeeHistory', () => {
-	let web3Eth: Web3Eth;
+describeIf(getSystemTestBackend().includes('geth'))('Web3Zond.getFeeHistory', () => {
+	let web3Zond: Web3Zond;
 	let systemProvider: string | SupportedProviders;
 
 	beforeAll(() => {
 		systemProvider = getSystemTestProvider();
-		web3Eth = new Web3Eth(systemProvider);
+		web3Zond = new Web3Zond(systemProvider);
 	});
 
 	afterAll(async () => {
-		await closeOpenConnection(web3Eth);
+		await closeOpenConnection(web3Zond);
 	});
 
 	test('should return fee history with right data', async () => {
@@ -43,7 +43,7 @@ describeIf(getSystemTestBackend().includes('geth'))('Web3Eth.getFeeHistory', () 
 		const newestBlock: BlockNumberOrTag = 'latest';
 		const rewardPercentiles: number[] = [];
 
-		const functionResponse = await web3Eth.getFeeHistory(
+		const functionResponse = await web3Zond.getFeeHistory(
 			blockCount,
 			newestBlock,
 			rewardPercentiles,

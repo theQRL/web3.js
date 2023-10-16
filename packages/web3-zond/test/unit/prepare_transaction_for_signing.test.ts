@@ -38,18 +38,17 @@ describe('prepareTransactionForSigning', () => {
 
 	describe('should return an web3-utils/tx instance with expected properties', () => {
 		it.each(validTransactions)(
-			'mockBlock: %s\nexpectedTransaction: %s\nexpectedPrivateKey: %s\nexpectedAddress: %s\nexpectedRlpEncodedTransaction: %s\nexpectedTransactionHash: %s\nexpectedMessageToSign: %s\nexpectedV: %s\nexpectedR: %s\nexpectedS: %s',
+			'mockBlock: %s\nexpectedTransaction: %s\nexpectedSeed: %s\nexpectedAddress: %s\nexpectedRlpEncodedTransaction: %s\nexpectedTransactionHash: %s\nexpectedMessageToSign: %s\nexpectedPublicKey: %s\nexpectedSignature: %s',
 			async (
 				mockBlock,
 				expectedTransaction,
-				expectedPrivateKey,
+				expectedSeed,
 				expectedAddress,
 				expectedRlpEncodedTransaction,
 				expectedTransactionHash,
 				expectedMessageToSign,
-				expectedV,
-				expectedR,
-				expectedS,
+				expectedPublicKey,
+				expectedSignature,
 			) => {
 				// (i.e. requestManager, blockNumber, hydrated params), but that doesn't matter for the test
 				jest.spyOn(zondRpcMethods, 'estimateGas').mockImplementation(
@@ -62,7 +61,7 @@ describe('prepareTransactionForSigning', () => {
 				const ethereumjsTx = await prepareTransactionForSigning(
 					expectedTransaction,
 					web3Context,
-					expectedPrivateKey,
+					expectedSeed,
 					true,
 				);
 
@@ -76,7 +75,7 @@ describe('prepareTransactionForSigning', () => {
 
 				// should sign transaction
 				const signedTransaction = ethereumjsTx.sign(
-					hexToBytes(expectedPrivateKey.substring(2)),
+					hexToBytes(expectedSeed.substring(2)),
 				);
 
 				const senderAddress = signedTransaction.getSenderAddress().toString();
@@ -94,18 +93,14 @@ describe('prepareTransactionForSigning', () => {
 				const messageToSign = bytesToHex(signedTransaction.getMessageToSign());
 				expect(messageToSign).toBe(expectedMessageToSign);
 				// should have expected v, r, and s
-				const v = !isNullish(signedTransaction.v)
-					? `0x${signedTransaction.v.toString(16)}`
+				const publicKey = !isNullish(signedTransaction.publicKey)
+					? `0x${signedTransaction.publicKey.toString(16)}`
 					: '';
-				const r = !isNullish(signedTransaction.r)
-					? `0x${signedTransaction.r.toString(16)}`
+				const signature = !isNullish(signedTransaction.signature)
+					? `0x${signedTransaction.signature.toString(16)}`
 					: '';
-				const s = !isNullish(signedTransaction.s)
-					? `0x${signedTransaction.s.toString(16)}`
-					: '';
-				expect(v).toBe(expectedV);
-				expect(r).toBe(expectedR);
-				expect(s).toBe(expectedS);
+				expect(publicKey).toBe(publicKey);
+				expect(signature).toBe(expectedSignature);
 			},
 		);
 	});

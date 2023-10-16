@@ -27,7 +27,7 @@ import {
 import { Contract, decodeEventABI } from '@theqrl/web3-zond-contract';
 import { hexToNumber, hexToString, numberToHex, getStorageSlotNumForLongString } from '@theqrl/web3-utils';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { Web3Eth } from '../../src';
+import { Web3Zond } from '../../src';
 
 import {
 	closeOpenConnection,
@@ -47,17 +47,17 @@ import {
 } from './helper';
 
 describe('rpc', () => {
-	let web3Eth: Web3Eth;
+	let web3Zond: Web3Zond;
 	let clientUrl: string | SupportedProviders;
 	let contractDeployed: Contract<typeof BasicAbi>;
 	let contract: Contract<typeof BasicAbi>;
 	let deployOptions: Record<string, unknown>;
 	let sendOptions: Record<string, unknown>;
-	let tempAcc: { address: string; privateKey: string };
-	let tempAcc2: { address: string; privateKey: string };
+	let tempAcc: { address: string; seed: string };
+	let tempAcc2: { address: string; seed: string };
 	beforeAll(async () => {
 		clientUrl = getSystemTestProvider();
-		web3Eth = new Web3Eth({
+		web3Zond = new Web3Zond({
 			provider: clientUrl,
 			config: {
 				transactionPollingTimeout: 2000,
@@ -79,32 +79,32 @@ describe('rpc', () => {
 	});
 
 	afterAll(async () => {
-		await closeOpenConnection(web3Eth);
+		await closeOpenConnection(web3Zond);
 		await closeOpenConnection(contract);
 	});
 
 	describe('methods', () => {
 		itIf(!['geth'].includes(getSystemTestBackend()))('getProtocolVersion', async () => {
-			const version = await web3Eth.getProtocolVersion();
+			const version = await web3Zond.getProtocolVersion();
 			// eslint-disable-next-line jest/no-standalone-expect
 			expect(parseInt(version, 16)).toBeGreaterThan(0);
 		});
 
 		// TODO:in beta,  test zond_syncing during sync mode with return obj having ( startingblock, currentBlock, heighestBlock )
 		it('isSyncing', async () => {
-			const isSyncing = await web3Eth.isSyncing();
+			const isSyncing = await web3Zond.isSyncing();
 			expect(isSyncing).toBe(false);
 		});
 
 		// TODO: in future release, set coinbase account in node and match actual address here
 		it('getCoinbase', async () => {
-			const coinbase = await web3Eth.getCoinbase();
+			const coinbase = await web3Zond.getCoinbase();
 			expect(coinbase.startsWith('0x')).toBe(true);
 			expect(coinbase).toHaveLength(42);
 		});
 
 		it('isMining', async () => {
-			const isMining = await web3Eth.isMining();
+			const isMining = await web3Zond.isMining();
 
 			if (getSystemTestBackend() !== 'geth')
 				// eslint-disable-next-line jest/no-conditional-expect
@@ -112,7 +112,7 @@ describe('rpc', () => {
 		});
 
 		it.each(Object.values(FMT_NUMBER))('getHashRate', async format => {
-			const hashRate = await web3Eth.getHashRate({
+			const hashRate = await web3Zond.getHashRate({
 				number: format as FMT_NUMBER,
 				bytes: FMT_BYTES.HEX,
 			});
@@ -121,13 +121,13 @@ describe('rpc', () => {
 
 		it('getAccounts', async () => {
 			const account = await createNewAccount({ unlock: true });
-			const accList = await web3Eth.getAccounts();
+			const accList = await web3Zond.getAccounts();
 			const accListLowerCase = accList.map((add: string) => add.toLowerCase());
 			expect(accListLowerCase).toContain(account.address.toLowerCase());
 		});
 
 		it.each(Object.values(FMT_NUMBER))('getBlockNumber', async format => {
-			const res = await web3Eth.getBlockNumber({
+			const res = await web3Zond.getBlockNumber({
 				number: format as FMT_NUMBER,
 				bytes: FMT_BYTES.HEX,
 			});
@@ -136,7 +136,7 @@ describe('rpc', () => {
 		});
 
 		it.each(Object.values(FMT_NUMBER))('getGasPrice', async format => {
-			const res = await web3Eth.getGasPrice({
+			const res = await web3Zond.getGasPrice({
 				number: format as FMT_NUMBER,
 				bytes: FMT_BYTES.HEX,
 			});
@@ -147,12 +147,12 @@ describe('rpc', () => {
 		it.each(Object.values(FMT_NUMBER))('getBalance', async format => {
 			const value = '0xa';
 			const newAccount = await createNewAccount();
-			await web3Eth.sendTransaction({
+			await web3Zond.sendTransaction({
 				to: newAccount.address,
 				value,
 				from: tempAcc.address,
 			});
-			const res = await web3Eth.getBalance(newAccount.address, undefined, {
+			const res = await web3Zond.getBalance(newAccount.address, undefined, {
 				number: format as FMT_NUMBER,
 				bytes: FMT_BYTES.HEX,
 			});
@@ -168,17 +168,17 @@ describe('rpc', () => {
 			await contractDeployed.methods
 				?.setValues(numberData, stringData, boolData)
 				.send(sendOptions);
-			const resNumber = await web3Eth.getStorageAt(
+			const resNumber = await web3Zond.getStorageAt(
 				contractDeployed.options.address as string,
 				'0x0',
 				undefined,
 			);
-			const resString = await web3Eth.getStorageAt(
+			const resString = await web3Zond.getStorageAt(
 				contractDeployed.options.address as string,
 				'0x1',
 				undefined,
 			);
-			const resBool = await web3Eth.getStorageAt(
+			const resBool = await web3Zond.getStorageAt(
 				contractDeployed.options.address as string,
 				'0x2',
 				undefined,
@@ -202,7 +202,7 @@ describe('rpc', () => {
 				?.setValues(numberData, stringDataLong, boolData)
 				.send(sendOptions);
 
-			const resStringLong = await web3Eth.getStorageAt(
+			const resStringLong = await web3Zond.getStorageAt(
 				contractDeployed.options.address as string,
 				1,
 				undefined,
@@ -218,7 +218,7 @@ describe('rpc', () => {
 			for (let i = 0; i < slotCount; i += 1) {
 				prs.push(
 					// eslint-disable-next-line no-await-in-loop
-					web3Eth.getStorageAt(
+					web3Zond.getStorageAt(
 						contractDeployed.options.address as string,
 						`0x${(
 							BigInt(String(hexToNumber(slotDataNum as string))) + BigInt(i)
@@ -236,7 +236,7 @@ describe('rpc', () => {
 		});
 
 		it.each(Object.values(FMT_NUMBER))('getCode', async format => {
-			const code = await web3Eth.getCode(
+			const code = await web3Zond.getCode(
 				contractDeployed?.options?.address as string,
 				undefined,
 				{
@@ -255,7 +255,7 @@ describe('rpc', () => {
 				times: 1,
 			});
 
-			const res = await web3Eth.getTransaction(receipt.transactionHash);
+			const res = await web3Zond.getTransaction(receipt.transactionHash);
 			// TODO: after alpha release add tests for matching following (first get nonce of account sending tx and validate nonce with tx is incremented)
 			// TODO: after alpha release add tests for matching following (from and to addresses)
 			// TODO: after alpha release add tests for matching following (value transferred)
@@ -272,7 +272,7 @@ describe('rpc', () => {
 				times: 1,
 			});
 			// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-			const res: TransactionReceipt = (await web3Eth.getTransactionReceipt(
+			const res: TransactionReceipt = (await web3Zond.getTransactionReceipt(
 				// TODO: add more scenarios in future release with block number
 				receipt.transactionHash as string,
 			))!;
@@ -281,7 +281,7 @@ describe('rpc', () => {
 		});
 
 		it('getChainId', async () => {
-			const res = await web3Eth.getChainId({
+			const res = await web3Zond.getChainId({
 				number: FMT_NUMBER.NUMBER,
 				bytes: FMT_BYTES.HEX,
 			});
@@ -290,19 +290,19 @@ describe('rpc', () => {
 		});
 
 		it('getNodeInfo', async () => {
-			const res = await web3Eth.getNodeInfo();
+			const res = await web3Zond.getNodeInfo();
 			// TODO: in next release, it should also be validated
 			expect(res).toBeDefined();
 		});
 
 		itIf(!['geth'].includes(getSystemTestBackend()))('getWork', async () => {
-			const res = await web3Eth.getWork();
+			const res = await web3Zond.getWork();
 			// eslint-disable-next-line jest/no-standalone-expect
 			expect(res[0]).toBeDefined();
 		});
 
 		itIf(!['geth'].includes(getSystemTestBackend()))('requestAccounts', () => {
-			// const res = await web3Eth.requestAccounts();
+			// const res = await web3Zond.requestAccounts();
 			// eslint-disable-next-line jest/no-standalone-expect
 			expect(true).toBe(true);
 			// expect(res[0]).toEqual(tempAcc.address);
@@ -317,7 +317,7 @@ describe('rpc', () => {
 			}
 
 			// test type hexstring
-			const res: Array<any> = await web3Eth.getPastLogs({
+			const res: Array<any> = await web3Zond.getPastLogs({
 				address: contractDeployed.options.address as string,
 				fromBlock: numberToHex(Math.min(...resTx.map(d => Number(d.blockNumber)))),
 				toBlock: numberToHex(1000),
@@ -329,7 +329,7 @@ describe('rpc', () => {
 			);
 
 			// test type number
-			const res2: Array<any> = await web3Eth.getPastLogs({
+			const res2: Array<any> = await web3Zond.getPastLogs({
 				address: contractDeployed.options.address as string,
 				fromBlock: Math.min(...resTx.map(d => Number(d.blockNumber))),
 				toBlock: 1000,
@@ -340,7 +340,7 @@ describe('rpc', () => {
 						.returnValues[0],
 			);
 			// test type BigInt
-			const res3: Array<any> = await web3Eth.getPastLogs({
+			const res3: Array<any> = await web3Zond.getPastLogs({
 				address: contractDeployed.options.address as string,
 				fromBlock: BigInt(Math.min(...resTx.map(d => Number(d.blockNumber)))),
 				toBlock: BigInt(1000),

@@ -38,16 +38,13 @@ import type {
 	TxOptions,
 	TxValuesArray,
 } from './types.js';
-import { Capability, Dilithium5Signature } from './types.js';
+import { Capability } from './types.js';
 import { Address } from './address.js';
 import { checkMaxInitCodeSize } from './utils.js';
 import { 
-	cryptoSign,
-	CryptoSecretKeyBytes, 
-	CryptoPublicKeyBytes, 
-	CryptoBytes, 
 	cryptoSignVerify 
 } from '@theqrl/dilithium5';
+import { Dilithium } from '@theqrl/wallet.js';
 
 interface TransactionCache {
 	hash: Uint8Array | undefined;
@@ -320,16 +317,13 @@ export abstract class BaseTransaction<TransactionObject> {
 	 * const signedTx = tx.sign(privateKey, publicKey)
 	 * ```
 	 */
-	public sign(privateKey: Uint8Array, publicKey: Uint8Array): TransactionObject {
-		if (privateKey.length !== CryptoSecretKeyBytes) {
-			const msg = this._errorMsg(`Private key must be ${CryptoSecretKeyBytes} bytes in length.`);
-			throw new Error(msg);
-		}
-		if (publicKey.length !== CryptoPublicKeyBytes) {
-			const msg = this._errorMsg(`Publick key must be ${CryptoPublicKeyBytes} bytes in length.`);
-			throw new Error(msg);
-		}
-
+	public sign(seed: Uint8Array): TransactionObject {
+		// TODO(rgeraldes) seed length
+		// if (privateKey.length !== CryptoSecretKeyBytes) {
+		// 	const msg = this._errorMsg(`Private key must be ${CryptoSecretKeyBytes} bytes in length.`);
+		// 	throw new Error(msg);
+		// }
+		
 		// Hack for the constellation that we have got a legacy tx after spuriousDragon with a non-EIP155 conforming signature
 		// and want to recreate a signature (where EIP155 should be applied)
 		// Leaving this hack lets the legacy.spec.ts -> sign(), verifySignature() test fail
@@ -345,8 +339,9 @@ export abstract class BaseTransaction<TransactionObject> {
 		}
 
 		const msgHash = this.getMessageToSign(true);
-		const { signature } = this._dilithium5sign(msgHash, privateKey);
-		const tx = this._processSignatureAndPublicKey(signature, publicKey);
+		const acc = new Dilithium(seed);
+		const signature = acc.sign(msgHash, acc.getSK())
+		const tx = this._processSignatureAndPublicKey(signature, acc.getPK());
 
 		// Hack part 2
 		if (hackApplied) {
@@ -534,14 +529,5 @@ export abstract class BaseTransaction<TransactionObject> {
 		postfix += `signed=${isSigned} hf=${hf}`;
 
 		return postfix;
-	}
-
-	// TODO(rgeraldes): chain id
-	// eslint-disable-next-line class-methods-use-this
-	private _dilithium5sign(msgHash: Uint8Array, privateKey: Uint8Array /*, chainId?: bigint */): Dilithium5Signature {
-		const sm = cryptoSign(msgHash, privateKey)
-		let signature = new Uint8Array(CryptoBytes);
-		signature = sm.slice(0, CryptoBytes);
-		return { signature } ;
 	}
 }

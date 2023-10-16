@@ -17,7 +17,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import { SupportedProviders, TransactionReceipt, FMT_BYTES, FMT_NUMBER } from '@theqrl/web3-types';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { Contract } from '@theqrl/web3-zond-contract';
-import { Web3Eth } from '../../../src';
+import { Web3Zond } from '../../../src';
 import {
 	getSystemTestProvider,
 	createNewAccount,
@@ -29,7 +29,7 @@ import { toAllVariants } from '../../shared_fixtures/utils';
 import { sendFewTxes } from '../helper';
 
 describe('rpc with block', () => {
-	let web3Eth: Web3Eth;
+	let web3Zond: Web3Zond;
 	let clientUrl: string | SupportedProviders;
 
 	let contract: Contract<typeof BasicAbi>;
@@ -49,7 +49,7 @@ describe('rpc with block', () => {
 
 	beforeAll(() => {
 		clientUrl = getSystemTestProvider();
-		web3Eth = new Web3Eth({
+		web3Zond = new Web3Zond({
 			provider: clientUrl,
 			config: {
 				transactionPollingTimeout: 2000,
@@ -86,7 +86,7 @@ describe('rpc with block', () => {
 		};
 	});
 	afterAll(async () => {
-		await closeOpenConnection(web3Eth);
+		await closeOpenConnection(web3Zond);
 		await closeOpenConnection(contract);
 	});
 
@@ -115,7 +115,7 @@ describe('rpc with block', () => {
 				transactionHash: String(receipt.transactionHash),
 				transactionIndex: Number(receipt.transactionIndex),
 			};
-			const countBefore = await web3Eth.getTransactionCount(acc.address, data[block], {
+			const countBefore = await web3Zond.getTransactionCount(acc.address, data[block], {
 				number: format as FMT_NUMBER,
 				bytes: FMT_BYTES.HEX,
 			});
@@ -135,7 +135,7 @@ describe('rpc with block', () => {
 				transactionHash: String(receiptAfter.transactionHash),
 				transactionIndex: Number(receiptAfter.transactionIndex),
 			};
-			const countAfter = await web3Eth.getTransactionCount(acc.address, dataAfter[block], {
+			const countAfter = await web3Zond.getTransactionCount(acc.address, dataAfter[block], {
 				number: format as FMT_NUMBER,
 				bytes: FMT_BYTES.HEX,
 			});

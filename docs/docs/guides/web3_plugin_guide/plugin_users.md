@@ -25,7 +25,7 @@ Unless otherwise mentioned by the plugin author, installing a plugin should be a
 
 ## Registering the Plugin
 
-To add a plugin to an instance of a class sourced from web3.js' modules (such as `Web3` or `Web3Eth`), you will use the `.registerPlugin` method. It's important to note that this method is only available on classes that extend `Web3Context`, so it may not be available on every class you import from a Web3.js package.
+To add a plugin to an instance of a class sourced from web3.js' modules (such as `Web3` or `Web3Zond`), you will use the `.registerPlugin` method. It's important to note that this method is only available on classes that extend `Web3Context`, so it may not be available on every class you import from a Web3.js package.
 
 For illustration purposes, let's assume a plugin developer has the following code for their plugin. Please note that this code should not be touched by the plugin user:
 

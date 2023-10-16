@@ -16,7 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { Web3 } from '@theqrl/web3';
-import { Web3Eth, NewPendingTransactionsSubscription } from '../../src';
+import { Web3Zond, NewPendingTransactionsSubscription } from '../../src';
 import {
 	closeOpenConnection,
 	describeIf,
@@ -31,9 +31,9 @@ describeIf(isSocket)('subscription', () => {
 	describe('new pending transaction', () => {
 		it(`wait ${checkTxCount} transaction`, async () => {
 			const web3 = new Web3(getSystemTestProvider());
-			const web3Eth = web3.eth;
-			await waitForOpenConnection(web3Eth);
-			const sub = await web3Eth.subscribe('pendingTransactions');
+			const web3Zond = web3.zond;
+			await waitForOpenConnection(web3Zond);
+			const sub = await web3Zond.subscribe('pendingTransactions');
 
 			let times = 0;
 			const txHashes: string[] = [];
@@ -87,18 +87,18 @@ describeIf(isSocket)('subscription', () => {
 			for (const hash of txHashes) {
 				expect(receipts).toContain(hash);
 			}
-			await closeOpenConnection(web3Eth);
+			await closeOpenConnection(web3Zond);
 		});
 		it(`clear`, async () => {
-			const web3Eth = new Web3Eth(getSystemTestProvider());
-			await waitForOpenConnection(web3Eth);
-			const sub: NewPendingTransactionsSubscription = await web3Eth.subscribe(
+			const web3Zond = new Web3Zond(getSystemTestProvider());
+			await waitForOpenConnection(web3Zond);
+			const sub: NewPendingTransactionsSubscription = await web3Zond.subscribe(
 				'pendingTransactions',
 			);
 			expect(sub.id).toBeDefined();
-			await web3Eth.subscriptionManager?.removeSubscription(sub);
+			await web3Zond.subscriptionManager?.removeSubscription(sub);
 			expect(sub.id).toBeUndefined();
-			await closeOpenConnection(web3Eth);
+			await closeOpenConnection(web3Zond);
 		});
 	});
 });

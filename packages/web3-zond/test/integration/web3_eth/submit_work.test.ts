@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { Web3Eth } from '../../../src';
+import { Web3Zond } from '../../../src';
 import {
 	closeOpenConnection,
 	getSystemTestBackend,
@@ -23,20 +23,20 @@ import {
 	itIf,
 } from '../../fixtures/system_test_utils';
 
-describe('Web3Eth.submitWork', () => {
-	let web3Eth: Web3Eth;
+describe('Web3Zond.submitWork', () => {
+	let web3Zond: Web3Zond;
 
 	beforeAll(() => {
-		web3Eth = new Web3Eth(getSystemTestProvider());
+		web3Zond = new Web3Zond(getSystemTestProvider());
 	});
 
 	afterAll(async () => {
-		await closeOpenConnection(web3Eth);
+		await closeOpenConnection(web3Zond);
 	});
 
 	// Geth doesn't support zond_submitWork
 	itIf(getSystemTestBackend() !== 'geth')('should submit work', async () => {
-		const response = await web3Eth.submitWork(
+		const response = await web3Zond.submitWork(
 			'0x0000000000000001',
 			'0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
 			'0xD1FE5700000000000000000000000000D1FE5700000000000000000000000000',
