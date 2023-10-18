@@ -111,10 +111,10 @@ export class FeeMarketEIP1559Transaction extends BaseTransaction<FeeMarketEIP155
 	 * Create a transaction from a values array.
 	 *
 	 * Format: `[chainId, nonce, maxPriorityFeePerGas, maxFeePerGas, gasLimit, to, value, data,
-	 * accessList, signatureYParity, signatureR, signatureS]`
+	 * accessList, publicKey, signature]`
 	 */
 	public static fromValuesArray(values: FeeMarketEIP1559ValuesArray, opts: TxOptions = {}) {
-		if (values.length !== 9 && values.length !== 12) {
+		if (values.length !== 9 && values.length !== 11) {
 			throw new Error(
 				'Invalid EIP-1559 transaction. Only expecting 9 values (for unsigned tx) or 12 values (for signed tx).',
 			);
@@ -130,8 +130,8 @@ export class FeeMarketEIP1559Transaction extends BaseTransaction<FeeMarketEIP155
 			value,
 			data,
 			accessList,
-			signature,
 			publicKey,
+			signature,
 		] = values;
 
 		this._validateNotArray({ chainId });
@@ -141,8 +141,8 @@ export class FeeMarketEIP1559Transaction extends BaseTransaction<FeeMarketEIP155
 			maxFeePerGas,
 			gasLimit,
 			value,
-			signature,
 			publicKey,
+			signature,
 		});
 
 		return new FeeMarketEIP1559Transaction(
@@ -156,8 +156,8 @@ export class FeeMarketEIP1559Transaction extends BaseTransaction<FeeMarketEIP155
 				value,
 				data,
 				accessList: accessList ?? [],
-				signature,
 				publicKey,
+				signature,
 			},
 			opts,
 		);
@@ -280,8 +280,8 @@ export class FeeMarketEIP1559Transaction extends BaseTransaction<FeeMarketEIP155
 			bigIntToUnpaddedUint8Array(this.value),
 			this.data,
 			this.accessList,
-			this.signature !== undefined ? bigIntToUnpaddedUint8Array(this.signature) : Uint8Array.from([]),
 			this.publicKey !== undefined ? bigIntToUnpaddedUint8Array(this.publicKey) : Uint8Array.from([]),
+			this.signature !== undefined ? bigIntToUnpaddedUint8Array(this.signature) : Uint8Array.from([]),
 		];
 	}
 
@@ -377,8 +377,8 @@ export class FeeMarketEIP1559Transaction extends BaseTransaction<FeeMarketEIP155
 				value: this.value,
 				data: this.data,
 				accessList: this.accessList,
-				signature: uint8ArrayToBigInt(signature),
 				publicKey: uint8ArrayToBigInt(publicKey),
+				signature: uint8ArrayToBigInt(signature),
 			},
 			opts,
 		);
@@ -400,8 +400,8 @@ export class FeeMarketEIP1559Transaction extends BaseTransaction<FeeMarketEIP155
 			value: bigIntToHex(this.value),
 			data: bytesToHex(this.data),
 			accessList: accessListJSON,
-			signature: this.signature !== undefined ? bigIntToHex(this.signature) : undefined,
 			publicKey: this.publicKey !== undefined ? bigIntToHex(this.publicKey) : undefined,
+			signature: this.signature !== undefined ? bigIntToHex(this.signature) : undefined,
 		};
 	}
 

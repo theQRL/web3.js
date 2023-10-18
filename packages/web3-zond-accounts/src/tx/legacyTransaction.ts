@@ -86,9 +86,9 @@ export class Transaction extends BaseTransaction<Transaction> {
 			);
 		}
 
-		const [nonce, gasPrice, gasLimit, to, value, data, signature, publicKey] = values;
+		const [nonce, gasPrice, gasLimit, to, value, data, publicKey, signature ] = values;
 
-		validateNoLeadingZeroes({ nonce, gasPrice, gasLimit, value, signature, publicKey });
+		validateNoLeadingZeroes({ nonce, gasPrice, gasLimit, value, publicKey, signature });
 
 		return new Transaction(
 			{
@@ -204,8 +204,9 @@ export class Transaction extends BaseTransaction<Transaction> {
 			this.data,
 		];
 
-		// TODO(rgeraldes): this check is probably not necessary
 		if (this.supports(Capability.EIP155ReplayProtection)) {
+			values.push(toUint8Array(this.common.chainId()));
+			// TODO (rgeraldes24): the following fields might be removed in the future
 			values.push(unpadUint8Array(toUint8Array(0)));
 			values.push(unpadUint8Array(toUint8Array(0)));
 		}

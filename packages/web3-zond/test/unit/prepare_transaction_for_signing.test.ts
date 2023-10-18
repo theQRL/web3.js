@@ -92,7 +92,8 @@ describe('prepareTransactionForSigning', () => {
 				// should be able to obtain expectedMessageToSign
 				const messageToSign = bytesToHex(signedTransaction.getMessageToSign());
 				expect(messageToSign).toBe(expectedMessageToSign);
-				// should have expected v, r, and s
+				
+				// should have expected public key and signature
 				const publicKey = !isNullish(signedTransaction.publicKey)
 					? `0x${signedTransaction.publicKey.toString(16)}`
 					: '';

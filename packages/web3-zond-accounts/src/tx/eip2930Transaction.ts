@@ -110,7 +110,7 @@ export class AccessListEIP2930Transaction extends BaseTransaction<AccessListEIP2
 	 * Create a transaction from a values array.
 	 *
 	 * Format: `[chainId, nonce, gasPrice, gasLimit, to, value, data, accessList,
-	 * signatureYParity (v), signatureR (r), signatureS (s)]`
+	 * publicKey, signature]`
 	 */
 	public static fromValuesArray(values: AccessListEIP2930ValuesArray, opts: TxOptions = {}) {
 		if (values.length !== 8 && values.length !== 10) {
@@ -119,10 +119,10 @@ export class AccessListEIP2930Transaction extends BaseTransaction<AccessListEIP2
 			);
 		}
 
-		const [chainId, nonce, gasPrice, gasLimit, to, value, data, accessList, signature, publicKey] = values;
+		const [chainId, nonce, gasPrice, gasLimit, to, value, data, accessList, publicKey, signature] = values;
 
 		this._validateNotArray({ chainId });
-		validateNoLeadingZeroes({ nonce, gasPrice, gasLimit, value, signature, publicKey });
+		validateNoLeadingZeroes({ nonce, gasPrice, gasLimit, value, publicKey, signature });
 
 		const emptyAccessList: AccessList = [];
 
@@ -136,8 +136,8 @@ export class AccessListEIP2930Transaction extends BaseTransaction<AccessListEIP2
 				value,
 				data,
 				accessList: accessList ?? emptyAccessList,
-				signature,
 				publicKey,
+				signature,
 			},
 			opts,
 		);
@@ -240,8 +240,8 @@ export class AccessListEIP2930Transaction extends BaseTransaction<AccessListEIP2
 			bigIntToUnpaddedUint8Array(this.value),
 			this.data,
 			this.accessList,
-			this.signature !== undefined ? bigIntToUnpaddedUint8Array(this.signature) : Uint8Array.from([]),
 			this.publicKey !== undefined ? bigIntToUnpaddedUint8Array(this.publicKey) : Uint8Array.from([]),
+			this.signature !== undefined ? bigIntToUnpaddedUint8Array(this.signature) : Uint8Array.from([]),
 		];
 	}
 
@@ -336,8 +336,8 @@ export class AccessListEIP2930Transaction extends BaseTransaction<AccessListEIP2
 				value: this.value,
 				data: this.data,
 				accessList: this.accessList,
-				signature: uint8ArrayToBigInt(signature),
 				publicKey: uint8ArrayToBigInt(publicKey),
+				signature: uint8ArrayToBigInt(signature),
 			},
 			opts,
 		);
@@ -358,8 +358,8 @@ export class AccessListEIP2930Transaction extends BaseTransaction<AccessListEIP2
 			value: bigIntToHex(this.value),
 			data: bytesToHex(this.data),
 			accessList: accessListJSON,
-			signature: this.signature !== undefined ? bigIntToHex(this.signature) : undefined,
 			publicKey: this.publicKey !== undefined ? bigIntToHex(this.publicKey) : undefined,
+			signature: this.signature !== undefined ? bigIntToHex(this.signature) : undefined,
 		};
 	}
 
