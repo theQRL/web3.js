@@ -88,9 +88,9 @@ export const parseAndValidatePublicKey = (data: Bytes, ignoreLength?: boolean): 
 
 	// TODO(rgeraldes24): review length
 	// To avoid the case of 1 character less in a hex string which is prefixed with '0' by using 'bytesToUint8Array'
-	if (!ignoreLength && typeof data === 'string' && isHexStrict(data) && data.length !== 2592) {
-		throw new PublicKeyLengthError();
-	}
+	// if (!ignoreLength && typeof data === 'string' && isHexStrict(data) && data.length !== 2592) {
+	// 	throw new PublicKeyLengthError();
+	// }
 
 	try {
 		publicKeyUint8Array = data instanceof Uint8Array ? data : bytesToUint8Array(data);

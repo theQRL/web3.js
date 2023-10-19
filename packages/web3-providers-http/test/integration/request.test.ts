@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { EthExecutionAPI, Web3APIPayload, JsonRpcResponseWithResult } from '@theqrl/web3-types';
+import { ZondExecutionAPI, Web3APIPayload, JsonRpcResponseWithResult } from '@theqrl/web3-types';
 import HttpProvider from '../../src/index';
 import {
 	getSystemTestProviderUrl,
@@ -26,7 +26,7 @@ import {
 
 describeIf(isHttp)('HttpProvider - implemented methods', () => {
 	let httpProvider: HttpProvider;
-	let jsonRpcPayload: Web3APIPayload<EthExecutionAPI, 'zond_getBalance'>;
+	let jsonRpcPayload: Web3APIPayload<ZondExecutionAPI, 'zond_getBalance'>;
 
 	beforeAll(async () => {
 		httpProvider = new HttpProvider(getSystemTestProviderUrl());
@@ -36,7 +36,7 @@ describeIf(isHttp)('HttpProvider - implemented methods', () => {
 			id: 42,
 			method: 'zond_getBalance',
 			params: [tempAcc.address, 'latest'],
-		} as Web3APIPayload<EthExecutionAPI, 'zond_getBalance'>;
+		} as Web3APIPayload<ZondExecutionAPI, 'zond_getBalance'>;
 	});
 
 	describe('httpProvider.request', () => {

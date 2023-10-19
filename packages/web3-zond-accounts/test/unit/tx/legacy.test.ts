@@ -217,14 +217,14 @@ describe('[Transaction]', () => {
 			common,
 		});
 		expect(tx.hash()).toEqual(
-			hexToBytes('0x375a8983c9fc56d7cfd118254a80a8d7403d590a6c9e105532b67aca1efb97aa'),
+			hexToBytes('0x2aebb77dc8b68c237297edd41ed9889c3831a40be6b32087f2d0a43efad48bbe'),
 		);
 		expect(tx.getMessageToSign()).toEqual(
-			hexToBytes('0x61e1ec33764304dddb55348e7883d4437426f44ab3ef65e6da1e025734c03ff0'),
+			hexToBytes('0xaad787b6c7cfb13feab05f6175089c95f0b54839365fab43c7c4245bd32b3d65'),
 		);
 		expect(tx.getMessageToSign(false)).toHaveLength(6);
 		expect(tx.hash()).toEqual(
-			hexToBytes('0x375a8983c9fc56d7cfd118254a80a8d7403d590a6c9e105532b67aca1efb97aa'),
+			hexToBytes('0x2aebb77dc8b68c237297edd41ed9889c3831a40be6b32087f2d0a43efad48bbe'),
 		);
 	});
 

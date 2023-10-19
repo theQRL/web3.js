@@ -12,7 +12,7 @@ const getSystemTestBackend = () => getEnvVar('WEB3_SYSTEM_TEST_BACKEND') ?? '';
 
 let mainAcc;
 let accountList = [];
-const addAccount = async (address, privateKey) => {
+const addAccount = async (address, seed) => {
 	let clientUrl = getSystemTestProvider();
 
 	const web3Personal = new Personal(clientUrl);
@@ -24,7 +24,7 @@ const addAccount = async (address, privateKey) => {
 
 	if (!accountList.find(acc => acc.address === address)) {
 		await web3Personal.importRawKey(
-			getSystemTestBackend() === 'geth' ? privateKey.slice(2) : privateKey,
+			getSystemTestBackend() === 'geth' ? seed.slice(2) : seed,
 			'123456',
 		);
 	}
@@ -41,7 +41,7 @@ const createWallets = () =>
 	new Promise(async resolve => {
 		for (const acc of tempAccountList) {
 			try {
-				await addAccount(acc.address, acc.privateKey);
+				await addAccount(acc.address, acc.seed);
 			} catch (e) {
 				console.log('error', e);
 			}
