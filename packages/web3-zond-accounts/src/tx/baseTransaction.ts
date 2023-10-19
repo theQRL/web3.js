@@ -292,11 +292,10 @@ export abstract class BaseTransaction<TransactionObject> {
 	 */
 	public verifySignature(): boolean {
 		const msgHash = this.getMessageToVerifySignature();
-		const { signature, publicKey } = this;
+		const { publicKey, signature } = this;
 		
 		try {
-			cryptoSignVerify(bigIntToUnpaddedUint8Array(signature!), msgHash, bigIntToUnpaddedUint8Array(publicKey!))
-			return true;
+			return cryptoSignVerify(bigIntToUnpaddedUint8Array(signature!), msgHash, bigIntToUnpaddedUint8Array(publicKey!));
 		} catch (e: any) {
 			return false;
 		}

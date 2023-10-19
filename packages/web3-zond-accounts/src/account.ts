@@ -16,7 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import {
-	InvalidPrivateKeyError,
+	InvalidPublicKeyError,
 	InvalidSeedError,
 	//PrivateKeyLengthError,
 	PublicKeyLengthError,
@@ -88,14 +88,14 @@ export const parseAndValidatePublicKey = (data: Bytes, ignoreLength?: boolean): 
 
 	// TODO(rgeraldes24): review length
 	// To avoid the case of 1 character less in a hex string which is prefixed with '0' by using 'bytesToUint8Array'
-	if (!ignoreLength && typeof data === 'string' && isHexStrict(data) && data.length !== 66) {
+	if (!ignoreLength && typeof data === 'string' && isHexStrict(data) && data.length !== 2592) {
 		throw new PublicKeyLengthError();
 	}
 
 	try {
 		publicKeyUint8Array = data instanceof Uint8Array ? data : bytesToUint8Array(data);
 	} catch {
-		throw new InvalidPrivateKeyError();
+		throw new InvalidPublicKeyError();
 	}
 
 	if (!ignoreLength && publicKeyUint8Array.byteLength !== CryptoPublicKeyBytes) {
@@ -312,7 +312,7 @@ export const recoverTransaction = (rawTransaction: HexString): Address => {
  */
 // TODO (rgeraldes24) - modify public key above for dilithium pub key
 export const publicKeyToAddress = (publicKey: Bytes): string => {
-	const publicKeyUint8Array = parseAndValidatePublicKey(publicKey, true);	
+	const publicKeyUint8Array = parseAndValidatePublicKey(publicKey);	
 	const address = getDilithiumAddressFromPK(publicKeyUint8Array);
 
 	return toChecksumAddress(bytesToHex(address));
@@ -527,7 +527,7 @@ export const publicKeyToAddress = (publicKey: Bytes): string => {
 // // 	};
 // // };
 
-export const parseAndValidateSeed = (data: Bytes/*, ignoreLength?: boolean*/): Uint8Array => {
+export const parseAndValidateSeed = (data: Bytes /*, ignoreLength?: boolean*/): Uint8Array => {
 	let seedUint8Array: Uint8Array;
 
 	// To avoid the case of 1 character less in a hex string which is prefixed with '0' by using 'bytesToUint8Array'

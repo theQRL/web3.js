@@ -100,7 +100,7 @@ describe('[AccessListEIP2930Transaction / FeeMarketEIP1559Transaction] -> EIP-29
 	});
 
 	it('cannot input decimal values', () => {
-		const values = ['chainId', 'nonce', 'gasPrice', 'gasLimit', 'value', 'v', 'r', 's'];
+		const values = ['chainId', 'nonce', 'gasPrice', 'gasLimit', 'value', 'publicKey', 'signature'];
 		const cases = [
 			10.1,
 			'10.1',
@@ -506,14 +506,14 @@ describe('[AccessListEIP2930Transaction] -> Class Specific Tests', () => {
 		const expectedHash = hexToBytes(
 			'bbd570a3c6acc9bb7da0d5c0322fe4ea2a300db80226f7df4fef39b2d6649eec',
 		);
-		
-		// const v = BigInt(0);
-		// const r = uint8ArrayToBigInt(
-		// 	hexToBytes('294ac94077b35057971e6b4b06dfdf55a6fbed819133a6c1d31e187f1bca938d'),
-		// );
-		// const s = uint8ArrayToBigInt(
-		// 	hexToBytes('0be950468ba1c25a5cb50e9f6d8aa13c8cd21f24ba909402775b262ac76d374d'),
-		// );
+
+		const signature = uint8ArrayToBigInt(
+			hexToBytes('294ac94077b35057971e6b4b06dfdf55a6fbed819133a6c1d31e187f1bca938d'),
+		);
+
+		const publicKey = uint8ArrayToBigInt(
+			hexToBytes('294ac94077b35057971e6b4b06dfdf55a6fbed819133a6c1d31e187f1bca938d'),
+		);
 
 		const unsignedTx = AccessListEIP2930Transaction.fromTxData(txData, { common: usedCommon });
 
@@ -523,10 +523,8 @@ describe('[AccessListEIP2930Transaction] -> Class Specific Tests', () => {
 
 		const signed = unsignedTx.sign(seed);
 
-		// TODO(rgeraldes24) - public key and sig
-		// expect(v === signed.v!).toBeTruthy();
-		// expect(r === signed.r!).toBeTruthy();
-		// expect(s === signed.s!).toBeTruthy();
+		expect(signature === signed.signature!).toBeTruthy();
+		expect(publicKey === signed.publicKey!).toBeTruthy();
 		expect(uint8ArrayEquals(expectedSigned, signed.serialize())).toBeTruthy();
 		expect(uint8ArrayEquals(expectedHash, signed.hash())).toBeTruthy();
 
@@ -546,9 +544,8 @@ describe('[AccessListEIP2930Transaction] -> Class Specific Tests', () => {
 					],
 				},
 			],
-			v: '0x0',
-			r: '0x294ac94077b35057971e6b4b06dfdf55a6fbed819133a6c1d31e187f1bca938d',
-			s: '0xbe950468ba1c25a5cb50e9f6d8aa13c8cd21f24ba909402775b262ac76d374d',
+			publicKey: '0x294ac94077b35057971e6b4b06dfdf55a6fbed819133a6c1d31e187f1bca938d',
+			signature: '0xbe950468ba1c25a5cb50e9f6d8aa13c8cd21f24ba909402775b262ac76d374d',
 		};
 
 		expect(signed.toJSON()).toEqual(expectedJSON);

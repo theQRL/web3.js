@@ -22,6 +22,7 @@ import {
 	ERR_PUBLIC_KEY_LENGTH,
 	ERR_INVALID_PRIVATE_KEY,
 	ERR_INVALID_SIGNATURE,
+	ERR_INVALID_PUBLIC_KEY,
 	ERR_UNSUPPORTED_KDF,
 	ERR_KEY_DERIVATION_FAIL,
 	ERR_KEY_VERSION_UNSUPPORTED,
@@ -42,7 +43,7 @@ export class PrivateKeyLengthError extends BaseWeb3Error {
 export class PublicKeyLengthError extends BaseWeb3Error {
 	public code = ERR_PUBLIC_KEY_LENGTH;
 	public constructor() {
-		super(`Private key must be 2592 bytes.`);
+		super(`Public key must be 2592 bytes.`);
 	}
 }
 
@@ -106,5 +107,12 @@ export class PBKDF2IterationsError extends BaseWeb3Error {
 	public code = ERR_PBKDF2_ITERATIONS;
 	public constructor() {
 		super('c > 1000, pbkdf2 is less secure with less iterations');
+	}
+}
+
+export class InvalidPublicKeyError extends BaseWeb3Error {
+	public code = ERR_INVALID_PUBLIC_KEY;
+	public constructor() {
+		super(`Invalid Public Key, Not a valid string or uint8Array`);
 	}
 }

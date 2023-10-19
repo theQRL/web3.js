@@ -121,7 +121,7 @@ describe('[FeeMarketEIP1559Transaction]', () => {
 		let txn = FeeMarketEIP1559Transaction.fromTxData(data, { common });
 		let signed = txn.sign(seed);
 		const expectedHash = hexToBytes(
-			'0x2e564c87eb4b40e7f469b2eec5aa5d18b0b46a24e8bf0919439cfb0e8fcae446',
+			'0xf1e0e9a7693c947198221b333aef12e950e07d406d489b02acb94f085f34efed',
 		);
 		expect(signed.hash()).toEqual(expectedHash);
 		txn = FeeMarketEIP1559Transaction.fromTxData(data, { common, freeze: false });

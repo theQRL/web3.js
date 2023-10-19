@@ -74,7 +74,7 @@ export class FeeMarketEIP1559Transaction extends BaseTransaction<FeeMarketEIP155
 	 * Instantiate a transaction from a data dictionary.
 	 *
 	 * Format: { chainId, nonce, maxPriorityFeePerGas, maxFeePerGas, gasLimit, to, value, data,
-	 * accessList, signature, publicKey }
+	 * accessList, publicKey, signature }
 	 *
 	 * Notes:
 	 * - `chainId` will be set automatically if not provided
