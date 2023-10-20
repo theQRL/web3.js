@@ -293,9 +293,12 @@ export abstract class BaseTransaction<TransactionObject> {
 	public verifySignature(): boolean {
 		const msgHash = this.getMessageToVerifySignature();
 		const { publicKey, signature } = this;
-		
+		const sigBuf = Buffer.from(bigIntToUnpaddedUint8Array(signature!))
+		const pubKeyBuf = Buffer.from(bigIntToUnpaddedUint8Array(publicKey!))
+		const msgHashBuf = Buffer.from(msgHash);
+
 		try {
-			return cryptoSignVerify(bigIntToUnpaddedUint8Array(signature!), msgHash, bigIntToUnpaddedUint8Array(publicKey!));
+			return cryptoSignVerify(sigBuf, msgHashBuf, pubKeyBuf);;
 		} catch (e: any) {
 			return false;
 		}
@@ -347,7 +350,7 @@ export abstract class BaseTransaction<TransactionObject> {
 		const msgHash = this.getMessageToSign(true);
 		const buf = Buffer.from(seed);
 		const acc = new Dilithium(buf);
-		const signature = acc.sign(msgHash, acc.getSK())
+		const signature = acc.sign(msgHash)
 		const tx = this._processSignatureAndPublicKey(signature, acc.getPK());
 
 		// Hack part 2

@@ -19,7 +19,7 @@ import { SupportedProviders, TransactionReceipt } from '@theqrl/web3-types';
 import { Contract } from '@theqrl/web3-zond-contract';
 import { Web3Zond } from '../../../src';
 import {
-	getSystemTestBackend,
+	//getSystemTestBackend,
 	getSystemTestProvider,
 	createTempAccount,
 	closeOpenConnection,
@@ -45,7 +45,7 @@ describe('rpc with block', () => {
 		transactionHash: string;
 		transactionIndex: number | bigint;
 	};
-	let tempAcc: { address: string; privateKey: string };
+	let tempAcc: { address: string; seed: string };
 
 	beforeAll(() => {
 		clientUrl = getSystemTestProvider();

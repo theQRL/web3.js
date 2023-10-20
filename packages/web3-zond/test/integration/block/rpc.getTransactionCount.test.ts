@@ -45,7 +45,7 @@ describe('rpc with block', () => {
 		transactionHash: string;
 		transactionIndex: number | bigint;
 	};
-	let tempAcc: { address: string; privateKey: string };
+	let tempAcc: { address: string; seed: string };
 
 	beforeAll(() => {
 		clientUrl = getSystemTestProvider();

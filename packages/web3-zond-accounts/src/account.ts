@@ -555,7 +555,7 @@ export const seedToAccount = (seed: Bytes/*, ignoreLength?: boolean*/): Web3Acco
 	const acc = new Dilithium(buf);
 
 	return {
-		address: bytesToHex(acc.getAddress()),
+		address: publicKeyToAddress(acc.getPK()),
 		seed: acc.getHexSeed(),
 		// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		signTransaction: (_tx: Transaction) => {

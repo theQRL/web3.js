@@ -85,8 +85,8 @@ export const validateTransaction = (
 	expect(tx.to).toMatch(regexHex20);
 	expect(Number(tx.value)).toBe(1);
 	expect(tx.input).toBe('0x');
-	expect(tx.r).toBeDefined();
-	expect(tx.s).toBeDefined();
+	expect(tx.publicKey).toBeDefined();
+	expect(tx.signature).toBeDefined();
 	expect(Number(tx.gas)).toBeGreaterThan(0);
 };
 export const validateBlock = (b: Block) => {

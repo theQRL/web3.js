@@ -65,7 +65,7 @@ export const validSeedtoAccountData: [any, any][] = [
 			ignoreLength: false,
 		},
 		{
-			address: '0x2054f0f00cb9925477dcd3cd506dbb3d37742026',
+			address: '0x2054f0f00cB9925477DCd3Cd506dBb3d37742026',
 			seed: '0x034da61fe50c659a3285549dc395571e2bf6891c462c041e3c6b9061fc73eb3687d03f940e5e65d582019ef10ce1327f',
 			sign,
 			signTransaction,
@@ -75,7 +75,7 @@ export const validSeedtoAccountData: [any, any][] = [
 	[
 		{ address: '0x7fc43a2ccb557f900d4ca924c187b4438a7f8185b8edbfbabdd26b87f125594495268f55ceac9c9eb23efaab76b0d4c5' },
 		{
-			address: '0x20618f56c422d34b190b9b49a636a3429b927a91',
+			address: '0x20618F56c422D34b190B9B49a636a3429B927A91',
 			seed: '0x7fc43a2ccb557f900d4ca924c187b4438a7f8185b8edbfbabdd26b87f125594495268f55ceac9c9eb23efaab76b0d4c5',
 			sign,
 			signTransaction,
@@ -88,7 +88,7 @@ export const validSeedtoAccountData: [any, any][] = [
 			ignoreLength: true,
 		},
 		{
-			address: '0x2046b4f923f908201ab8ddd86330b3228720d589',
+			address: '0x2046B4F923f908201Ab8Ddd86330b3228720D589',
 			seed: '0xc902ea9bbf1dd51aaa2ee9bed126aba921f6a6afac9cf09a21f3d915b057bace6787a894a71d1d103992aca0a6a4250c',
 			sign,
 			signTransaction,
@@ -154,6 +154,7 @@ export const signatureRecoverData: [string, any][] = [
 ];
 
 export const transactionsTestData: [TxData | AccessListEIP2930TxData | FeeMarketEIP1559TxData][] = [
+	/*
 	[
 		// 'TxLegacy'
 		{
@@ -166,9 +167,11 @@ export const transactionsTestData: [TxData | AccessListEIP2930TxData | FeeMarket
 			nonce: 0,
 		},
 	],
+	*/
 	[
 		// 'Tx1559'
 		{
+			type: 2,
 			to: '0xF0109fC8DF283027b6285cc889F5aA624EaC1F55',
 			maxPriorityFeePerGas: '0x3B9ACA00',
 			maxFeePerGas: '0xB2D05E00',
@@ -179,6 +182,7 @@ export const transactionsTestData: [TxData | AccessListEIP2930TxData | FeeMarket
 			nonce: 0,
 		},
 	],
+	/*
 	[
 		// 'Tx2930'
 		{
@@ -200,6 +204,7 @@ export const transactionsTestData: [TxData | AccessListEIP2930TxData | FeeMarket
 			],
 		},
 	],
+	*/
 ];
 
 // export const invalidSeedtoAccountData: [

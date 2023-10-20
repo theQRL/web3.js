@@ -26,7 +26,7 @@ import {
 
 describe('Web3Zond.sign', () => {
 	let web3Zond: Web3Zond;
-	let tempAcc: { address: string; privateKey: string };
+	let tempAcc: { address: string; seed: string };
 
 	beforeAll(async () => {
 		web3Zond = new Web3Zond(getSystemTestProvider());
