@@ -29,11 +29,17 @@ const addAccount = async (address, seed) => {
 		);
 	}
 
+	if (address === mainAcc) {
+		await web3Personal.unlockAccount(mainAcc, '123456', 15000);
+	}
+
 	await web3Zond.sendTransaction({
 		from: mainAcc,
 		to: address,
 		gas: 1500000,
-		value: '1000000000000000000',
+		value: '10000000000000000000',
+		maxFeePerGas: 1000000000,
+  		maxPriorityFeePerGas: 10,
 	});
 };
 
