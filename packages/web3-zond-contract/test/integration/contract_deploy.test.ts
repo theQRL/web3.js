@@ -36,8 +36,8 @@ describe('contract', () => {
 		let contract: Contract<typeof GreeterAbi>;
 		let deployOptions: Record<string, unknown>;
 		let sendOptions: Record<string, unknown>;
-		let acc: { address: string; privateKey: string };
-		let pkAccount: { address: string; privateKey: string };
+		let acc: { address: string; seed: string };
+		let pkAccount: { address: string; seed: string };
 		let web3Zond: Web3Zond;
 
 		beforeAll(async () => {
@@ -52,7 +52,7 @@ describe('contract', () => {
 			contract = new Contract(GreeterAbi, undefined, {
 				provider: getSystemTestProvider(),
 			});
-			sendOptions = { from: acc.address, gas: '1000000' };
+			sendOptions = { from: acc.address, /*gas: '1000000'*/ type: 2 };
 		});
 
 		afterAll(async () => {
@@ -71,7 +71,7 @@ describe('contract', () => {
 						{
 							data: deployData.encodeABI(),
 						},
-						pkAccount.privateKey,
+						pkAccount.seed,
 					);
 					expect(Number(res.status)).toBe(1);
 				},
@@ -89,7 +89,7 @@ describe('contract', () => {
 						{
 							input: deployData.encodeABI(),
 						},
-						pkAccount.privateKey,
+						pkAccount.seed,
 					);
 					expect(Number(res.status)).toBe(1);
 				},

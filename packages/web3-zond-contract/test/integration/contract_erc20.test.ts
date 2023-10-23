@@ -51,7 +51,7 @@ describe('contract', () => {
 
 		it('should deploy the contract', async () => {
 			const acc = await createTempAccount();
-			const sendOptionsLocal = { from: acc.address, gas: '10000000' };
+			const sendOptionsLocal = { from: acc.address, /*gas: '10000000'*/ type: 2 };
 			await expect(
 				contract.deploy(deployOptions).send(sendOptionsLocal),
 			).resolves.toBeDefined();
@@ -59,8 +59,8 @@ describe('contract', () => {
 
 		describe('contract instance', () => {
 			let contractDeployed: Contract<typeof ERC20TokenAbi>;
-			let pkAccount: { address: string; privateKey: string };
-			let mainAcc: { address: string; privateKey: string };
+			let pkAccount: { address: string; seed: string };
+			let mainAcc: { address: string; seed: string };
 			const prepareForTransfer = async (value: string) => {
 				const tempAccount = await createTempAccount();
 				await contractDeployed.methods.transfer(pkAccount.address, value).send(sendOptions);
@@ -109,7 +109,7 @@ describe('contract', () => {
 							contract.provider,
 							contractDeployed.options.address as string,
 							contractDeployed.methods.transfer(tempAccount.address, value),
-							pkAccount.privateKey,
+							pkAccount.seed,
 						);
 
 						expect(
@@ -129,7 +129,7 @@ describe('contract', () => {
 							contract.provider,
 							contractDeployed.options.address as string,
 							contractDeployed.methods.approve(pkAccount.address, value),
-							pkAccount.privateKey,
+							pkAccount.seed,
 						);
 
 						expect(res.status).toBe(BigInt(1));
@@ -148,7 +148,7 @@ describe('contract', () => {
 								tempAccount.address,
 								transferFromValue,
 							),
-							pkAccount.privateKey,
+							pkAccount.seed,
 						);
 						expect(
 							await contractDeployed.methods.balanceOf(tempAccount.address).call(),
@@ -177,7 +177,7 @@ describe('contract', () => {
 								tempAccount.address,
 								transferFromValue,
 							),
-							tempAccount.privateKey,
+							tempAccount.seed,
 						);
 
 						// allowance
@@ -195,7 +195,7 @@ describe('contract', () => {
 								tempAccount.address,
 								transferFromValue,
 							),
-							tempAccount.privateKey,
+							tempAccount.seed,
 						);
 
 						// allowance

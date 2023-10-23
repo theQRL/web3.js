@@ -40,6 +40,7 @@ describe('Web3Zond.getRevertReason', () => {
 		const simpleRevertDeployTransaction: Transaction = {
 			from: tempAccount.address,
 			data: SimpleRevertDeploymentData,
+			type: BigInt(2),
 		};
 		simpleRevertDeployTransaction.gas = await web3Zond.estimateGas(
 			simpleRevertDeployTransaction,
@@ -53,6 +54,7 @@ describe('Web3Zond.getRevertReason', () => {
 			from: tempAccount.address,
 			to: simpleRevertContractAddress,
 			data: '0xf38fb65b',
+			type: BigInt(2),
 		};
 
 		const response = await getRevertReason(web3Zond, transaction);
@@ -100,6 +102,7 @@ describe('Web3Zond.getRevertReason', () => {
 		const transaction: TransactionCall = {
 			from: tempAccount.address,
 			to: simpleRevertContractAddress,
+			type: BigInt(2),
 			gas: '0x0',
 			data: '0xba57a511000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000067265766572740000000000000000000000000000000000000000000000000000',
 		};
@@ -123,6 +126,7 @@ describe('Web3Zond.getRevertReason', () => {
 			from: tempAccount.address,
 			to: simpleRevertContractAddress,
 			data: '0x3ebf4d9c',
+			type: BigInt(2),
 		};
 
 		const response = await getRevertReason(web3Zond, transaction, SimpleRevertAbi);
@@ -149,6 +153,7 @@ describe('Web3Zond.getRevertReason', () => {
 			from: tempAccount.address,
 			to: simpleRevertContractAddress,
 			data: '0x819f48fe',
+			type: BigInt(2),
 		};
 
 		const response = await getRevertReason(web3Zond, transaction, SimpleRevertAbi);
@@ -178,6 +183,7 @@ describe('Web3Zond.getRevertReason', () => {
 			from: tempAccount.address,
 			to: simpleRevertContractAddress,
 			data: '0xba57a51100000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000',
+			type: BigInt(2),
 		};
 
 		const response = await getRevertReason(web3Zond, transaction);

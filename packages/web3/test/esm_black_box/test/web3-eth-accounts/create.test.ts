@@ -30,12 +30,12 @@ jest.setTimeout(15000);
 // TODO Consider adding this to web3.eth.accounts package
 const accountSchema = {
 	type: 'object',
-	required: ['address', 'privateKey'],
+	required: ['address', 'seed'],
 	// TODO Should validation functions as well
-	// required: ['address', 'privateKey', 'signTransaction', 'sign', 'encrypt'],
+	// required: ['address', 'seed', 'signTransaction', 'sign', 'encrypt'],
 	properties: {
 		address: { type: 'string' },
-		privateKey: { type: 'string' },
+		seed: { type: 'string' },
 	},
 };
 

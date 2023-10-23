@@ -155,11 +155,12 @@ describe('web3.accounts', () => {
 					from: tempAccount,
 					to: account.address,
 					value: web3.utils.toWei('0.5', 'ether'),
+					type: BigInt(2),
 				}),
 			).resolves.toBeDefined();
 
 			// Sign the tx from that account
-			const signedTx = await web3.zond.accounts.signTransaction(tx, account.privateKey, account.publicKey);
+			const signedTx = await web3.zond.accounts.signTransaction(tx, account.seed);
 
 			expect(signedTx).toEqual(
 				expect.objectContaining({

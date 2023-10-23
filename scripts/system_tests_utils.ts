@@ -233,6 +233,7 @@ export const refillAccount = async (from: string, to: string, value: string | nu
 		from,
 		to,
 		value,
+		type: BigInt(2),
 	});
 };
 
@@ -251,11 +252,10 @@ export const createNewAccount = async (config?: {
 	if (config?.unlock) {
 		const web3Personal = new Personal(clientUrl);
 		if (!config?.doNotImport) {
-			// TODO(rgeraldes24)
-			// await web3Personal.importRawKey(
-			// 	getSystemTestBackend() === 'geth' ? acc.privateKey.slice(2) : acc.privateKey,
-			// 	config.password ?? '123456',
-			// );
+			await web3Personal.importRawKey(
+				getSystemTestBackend() === 'geth' ? acc.seed.slice(2) : acc.seed,
+				config.password ?? '123456',
+			);
 		}
 
 		await web3Personal.unlockAccount(acc.address, config.password ?? '123456', 100000000);
@@ -266,7 +266,7 @@ export const createNewAccount = async (config?: {
 		if (!mainAcc) {
 			[mainAcc] = await web3Personal.getAccounts();
 		}
-		await refillAccount(mainAcc, acc.address, '100000000000000000');
+		await refillAccount(mainAcc, acc.address, '10000000000000000000');
 	}
 
 	return { address: acc.address.toLowerCase(), seed: acc.seed! };
@@ -400,7 +400,7 @@ export const signAndSendContractMethodEIP2930 = async (
 
 export const createLocalAccount = async (web3: Web3) => {
 	const account = web3.zond.accounts.create();
-	await refillAccount((await createTempAccount()).address, account.address, '10000000000000000');
+	await refillAccount((await createTempAccount()).address, account.address, '100000000000000000000');
 	web3.zond.accounts.wallet.add(account);
 	return account;
 };
@@ -467,6 +467,7 @@ export const sendFewSampleTxs = async (cnt = 1) => {
 				value: '0x1',
 				from: fromAcc.address,
 				gas: '300000',
+				type: BigInt(2),
 			}),
 		);
 	}

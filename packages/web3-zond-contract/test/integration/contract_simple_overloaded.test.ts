@@ -20,7 +20,7 @@ import { createTempAccount, getSystemTestProvider } from '../fixtures/system_tes
 
 describe('SimpleOverloaded', () => {
 	let contract: Contract<typeof SimpleOverloadedAbi>;
-	let mainAcc: { address: string; privateKey: string };
+	let mainAcc: { address: string; seed: string };
 	let contractDeployed: Contract<typeof SimpleOverloadedAbi>;
 
 	beforeAll(async () => {
@@ -32,7 +32,7 @@ describe('SimpleOverloaded', () => {
 			.deploy({
 				data: SimpleOverloadedBytecode,
 			})
-			.send({ from: mainAcc.address, gas: '10000000' });
+			.send({ from: mainAcc.address, /*gas: '10000000'*/ type: 2 });
 	});
 
 	it('should call getSecret with no args', async () => {
@@ -53,7 +53,7 @@ describe('SimpleOverloaded', () => {
 	it('should send setSecret with no args', async () => {
 		const transactionReceipt = await contractDeployed.methods
 			.setSecret()
-			.send({ from: mainAcc.address, gas: '10000000' });
+			.send({ from: mainAcc.address, /*gas: '10000000'*/ type: 2 });
 		expect(transactionReceipt.status).toBe(BigInt(1));
 
 		const response = await contractDeployed.methods.getSecret(42, 'some string').call();
@@ -63,7 +63,7 @@ describe('SimpleOverloaded', () => {
 	it('should send setSecret with one args', async () => {
 		const transactionReceipt = await contractDeployed.methods
 			.setSecret(42)
-			.send({ from: mainAcc.address, gas: '10000000' });
+			.send({ from: mainAcc.address, /*gas: '10000000'*/ type: 2 });
 		expect(transactionReceipt.status).toBe(BigInt(1));
 
 		const response = await contractDeployed.methods.getSecret(42, 'some string').call();
@@ -73,7 +73,7 @@ describe('SimpleOverloaded', () => {
 	it('should send setSecret with two args', async () => {
 		const transactionReceipt = await contractDeployed.methods
 			.setSecret(42, 'more string')
-			.send({ from: mainAcc.address, gas: '10000000' });
+			.send({ from: mainAcc.address, /*gas: '10000000'*/ type: 2 });
 		expect(transactionReceipt.status).toBe(BigInt(1));
 
 		const response = await contractDeployed.methods.getSecret(42, 'some string').call();
@@ -87,14 +87,14 @@ describe('SimpleOverloaded', () => {
 	it('should send multicall with one arg', async () => {
 		const transactionReceipt = await contractDeployed.methods
 			.multicall(['0x5b9fdc30', '0x5b9fdc30', '0x5b9fdc30'])
-			.send({ from: mainAcc.address, gas: '10000000' });
+			.send({ from: mainAcc.address, /*gas: '10000000'*/ type: 2 });
 		expect(transactionReceipt.status).toBe(BigInt(1));
 	});
 
 	it('should send multicall with two args', async () => {
 		const transactionReceipt = await contractDeployed.methods
 			.multicall(99999999999, ['0x5b9fdc30', '0x5b9fdc30', '0x5b9fdc30'])
-			.send({ from: mainAcc.address, gas: '10000000' });
+			.send({ from: mainAcc.address, /*gas: '10000000'*/ type: 2 });
 		expect(transactionReceipt.status).toBe(BigInt(1));
 	});
 });

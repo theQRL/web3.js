@@ -41,7 +41,8 @@ describe('Contract - NegativeNumbers.sol', () => {
 		};
 		sendOptions = {
 			from: account.address,
-			gas: '1000000',
+			type: '2',
+			//gas: '1000000',
 		};
 
 		contractDeployed = await contract.deploy(deployOptions).send(sendOptions);

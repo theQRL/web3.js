@@ -27,7 +27,7 @@ import {
 	getSystemTestProvider,
 } from '../fixtures/system_test_utils';
 
-const gas = 30000;
+//const gas = 30000;
 
 describe('defaults', () => {
 	let web3Zond: Web3Zond;
@@ -53,6 +53,7 @@ describe('defaults', () => {
 			const from = tempAcc.address;
 			const to = createAccount().address;
 			const value = `0x1`;
+			const type = BigInt(2);
 
 			try {
 				// Setting a high `nonce` when sending a transaction, to cause the RPC call to stuck at the Node
@@ -60,10 +61,11 @@ describe('defaults', () => {
 					to,
 					value,
 					from,
-					gas,
+					//gas,
 					// Give a high nonce so the transaction stuck forever.
 					// However, make this random to be able to run the test many times without receiving an error that indicate submitting the same transaction twice.
 					nonce: Number.MAX_SAFE_INTEGER,
+					type,
 				});
 				expect(true).toBe(false); // the test should fail if there is no exception
 			} catch (error) {

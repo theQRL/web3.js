@@ -49,7 +49,7 @@ describe('contract getPastEvent filter', () => {
 				arguments: [initialSupply],
 			};
 			mainAcc = await createTempAccount();
-			sendOptions = { from: mainAcc.address, gas: '10000000' };
+			sendOptions = { from: mainAcc.address, /*gas: '10000000'*/ type: 2 };
 			contractDeployed = await contract.deploy(deployOptions).send(sendOptions);
 			toAcc1 = await createNewAccount();
 			toAcc2 = await createNewAccount();
@@ -172,7 +172,7 @@ describe('contract getPastEvent filter', () => {
 				arguments: [123, '123'],
 			};
 			mainAcc = await createTempAccount();
-			sendOptions = { from: mainAcc.address, gas: '10000000' };
+			sendOptions = { from: mainAcc.address, /*gas: '10000000'*/ type: 2 };
 			contractDeployed = await contract.deploy(deployOptions).send(sendOptions);
 			await contractDeployed.methods
 				.firesMultiValueIndexedEvent('str1', 1, true)

@@ -29,7 +29,7 @@ describe('contract', () => {
 		let contract: Contract<typeof GreeterAbi>;
 		let deployOptions: Record<string, unknown>;
 		let sendOptions: Record<string, unknown>;
-		let acc: { address: string; privateKey: string };
+		let acc: { address: string; seed: string };
 
 		beforeEach(async () => {
 			contract = new Contract(GreeterAbi, undefined, {
@@ -42,7 +42,7 @@ describe('contract', () => {
 				arguments: ['My Greeting'],
 			};
 
-			sendOptions = { from: acc.address, gas: '1000000' };
+			sendOptions = { from: acc.address, /*gas: '1000000'*/ type: 2 };
 		});
 
 		it('create access list for setter', async () => {

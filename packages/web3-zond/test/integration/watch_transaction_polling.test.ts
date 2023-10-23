@@ -52,6 +52,7 @@ describeIf(isHttp)('watch polling transaction', () => {
 			const from = tempAcc.address;
 			const to = tempAcc2.address;
 			const value = `0x1`;
+			const type = BigInt(2);
 
 			const sentTx: Web3PromiEvent<
 				TransactionReceipt,
@@ -60,6 +61,7 @@ describeIf(isHttp)('watch polling transaction', () => {
 				to,
 				value,
 				from,
+				type,
 			});
 			const confirmationPromise = new Promise((resolve: Resolve) => {
 				// Tx promise is handled separately
@@ -75,6 +77,7 @@ describeIf(isHttp)('watch polling transaction', () => {
 								to,
 								value,
 								from,
+								type,
 							});
 						}
 					},

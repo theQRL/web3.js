@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { ETH_DATA_FORMAT } from '@theqrl/web3-types';
+import { ZOND_DATA_FORMAT } from '@theqrl/web3-types';
 import { Contract } from '../../src';
 import { getSystemTestProvider, createTempAccount } from '../fixtures/system_test_utils';
 
@@ -42,7 +42,7 @@ describe('contract', () => {
 			type: 'function',
 		},
 	];
-	let acc: { address: string; privateKey: string };
+	let acc: { address: string; seed: string };
 	let contract: Contract<typeof abi>;
 
 	beforeEach(async () => {
@@ -65,7 +65,7 @@ describe('contract', () => {
 			{
 				from: acc.address,
 			},
-			ETH_DATA_FORMAT,
+			ZOND_DATA_FORMAT,
 		);
 		expect(gas).toBeDefined();
 		expect(gas).toMatch(/0[xX][0-9a-fA-F]/i);

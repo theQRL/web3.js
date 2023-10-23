@@ -154,14 +154,11 @@ export const transactionSchema = {
 		gasLimit: {
 			format: 'uint',
 		},
-		v: {
-			format: 'uint',
+		publicKey: {
+			format: 'bytes',
 		},
-		r: {
-			format: 'bytes32',
-		},
-		s: {
-			format: 'bytes32',
+		signature: {
+			format: 'bytes',
 		},
 	},
 };
@@ -224,14 +221,11 @@ export const transactionInfoSchema = {
 		gasLimit: {
 			format: 'uint',
 		},
-		v: {
-			format: 'uint',
+		publicKey: {
+			format: 'bytes',
 		},
-		r: {
-			format: 'bytes32',
-		},
-		s: {
-			format: 'bytes32',
+		signature: {
+			format: 'bytes',
 		},
 	},
 };
@@ -543,15 +537,6 @@ export const SignatureObjectSchema = {
 	type: 'object',
 	properties: {
 		messageHash: {
-			format: 'bytes',
-		},
-		r: {
-			format: 'bytes32',
-		},
-		s: {
-			format: 'bytes32',
-		},
-		v: {
 			format: 'bytes',
 		},
 		message: {

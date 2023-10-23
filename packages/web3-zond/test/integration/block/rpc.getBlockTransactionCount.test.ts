@@ -52,7 +52,7 @@ describe('rpc with block', () => {
 		web3Zond = new Web3Zond({
 			provider: clientUrl,
 			config: {
-				transactionPollingTimeout: 2000,
+				transactionPollingTimeout: 15000,
 			},
 		});
 
@@ -67,7 +67,7 @@ describe('rpc with block', () => {
 	});
 	beforeAll(async () => {
 		tempAcc = await createTempAccount();
-		sendOptions = { from: tempAcc.address, gas: '1000000' };
+		sendOptions = { from: tempAcc.address, /*gas: '1000000'*/ type: 2 };
 
 		await contract.deploy(deployOptions).send(sendOptions);
 		const [receipt]: TransactionReceipt[] = await sendFewTxes({

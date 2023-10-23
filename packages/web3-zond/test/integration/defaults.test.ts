@@ -71,7 +71,7 @@ describe('defaults', () => {
 			data: BasicBytecode,
 			arguments: [10, 'string init value'],
 		};
-		sendOptions = { from: tempAcc.address, gas: '1000000' };
+		sendOptions = { from: tempAcc.address, /*gas: '1000000'*/ type: 2 };
 	});
 
 	afterEach(async () => {
@@ -91,7 +91,7 @@ describe('defaults', () => {
 					data: MsgSenderBytecode,
 					arguments: ['test'],
 				})
-				.send({ from: tempAcc2.address, gas: '2700000' });
+				.send({ from: tempAcc2.address, /*gas: '2700000',*/ type: 2 });
 			// default
 			expect(web3Zond.defaultAccount).toBeUndefined();
 
@@ -119,21 +119,25 @@ describe('defaults', () => {
 
 			const tx = await contractMsgFrom.methods
 				.setTestString('test2')
-				.send({ gas: '1000000' });
+				.send({ type: 2 });
+				//.send({ gas: '1000000' });
 			const txSend = await web3Zond.sendTransaction({
 				to: tempAcc2.address,
 				value: '0x1',
+				type: BigInt(2),
 			});
 			expect(tx.from).toBe(tempAcc.address.toLowerCase());
 			expect(txSend.from).toBe(tempAcc.address.toLowerCase());
 
 			const tx2 = await contractMsgFrom.methods.setTestString('test3').send({
 				from: tempAcc2.address,
+				type: 2,
 			});
 			const tx2Send = await web3Zond.sendTransaction({
 				to: tempAcc.address,
 				value: '0x1',
 				from: tempAcc2.address,
+				type: BigInt(2),
 			});
 			expect(tx2.from).toBe(tempAcc2.address.toLowerCase());
 			expect(tx2Send.from).toBe(tempAcc2.address.toLowerCase());
@@ -341,6 +345,7 @@ describe('defaults', () => {
 				to,
 				value,
 				from,
+				type: BigInt(2),
 			});
 
 			const receiptPromise = new Promise((resolve: Resolve) => {
@@ -570,6 +575,7 @@ describe('defaults', () => {
 				from,
 				to,
 				value,
+				type: BigInt(2),
 			});
 
 			const confirmationPromise = new Promise((resolve: (status: bigint) => void) => {
@@ -594,6 +600,7 @@ describe('defaults', () => {
 								from,
 								to,
 								value,
+								type: BigInt(2),
 							});
 						}
 					},

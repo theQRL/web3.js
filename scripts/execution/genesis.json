@@ -21,7 +21,7 @@
 		"ethash": {}
 	},
 	"nonce": "0x0",
-	"timestamp": "0x65328f70",
+	"timestamp": "0x6536a340",
 	"extraData": "0x426574614e65742c205a6f6e642c20584d53532c2044696c69746869756d2121",
 	"gasLimit": "0x1c9c380",
 	"difficulty": "0x1",
@@ -36,7 +36,7 @@
 			"balance": "0x21e19e0c9bab2400000"
 		},
 		"2099d76d9a34cdd2694c4dc703930a6fbbc1d402": {
-			"balance": "0x43c33c1937564800000"
+			"balance": "0x43c33c1937564800000000000000"
 		},
 		"23618e81e3f5cdf7f54c3d65f7fbc0abf5b21e8f": {
 			"balance": "0x21e19e0c9bab2400000"

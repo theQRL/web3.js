@@ -11,35 +11,48 @@ const getSystemTestProvider = () => DEFAULT_SYSTEM_PROVIDER;
 const getSystemTestBackend = () => getEnvVar('WEB3_SYSTEM_TEST_BACKEND') ?? '';
 
 let mainAcc;
-let accountList = [];
+//let accountList = [];
 const addAccount = async (address, seed) => {
 	let clientUrl = getSystemTestProvider();
-
 	const web3Personal = new Personal(clientUrl);
-	if (accountList.length === 0) {
-		accountList = await web3Personal.getAccounts();
-		mainAcc = accountList[0];
-	}
 	const web3Zond = new Web3Zond(clientUrl);
 
-	if (!accountList.find(acc => acc.address === address)) {
+	if (mainAcc === undefined) {
+		mainAcc = address;
 		await web3Personal.importRawKey(
 			getSystemTestBackend() === 'geth' ? seed.slice(2) : seed,
 			'123456',
 		);
+		await web3Personal.unlockAccount(mainAcc, '123456', 15000);
+		return;
 	}
 
-	if (address === mainAcc) {
-		await web3Personal.unlockAccount(mainAcc, '123456', 15000);
-	}
+	// const web3Personal = new Personal(clientUrl);
+	// if (accountList.length === 0) {
+	// 	accountList = await web3Personal.getAccounts();
+	// 	mainAcc = accountList[0];
+	// }
+	// const web3Zond = new Web3Zond(clientUrl);
+
+	// if (!accountList.find(acc => acc.address === address)) {
+	// 	await web3Personal.importRawKey(
+	// 		getSystemTestBackend() === 'geth' ? seed.slice(2) : seed,
+	// 		'123456',
+	// 	);
+	// }
+
+	await web3Personal.importRawKey(
+		getSystemTestBackend() === 'geth' ? seed.slice(2) : seed,
+		'123456',
+	);
+	
 
 	await web3Zond.sendTransaction({
 		from: mainAcc,
 		to: address,
 		gas: 1500000,
-		value: '10000000000000000000',
-		maxFeePerGas: 1000000000,
-  		maxPriorityFeePerGas: 10,
+		value: '100000000000000000000000',
+		type: BigInt(2),
 	});
 };
 

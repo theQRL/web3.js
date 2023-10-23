@@ -33,7 +33,7 @@ import {
 } from '../fixtures/system_test_utils';
 import { BasicAbi, BasicBytecode } from '../shared_fixtures/build/Basic';
 
-describe('eth', () => {
+describe('zond', () => {
 	let web3Zond: Web3Zond;
 	let clientUrl: string | SupportedProviders;
 
@@ -64,7 +64,7 @@ describe('eth', () => {
 				arguments: [10, 'string init value'],
 			};
 
-			sendOptions = { from: tempAcc.address, gas: '1000000' };
+			sendOptions = { from: tempAcc.address, /*gas: '1000000'*/ type: 2 };
 
 			const deployedContract = await contract.deploy(deployOptions).send(sendOptions);
 			const { provider } = web3Zond;

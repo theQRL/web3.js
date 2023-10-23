@@ -37,9 +37,8 @@ export interface TxData {
 	to: string;
 	value: string;
 
-	v: string;
-	r: string;
-	s: string;
+	publicKey: string;
+	signature: string;
 }
 
 // The type of each entry from ./ttTransactionTestEip155VitaliksTests.json

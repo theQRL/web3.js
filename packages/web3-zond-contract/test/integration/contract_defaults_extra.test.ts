@@ -33,7 +33,7 @@ type Resolve = (value?: unknown) => void;
 const MAX_32_SIGNED_INTEGER = 2147483647;
 
 jest.mock('@theqrl/web3-zond', () => {
-	const original = jest.requireActual('web3-zond');
+	const original = jest.requireActual('@theqrl/web3-zond');
 	// eslint-disable-next-line @typescript-eslint/no-unsafe-return
 	return {
 		...original,
@@ -46,7 +46,7 @@ describe('contract defaults (extra)', () => {
 	let contract: Contract<typeof GreeterAbi>;
 	let deployOptions: Record<string, unknown>;
 	let sendOptions: Record<string, unknown>;
-	let acc: { address: string; privateKey: string };
+	let acc: { address: string; seed: string };
 
 	beforeEach(async () => {
 		acc = await createTempAccount();
@@ -56,7 +56,7 @@ describe('contract defaults (extra)', () => {
 			arguments: ['My Greeting'],
 		};
 
-		sendOptions = { from: acc.address, gas: '1000000' };
+		sendOptions = { from: acc.address, /*gas: '1000000'*/ type: 2 };
 	});
 
 	afterEach(async () => {

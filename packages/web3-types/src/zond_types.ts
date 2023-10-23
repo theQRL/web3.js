@@ -361,8 +361,7 @@ interface TransactionBase {
 	chainId?: Numbers;
 	networkId?: Numbers;
 	gasLimit?: Numbers;
-	yParity?: Uint;
-	publicKey?: Numbers;
+	publicKey?: Bytes;
 	signature?: Bytes;
 }
 

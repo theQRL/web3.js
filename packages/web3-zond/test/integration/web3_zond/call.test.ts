@@ -14,17 +14,33 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { AccessListResult, Transaction, TransactionForAccessList } from '@theqrl/web3-types';
+import { TransactionCall, BlockTags, Transaction } from '@theqrl/web3-types';
+import { decodeParameters } from '@theqrl/web3-zond-abi';
 import { Web3Zond } from '../../../src';
 import {
 	closeOpenConnection,
 	createTempAccount,
-	describeIf,
-	getSystemTestBackend,
 	getSystemTestProvider,
 } from '../../fixtures/system_test_utils';
 
-describeIf(getSystemTestBackend() === 'geth')('Web3Zond.createAccessList', () => {
+describe('Web3Zond.call', () => {
+	const expectedEncodedGreet =
+		'0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000017736f6c79656e7420677265656e2069732070656f706c65000000000000000000';
+	const expectedDecodedGreet = 'solyent green is people';
+	const greetCallData = '0xcfae3217';
+	const greeterAbiFragment = {
+		inputs: [],
+		name: 'greet',
+		outputs: [
+			{
+				name: '',
+				type: 'string',
+			},
+		],
+		stateMutability: 'view',
+		type: 'function',
+	};
+
 	let web3Zond: Web3Zond;
 	let greeterContractAddress: string;
 	let tempAcc: { address: string; seed: string };
@@ -37,37 +53,90 @@ describeIf(getSystemTestBackend() === 'geth')('Web3Zond.createAccessList', () =>
 		const transaction: Transaction = {
 			from: tempAcc.address,
 			data: greeterContractDeploymentData,
-			gas: '0x744A0',
+			type: BigInt(2),
 		};
 		const response = await web3Zond.sendTransaction(transaction);
 		greeterContractAddress = response.contractAddress as string;
 	});
-
 	afterAll(async () => {
 		await closeOpenConnection(web3Zond);
 	});
 
-	test('should return access list for provided transaction', async () => {
-		const transaction: TransactionForAccessList = {
+	it('should make a call to deployed Greeter contract', async () => {
+		const transaction: TransactionCall = {
 			from: tempAcc.address,
 			to: greeterContractAddress,
-			data: '0xcfae3217', // greet function call data encoded
+			data: greetCallData,
+			type: BigInt(2),
 		};
+		const response = await web3Zond.call(transaction);
+		expect(response).toBe(expectedEncodedGreet);
+		const decodedResult = decodeParameters([...greeterAbiFragment.outputs], response)[0];
+		expect(decodedResult).toBe(expectedDecodedGreet);
+	});
 
-		const response = await web3Zond.createAccessList(transaction);
+	describe('blockNumber parameter', () => {
+		it('should return no data (0x) for call to deployed Greeter contract with blockNumber = EARLIEST', async () => {
+			const transaction: TransactionCall = {
+				from: tempAcc.address,
+				to: greeterContractAddress,
+				data: greetCallData,
+				type: BigInt(2),
+			};
+			const response = await web3Zond.call(transaction, BlockTags.EARLIEST);
+			expect(response).toBe('0x');
+		});
 
-		const expectedResponse: AccessListResult = {
-			accessList: [
-				{
-					address: greeterContractAddress,
-					storageKeys: [
-						'0x0000000000000000000000000000000000000000000000000000000000000000',
-					],
-				},
-			],
-			gasUsed: '0x68c5',
-		};
+		it('should return expectedDecodedGreet for call to deployed Greeter contract with blockNumber = LATEST', async () => {
+			const transaction: TransactionCall = {
+				from: tempAcc.address,
+				to: greeterContractAddress,
+				data: greetCallData,
+				type: BigInt(2),
+			};
+			const response = await web3Zond.call(transaction, BlockTags.LATEST);
+			expect(response).toBe(expectedEncodedGreet);
+			const decodedResult = decodeParameters([...greeterAbiFragment.outputs], response)[0];
+			expect(decodedResult).toBe(expectedDecodedGreet);
+		});
 
-		expect(response).toStrictEqual(expectedResponse);
+		// TODO - Not sure if there is a better way to test PENDING BlockTag,
+		// but interacting with a contract that hasn't been mined yet doesn't make sense
+		it('should return expectedDecodedGreet for call to deployed Greeter contract with blockNumber = PENDING', async () => {
+			const transaction: TransactionCall = {
+				from: tempAcc.address,
+				to: greeterContractAddress,
+				data: greetCallData,
+				type: BigInt(2),
+			};
+			const response = await web3Zond.call(transaction, BlockTags.PENDING);
+			expect(response).toBe(expectedEncodedGreet);
+			const decodedResult = decodeParameters([...greeterAbiFragment.outputs], response)[0];
+			expect(decodedResult).toBe(expectedDecodedGreet);
+		});
+
+		it('should return no data (0x) for call to deployed Greeter contract with blockNumber = 0x0', async () => {
+			const transaction: TransactionCall = {
+				from: tempAcc.address,
+				to: greeterContractAddress,
+				data: greetCallData,
+				type: BigInt(2),
+			};
+			const response = await web3Zond.call(transaction, '0x0');
+			expect(response).toBe('0x');
+		});
+
+		it('should return no data (0x) for call to deployed Greeter contract with web3Context.defaultBlock = EARLIEST', async () => {
+			web3Zond.defaultBlock = BlockTags.EARLIEST;
+
+			const transaction: TransactionCall = {
+				from: tempAcc.address,
+				to: greeterContractAddress,
+				data: greetCallData,
+				type: BigInt(2),
+			};
+			const response = await web3Zond.call(transaction);
+			expect(response).toBe('0x');
+		});
 	});
 });

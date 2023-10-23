@@ -34,7 +34,7 @@ describe('contract', () => {
 
 		beforeEach(async () => {
 			web3 = new Web3(getSystemTestProvider());
-			contract = new web3.eth.Contract(GreeterAbi) as unknown as Contract<typeof GreeterAbi>;
+			contract = new web3.zond.Contract(GreeterAbi) as unknown as Contract<typeof GreeterAbi>;
 			deployOptions = {
 				data: GreeterBytecode,
 				arguments: ['My Greeting'],
@@ -42,7 +42,8 @@ describe('contract', () => {
 			localAccount = await createLocalAccount(web3);
 			sendOptions = {
 				from: localAccount.address,
-				gas: '1000000',
+				type: 2,
+				/*gas: '1000000',*/
 			};
 		});
 
@@ -102,7 +103,7 @@ describe('contract', () => {
 		);
 
 		it('should deploy the contract if data is provided at initiation', async () => {
-			const contractWithParams = new web3.eth.Contract(GreeterAbi, undefined, {
+			const contractWithParams = new web3.zond.Contract(GreeterAbi, undefined, {
 				provider: web3.provider,
 				data: GreeterBytecode,
 				from: localAccount.address,

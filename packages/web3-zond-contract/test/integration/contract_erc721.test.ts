@@ -48,7 +48,7 @@ describe('contract', () => {
 				data: ERC721TokenBytecode,
 				arguments: [],
 			};
-			sendOptions = { from: acc.address, gas: '10000000' };
+			sendOptions = { from: acc.address, /*gas: '10000000'*/ type: 2 };
 		});
 
 		it('should deploy the contract', async () => {
@@ -56,9 +56,9 @@ describe('contract', () => {
 		});
 
 		describe('contract instance', () => {
-			let acc: { address: string; privateKey: string };
-			let acc2: { address: string; privateKey: string };
-			let pkAccount: { address: string; privateKey: string };
+			let acc: { address: string; seed: string };
+			let acc2: { address: string; seed: string };
+			let pkAccount: { address: string; seed: string };
 			beforeAll(async () => {
 				acc = await createTempAccount();
 				pkAccount = await createNewAccount();
@@ -106,7 +106,7 @@ describe('contract', () => {
 								tempAccount.address,
 								'http://my-nft-award',
 							),
-							pkAccount.privateKey,
+							pkAccount.seed,
 						);
 						const tokenId = toBigInt(0);
 						expect(
@@ -131,7 +131,7 @@ describe('contract', () => {
 								tempAccount.address,
 								'http://my-nft-award',
 							),
-							pkAccount.privateKey,
+							pkAccount.seed,
 						);
 
 						const tokenId = toBigInt(0);
@@ -143,7 +143,7 @@ describe('contract', () => {
 								tempAccountTo.address,
 								tokenId,
 							),
-							tempAccount.privateKey,
+							tempAccount.seed,
 						);
 
 						expect(
@@ -168,7 +168,7 @@ describe('contract', () => {
 								tempAccount.address,
 								'http://my-nft-award',
 							),
-							pkAccount.privateKey,
+							pkAccount.seed,
 						);
 
 						const tokenId = toBigInt(0);
@@ -176,7 +176,7 @@ describe('contract', () => {
 							contract.provider,
 							contractDeployed.options.address as string,
 							contractDeployed.methods.approve(tempAccountTo.address, tokenId),
-							tempAccount.privateKey,
+							tempAccount.seed,
 						);
 						await signAndSendContractMethod(
 							contract.provider,
@@ -186,7 +186,7 @@ describe('contract', () => {
 								tempAccountTo.address,
 								tokenId,
 							),
-							tempAccount.privateKey,
+							tempAccount.seed,
 						);
 
 						expect(
@@ -211,7 +211,7 @@ describe('contract', () => {
 								tempAccount.address,
 								'http://my-nft-award',
 							),
-							pkAccount.privateKey,
+							pkAccount.seed,
 						);
 						const tokenId = toBigInt(0);
 
@@ -219,7 +219,7 @@ describe('contract', () => {
 							contract.provider,
 							contractDeployed.options.address as string,
 							contractDeployed.methods.approve(tempAccountTo.address, tokenId),
-							tempAccount.privateKey,
+							tempAccount.seed,
 						);
 
 						const res = await contractDeployed.methods.getApproved(tokenId).call();
@@ -241,14 +241,14 @@ describe('contract', () => {
 								tempAccount.address,
 								'http://my-nft-award',
 							),
-							pkAccount.privateKey,
+							pkAccount.seed,
 						);
 
 						await signAndSendContractMethod(
 							contract.provider,
 							contractDeployed.options.address as string,
 							contractDeployed.methods.setApprovalForAll(tempAccountTo.address, true),
-							tempAccount.privateKey,
+							tempAccount.seed,
 						);
 
 						expect(
@@ -264,7 +264,7 @@ describe('contract', () => {
 								tempAccountTo.address,
 								false,
 							),
-							tempAccount.privateKey,
+							tempAccount.seed,
 						);
 
 						expect(

@@ -44,7 +44,7 @@ describe('contract errors', () => {
 			data: ErrorsContractBytecode,
 		};
 
-		const sendOptionsLocal = { from: acc.address, gas: '10000000' };
+		const sendOptionsLocal = { from: acc.address, /*gas: '10000000'*/ type: 2 };
 		deployedContract = await contract.deploy(deployOptions).send(sendOptionsLocal);
 
 		contract.setProvider(getSystemTestProvider());

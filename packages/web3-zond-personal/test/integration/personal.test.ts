@@ -84,9 +84,10 @@ describe('personal integration tests', () => {
 
 	itIf(getSystemTestBackend() === 'geth')('sign', async () => {
 		const password = '123456';
-		const key = (await createTempAccount({ password })).address;
-		await zondPersonal.unlockAccount(key, password, 100000);
-		const signature = await zondPersonal.sign('0xdeadbeaf', key, password);
+		const addr = (await createTempAccount({ password })).address;
+		await zondPersonal.unlockAccount(addr, password, 100000);
+		await zondPersonal.sign('0xdeadbeaf', addr, password);
+		//const signature = await zondPersonal.sign('0xdeadbeaf', addr, password);
 		// TODO (rgeraldes24)
 		//const address = await zondPersonal.ecRecover('0xdeadbeaf', signature);
 		// eslint-disable-next-line jest/no-standalone-expect
@@ -102,8 +103,8 @@ describe('personal integration tests', () => {
 	});
 
 	it('importRawKey', async () => {
-		const { address, privateKey } = createAccount();
-		const rawKey = getSystemTestBackend() === 'geth' ? privateKey.slice(2) : privateKey;
+		const { address, seed } = createAccount();
+		const rawKey = getSystemTestBackend() === 'geth' ? seed.slice(2) : seed;
 		const key = await zondPersonal.importRawKey(rawKey, '123456');
 		expect(toChecksumAddress(key).toLowerCase()).toBe(address.toLowerCase());
 	});
@@ -121,6 +122,7 @@ describe('personal integration tests', () => {
 			gas: '21000',
 			maxFeePerGas: '0x59682F00',
 			maxPriorityFeePerGas: '0x1DCD6500',
+			type: BigInt(2),
 		};
 		const receipt = await zondPersonal.sendTransaction(tx, '123456');
 

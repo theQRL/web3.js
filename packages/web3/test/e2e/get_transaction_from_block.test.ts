@@ -87,9 +87,8 @@ describe(`${getSystemTestBackend()} tests - getTransactionFromBlock`, () => {
 				gas: expect.any(BigInt),
 				input: expect.any(String),
 				type: expect.any(BigInt),
-				v: expect.any(BigInt),
-				s: expect.any(String),
-				r: expect.any(String),
+				publicKey: expect.any(String),
+				signature: expect.any(String),
 				// TODO These values are included when fetching the transaction from
 				// Nethermind, but not Infura
 				// https://github.com/web3/web3.js/issues/5997

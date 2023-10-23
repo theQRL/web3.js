@@ -36,7 +36,7 @@ describe('contract ERC721 overloaded functions', () => {
 	beforeAll(async () => {
 		web3 = new Web3(getSystemTestProvider());
 		localAccount = await createLocalAccount(web3);
-		contract = new web3.eth.Contract(ERC721TokenAbi) as unknown as Contract<
+		contract = new web3.zond.Contract(ERC721TokenAbi) as unknown as Contract<
 			typeof ERC721TokenAbi
 		>;
 
@@ -47,7 +47,8 @@ describe('contract ERC721 overloaded functions', () => {
 
 		sendOptions = {
 			from: localAccount.address,
-			gas: '1000000',
+			/*gas: '1000000',*/
+			type: 2,
 		};
 		contractDeployed = await contract
 			.deploy(deployOptions)

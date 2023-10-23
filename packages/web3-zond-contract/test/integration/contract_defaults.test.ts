@@ -27,7 +27,7 @@ describe('contract', () => {
 		let contract: Contract<typeof GreeterAbi>;
 		let deployOptions: Record<string, unknown>;
 		let sendOptions: Record<string, unknown>;
-		let acc: { address: string; privateKey: string };
+		let acc: { address: string; seed: string };
 
 		beforeEach(async () => {
 			contract = new Contract(GreeterAbi, undefined, {

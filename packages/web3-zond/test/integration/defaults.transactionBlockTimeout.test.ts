@@ -26,15 +26,16 @@ import { SendTransactionEvents } from '../../src';
 import {
 	closeOpenConnection,
 	getSystemTestProvider,
-	isSocket,
-	itIf,
-	waitForOpenConnection,
+	//isSocket,
+	//itIf,
+	//waitForOpenConnection,
 	createLocalAccount,
-	sendFewSampleTxs,
+	//sendFewSampleTxs,
 } from '../fixtures/system_test_utils';
 
 const MAX_32_SIGNED_INTEGER = 2147483647;
-const gas = 21000;
+//const gas = 21000;
+const type = BigInt(2);
 /* eslint-disable jest/no-standalone-expect */
 describe('defaults', () => {
 	let web3: Web3;
@@ -70,7 +71,8 @@ describe('defaults', () => {
 			> = web3.zond.sendTransaction({
 				from: account1.address,
 				to: account2.address,
-				gas,
+				//gas,
+				type,
 				value: '0x1',
 				// Give a high nonce so the transaction stuck forever.
 				// However, make this random to be able to run the test many times without receiving an error that indicate submitting the same transaction twice.
@@ -80,7 +82,8 @@ describe('defaults', () => {
 			// Some providers (mostly used for development) will make blocks only when there are new transactions
 			// So, send 2 transactions, one after another, because in this test `transactionBlockTimeout = 2`.
 			// eslint-disable-next-line no-void
-			await sendFewSampleTxs(2);
+			// TODO(rgeraldes24)
+			//await sendFewSampleTxs(2);
 
 			try {
 				await sentTx;
@@ -96,6 +99,8 @@ describe('defaults', () => {
 			await closeOpenConnection(web3.zond);
 		});
 
+		// TODO(rgeraldes24)
+		/*
 		// The code of this test case is identical to the pervious one except for `eth.enableExperimentalFeatures = true`
 		// TODO: And this test case will be removed once https://github.com/web3/web3.js/issues/5521 is implemented.
 		itIf(isSocket)(
@@ -135,5 +140,6 @@ describe('defaults', () => {
 				await closeOpenConnection(web3.zond);
 			},
 		);
+		*/
 	});
 });

@@ -44,7 +44,7 @@ export const sendFewTxes = async ({
 	value,
 	from,
 	times = 3,
-	gas,
+	//gas,
 }: SendFewTxParams): Promise<TransactionReceipt[]> => {
 	const res: TransactionReceipt[] = [];
 	const toAddress = to ?? createAccount().address;
@@ -56,7 +56,8 @@ export const sendFewTxes = async ({
 				to: toAddress,
 				value,
 				from,
-				gas: gas ?? '300000',
+				//gas: gas ?? '300000',
+				type: BigInt(2),
 			}),
 		);
 	}
@@ -73,7 +74,7 @@ type ExpectOptions = {
 };
 export const validateTransaction = (
 	tx: TransactionInfo,
-	expectOptions: ExpectOptions = { type: 0 },
+	expectOptions: ExpectOptions = { type: 2 },
 ) => {
 	expect(tx.nonce).toBeDefined();
 	expect(tx.hash).toMatch(regexHex32);

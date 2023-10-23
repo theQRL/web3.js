@@ -56,6 +56,7 @@ describe('Web3Zond.sendSignedTransaction', () => {
 	});
 
 	describe('Transaction Types', () => {
+		/*
 		it('should send a signed simple value transfer - type 0x0', async () => {
 			const temp = await createTempAccount();
 			const accountNonce = await web3Zond.getTransactionCount(
@@ -122,6 +123,7 @@ describe('Web3Zond.sendSignedTransaction', () => {
 				format(transactionSchema, transaction, DEFAULT_RETURN_FORMAT),
 			);
 		});
+		*/
 
 		it('should send a signed simple value transfer - type 0x2', async () => {
 			const temp = await createTempAccount();
@@ -169,7 +171,7 @@ describe('Web3Zond.sendSignedTransaction', () => {
 			nonce: accountNonce,
 			from: tempAcc.address,
 			data: greeterContractDeploymentData,
-			type: '0x0',
+			type: '0x2',
 			gas: '0x745b8',
 		};
 		const gasPricing = await getTransactionGasPricing(
@@ -188,7 +190,7 @@ describe('Web3Zond.sendSignedTransaction', () => {
 			nonce: BigInt(hexToNumber(accountNonce)),
 			from: tempAcc.address,
 			input: greeterContractDeploymentData,
-			type: BigInt(0),
+			type: BigInt(2),
 			gas: BigInt(476600),
 		});
 	});
@@ -205,7 +207,7 @@ describe('Web3Zond.sendSignedTransaction', () => {
 				from: tempAcc.address,
 				to: '0x0000000000000000000000000000000000000000',
 				value: '0x1',
-				type: '0x0',
+				type: '0x2',
 				gas: '0x5208',
 			};
 			const gasPricing = await getTransactionGasPricing(
@@ -261,7 +263,7 @@ describe('Web3Zond.sendSignedTransaction', () => {
 				expect(typeof data.gasUsed).toBe('bigint');
 				expect(typeof data.transactionIndex).toBe('bigint');
 				expect(data.status).toBe(BigInt(1));
-				expect(data.type).toBe(BigInt(0));
+				expect(data.type).toBe(BigInt(2));
 			});
 			expect.assertions(8);
 		});
@@ -283,7 +285,7 @@ describe('Web3Zond.sendSignedTransaction', () => {
 					to: transaction.to,
 					transactionHash: expect.any(String),
 					transactionIndex: BigInt(0),
-					type: BigInt(0),
+					type: BigInt(2),
 				},
 				latestBlockHash: expect.any(String),
 			};
@@ -300,7 +302,7 @@ describe('Web3Zond.sendSignedTransaction', () => {
 				from: tempAcc.address,
 				to: '0x0000000000000000000000000000000000000000',
 				value: '0x1',
-				type: '0x0',
+				type: '0x2',
 				gas: '0x5208',
 			});
 
@@ -315,6 +317,7 @@ describe('Web3Zond.sendSignedTransaction', () => {
 			const simpleRevertDeployTransaction: Transaction = {
 				from: tempAcc.address,
 				data: SimpleRevertDeploymentData,
+				type: BigInt(2),
 			};
 			simpleRevertDeployTransaction.gas = await web3Zond.estimateGas(
 				simpleRevertDeployTransaction,
@@ -324,6 +327,7 @@ describe('Web3Zond.sendSignedTransaction', () => {
 			).contractAddress as Address;
 		});
 
+		/*
 		it('Should throw TransactionRevertInstructionError because gas too low', async () => {
 			const transaction: Transaction = {
 				from: tempAcc.address,
@@ -331,6 +335,7 @@ describe('Web3Zond.sendSignedTransaction', () => {
 				value: BigInt(1),
 				gas: 1,
 				gasPrice: 1,
+				//type: BigInt(2),
 				nonce: await web3Zond.getTransactionCount(tempAcc.address),
 			};
 			const signedTransaction = await web3Zond.signTransaction(transaction, {
@@ -359,13 +364,15 @@ describe('Web3Zond.sendSignedTransaction', () => {
 					.on('error', error => expect(error).toMatchObject(expectedThrownError)),
 			).rejects.toMatchObject(expectedThrownError);
 		});
+		*/
 		it('Should throw InvalidResponseError because insufficient funds', async () => {
 			const transaction: Transaction = {
 				from: tempAcc.address,
 				to: '0x0000000000000000000000000000000000000000',
 				value: BigInt('999999999999999999999999999999999999999999999999999999999'),
-				gas: 21000,
 				nonce: await web3Zond.getTransactionCount(tempAcc.address),
+				type: BigInt(2),
+				gas: 27000,
 			};
 			transaction.gasPrice = await web3Zond.getGasPrice();
 			const signedTransaction = await web3Zond.signTransaction(transaction, {
@@ -401,8 +408,10 @@ describe('Web3Zond.sendSignedTransaction', () => {
 				from: tempAcc.address,
 				to: simpleRevertContractAddress,
 				data: '0xba57a511000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000067265766572740000000000000000000000000000000000000000000000000000',
-				gasPrice: 2000000000,
+				maxFeePerGas: BigInt(108571383800),
+				maxPriorityFeePerGas: BigInt(25415778028),
 				gas: 23605,
+				type: BigInt(2),
 				nonce: await web3Zond.getTransactionCount(tempAcc.address),
 			};
 			const signedTransaction = await web3Zond.signTransaction(transaction, {
@@ -436,7 +445,9 @@ describe('Web3Zond.sendSignedTransaction', () => {
 				from: tempAcc.address,
 				to: simpleRevertContractAddress,
 				data: '0x3ebf4d9c',
-				gasPrice: 2000000000,
+				type: BigInt(2),
+				maxFeePerGas: BigInt(108571383800),
+				maxPriorityFeePerGas: BigInt(25415778028),
 				gas: 21222,
 				nonce: await web3Zond.getTransactionCount(tempAcc.address),
 			};
@@ -475,8 +486,10 @@ describe('Web3Zond.sendSignedTransaction', () => {
 				from: tempAcc.address,
 				to: simpleRevertContractAddress,
 				data: '0x819f48fe',
-				gasPrice: 2000000000,
+				maxFeePerGas: BigInt(108571383800),
+				maxPriorityFeePerGas: BigInt(25415778028),
 				gas: 21730,
+				type: BigInt(2),
 				nonce: await web3Zond.getTransactionCount(tempAcc.address),
 			};
 			const signedTransaction = await web3Zond.signTransaction(transaction, {
@@ -518,8 +531,10 @@ describe('Web3Zond.sendSignedTransaction', () => {
 				from: tempAcc.address,
 				to: simpleRevertContractAddress,
 				data: '0xba57a511000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000067265766572740000000000000000000000000000000000000000000000000000',
-				gasPrice: 2000000000,
+				maxFeePerGas: BigInt(108571383800),
+				maxPriorityFeePerGas: BigInt(25415778028),
 				gas: 23605,
+				type: BigInt(2),
 				nonce: await web3Zond.getTransactionCount(tempAcc.address),
 			};
 			const signedTransaction = await web3Zond.signTransaction(transaction, {

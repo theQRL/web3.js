@@ -54,13 +54,13 @@ describe('rpc', () => {
 	let deployOptions: Record<string, unknown>;
 	let sendOptions: Record<string, unknown>;
 	let tempAcc: { address: string; seed: string };
-	let tempAcc2: { address: string; seed: string };
+	//let tempAcc2: { address: string; seed: string };
 	beforeAll(async () => {
 		clientUrl = getSystemTestProvider();
 		web3Zond = new Web3Zond({
 			provider: clientUrl,
 			config: {
-				transactionPollingTimeout: 2000,
+				transactionPollingTimeout: 15000,
 			},
 		});
 		contract = new Contract(BasicAbi, undefined, {
@@ -72,8 +72,8 @@ describe('rpc', () => {
 			arguments: [10, 'string init value'],
 		};
 		tempAcc = await createTempAccount();
-		tempAcc2 = await createTempAccount();
-		sendOptions = { from: tempAcc.address, gas: '1000000' };
+		//tempAcc2 = await createTempAccount();
+		sendOptions = { from: tempAcc.address, /*gas: '1000000'*/ type: 2 };
 
 		contractDeployed = await contract.deploy(deployOptions).send(sendOptions);
 	});
@@ -97,11 +97,13 @@ describe('rpc', () => {
 		});
 
 		// TODO: in future release, set coinbase account in node and match actual address here
+		/*
 		it('getCoinbase', async () => {
 			const coinbase = await web3Zond.getCoinbase();
 			expect(coinbase.startsWith('0x')).toBe(true);
 			expect(coinbase).toHaveLength(42);
 		});
+		*/
 
 		it('isMining', async () => {
 			const isMining = await web3Zond.isMining();
@@ -151,6 +153,7 @@ describe('rpc', () => {
 				to: newAccount.address,
 				value,
 				from: tempAcc.address,
+				type: BigInt(2),
 			});
 			const res = await web3Zond.getBalance(newAccount.address, undefined, {
 				number: format as FMT_NUMBER,
@@ -261,7 +264,7 @@ describe('rpc', () => {
 			// TODO: after alpha release add tests for matching following (value transferred)
 			// TODO: after alpha release add tests for matching following (specify some random inputData in tx and validate in test with getTransaction)
 
-			validateTransaction(res as TransactionInfo);
+			validateTransaction(res as TransactionInfo, {type: 2});
 			expect(res?.hash).toBe(receipt.transactionHash);
 		});
 

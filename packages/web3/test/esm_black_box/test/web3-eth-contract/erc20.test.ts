@@ -49,7 +49,7 @@ describeIf(getSystemTestBackend() === 'geth')(
 						data: ERC20TokenBytecode,
 						arguments: ['420'],
 					})
-					.send({ from: account.address, gas: '10000000' });
+					.send({ from: account.address, gas: '10000000', type: 2 });
 			});
 
 			afterAll(async () => {

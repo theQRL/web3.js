@@ -37,7 +37,7 @@ describe('contract', () => {
 		beforeAll(async () => {
 			web3 = new Web3(getSystemTestProvider());
 			localAccount = await createLocalAccount(web3);
-			contract = new web3.eth.Contract(ERC20TokenAbi) as unknown as Contract<
+			contract = new web3.zond.Contract(ERC20TokenAbi) as unknown as Contract<
 				typeof ERC20TokenAbi
 			>;
 
@@ -48,7 +48,8 @@ describe('contract', () => {
 
 			sendOptions = {
 				from: localAccount.address,
-				gas: '2000000',
+				/*gas: '2000000',*/
+				type: 2,
 			};
 			contractDeployed = await contract.deploy(deployOptions).send(sendOptions);
 		});
@@ -58,7 +59,7 @@ describe('contract', () => {
 		});
 
 		it.each(['0x1', '0x2'])('should transfer tokens %p', async type => {
-			const acc = web3.eth.accounts.create();
+			const acc = web3.zond.accounts.create();
 			const value = BigInt(10);
 
 			await contractDeployed.methods.transfer(acc.address, value).send({

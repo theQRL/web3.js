@@ -1,12 +1,11 @@
 {
 	"name": "web3.js",
 	"private": true,
-	"description": "Ethereum API wrappers and utilities",
+	"description": "Zond API wrappers and utilities",
 	"author": "ChainSafe Systems",
 	"license": "LGPL-3.0",
 	"keywords": [
-		"ethereum",
-		"eth",
+		"zond",
 		"web3",
 		"web3js",
 		"web3.js",

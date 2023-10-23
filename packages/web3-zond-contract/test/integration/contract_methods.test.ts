@@ -37,7 +37,7 @@ describe('contract', () => {
 			arguments: [10, 'string init value'],
 		};
 
-		sendOptions = { from: acc.address, gas: '1000000' };
+		sendOptions = { from: acc.address, /*gas: '1000000'*/ type: 2 };
 
 		contractDeployed = await contract.deploy(deployOptions).send(sendOptions);
 	});
@@ -107,7 +107,7 @@ describe('contract', () => {
 			it('should returns a receipt (EIP-1559, maxFeePerGas and maxPriorityFeePerGas specified)', async () => {
 				const tempAcc = await createTempAccount();
 
-				const sendOptionsLocal = { from: tempAcc.address, gas: '1000000' };
+				const sendOptionsLocal = { from: tempAcc.address, /*gas: '1000000'*/ type: 2 };
 
 				const contractLocal = await contract.deploy(deployOptions).send(sendOptionsLocal);
 				const receipt = await contractLocal.methods

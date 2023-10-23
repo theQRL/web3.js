@@ -71,9 +71,8 @@ export interface Transaction1559UnsignedAPI extends BaseTransactionAPI {
 }
 
 export interface Transaction1559SignedAPI extends Transaction1559UnsignedAPI {
-	readonly yParity: Uint;
-	readonly r: Uint;
-	readonly s: Uint;
+	readonly publicKey: HexStringBytes;
+	readonly signature: HexStringBytes;
 }
 
 export interface Transaction2930UnsignedAPI extends BaseTransactionAPI {
@@ -82,9 +81,8 @@ export interface Transaction2930UnsignedAPI extends BaseTransactionAPI {
 }
 
 export interface Transaction2930SignedAPI extends Transaction2930UnsignedAPI {
-	readonly yParity: Uint;
-	readonly r: Uint;
-	readonly s: Uint;
+	readonly publicKey: HexStringBytes;
+	readonly signature: HexStringBytes;
 }
 
 export interface TransactionLegacyUnsignedAPI extends BaseTransactionAPI {
@@ -92,9 +90,8 @@ export interface TransactionLegacyUnsignedAPI extends BaseTransactionAPI {
 }
 
 export interface TransactionLegacySignedAPI extends TransactionLegacyUnsignedAPI {
-	readonly v: Uint;
-	readonly r: Uint;
-	readonly s: Uint;
+	readonly publicKey: HexStringBytes;
+	readonly signature: HexStringBytes;
 }
 
 // https://github.com/ethereum/execution-apis/blob/main/src/schemas/transaction.yaml#L144

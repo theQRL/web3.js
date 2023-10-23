@@ -34,7 +34,7 @@ describe('contract', () => {
 				arguments: ['My Greeting'],
 			};
 
-			sendOptions = { from: acc.address, gas: '1000000' };
+			sendOptions = { from: acc.address, /*gas: '1000000'*/ type: 2 };
 		});
 
 		it('should clone the contract but with same address', async () => {
