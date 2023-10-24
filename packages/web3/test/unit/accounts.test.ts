@@ -43,7 +43,7 @@ describe('test new Web3().zond.accounts', () => {
 	});
 
 	it('`signTransaction` should call the original `prepareTransactionForSigning` and `signTransaction`', async () => {
-		await accounts.signTransaction({}, '', '');
+		await accounts.signTransaction({}, '');
 
 		expect(zond.prepareTransactionForSigning).toHaveBeenCalledTimes(1);
 		expect(zondAccounts.signTransaction).toHaveBeenCalledTimes(1);
@@ -83,7 +83,7 @@ describe('test new Web3().zond.accounts', () => {
 
 	it('`create` should call the original `create` and add `signTransaction`', async () => {
 		jest.spyOn(zondAccounts, 'create').mockReturnValue({
-			privateKey: '',
+			seed: '',
 		} as unknown as Web3Account);
 		const account = accounts.create();
 

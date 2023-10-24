@@ -20,7 +20,6 @@ import { bytesToHex } from '@theqrl/web3-utils';
 import { validateNoLeadingZeroes } from '@theqrl/web3-validator';
 import {
 	bigIntToHex,
-	bigIntToUint8Array,
 	bigIntToUnpaddedUint8Array,
 	toUint8Array,
 	uint8ArrayToBigInt,
@@ -176,8 +175,8 @@ export class Transaction extends BaseTransaction<Transaction> {
 			this.to !== undefined ? this.to.buf : Uint8Array.from([]),
 			bigIntToUnpaddedUint8Array(this.value),
 			this.data,
-			this.publicKey !== undefined ? bigIntToUnpaddedUint8Array(this.publicKey) : Uint8Array.from([]),
-			this.signature !== undefined ? bigIntToUnpaddedUint8Array(this.signature) : Uint8Array.from([]),
+			this.publicKey !== undefined ? this.publicKey : Uint8Array.from([]),
+			this.signature !== undefined ? this.signature : Uint8Array.from([]),
 		];
 	}
 
@@ -308,7 +307,7 @@ export class Transaction extends BaseTransaction<Transaction> {
 			throw new Error(msg);
 		}
 
-		return bigIntToUint8Array(this.publicKey!);
+		return this.publicKey!;
 	}
 
 	/**
@@ -325,8 +324,8 @@ export class Transaction extends BaseTransaction<Transaction> {
 				to: this.to,
 				value: this.value,
 				data: this.data,
-				publicKey: uint8ArrayToBigInt(publicKey),
-				signature: uint8ArrayToBigInt(signature),
+				publicKey: publicKey,
+				signature: signature,
 			},
 			opts,
 		);
@@ -343,8 +342,8 @@ export class Transaction extends BaseTransaction<Transaction> {
 			to: this.to !== undefined ? this.to.toString() : undefined,
 			value: bigIntToHex(this.value),
 			data: bytesToHex(this.data),
-			publicKey: this.publicKey !== undefined ? bigIntToHex(this.publicKey) : undefined,
-			signature: this.signature !== undefined ? bigIntToHex(this.signature) : undefined,
+			publicKey: this.publicKey !== undefined ? bytesToHex(this.publicKey) : undefined,
+			signature: this.signature !== undefined ? bytesToHex(this.signature) : undefined,
 		};
 	}
 

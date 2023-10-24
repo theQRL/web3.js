@@ -17,9 +17,6 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 import { Numbers } from '@theqrl/web3-types';
 import { bytesToHex } from '@theqrl/web3-utils';
-import {
-	bigIntToUnpaddedUint8Array,
-} from '../common/utils.js';
 import { MAX_INTEGER, MAX_UINT64 } from './constants.js';
 import {
 	Chain,
@@ -70,8 +67,8 @@ export abstract class BaseTransaction<TransactionObject> {
 	public readonly value: bigint;
 	public readonly data: Uint8Array;
 
-	public readonly signature?: bigint;
-	public readonly publicKey?: bigint;
+	public readonly signature?: Uint8Array;
+	public readonly publicKey?: Uint8Array;
 
 	public readonly common!: Common;
 
@@ -126,8 +123,8 @@ export abstract class BaseTransaction<TransactionObject> {
 		this.value = uint8ArrayToBigInt(toUint8Array(value === '' ? '0x' : value));
 		this.data = toUint8Array(data === '' ? '0x' : data);
 
-		this.signature = signatureB.length > 0 ? uint8ArrayToBigInt(signatureB) : undefined;
-		this.publicKey = publicKeyB.length > 0 ? uint8ArrayToBigInt(publicKeyB) : undefined;
+		this.signature = signatureB.length > 0 ? signatureB : undefined;
+		this.publicKey = publicKeyB.length > 0 ? publicKeyB : undefined;
 
 		// TODO(rgeraldes24): review these limits
 		//this._validateCannotExceedMaxInteger({ value: this.value, signature: this.signature, publicKey: this.publicKey });
@@ -293,8 +290,8 @@ export abstract class BaseTransaction<TransactionObject> {
 	public verifySignature(): boolean {
 		const msgHash = this.getMessageToVerifySignature();
 		const { publicKey, signature } = this;
-		const sigBuf = Buffer.from(bigIntToUnpaddedUint8Array(signature!))
-		const pubKeyBuf = Buffer.from(bigIntToUnpaddedUint8Array(publicKey!))
+		const sigBuf = Buffer.from(signature!);
+		const pubKeyBuf = Buffer.from(publicKey!);
 		const msgHashBuf = Buffer.from(msgHash);
 
 		try {
@@ -309,7 +306,7 @@ export abstract class BaseTransaction<TransactionObject> {
 	 */
 	public getSenderAddress(): Address {
 		const { publicKey } = this;
-		return new Address(Address.publicToAddress(bigIntToUnpaddedUint8Array(publicKey!)));
+		return new Address(Address.publicToAddress(publicKey!));
 	}
 
 	/**

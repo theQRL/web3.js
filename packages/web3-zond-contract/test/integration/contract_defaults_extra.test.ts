@@ -142,7 +142,7 @@ describe('contract defaults (extra)', () => {
 				arguments: ['My Greeting'],
 			};
 
-			sendOptions = { from: acc.address, gas: '1000000' };
+			sendOptions = { from: acc.address, /*gas: '1000000'*/ type: 2 };
 
 			contract = await contract.deploy(deployOptions).send(sendOptions);
 		});

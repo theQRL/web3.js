@@ -37,7 +37,7 @@ describe('contract', () => {
 			arguments: [10, 'string init value'],
 		};
 
-		sendOptions = { from: acc.address, /*gas: '1000000'*/ type: 2 };
+		sendOptions = { from: acc.address, gas: '1000000', type: 2 };
 
 		contractDeployed = await contract.deploy(deployOptions).send(sendOptions);
 	});
@@ -64,7 +64,7 @@ describe('contract', () => {
 				});
 				const deployedTempContract = await tempContract
 					.deploy({ arguments: [10, 'string init value'] })
-					.send();
+					.send({type: 2});
 				const res = await deployedTempContract.methods.getStringValue().call();
 				expect(res).toBe('string init value');
 			});
@@ -140,7 +140,7 @@ describe('contract', () => {
 				});
 				const deployedTempContract = await tempContract
 					.deploy({ arguments: [10, 'string init value'] })
-					.send();
+					.send({type: 2});
 				await deployedTempContract.methods.setValues(10, 'TEST', true).send();
 
 				expect(await deployedTempContract.methods.getStringValue().call()).toBe('TEST');

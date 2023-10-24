@@ -29,7 +29,7 @@ import {
 
 Error.stackTraceLimit = Infinity;
 
-describe.skip('eth', () => {
+describe.skip('zond', () => {
 	let web3: Web3;
 	let accounts: string[] = [];
 	let clientUrl: string;
@@ -96,7 +96,7 @@ describe.skip('eth', () => {
 			);
 		});
 
-		it('should get revert reason for eth tx', async () => {
+		it('should get revert reason for zond tx', async () => {
 			web3.zond.handleRevert = true;
 			await expect(
 				web3.zond.sendTransaction({
@@ -108,9 +108,8 @@ describe.skip('eth', () => {
 					to: undefined,
 					value: '0x0',
 					type: '0x0',
-					v: '0xa96',
-					r: '0x1ba80b16306d1de8ff809c00f67c305e8636326096aba282828d331aa2ec30a1',
-					s: '0x39f77e0b68d5524826e4385ad4e1f01e748f32c177840184ae65d9592fdfe5c',
+					publicKey: '0x1ba80b16306d1de8ff809c00f67c305e8636326096aba282828d331aa2ec30a1',
+					signature: '0x39f77e0b68d5524826e4385ad4e1f01e748f32c177840184ae65d9592fdfe5c',
 				}),
 			).rejects.toThrow(
 				new TransactionRevertInstructionError(

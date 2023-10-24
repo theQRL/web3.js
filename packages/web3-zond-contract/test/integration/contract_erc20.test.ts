@@ -71,7 +71,7 @@ describe('contract', () => {
 				mainAcc = await createTempAccount();
 				pkAccount = await createNewAccount();
 				await refillAccount(mainAcc.address, pkAccount.address, '20000000000000000');
-				sendOptions = { from: mainAcc.address, gas: '10000000' };
+				sendOptions = { from: mainAcc.address, /*gas: '10000000'*/ type: 2 };
 				contractDeployed = await contract.deploy(deployOptions).send(sendOptions);
 			});
 			describe('methods', () => {

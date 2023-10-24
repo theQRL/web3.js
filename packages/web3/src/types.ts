@@ -77,8 +77,7 @@ export interface Web3ZondInterface extends Zond {
 		seedToAccount: (seed: Uint8Array | string) => Web3Account;
 		signTransaction: (
 			transaction: Transaction,
-			privateKey: Bytes,
-			publicKey: Bytes,
+			seed: Bytes,
 		) => ReturnType<typeof signTransaction>;
 		//recoverTransaction: typeof recoverTransaction;
 		hashMessage: typeof hashMessage;

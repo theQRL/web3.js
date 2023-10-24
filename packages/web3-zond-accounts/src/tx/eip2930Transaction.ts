@@ -30,7 +30,6 @@ import {
 	toUint8Array,
 	uint8ArrayToBigInt,
 	bigIntToUnpaddedUint8Array,
-	bigIntToUint8Array,
 } from '../common/utils.js';
 import { BaseTransaction } from './baseTransaction.js';
 import type {
@@ -240,8 +239,8 @@ export class AccessListEIP2930Transaction extends BaseTransaction<AccessListEIP2
 			bigIntToUnpaddedUint8Array(this.value),
 			this.data,
 			this.accessList,
-			this.publicKey !== undefined ? bigIntToUnpaddedUint8Array(this.publicKey) : Uint8Array.from([]),
-			this.signature !== undefined ? bigIntToUnpaddedUint8Array(this.signature) : Uint8Array.from([]),
+			this.publicKey !== undefined ? this.publicKey : Uint8Array.from([]),
+			this.signature !== undefined ? this.signature : Uint8Array.from([]),
 		];
 	}
 
@@ -320,7 +319,7 @@ export class AccessListEIP2930Transaction extends BaseTransaction<AccessListEIP2
 			throw new Error(msg);
 		}
 
-		return bigIntToUint8Array(this.publicKey!);
+		return this.publicKey!;
 	}
 
 	public _processSignatureAndPublicKey(signature: Uint8Array, publicKey: Uint8Array) {
@@ -336,8 +335,8 @@ export class AccessListEIP2930Transaction extends BaseTransaction<AccessListEIP2
 				value: this.value,
 				data: this.data,
 				accessList: this.accessList,
-				publicKey: uint8ArrayToBigInt(publicKey),
-				signature: uint8ArrayToBigInt(signature),
+				publicKey: publicKey,
+				signature: signature,
 			},
 			opts,
 		);
@@ -358,8 +357,8 @@ export class AccessListEIP2930Transaction extends BaseTransaction<AccessListEIP2
 			value: bigIntToHex(this.value),
 			data: bytesToHex(this.data),
 			accessList: accessListJSON,
-			publicKey: this.publicKey !== undefined ? bigIntToHex(this.publicKey) : undefined,
-			signature: this.signature !== undefined ? bigIntToHex(this.signature) : undefined,
+			publicKey: this.publicKey !== undefined ? bytesToHex(this.publicKey) : undefined,
+			signature: this.signature !== undefined ? bytesToHex(this.signature) : undefined,
 		};
 	}
 

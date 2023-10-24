@@ -275,7 +275,7 @@ export const signTransaction = async (
 
 	return {
 		messageHash: bytesToHex(signedTx.getMessageToSign(true)),
-		signature: `0x${signedTx.signature.toString(16).padStart(64, '0')}`,
+		signature: bytesToHex(signedTx.signature),
 		rawTransaction: rawTx,
 		transactionHash: bytesToHex(txHash),
 	};

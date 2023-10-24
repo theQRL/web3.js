@@ -66,7 +66,7 @@ describe('contract', () => {
 			});
 			beforeEach(async () => {
 				acc2 = await createTempAccount();
-				sendOptions = { from: acc.address, gas: '10000000' };
+				sendOptions = { from: acc.address, /*gas: '10000000'*/ type: 2 };
 				contractDeployed = await contract.deploy(deployOptions).send(sendOptions);
 			});
 

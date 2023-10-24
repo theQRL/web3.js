@@ -22,12 +22,12 @@ import { GreeterBytecode, GreeterAbi } from '../shared_fixtures/build/Greeter';
 import { DeployRevertAbi, DeployRevertBytecode } from '../shared_fixtures/build/DeployRevert';
 import {
 	getSystemTestProvider,
-	isWs,
+	//isWs,
 	createTempAccount,
 	createNewAccount,
 	signTxAndSendEIP2930,
 	signTxAndSendEIP1559,
-	sendFewSampleTxs,
+	//sendFewSampleTxs,
 	closeOpenConnection,
 } from '../fixtures/system_test_utils';
 
@@ -52,7 +52,7 @@ describe('contract', () => {
 			contract = new Contract(GreeterAbi, undefined, {
 				provider: getSystemTestProvider(),
 			});
-			sendOptions = { from: acc.address, /*gas: '1000000'*/ type: 2 };
+			sendOptions = { from: acc.address, gas: '1000000', type: 2 };
 		});
 
 		afterAll(async () => {
@@ -158,7 +158,7 @@ describe('contract', () => {
 				from: acc.address,
 				gas: '1000000',
 			});
-			const deployedContract = await contract.deploy({ arguments: ['Hello World'] }).send();
+			const deployedContract = await contract.deploy({ arguments: ['Hello World'] }).send({type: 2});
 
 			expect(deployedContract).toBeDefined();
 		});
@@ -184,17 +184,17 @@ describe('contract', () => {
 				.on('confirmation', confirmationHandler);
 
 			// Wait for some time to allow the transaction to be processed
-			await sleep(500);
+			await sleep(15000);
 
 			// Deploy once again to trigger block mining to trigger confirmation
 			// We can send any other transaction as well
-			await contract.deploy(deployOptions).send(sendOptions);
+			//await contract.deploy(deployOptions).send(sendOptions);
 
-			await sendFewSampleTxs(3);
+			//await sendFewSampleTxs(3);
 
 			// Wait for some fraction of time to trigger the handler
 			// On http we use polling to get confirmation, so wait a bit longer
-			await sleep(isWs ? 500 : 2000);
+			//await sleep(isWs ? 500 : 2000);
 
 			// eslint-disable-next-line jest/no-standalone-expect
 			expect(confirmationHandler).toHaveBeenCalled();

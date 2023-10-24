@@ -77,7 +77,7 @@ describe('ens', () => {
 
 		[defaultAccount, accountOne] = accounts;
 
-		sendOptions = { from: defaultAccount, gas: '10000000' };
+		sendOptions = { from: defaultAccount, gas: '10000000', type: 2 };
 
 		const Registry = new Contract(ENSRegistryAbi, undefined, {
 			provider: getSystemTestProvider(),
