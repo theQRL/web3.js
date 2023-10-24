@@ -30,7 +30,6 @@ describe('signTransaction', () => {
 		async txObj => {
 			const web3: Web3 = new Web3('http://127.0.0.1:8080');
 
-			// TODO(rgeraldes24 review)
 			const account: Web3Account = web3.zond.accounts.seedToAccount(txObj.seed);
 
 			web3.zond.wallet?.add(txObj.seed);

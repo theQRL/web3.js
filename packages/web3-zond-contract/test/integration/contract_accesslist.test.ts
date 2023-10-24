@@ -51,7 +51,7 @@ describe('contract', () => {
 
 			const receipt = await deployedContract.methods
 				.setGreeting('New Greeting')
-				.send({ gas: '1000000' });
+				.send({ gas: '1000000', type: 2 });
 			expect(receipt.from).toEqual(acc.address);
 
 			const accessList = await deployedContract.methods
@@ -79,7 +79,7 @@ describe('contract', () => {
 
 			const receipt = await deployedContract.methods
 				.setGreeting('New Greeting')
-				.send({ gas: '1000000' });
+				.send({ gas: '1000000', type: 2 });
 			expect(receipt.from).toEqual(acc.address);
 
 			const accessList = await deployedContract.methods.greet().createAccessList();

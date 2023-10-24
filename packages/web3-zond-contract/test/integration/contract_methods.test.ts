@@ -141,7 +141,7 @@ describe('contract', () => {
 				const deployedTempContract = await tempContract
 					.deploy({ arguments: [10, 'string init value'] })
 					.send({type: 2});
-				await deployedTempContract.methods.setValues(10, 'TEST', true).send();
+				await deployedTempContract.methods.setValues(10, 'TEST', true).send({type: 2});
 
 				expect(await deployedTempContract.methods.getStringValue().call()).toBe('TEST');
 			});
@@ -161,7 +161,7 @@ describe('contract', () => {
 						status: BigInt(0),
 						to: contractDeployed.options.address?.toLowerCase(),
 						transactionIndex: BigInt(0),
-						type: BigInt(0),
+						type: BigInt(2),
 					},
 				});
 			});

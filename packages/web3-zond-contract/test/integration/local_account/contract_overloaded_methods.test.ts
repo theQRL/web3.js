@@ -47,7 +47,7 @@ describe('contract ERC721 overloaded functions', () => {
 
 		sendOptions = {
 			from: localAccount.address,
-			/*gas: '1000000',*/
+			gas: '1000000',
 			type: 2,
 		};
 		contractDeployed = await contract
