@@ -172,9 +172,9 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
  * let web3 = new Web3(Web3.givenProvider || new Web3.providers.WebsocketProvider('ws://remotenode.com:8546'));
  *
  * // Using the IPC provider in node.js
- * var web3 = new Web3(new Web3.providers.IpcProvider('/Users/myuser/Library/Ethereum/geth.ipc')); // mac os path
- * // on windows the path is: "\\\\.\\pipe\\geth.ipc"
- * // on linux the path is: "/users/myuser/.ethereum/geth.ipc"
+ * var web3 = new Web3(new Web3.providers.IpcProvider('/Users/myuser/Library/Zond/gzond.ipc')); // mac os path
+ * // on windows the path is: "\\\\.\\pipe\\gzond.ipc"
+ * // on linux the path is: "/users/myuser/.zond/gzond.ipc"
  * ```
  * #### Configuration
  *

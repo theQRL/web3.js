@@ -32,7 +32,7 @@ const _decodeParameter = (inputType: string, clonedTopic: string) =>
  *
  * @example
  * ```ts
- * let res = web3.eth.abi.decodeLog(
+ * let res = web3.zond.abi.decodeLog(
  *    [
  *      {
  *        type: "string",

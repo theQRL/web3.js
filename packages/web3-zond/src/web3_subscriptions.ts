@@ -62,10 +62,10 @@ export class LogsSubscription extends Web3Subscription<
  * ## subscribe('pendingTransactions')
  * Subscribes to incoming pending transactions.
  *
- * You can subscribe to pending transactions by calling web3.eth.subscribe('pendingTransactions').
+ * You can subscribe to pending transactions by calling web3.zond.subscribe('pendingTransactions').
  * @example
  * ```ts
- * (await web3.eth.subscribe('pendingTransactions')).on('data', console.log);
+ * (await web3.zond.subscribe('pendingTransactions')).on('data', console.log);
  * ```
  */
 export class NewPendingTransactionsSubscription extends Web3Subscription<{
@@ -89,7 +89,7 @@ export class NewPendingTransactionsSubscription extends Web3Subscription<{
  * The structure of a returned block header is {@link BlockHeaderOutput}:
  * @example
  * ```ts
- * (await web3.eth.subscribe('newHeads')).on( // 'newBlockHeaders' would work as well
+ * (await web3.zond.subscribe('newHeads')).on( // 'newBlockHeaders' would work as well
  *  'data',
  * console.log
  * );
@@ -129,10 +129,10 @@ export class NewHeadsSubscription extends Web3Subscription<{
  * Subscribe to syncing events. This will return `true` when the node is syncing and when it’s finished syncing will return `false`, for the `changed` event.
  * @example
  * ```ts
- * (await web3.eth.subscribe('syncing')).on('changed', console.log);
+ * (await web3.zond.subscribe('syncing')).on('changed', console.log);
  * > `true` // when syncing
  *
- * (await web3.eth.subscribe('syncing')).on('data', console.log);
+ * (await web3.zond.subscribe('syncing')).on('data', console.log);
  * > {
  *      startingBlock: 0,
  *      currentBlock: 0,

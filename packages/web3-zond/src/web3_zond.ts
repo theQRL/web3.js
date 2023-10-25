@@ -24,7 +24,6 @@ import {
 	Bytes,
 	Filter,
 	HexString32Bytes,
-	HexString8Bytes,
 	Numbers,
 	BlockNumberOrTag,
 	LogsOutput,
@@ -99,10 +98,10 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	}
 
 	/**
-	 * @returns Returns the ethereum protocol version of the node.
+	 * @returns Returns the zond protocol version of the node.
 	 *
 	 * ```ts
-	 * web3.eth.getProtocolVersion().then(console.log);
+	 * web3.zond.getProtocolVersion().then(console.log);
 	 * > "63"
 	 * ```
 	 */
@@ -117,7 +116,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * @returns Either a {@link SyncingStatusAPI}, or `false`.
 	 *
 	 * ```ts
-	 * web3.eth.isSyncing().then(console.log);
+	 * web3.zond.isSyncing().then(console.log);
 	 * > {
 	 *     startingBlock: 100,
 	 *     currentBlock: 312,
@@ -136,7 +135,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * @returns Returns the coinbase address to which mining rewards will go.
 	 *
 	 * ```ts
-	 * web3.eth.getCoinbase().then(console.log);
+	 * web3.zond.getCoinbase().then(console.log);
 	 * > "0x11f4d0A3c12e86B4b5F39B213F7E19D048276DAe"
 	 * ```
 	 */
@@ -145,66 +144,14 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	}
 
 	/**
-	 * Checks whether the node is mining or not.
-	 *
-	 * @returns `true` if the node is mining, otherwise `false`.
-	 *
-	 * ```ts
-	 * web3.eth.isMining().then(console.log);
-	 * > true
-	 * ```
-	 */
-	public async isMining() {
-		return zondRpcMethods.getMining(this.requestManager);
-	}
-
-	/**
-	 * @deprecated Will be removed in the future, please use {@link Web3Zond.getHashRate} method instead.
-	 *
-	 * @param returnFormat ({@link DataFormat} defaults to {@link DEFAULT_RETURN_FORMAT}) Specifies how the return data should be formatted.
-	 * @returns The number of hashes per second that the node is mining with.
-	 *
-	 * ```ts
-	 * web3.eth.getHashrate().then(console.log);
-	 * > 493736n
-	 *
-	 * web3.eth.getHashrate({ number: FMT_NUMBER.HEX , bytes: FMT_BYTES.HEX }).then(console.log);
-	 * > "0x788a8"
-	 * ```
-	 */
-	public async getHashrate<ReturnFormat extends DataFormat = typeof DEFAULT_RETURN_FORMAT>(
-		returnFormat: ReturnFormat = DEFAULT_RETURN_FORMAT as ReturnFormat,
-	) {
-		return this.getHashRate(returnFormat);
-	}
-
-	/**
-	 * @param returnFormat ({@link DataFormat} defaults to {@link DEFAULT_RETURN_FORMAT}) Specifies how the return data should be formatted.
-	 * @returns The number of hashes per second that the node is mining with.
-	 *
-	 * ```ts
-	 * web3.eth.getHashRate().then(console.log);
-	 * > 493736n
-	 *
-	 * web3.eth.getHashRate({ number: FMT_NUMBER.HEX , bytes: FMT_BYTES.HEX }).then(console.log);
-	 * > "0x788a8"
-	 * ```
-	 */
-	public async getHashRate<ReturnFormat extends DataFormat = typeof DEFAULT_RETURN_FORMAT>(
-		returnFormat: ReturnFormat = DEFAULT_RETURN_FORMAT as ReturnFormat,
-	) {
-		return rpcMethodsWrappers.getHashRate(this, returnFormat);
-	}
-
-	/**
 	 * @param returnFormat ({@link DataFormat} defaults to {@link DEFAULT_RETURN_FORMAT}) Specifies how the return data should be formatted.
 	 * @returns The gas price determined by the last few blocks median gas price.
 	 *
 	 * ```ts
-	 * web3.eth.getGasPrice().then(console.log);
+	 * web3.zond.getGasPrice().then(console.log);
 	 * > 20000000000n
 	 *
-	 * web3.eth.getGasPrice({ number: FMT_NUMBER.HEX , bytes: FMT_BYTES.HEX }).then(console.log);
+	 * web3.zond.getGasPrice({ number: FMT_NUMBER.HEX , bytes: FMT_BYTES.HEX }).then(console.log);
 	 * > "0x4a817c800"
 	 * ```
 	 */
@@ -218,7 +165,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * @returns A list of accounts the node controls (addresses are checksummed).
 	 *
 	 * ```ts
-	 * web3.eth.getAccounts().then(console.log);
+	 * web3.zond.getAccounts().then(console.log);
 	 * > ["0x11f4d0A3c12e86B4b5F39B213F7E19D048276DAe", "0xDCc6960376d6C6dEa93647383FfB245CfCed97Cf"]
 	 * ```
 	 */
@@ -232,10 +179,10 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * @returns The current block number.
 	 *
 	 * ```ts
-	 * web3.eth.getBlockNumber().then(console.log);
+	 * web3.zond.getBlockNumber().then(console.log);
 	 * > 2744n
 	 *
-	 * web3.eth.getBlockNumber({ number: FMT_NUMBER.HEX , bytes: FMT_BYTES.HEX }).then(console.log);
+	 * web3.zond.getBlockNumber({ number: FMT_NUMBER.HEX , bytes: FMT_BYTES.HEX }).then(console.log);
 	 * > "0xab8"
 	 * ```
 	 */
@@ -254,10 +201,10 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * @returns The current balance for the given address in `wei`.
 	 *
 	 * ```ts
-	 * web3.eth.getBalance("0x407d73d8a49eeb85d32cf465507dd71d507100c1").then(console.log);
+	 * web3.zond.getBalance("0x407d73d8a49eeb85d32cf465507dd71d507100c1").then(console.log);
 	 * > 1000000000000n
 	 *
-	 * web3.eth.getBalance("0x407d73d8a49eeb85d32cf465507dd71d507100c1").then(console.log);
+	 * web3.zond.getBalance("0x407d73d8a49eeb85d32cf465507dd71d507100c1").then(console.log);
 	 * > "0xe8d4a51000"
 	 * ```
 	 */
@@ -279,10 +226,10 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * @returns The value in storage at the given position.
 	 *
 	 * ```ts
-	 * web3.eth.getStorageAt("0x033456732123ffff2342342dd12342434324234234fd234fd23fd4f23d4234", 0).then(console.log);
+	 * web3.zond.getStorageAt("0x033456732123ffff2342342dd12342434324234234fd234fd23fd4f23d4234", 0).then(console.log);
 	 * > "0x033456732123ffff2342342dd12342434324234234fd234fd23fd4f23d4234"
 	 *
-	 * web3.eth.getStorageAt(
+	 * web3.zond.getStorageAt(
 	 *      "0x033456732123ffff2342342dd12342434324234234fd234fd23fd4f23d4234",
 	 *      0,
 	 *      undefined,
@@ -320,10 +267,10 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * @returns The [data](https://ethereum.org/en/developers/docs/transactions/#the-data-field) at the provided `address`.
 	 *
 	 * ```ts
-	 * web3.eth.getCode("0x033456732123ffff2342342dd12342434324234234fd234fd23fd4f23d4234").then(console.log);
+	 * web3.zond.getCode("0x033456732123ffff2342342dd12342434324234234fd234fd23fd4f23d4234").then(console.log);
 	 * > "0x600160008035811a818181146012578301005b601b6001356025565b8060005260206000f25b600060078202905091905056"
 	 *
-	 * web3.eth.getCode(
+	 * web3.zond.getCode(
 	 *      "0x407d73d8a49eeb85d32cf465507dd71d507100c1",
 	 *      undefined,
 	 *      { number: FMT_NUMBER.HEX , bytes: FMT_BYTES.UINT8ARRAY }
@@ -354,7 +301,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * @returns A {@link Block} object matching the provided block number or block hash.
 	 *
 	 * ```ts
-	 * web3.eth.getBlock(0).then(console.log);
+	 * web3.zond.getBlock(0).then(console.log);
 	 * > {
 	 *    hash: '0x7dbfdc6a7a67a670cb9b0c3f81ca60c007762f1e4e598cb027a470678ff26d0d',
 	 *    parentHash: '0x0000000000000000000000000000000000000000000000000000000000000000',
@@ -379,7 +326,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *    uncles: []
 	 *  }
 	 *
-	 * web3.eth.getBlock(
+	 * web3.zond.getBlock(
 	 *      "0x7dbfdc6a7a67a670cb9b0c3f81ca60c007762f1e4e598cb027a470678ff26d0d",
 	 *      false,
 	 *      { number: FMT_NUMBER.NUMBER , bytes: FMT_BYTES.HEX }
@@ -423,10 +370,10 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * @returns The number of transactions in the provided block.
 	 *
 	 * ```ts
-	 * web3.eth.getBlockTransactionCount("0x407d73d8a49eeb85d32cf465507dd71d507100c1").then(console.log);
+	 * web3.zond.getBlockTransactionCount("0x407d73d8a49eeb85d32cf465507dd71d507100c1").then(console.log);
 	 * > 1n
 	 *
-	 * web3.eth.getBlockTransactionCount(
+	 * web3.zond.getBlockTransactionCount(
 	 *     "0x407d73d8a49eeb85d32cf465507dd71d507100c1",
 	 *     { number: FMT_NUMBER.NUMBER , bytes: FMT_BYTES.HEX }
 	 * ).then(console.log);
@@ -443,106 +390,12 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	}
 
 	/**
-	 * @param block The {@link BlockNumberOrTag} (defaults to {@link Web3Zond.defaultBlock}) or block hash of the desired block.
-	 * @param returnFormat ({@link DataFormat} defaults to {@link DEFAULT_RETURN_FORMAT}) Specifies how the return data should be formatted.
-	 * @returns The number of [uncles](https://ethereum.org/en/glossary/#ommer) in the provided block.
-	 *
-	 * ```ts
-	 * web3.eth.getBlockUncleCount("0x407d73d8a49eeb85d32cf465507dd71d507100c1").then(console.log);
-	 * > 1n
-	 *
-	 * web3.eth.getBlockUncleCount(
-	 *     "0x407d73d8a49eeb85d32cf465507dd71d507100c1",
-	 *     { number: FMT_NUMBER.NUMBER , bytes: FMT_BYTES.HEX }
-	 * ).then(console.log);
-	 * > 1
-	 * ```
-	 */
-	public async getBlockUncleCount<ReturnFormat extends DataFormat = typeof DEFAULT_RETURN_FORMAT>(
-		block: HexString32Bytes | BlockNumberOrTag = this.defaultBlock,
-		returnFormat: ReturnFormat = DEFAULT_RETURN_FORMAT as ReturnFormat,
-	) {
-		return rpcMethodsWrappers.getBlockUncleCount(this, block, returnFormat);
-	}
-
-	/**
-	 *
-	 * @param block The {@link BlockNumberOrTag} (defaults to {@link Web3Zond.defaultBlock}) or block hash of the desired block.
-	 * @param uncleIndex The index position of the uncle.
-	 * @param returnFormat ({@link DataFormat} defaults to {@link DEFAULT_RETURN_FORMAT}) Specifies how the return data should be formatted.
-	 * @returns A blocks [uncle](https://ethereum.org/en/glossary/#ommer) by a given uncle index position.
-	 *
-	 * ```ts
-	 * web3.eth.getUncle(0, 1).then(console.log);
-	 * > {
-	 *    hash: '0x7dbfdc6a7a67a670cb9b0c3f81ca60c007762f1e4e598cb027a470678ff26d0d',
-	 *    parentHash: '0x0000000000000000000000000000000000000000000000000000000000000000',
-	 *    sha3Uncles: '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347',
-	 *    miner: '0x0000000000000000000000000000000000000000',
-	 *    stateRoot: '0x5ed9882897d363c4632a6e67fba6203df61bd994813dcf048da59be442a9c6c4',
-	 *    transactionsRoot: '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421',
-	 *    receiptsRoot: '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421',
-	 *    logsBloom: '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
-	 *    difficulty: 1n,
-	 *    number: 0n,
-	 *    gasLimit: 30000000n,
-	 *    gasUsed: 0n,
-	 *    timestamp: 1658281638n,
-	 *    extraData: '0x',
-	 *    mixHash: '0x0000000000000000000000000000000000000000000000000000000000000000',
-	 *    nonce: 0n,
-	 *    totalDifficulty: 1n,
-	 *    baseFeePerGas: 1000000000n,
-	 *    size: 514n,
-	 *    transactions: [],
-	 *    uncles: []
-	 *  }
-	 *
-	 * web3.eth.getUncle(
-	 *      "0x7dbfdc6a7a67a670cb9b0c3f81ca60c007762f1e4e598cb027a470678ff26d0d",
-	 *      1,
-	 *      { number: FMT_NUMBER.NUMBER , bytes: FMT_BYTES.HEX }
-	 * ).then(console.log);
-	 * > {
-	 *    hash: '0x7dbfdc6a7a67a670cb9b0c3f81ca60c007762f1e4e598cb027a470678ff26d0d',
-	 *    parentHash: '0x0000000000000000000000000000000000000000000000000000000000000000',
-	 *    sha3Uncles: '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347',
-	 *    miner: '0x0000000000000000000000000000000000000000',
-	 *    stateRoot: '0x5ed9882897d363c4632a6e67fba6203df61bd994813dcf048da59be442a9c6c4',
-	 *    transactionsRoot: '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421',
-	 *    receiptsRoot: '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421',
-	 *    logsBloom: '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
-	 *    difficulty: 1,
-	 *    number: 0,
-	 *    gasLimit: 30000000,
-	 *    gasUsed: 0,
-	 *    timestamp: 1658281638,
-	 *    extraData: '0x',
-	 *    mixHash: '0x0000000000000000000000000000000000000000000000000000000000000000',
-	 *    nonce: 0,
-	 *    totalDifficulty: 1,
-	 *    baseFeePerGas: 1000000000,
-	 *    size: 514,
-	 *    transactions: [],
-	 *    uncles: []
-	 *  }
-	 * ```
-	 */
-	public async getUncle<ReturnFormat extends DataFormat = typeof DEFAULT_RETURN_FORMAT>(
-		block: HexString32Bytes | BlockNumberOrTag = this.defaultBlock,
-		uncleIndex: Numbers,
-		returnFormat: ReturnFormat = DEFAULT_RETURN_FORMAT as ReturnFormat,
-	) {
-		return rpcMethodsWrappers.getUncle(this, block, uncleIndex, returnFormat);
-	}
-
-	/**
 	 * @param transactionHash The hash of the desired transaction.
 	 * @param returnFormat ({@link DataFormat} defaults to {@link DEFAULT_RETURN_FORMAT}) Specifies how the return data should be formatted.
 	 * @returns The desired transaction object.
 	 *
 	 * ```ts
-	 * web3.eth.getTransaction('0x73aea70e969941f23f9d24103e91aa1f55c7964eb13daf1c9360c308a72686dc').then(console.log);
+	 * web3.zond.getTransaction('0x73aea70e969941f23f9d24103e91aa1f55c7964eb13daf1c9360c308a72686dc').then(console.log);
 	 * {
 	 *    hash: '0x73aea70e969941f23f9d24103e91aa1f55c7964eb13daf1c9360c308a72686dc',
 	 *    type: 0n,
@@ -561,7 +414,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *    s: '0x5a83c6f816befc5cd4b0c997a347224a8aa002e5799c4b082a3ec726d0e9531d'
 	 *  }
 	 *
-	 * web3.eth.getTransaction(
+	 * web3.zond.getTransaction(
 	 *     web3.utils.hexToBytes("0x30755ed65396facf86c53e6217c52b4daebe72aa4941d89635409de4c9c7f9466d4e9aaec7977f05e923889b33c0d0dd27d7226b6e6f56ce737465c5cfd04be400"),
 	 *     { number: FMT_NUMBER.NUMBER , bytes: FMT_BYTES.HEX }
 	 * ).then(console.log);
@@ -604,7 +457,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * @returns A list of pending transactions.
 	 *
 	 * ```ts
-	 * web3.eth.getPendingTransactions().then(console.log);
+	 * web3.zond.getPendingTransactions().then(console.log);
 	 * > [
 	 *      {
 	 *          hash: '0x73aea70e969941f23f9d24103e91aa1f55c7964eb13daf1c9360c308a72686dc',
@@ -642,7 +495,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *      }
 	 *   ]
 	 *
-	 * * web3.eth.getPendingTransactions({ number: FMT_NUMBER.NUMBER , bytes: FMT_BYTES.HEX }).then(console.log);
+	 * * web3.zond.getPendingTransactions({ number: FMT_NUMBER.NUMBER , bytes: FMT_BYTES.HEX }).then(console.log);
 	 * > [
 	 *      {
 	 *          hash: '0x73aea70e969941f23f9d24103e91aa1f55c7964eb13daf1c9360c308a72686dc',
@@ -694,7 +547,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * @returns The desired transaction object.
 	 *
 	 * ```ts
-	 * web3.eth.getTransactionFromBlock('0x43202bd16b6bd54bea1b310736bd78bdbe93a64ad940f7586739d9eb25ad8d00', 0).then(console.log);
+	 * web3.zond.getTransactionFromBlock('0x43202bd16b6bd54bea1b310736bd78bdbe93a64ad940f7586739d9eb25ad8d00', 0).then(console.log);
 	 * {
 	 *    hash: '0x73aea70e969941f23f9d24103e91aa1f55c7964eb13daf1c9360c308a72686dc',
 	 *    type: 0n,
@@ -713,7 +566,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *    s: '0x5a83c6f816befc5cd4b0c997a347224a8aa002e5799c4b082a3ec726d0e9531d'
 	 *  }
 	 *
-	 * web3.eth.getTransactionFromBlock(
+	 * web3.zond.getTransactionFromBlock(
 	 *     hexToBytes("0x30755ed65396facf86c53e6217c52b4daebe72aa4941d89635409de4c9c7f9466d4e9aaec7977f05e923889b33c0d0dd27d7226b6e6f56ce737465c5cfd04be400"),
 	 *     0,
 	 *     { number: FMT_NUMBER.NUMBER , bytes: FMT_BYTES.HEX }
@@ -758,7 +611,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * @returns The desired {@link TransactionReceipt} object.
 	 *
 	 * ```ts
-	 * web3.eth.getTransactionReceipt("0xdf7756865c2056ce34c4eabe4eff42ad251a9f920a1c620c00b4ea0988731d3f").then(console.log);
+	 * web3.zond.getTransactionReceipt("0xdf7756865c2056ce34c4eabe4eff42ad251a9f920a1c620c00b4ea0988731d3f").then(console.log);
 	 * > {
 	 *      transactionHash: '0xdf7756865c2056ce34c4eabe4eff42ad251a9f920a1c620c00b4ea0988731d3f',
 	 *      transactionIndex: 0n,
@@ -775,7 +628,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *      type: 0n
 	 *  }
 	 *
-	 * web3.eth.getTransactionReceipt(
+	 * web3.zond.getTransactionReceipt(
 	 *      "0xdf7756865c2056ce34c4eabe4eff42ad251a9f920a1c620c00b4ea0988731d3f",
 	 *      { number: FMT_NUMBER.NUMBER , bytes: FMT_BYTES.HEX }
 	 * ).then(console.log);
@@ -817,10 +670,10 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * @returns The number of transactions sent from the provided address.
 	 *
 	 * ```ts
-	 * web3.eth.getTransactionCount("0x407d73d8a49eeb85d32cf465507dd71d507100c1").then(console.log);
+	 * web3.zond.getTransactionCount("0x407d73d8a49eeb85d32cf465507dd71d507100c1").then(console.log);
 	 * > 1n
 	 *
-	 * web3.eth.getTransactionCount(
+	 * web3.zond.getTransactionCount(
 	 *     "0x407d73d8a49eeb85d32cf465507dd71d507100c1",
 	 *     undefined,
 	 *     { number: FMT_NUMBER.NUMBER , bytes: FMT_BYTES.HEX }
@@ -850,18 +703,18 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *   value: '0x1'
 	 * }
 	 *
-	 * const transactionHash = await web3.eth.sendTransaction(transaction);
+	 * const transactionHash = await web3.zond.sendTransaction(transaction);
 	 * console.log(transactionHash);
 	 * > 0xdf7756865c2056ce34c4eabe4eff42ad251a9f920a1c620c00b4ea0988731d3f
 	 *
-	 * web3.eth.sendTransaction(transaction).then(console.log);
+	 * web3.zond.sendTransaction(transaction).then(console.log);
 	 * > 0xdf7756865c2056ce34c4eabe4eff42ad251a9f920a1c620c00b4ea0988731d3f
 	 *
-	 * web3.eth.sendTransaction(transaction).catch(console.log);
+	 * web3.zond.sendTransaction(transaction).catch(console.log);
 	 * > <Some TransactionError>
 	 *
 	 * // Example using options.ignoreGasPricing = true
-	 * web3.eth.sendTransaction(transaction, undefined, { ignoreGasPricing: true }).then(console.log);
+	 * web3.zond.sendTransaction(transaction, undefined, { ignoreGasPricing: true }).then(console.log);
 	 * > 0xdf7756865c2056ce34c4eabe4eff42ad251a9f920a1c620c00b4ea0988731d3f
 	 * ```
 	 *
@@ -869,7 +722,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * Otherwise, a {@link Web3PromiEvent} is returned which has several events than can be listened to using the `.on` syntax, such as:
 	 * - `sending`
 	 * ```ts
-	 * web3.eth.sendTransaction(transaction).on('sending', transactionToBeSent => console.log(transactionToBeSent));
+	 * web3.zond.sendTransaction(transaction).on('sending', transactionToBeSent => console.log(transactionToBeSent));
 	 * > {
 	 *    from: '0x6E599DA0bfF7A6598AC1224E4985430Bf16458a4',
 	 *    to: '0x6f1DF96865D09d21e8f3f9a7fbA3b17A11c7C53C',
@@ -881,7 +734,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * ```
 	 * - `sent`
 	 * ```ts
-	 * web3.eth.sendTransaction(transaction).on('sent', sentTransaction => console.log(sentTransaction));
+	 * web3.zond.sendTransaction(transaction).on('sent', sentTransaction => console.log(sentTransaction));
 	 * > {
 	 *    from: '0x6E599DA0bfF7A6598AC1224E4985430Bf16458a4',
 	 *    to: '0x6f1DF96865D09d21e8f3f9a7fbA3b17A11c7C53C',
@@ -893,12 +746,12 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * ```
 	 * - `transactionHash`
 	 * ```ts
-	 * web3.eth.sendTransaction(transaction).on('transactionHash', transactionHash => console.log(transactionHash));
+	 * web3.zond.sendTransaction(transaction).on('transactionHash', transactionHash => console.log(transactionHash));
 	 * > 0xdf7756865c2056ce34c4eabe4eff42ad251a9f920a1c620c00b4ea0988731d3f
 	 * ```
 	 * - `receipt`
 	 * ```ts
-	 * web3.eth.sendTransaction(transaction).on('receipt', receipt => console.log(receipt));
+	 * web3.zond.sendTransaction(transaction).on('receipt', receipt => console.log(receipt));
 	 * > {
 	 *      transactionHash: '0xdf7756865c2056ce34c4eabe4eff42ad251a9f920a1c620c00b4ea0988731d3f',
 	 *      transactionIndex: 0n,
@@ -917,7 +770,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * ```
 	 * - `confirmation`
 	 * ```ts
-	 * web3.eth.sendTransaction(transaction).on('confirmation', confirmation => console.log(confirmation));
+	 * web3.zond.sendTransaction(transaction).on('confirmation', confirmation => console.log(confirmation));
 	 * > {
 	 *     confirmations: 1n,
 	 *     receipt: {
@@ -940,7 +793,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * ```
 	 * - `error`
 	 * ```ts
-	 * web3.eth.sendTransaction(transaction).on('error', error => console.log);
+	 * web3.zond.sendTransaction(transaction).on('error', error => console.log);
 	 * > <Some TransactionError>
 	 * ```
 	 */
@@ -963,14 +816,14 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * ```ts
 	 * const signedTransaction = "0xf86580843b9aca0182520894e899f0130fd099c0b896b2ce4e5e15a25b23139a0180820a95a03a42d53ca5b71f845e1cd4c65359b05446a85d16881372d3bfaab8980935cb04a0711497bc8dd3b541152e2fed14fe650a647f1f0edab0d386ad9506f0e642410f"
 	 *
-	 * const transactionHash = await web3.eth.sendSignedTransaction(signedTransaction);
+	 * const transactionHash = await web3.zond.sendSignedTransaction(signedTransaction);
 	 * console.log(transactionHash);
 	 * > 0xed8c241ea44d57f4605dc22c63500de46254d6c7844fd65fa438b128c80cf700
 	 *
-	 * web3.eth.sendSignedTransaction(signedTransaction).then(console.log);
+	 * web3.zond.sendSignedTransaction(signedTransaction).then(console.log);
 	 * > 0xed8c241ea44d57f4605dc22c63500de46254d6c7844fd65fa438b128c80cf700
 	 *
-	 * web3.eth.sendSignedTransaction(signedTransaction).catch(console.log);
+	 * web3.zond.sendSignedTransaction(signedTransaction).catch(console.log);
 	 * > <Some TransactionError>
 	 * ```
 	 *
@@ -978,22 +831,22 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * Otherwise, a {@link Web3PromiEvent} is returned which has several events than can be listened to using the `.on` syntax, such as:
 	 * - `sending`
 	 * ```ts
-	 * web3.eth.sendSignedTransaction(signedTransaction).on('sending', transactionToBeSent => console.log(transactionToBeSent));
+	 * web3.zond.sendSignedTransaction(signedTransaction).on('sending', transactionToBeSent => console.log(transactionToBeSent));
 	 * > "0xf86580843b9aca0182520894e899f0130fd099c0b896b2ce4e5e15a25b23139a0180820a95a03a42d53ca5b71f845e1cd4c65359b05446a85d16881372d3bfaab8980935cb04a0711497bc8dd3b541152e2fed14fe650a647f1f0edab0d386ad9506f0e642410f"
 	 * ```
 	 * - `sent`
 	 * ```ts
-	 * web3.eth.sendSignedTransaction(signedTransaction).on('sent', sentTransaction => console.log(sentTransaction));
+	 * web3.zond.sendSignedTransaction(signedTransaction).on('sent', sentTransaction => console.log(sentTransaction));
 	 * > "0xf86580843b9aca0182520894e899f0130fd099c0b896b2ce4e5e15a25b23139a0180820a95a03a42d53ca5b71f845e1cd4c65359b05446a85d16881372d3bfaab8980935cb04a0711497bc8dd3b541152e2fed14fe650a647f1f0edab0d386ad9506f0e642410f"
 	 * ```
 	 * - `transactionHash`
 	 * ```ts
-	 * web3.eth.sendSignedTransaction(signedTransaction).on('transactionHash', transactionHash => console.log(transactionHash));
+	 * web3.zond.sendSignedTransaction(signedTransaction).on('transactionHash', transactionHash => console.log(transactionHash));
 	 * > 0xed8c241ea44d57f4605dc22c63500de46254d6c7844fd65fa438b128c80cf700
 	 * ```
 	 * - `receipt`
 	 * ```ts
-	 * web3.eth.sendSignedTransaction(signedTransaction).on('receipt', receipt => console.log(receipt));
+	 * web3.zond.sendSignedTransaction(signedTransaction).on('receipt', receipt => console.log(receipt));
 	 * > {
 	 *      blockHash: '0xff2b1687995d81066361bc6affe4455746120a7d4bb75fc938211a2692a50081',
 	 *      blockNumber: 1n,
@@ -1012,7 +865,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * ```
 	 * - `confirmation`
 	 * ```ts
-	 * web3.eth.sendSignedTransaction(signedTransaction).on('confirmation', confirmation => console.log(confirmation));
+	 * web3.zond.sendSignedTransaction(signedTransaction).on('confirmation', confirmation => console.log(confirmation));
 	 * > {
 	 *     confirmations: 1n,
 	 *     receipt: {
@@ -1035,7 +888,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * ```
 	 * - `error`
 	 * ```ts
-	 * web3.eth.sendSignedTransaction(signedTransaction).on('error', error => console.log(error));
+	 * web3.zond.sendSignedTransaction(signedTransaction).on('error', error => console.log(error));
 	 * > <Some TransactionError>
 	 * ```
 	 */
@@ -1055,11 +908,11 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *
 	 * ```ts
 	 * // Using an unlocked account managed by connected RPC client
-	 * web3.eth.sign("0x48656c6c6f20776f726c64", "0x11f4d0A3c12e86B4b5F39B213F7E19D048276DAe").then(console.log);
+	 * web3.zond.sign("0x48656c6c6f20776f726c64", "0x11f4d0A3c12e86B4b5F39B213F7E19D048276DAe").then(console.log);
 	 * > "0x30755ed65396facf86c53e6217c52b4daebe72aa4941d89635409de4c9c7f9466d4e9aaec7977f05e923889b33c0d0dd27d7226b6e6f56ce737465c5cfd04be400"
 	 *
 	 * // Using an unlocked account managed by connected RPC client
-	 * web3.eth.sign("0x48656c6c6f20776f726c64", "0x11f4d0A3c12e86B4b5F39B213F7E19D048276DAe", { number: FMT_NUMBER.NUMBER , bytes: FMT_BYTES.UINT8ARRAY }).then(console.log);
+	 * web3.zond.sign("0x48656c6c6f20776f726c64", "0x11f4d0A3c12e86B4b5F39B213F7E19D048276DAe", { number: FMT_NUMBER.NUMBER , bytes: FMT_BYTES.UINT8ARRAY }).then(console.log);
 	 * > Uint8Array(65) [
 	 *    48, 117,  94, 214,  83, 150, 250, 207, 134, 197,  62,
 	 *    98,  23, 197,  43,  77, 174, 190, 114, 170,  73,  65,
@@ -1071,7 +924,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * ```
 	 *
 	 * // Using an indexed account managed by local Web3 wallet
-	 * web3.eth.sign("0x48656c6c6f20776f726c64", 0).then(console.log);
+	 * web3.zond.sign("0x48656c6c6f20776f726c64", 0).then(console.log);
 	 * > "0x30755ed65396facf86c53e6217c52b4daebe72aa4941d89635409de4c9c7f9466d4e9aaec7977f05e923889b33c0d0dd27d7226b6e6f56ce737465c5cfd04be400"
 	 */
 	public async sign<ReturnFormat extends DataFormat = typeof DEFAULT_RETURN_FORMAT>(
@@ -1098,7 +951,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *      type: '0x0'
 	 * }
 	 *
-	 * web3.eth.signTransaction(transaction).then(console.log);
+	 * web3.zond.signTransaction(transaction).then(console.log);
 	 * > {
 	 *   raw: '0xf86501843b9aca0182520894e899f0130fd099c0b896b2ce4e5e15a25b23139a0180820a96a0adb3468dbb4dce89fe1785ea9182e85fb56b399b378f82b93af7a8a12a4f9679a027d37d736e9bcf00121f78b2d10e4404fa5c45856d62b746574345f5cd278097',
 	 *   tx: {
@@ -1115,7 +968,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *   }
 	 * }
 	 *
-	 * web3.eth.signTransaction(transaction, { number: FMT_NUMBER.NUMBER , bytes: FMT_BYTES.HEX }).then(console.log);
+	 * web3.zond.signTransaction(transaction, { number: FMT_NUMBER.NUMBER , bytes: FMT_BYTES.HEX }).then(console.log);
 	 * > {
 	 *   raw: '0xf86501843b9aca0182520894e899f0130fd099c0b896b2ce4e5e15a25b23139a0180820a96a0adb3468dbb4dce89fe1785ea9182e85fb56b399b378f82b93af7a8a12a4f9679a027d37d736e9bcf00121f78b2d10e4404fa5c45856d62b746574345f5cd278097',
 	 *   tx: {
@@ -1178,10 +1031,10 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *       type: '0x0'
 	 * }
 	 *
-	 * web3.eth.estimateGas(transaction).then(console.log);
+	 * web3.zond.estimateGas(transaction).then(console.log);
 	 * > 21000n
 	 *
-	 * web3.eth.estimateGas(transaction, { number: FMT_NUMBER.NUMBER , bytes: FMT_BYTES.HEX }).then(console.log);
+	 * web3.zond.estimateGas(transaction, { number: FMT_NUMBER.NUMBER , bytes: FMT_BYTES.HEX }).then(console.log);
 	 * > 21000
 	 * ```
 	 */
@@ -1201,7 +1054,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * @returns {@link FilterResultsAPI}, an array of {@link Log} objects.
 	 *
 	 * ```ts
-	 * web3.eth.getPastLogs({
+	 * web3.zond.getPastLogs({
 	 *      address: "0x11f4d0A3c12e86B4b5F39B213F7E19D048276DAe",
 	 *      topics: ["0x033456732123ffff2342342dd12342434324234234fd234fd23fd4f23d4234"]
 	 *  }).then(console.log);
@@ -1217,7 +1070,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *   },
 	 *   {...}]
 	 *
-	 * web3.eth.getPastLogs(
+	 * web3.zond.getPastLogs(
 	 *     {
 	 *       address: "0x11f4d0A3c12e86B4b5F39B213F7E19D048276DAe",
 	 *       topics: ["0x033456732123ffff2342342dd12342434324234234fd234fd23fd4f23d4234"]
@@ -1244,53 +1097,6 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 		return rpcMethodsWrappers.getLogs(this, filter, returnFormat);
 	}
 
-	/**
-	 * Gets work for miners to mine on. Returns the hash of the current block, the seedHash, and the boundary condition to be met ('target').
-	 *
-	 * @returns The mining work as an array of strings with the following structure:
-	 *
-	 * String 32 Bytes - at index 0: current block header pow-hash
-	 * String 32 Bytes - at index 1: the seed hash used for the DAG.
-	 * String 32 Bytes - at index 2: the boundary condition ('target'), 2^256 / difficulty.
-	 *
-	 * ```ts
-	 * web3.eth.getWork().then(console.log);
-	 * > [
-	 *     "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-	 *     "0x5EED00000000000000000000000000005EED0000000000000000000000000000",
-	 *     "0xd1ff1c01710000000000000000000000d1ff1c01710000000000000000000000"
-	 * ]
-	 * ```
-	 */
-	public async getWork() {
-		return zondRpcMethods.getWork(this.requestManager);
-	}
-
-	/**
-	 * Used for submitting a proof-of-work solution.
-	 *
-	 * @param nonce The nonce found (8 bytes).
-	 * @param hash  The header’s pow-hash (32 bytes).
-	 * @param digest The mix digest (32 bytes).
-	 * @returns Returns `true` if the provided solution is valid, otherwise `false`.
-	 *
-	 * ```ts
-	 * web3.eth.submitWork([
-	 *     "0x0000000000000001",
-	 *     "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-	 *     "0xD1FE5700000000000000000000000000D1FE5700000000000000000000000000"
-	 * ]).then(console.log);
-	 * > true
-	 * ```
-	 */
-	public async submitWork(
-		nonce: HexString8Bytes,
-		hash: HexString32Bytes,
-		digest: HexString32Bytes,
-	) {
-		return zondRpcMethods.submitWork(this.requestManager, nonce, hash, digest);
-	}
-
 	// TODO - Format addresses
 	/**
 	 * This method will request/enable the accounts from the current environment and for supporting [EIP 1102](https://eips.ethereum.org/EIPS/eip-1102)
@@ -1301,7 +1107,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * @returns An array of enabled accounts.
 	 *
 	 * ```ts
-	 * web3.eth.requestAccounts().then(console.log);
+	 * web3.zond.requestAccounts().then(console.log);
 	 * > ['0aae0B295369a9FD31d5F28D9Ec85E40f4cb692BAf', '0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe']
 	 * ```
 	 */
@@ -1314,10 +1120,10 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * @returns The chain ID of the current connected node as described in the [EIP-695](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-695.md).
 	 *
 	 * ```ts
-	 * web3.eth.getChainId().then(console.log);
+	 * web3.zond.getChainId().then(console.log);
 	 * > 61n
 	 *
-	 * web3.eth.getChainId({ number: FMT_NUMBER.NUMBER , bytes: FMT_BYTES.HEX }).then(console.log);
+	 * web3.zond.getChainId({ number: FMT_NUMBER.NUMBER , bytes: FMT_BYTES.HEX }).then(console.log);
 	 * > 61
 	 * ```
 	 */
@@ -1331,7 +1137,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * @returns The current client version.
 	 *
 	 * ```ts
-	 * web3.eth.getNodeInfo().then(console.log);
+	 * web3.zond.getNodeInfo().then(console.log);
 	 * > "Mist/v0.9.3/darwin/go1.4.1"
 	 * ```
 	 */
@@ -1347,7 +1153,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * @returns The account and storage-values of the specified account including the Merkle-proof as described in [EIP-1186](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1186.md).
 	 *
 	 * ```ts
-	 * web3.eth.getProof(
+	 * web3.zond.getProof(
 	 *     "0x1234567890123456789012345678901234567890",
 	 *     ["0x0000000000000000000000000000000000000000000000000000000000000000","0x0000000000000000000000000000000000000000000000000000000000000001"],
 	 *     "latest"
@@ -1378,7 +1184,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *     ]
 	 * }
 	 *
-	 * web3.eth.getProof(
+	 * web3.zond.getProof(
 	 *     "0x1234567890123456789012345678901234567890",
 	 *     ["0x0000000000000000000000000000000000000000000000000000000000000000","0x0000000000000000000000000000000000000000000000000000000000000001"],
 	 *     undefined,
@@ -1432,7 +1238,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * For pre-EIP-1559 blocks the `gasPrice`s are returned as `rewards` and zeroes are returned for the `baseFeePerGas`.
 	 *
 	 * ```ts
-	 * web3.eth.getFeeHistory(4, 'pending', [0, 25, 75, 100]).then(console.log);
+	 * web3.zond.getFeeHistory(4, 'pending', [0, 25, 75, 100]).then(console.log);
 	 * > {
 	 *     baseFeePerGas: [
 	 *         22983878621n,
@@ -1456,7 +1262,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *     ]
 	 * }
 	 *
-	 * web3.eth.getFeeHistory(4, BlockTags.LATEST, [0, 25, 75, 100], { number: FMT_NUMBER.NUMBER , bytes: FMT_BYTES.HEX }).then(console.log);
+	 * web3.zond.getFeeHistory(4, BlockTags.LATEST, [0, 25, 75, 100], { number: FMT_NUMBER.NUMBER , bytes: FMT_BYTES.HEX }).then(console.log);
 	 * > {
 	 *     baseFeePerGas: [
 	 *         22983878621,
@@ -1505,7 +1311,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * @returns The returned data of the createAccessList,  e.g. The generated access list for transaction.
 	 * @example
 	 * ```ts
-	 * web3.eth.createAccessList({
+	 * web3.zond.createAccessList({
 	 * from: '0xDe95305a63302C3aa4d3A9B42654659AeA72b694',
 	 * data: '0x9a67c8b100000000000000000000000000000000000000000000000000000000000004d0',
 	 * gasPrice: '0x3b9aca00',
@@ -1575,7 +1381,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * @example **Subscribe to Smart Contract events**
 	 * ```ts
 	 * // Subscribe to `logs`
-	 * const logSubscription = web3.eth.subscribe('logs', {
+	 * const logSubscription = web3.zond.subscribe('logs', {
 	 *     address: '0x1234567890123456789012345678901234567890',
 	 *     topics: ['0x033456732123ffff2342342dd12342434324234234fd234fd23fd4f23d4234']
 	 * });
@@ -1587,7 +1393,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * @example **Subscribe to new block headers**
 	 * ```ts
 	 * // Subscribe to `newBlockHeaders`
-	 * const newBlocksSubscription = await web3.eth.subscribe('newBlockHeaders');
+	 * const newBlocksSubscription = await web3.zond.subscribe('newBlockHeaders');
 	 *
 	 * newBlocksSubscription.on('data', async blockhead => {
 	 * 	console.log('New block header: ', blockhead);
@@ -1643,7 +1449,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * @returns A promise to an array of subscription ids that were cleared.
 	 *
 	 * ```ts
-	 * web3.eth.clearSubscriptions().then(console.log);
+	 * web3.zond.clearSubscriptions().then(console.log);
 	 * > [...] An array of subscription ids that were cleared
 	 * ```
 	 */

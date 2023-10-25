@@ -24,7 +24,7 @@ import { GreeterAbi, GreeterBytecode } from '../../shared_fixtures/build/Greeter
 import {
 	getAllowedSendTransaction,
 	getE2ETestAccountAddress,
-	getE2ETestAccountPrivateKey,
+	getE2ETestAccountSeed,
 	getSystemE2ETestProvider,
 } from '../e2e_utils';
 
@@ -38,7 +38,7 @@ describe(`${getSystemTestBackend()} tests - contract`, () => {
 	beforeAll(() => {
 		if (getAllowedSendTransaction()) {
 			web3 = new Web3(provider);
-			web3.zond.accounts.wallet.add(getE2ETestAccountPrivateKey());
+			web3.zond.accounts.wallet.add(getE2ETestAccountSeed());
 		}
 	});
 
@@ -59,7 +59,7 @@ describe(`${getSystemTestBackend()} tests - contract`, () => {
 				input: contract.encodeABI(),
 				gas: await contract.estimateGas(),
 			},
-			getE2ETestAccountPrivateKey(),
+			getE2ETestAccountSeed(),
 		);
 		const result = await web3.zond.sendSignedTransaction(signedTransaction.rawTransaction);
 		deployedContractAddress = result.contractAddress as string;
@@ -105,7 +105,7 @@ describe(`${getSystemTestBackend()} tests - contract`, () => {
 				input: contract.methods.setGreeting(expectedGreet).encodeABI(),
 				gas: await contract.methods.setGreeting(expectedGreet).estimateGas(),
 			},
-			getE2ETestAccountPrivateKey(),
+			getE2ETestAccountSeed(),
 		);
 
 		const result = await web3.zond.sendSignedTransaction(signedTransaction.rawTransaction);

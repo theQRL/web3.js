@@ -72,13 +72,13 @@ export const getAllowedSendTransaction = (): boolean => {
 	return false;
 };
 
-export const getE2ETestAccountPrivateKey = (): string => {
+export const getE2ETestAccountSeed = (): string => {
 	if (process.env.TEST_ACCOUNT_PRIVATE_KEY !== undefined) {
 		return process.env.TEST_ACCOUNT_PRIVATE_KEY;
 		// eslint-disable-next-line no-else-return
 	} else if (getSystemTestBackend() === 'testnet' || getSystemTestBackend() === 'mainnet') {
 		return secrets[getSystemTestBackend().toUpperCase() as 'TESTNET' | 'MAINNET'].ACCOUNT
-			.privateKey;
+			.seed;
 	}
 
 	throw new Error('Unable to get test account private key');

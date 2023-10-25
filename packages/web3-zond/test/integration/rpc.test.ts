@@ -105,22 +105,6 @@ describe('rpc', () => {
 		});
 		*/
 
-		it('isMining', async () => {
-			const isMining = await web3Zond.isMining();
-
-			if (getSystemTestBackend() !== 'geth')
-				// eslint-disable-next-line jest/no-conditional-expect
-				expect(isMining).toBe(true);
-		});
-
-		it.each(Object.values(FMT_NUMBER))('getHashRate', async format => {
-			const hashRate = await web3Zond.getHashRate({
-				number: format as FMT_NUMBER,
-				bytes: FMT_BYTES.HEX,
-			});
-			expect(typeof hashRate).toBe(mapFormatToType[format as string]);
-		});
-
 		it('getAccounts', async () => {
 			const account = await createNewAccount({ unlock: true });
 			const accList = await web3Zond.getAccounts();
@@ -296,12 +280,6 @@ describe('rpc', () => {
 			const res = await web3Zond.getNodeInfo();
 			// TODO: in next release, it should also be validated
 			expect(res).toBeDefined();
-		});
-
-		itIf(!['geth'].includes(getSystemTestBackend()))('getWork', async () => {
-			const res = await web3Zond.getWork();
-			// eslint-disable-next-line jest/no-standalone-expect
-			expect(res[0]).toBeDefined();
 		});
 
 		itIf(!['geth'].includes(getSystemTestBackend()))('requestAccounts', () => {

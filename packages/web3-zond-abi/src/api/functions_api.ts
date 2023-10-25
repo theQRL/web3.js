@@ -29,7 +29,7 @@ import { encodeParameters } from './parameters_api.js';
  * @returns - The ABI signature of the function.
  * @example
  * ```ts
- * const signature = web3.eth.abi.encodeFunctionSignature({
+ * const signature = web3.zond.abi.encodeFunctionSignature({
  *   name: "myMethod",
  *   type: "function",
  *   inputs: [
@@ -46,11 +46,11 @@ import { encodeParameters } from './parameters_api.js';
  * console.log(signature);
  * > 0x24ee0097
  *
- * const signature = web3.eth.abi.encodeFunctionSignature('myMethod(uint256,string)')
+ * const signature = web3.zond.abi.encodeFunctionSignature('myMethod(uint256,string)')
  * console.log(signature);
  * > 0x24ee0097
  *
- * const signature = web3.eth.abi.encodeFunctionSignature('safeTransferFrom(address,address,uint256,bytes)');
+ * const signature = web3.zond.abi.encodeFunctionSignature('safeTransferFrom(address,address,uint256,bytes)');
  * console.log(signature);
  * > 0xb88d4fde
  * ```
@@ -79,7 +79,7 @@ export const encodeFunctionSignature = (functionName: string | AbiFunctionFragme
  * @returns - The ABI encoded function call, which, means the function signature and the parameters passed.
  * @example
  * ```ts
- * const sig = web3.eth.abi.encodeFunctionCall(
+ * const sig = web3.zond.abi.encodeFunctionCall(
  *   {
  *     name: "myMethod",
  *     type: "function",
@@ -101,7 +101,7 @@ export const encodeFunctionSignature = (functionName: string | AbiFunctionFragme
  *
  *
  *
- * const sig = web3.eth.abi.encodeFunctionCall(
+ * const sig = web3.zond.abi.encodeFunctionCall(
  *   {
  *     inputs: [
  *       {

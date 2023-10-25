@@ -27,7 +27,7 @@ import { jsonInterfaceMethodToString, isAbiEventFragment } from '../utils.js';
  *
  * @example
  * ```ts
- * const event = web3.eth.abi.encodeEventSignature({
+ * const event = web3.zond.abi.encodeEventSignature({
  *   name: "myEvent",
  *   type: "event",
  *   inputs: [
@@ -44,7 +44,7 @@ import { jsonInterfaceMethodToString, isAbiEventFragment } from '../utils.js';
  * console.log(event);
  * > 0xf2eeb729e636a8cb783be044acf6b7b1e2c5863735b60d6daae84c366ee87d97
  *
- *  const event = web3.eth.abi.encodeEventSignature({
+ *  const event = web3.zond.abi.encodeEventSignature({
  *   inputs: [
  *     {
  *       indexed: true,

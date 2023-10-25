@@ -35,7 +35,7 @@ const Web3 = require('web3').default;
 
 
 describeIf(getSystemTestBackend() === 'geth')(
-	'Black Box Unit Tests - web3.eth.Contract',
+	'Black Box Unit Tests - web3.zond.Contract',
 	() => {
 		describe('Geth - ERC20', () => {
 			let account;
@@ -50,7 +50,7 @@ describeIf(getSystemTestBackend() === 'geth')(
 				});
 
 				web3 = new Web3(getSystemTestProvider());
-				deployedContract = await new web3.eth.Contract(ERC20TokenAbi)
+				deployedContract = await new web3.zond.Contract(ERC20TokenAbi)
 					.deploy({
 						data: ERC20TokenBytecode,
 						arguments: ['420'],
@@ -63,7 +63,7 @@ describeIf(getSystemTestBackend() === 'geth')(
 			});
 
 			it('should get deployed contract info', async () => {
-				const contract = new web3.eth.Contract(
+				const contract = new web3.zond.Contract(
 					ERC20TokenAbi,
 					deployedContract.options.address,
 				);

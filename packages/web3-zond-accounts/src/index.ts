@@ -16,7 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /**
- * The web3.eth.accounts contains functions to generate Ethereum accounts and sign transactions and data.
+ * The web3.zond.accounts contains functions to generate Zond accounts and sign transactions and data.
  *
  * **_NOTE:_** This package has NOT been audited and might potentially be unsafe. Take precautions to clear memory properly, store the private keys safely, and test transaction receiving and sending functionality properly before using in production!
  *
@@ -33,7 +33,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
  *
  * const web3 = new Web3(Web3.givenProvider || 'ws://some.local-or-remote.node:8546');
  * // now you have access to the accounts class
- * web3.eth.accounts.create();
+ * web3.zond.accounts.create();
  * ```
  */
 

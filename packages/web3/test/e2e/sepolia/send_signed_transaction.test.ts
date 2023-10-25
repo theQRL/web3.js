@@ -23,7 +23,7 @@ import {
 import {
 	getAllowedSendTransaction,
 	getE2ETestAccountAddress,
-	getE2ETestAccountPrivateKey,
+	getE2ETestAccountSeed,
 	getSystemE2ETestProvider,
 } from '../e2e_utils';
 
@@ -52,7 +52,7 @@ describe(`${getSystemTestBackend()} tests - sendSignedTransaction`, () => {
 			};
 			const signedTransaction = await web3.zond.accounts.signTransaction(
 				transaction,
-				getE2ETestAccountPrivateKey(),
+				getE2ETestAccountSeed(),
 			);
 			const result = await web3.zond.sendSignedTransaction(signedTransaction.rawTransaction);
 
@@ -93,7 +93,7 @@ describe(`${getSystemTestBackend()} tests - sendSignedTransaction`, () => {
 			};
 			const signedTransaction = await web3.zond.accounts.signTransaction(
 				transaction,
-				getE2ETestAccountPrivateKey(),
+				getE2ETestAccountSeed(),
 			);
 			const result = await web3.zond.sendSignedTransaction(signedTransaction.rawTransaction);
 
@@ -133,7 +133,7 @@ describe(`${getSystemTestBackend()} tests - sendSignedTransaction`, () => {
 			};
 			const signedTransaction = await web3.zond.accounts.signTransaction(
 				transaction,
-				getE2ETestAccountPrivateKey(),
+				getE2ETestAccountSeed(),
 			);
 			const result = await web3.zond.sendSignedTransaction(signedTransaction.rawTransaction);
 

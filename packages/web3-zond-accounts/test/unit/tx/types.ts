@@ -52,7 +52,7 @@ export interface VitaliksTestsDataEntry {
 
 // The type of ./txs.json
 export type TxsJsonEntry = {
-	privateKey: string;
+	seed: string;
 	sendersAddress: string;
 	type: string;
 	cost: number;

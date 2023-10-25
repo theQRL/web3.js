@@ -27,7 +27,7 @@ import {
 
 jest.setTimeout(15000);
 
-// TODO Consider adding this to web3.eth.accounts package
+// TODO Consider adding this to web3.zond.accounts package
 const accountSchema = {
 	type: 'object',
 	required: ['address', 'seed'],
@@ -39,7 +39,7 @@ const accountSchema = {
 	},
 };
 
-describe('Black Box Unit Tests - web3.eth.accounts.create', () => {
+describe('Black Box Unit Tests - web3.zond.accounts.create', () => {
 	let web3: Web3;
 
 	beforeAll(() => {

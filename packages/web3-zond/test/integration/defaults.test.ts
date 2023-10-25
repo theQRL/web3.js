@@ -162,8 +162,8 @@ describe('defaults', () => {
             //TO DO: after handleRevert implementation https://github.com/ChainSafe/web3.js/issues/5069 add following tests in future release
             /* set handleRevert true and test following functions with invalid input tx data and see revert reason present in error details:
 
-            web3.eth.call()
-            web3.eth.sendTransaction()
+            web3.zond.call()
+            web3.zond.sendTransaction()
             contract.methods.myMethod(…).send(…)
             contract.methods.myMethod(…).call(…)
 
@@ -332,8 +332,8 @@ describe('defaults', () => {
 		it('transactionConfirmationBlocks implementation', async () => {
 			const tempAcc2 = await createTempAccount();
 			const waitConfirmations = 1;
-			const eth = new Web3Zond(web3Zond.provider);
-			eth.setConfig({ transactionConfirmationBlocks: waitConfirmations });
+			const zond = new Web3Zond(web3Zond.provider);
+			zond.setConfig({ transactionConfirmationBlocks: waitConfirmations });
 
 			const from = tempAcc.address;
 			const to = tempAcc2.address;
@@ -341,7 +341,7 @@ describe('defaults', () => {
 			const sentTx: Web3PromiEvent<
 				TransactionReceipt,
 				SendTransactionEvents<typeof DEFAULT_RETURN_FORMAT>
-			> = eth.sendTransaction({
+			> = zond.sendTransaction({
 				to,
 				value,
 				from,
@@ -372,7 +372,7 @@ describe('defaults', () => {
 			await receiptPromise;
 			await sendFewSampleTxs(isIpc ? 2 * waitConfirmations : waitConfirmations);
 			await confirmationPromise;
-			await closeOpenConnection(eth);
+			await closeOpenConnection(zond);
 		});
 		it('transactionPollingInterval and transactionPollingTimeout', () => {
 			// default
@@ -543,12 +543,12 @@ describe('defaults', () => {
 		it('should fallback to polling if provider support `on` but `newBlockHeaders` does not arrive in `blockHeaderTimeout` seconds', async () => {
 			const tempAcc2 = await createTempAccount();
 
-			const tempEth: Web3Zond = new Web3Zond(clientUrl);
+			const tempZond: Web3Zond = new Web3Zond(clientUrl);
 			// Ensure the provider supports subscriptions to simulate the test scenario
 			// It will cause providers that does not support subscriptions (like http) to throw exception when subscribing.
 			// This case is tested to ensure that even if an error happen at subscription,
 			//	polling will still get the data from next blocks.
-			(tempEth.provider as Web3BaseProvider).supportsSubscriptions = () => true;
+			(tempZond.provider as Web3BaseProvider).supportsSubscriptions = () => true;
 
 			// Cause the events to take a long time (more than blockHeaderTimeout),
 			//	to ensure that polling of new blocks works in such cases.
@@ -556,14 +556,14 @@ describe('defaults', () => {
 			// 	to never return data through listening to new events
 
 			// eslint-disable-next-line @typescript-eslint/no-misused-promises
-			(tempEth.provider as Web3BaseProvider).on = async () => {
+			(tempZond.provider as Web3BaseProvider).on = async () => {
 				await new Promise(res => {
 					setTimeout(res, 1000000);
 				});
 			};
 
 			// Make the test run faster by casing the polling to start after 1 second
-			tempEth.blockHeaderTimeout = 1;
+			tempZond.blockHeaderTimeout = 1;
 			const from = tempAcc2.address;
 			const to = tempAcc.address;
 			const value = `0x1`;
@@ -571,7 +571,7 @@ describe('defaults', () => {
 			const sentTx: Web3PromiEvent<
 				TransactionReceipt,
 				SendTransactionEvents<typeof DEFAULT_RETURN_FORMAT>
-			> = tempEth.sendTransaction({
+			> = tempZond.sendTransaction({
 				from,
 				to,
 				value,
@@ -596,7 +596,7 @@ describe('defaults', () => {
 							resolve(status);
 						} else {
 							// Send a transaction to cause dev providers creating new blocks to fire the 'confirmation' event again.
-							await tempEth.sendTransaction({
+							await tempZond.sendTransaction({
 								from,
 								to,
 								value,
@@ -611,7 +611,7 @@ describe('defaults', () => {
 			// Ensure the promise the get the confirmations resolves with no error
 			const status = await confirmationPromise;
 			expect(status).toBe(BigInt(1));
-			await closeOpenConnection(tempEth);
+			await closeOpenConnection(tempZond);
 		});
 		it('maxListenersWarningThreshold test default config', () => {
 			// default
@@ -624,8 +624,8 @@ describe('defaults', () => {
 			expect(zond2.getMaxListeners()).toBe(3);
 		});
 		it('maxListenersWarningThreshold set config', () => {
-			const eth = new Web3Zond({});
-			eth.setConfig({
+			const zond = new Web3Zond({});
+			zond.setConfig({
 				maxListenersWarningThreshold: 3,
 			});
 			expect(zond2.maxListenersWarningThreshold).toBe(3);

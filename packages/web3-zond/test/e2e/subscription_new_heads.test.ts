@@ -42,11 +42,11 @@ describe(`${getSystemTestBackend()} tests - subscription newHeads`, () => {
 	itIf(provider.startsWith('ws'))(
 		`should subscribe to newHeads and receive ${expectedNumberOfNewHeads}`,
 		async () => {
-			const newHeadsSubscription = await web3.eth.subscribe('newHeads');
+			const newHeadsSubscription = await web3.zond.subscribe('newHeads');
 
 			let numberOfNewHeadsReceived = 0;
 
-			await waitForOpenConnection(web3.eth);
+			await waitForOpenConnection(web3.zond);
 			const assertionPromise = new Promise((resolve, reject) => {
 				newHeadsSubscription.on('data', (data: BlockHeaderOutput) => {
 					try {
@@ -82,7 +82,7 @@ describe(`${getSystemTestBackend()} tests - subscription newHeads`, () => {
 			});
 
 			await assertionPromise;
-			await web3.eth.subscriptionManager?.removeSubscription(newHeadsSubscription);
+			await web3.zond.subscriptionManager?.removeSubscription(newHeadsSubscription);
 		},
 	);
 });

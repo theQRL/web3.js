@@ -28,7 +28,7 @@ describe('Wallet', () => {
 		setItem: jest.MockedFunction<(key: string, value: string) => string>;
 	};
 	let totalAccountsCreate = 0;
-	let totalPrivatekeyCreate = 0;
+	let totalSeedCreate = 0;
 
 	beforeEach(() => {
 		localStorageSpy = { getItem: jest.fn(), setItem: jest.fn() };
@@ -37,8 +37,8 @@ describe('Wallet', () => {
 
 		accountProvider = {
 			seedToAccount: jest.fn().mockImplementation(() => {
-				totalPrivatekeyCreate += 1;
-				return { address: `privatekey_create_${totalPrivatekeyCreate}` };
+				totalSeedCreate += 1;
+				return { address: `seed_create_${totalSeedCreate}` };
 			}),
 			//decrypt: jest.fn(),
 			create: jest.fn().mockImplementation(() => {
@@ -75,15 +75,15 @@ describe('Wallet', () => {
 
 	describe('add', () => {
 		it('should create account from private key if string value is given', () => {
-			const privateKey = 'private key';
-			const result = wallet.add(privateKey);
+			const seed = 'seed';
+			const result = wallet.add(seed);
 
 			expect(result).toBeTruthy();
 
 			expect(accountProvider.seedToAccount).toHaveBeenCalledTimes(1);
-			expect(accountProvider.seedToAccount).toHaveBeenCalledWith(privateKey);
+			expect(accountProvider.seedToAccount).toHaveBeenCalledWith(seed);
 			expect(wallet).toHaveLength(1);
-			expect(wallet.get(0)).toEqual({ address: 'privatekey_create_1' });
+			expect(wallet.get(0)).toEqual({ address: 'seed_create_1' });
 		});
 
 		it('should not create account from private key if object value is given', () => {
@@ -105,8 +105,8 @@ describe('Wallet', () => {
 		});
 
 		it('should override account object for existing address', () => {
-			const account1 = { address: 'address', privateKey: 'pkey1' } as never;
-			const account2 = { address: 'address', privateKey: 'pkey2' } as never;
+			const account1 = { address: 'address', seed: 'seed1' } as never;
+			const account2 = { address: 'address', seed: 'seed2' } as never;
 
 			wallet.add(account1);
 			expect(wallet.get('address')).toEqual(account1);
@@ -212,9 +212,9 @@ describe('Wallet', () => {
 			expect(wallet[0]).toBeUndefined();
 		});
 
-		it('should remove account added with private key with array methods', () => {
-			const privateKey = 'private_key';
-			wallet.add(privateKey);
+		it('should remove account added with seed with array methods', () => {
+			const seed = 'seed';
+			wallet.add(seed);
 			expect(wallet).toHaveLength(1);
 
 			wallet.splice(0, 1);

@@ -43,19 +43,9 @@ describe('web3_eth_methods_no_parameters', () => {
 			expect(zondRpcMethods.getCoinbase).toHaveBeenCalledWith(web3Zond.requestManager);
 		});
 
-		it('isMining', async () => {
-			await web3Zond.isMining();
-			expect(zondRpcMethods.getMining).toHaveBeenCalledWith(web3Zond.requestManager);
-		});
-
 		it('getAccounts', async () => {
 			await web3Zond.getAccounts();
 			expect(zondRpcMethods.getAccounts).toHaveBeenCalledWith(web3Zond.requestManager);
-		});
-
-		it('getWork', async () => {
-			await web3Zond.getWork();
-			expect(zondRpcMethods.getWork).toHaveBeenCalledWith(web3Zond.requestManager);
 		});
 
 		it('getPendingTransactions', async () => {

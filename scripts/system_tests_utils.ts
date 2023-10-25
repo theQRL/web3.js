@@ -204,7 +204,7 @@ export const createAccountProvider = (context: Web3Context<ZondExecutionAPI>) =>
 		return {
 			...account,
 			signTransaction: async (transaction: Transaction) =>
-				signTransactionWithContext(transaction, account.privateKey),
+				signTransactionWithContext(transaction, account.seed),
 		};
 	};
 	*/
@@ -372,7 +372,7 @@ export const signAndSendContractMethodEIP1559 = async (
 	provider: unknown,
 	address: string,
 	method: NonPayableMethodObject,
-	privateKey: string,
+	seed: string,
 ) =>
 	signTxAndSendEIP1559(
 		provider,
@@ -380,14 +380,14 @@ export const signAndSendContractMethodEIP1559 = async (
 			to: address,
 			data: method.encodeABI(),
 		},
-		privateKey,
+		seed,
 	);
 
 export const signAndSendContractMethodEIP2930 = async (
 	provider: unknown,
 	address: string,
 	method: NonPayableMethodObject,
-	privateKey: string,
+	seed: string,
 ) =>
 	signTxAndSendEIP2930(
 		provider,
@@ -395,7 +395,7 @@ export const signAndSendContractMethodEIP2930 = async (
 			to: address,
 			data: method.encodeABI(),
 		},
-		privateKey,
+		seed,
 	);
 
 export const createLocalAccount = async (web3: Web3) => {

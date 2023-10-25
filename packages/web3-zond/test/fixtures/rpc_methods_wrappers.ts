@@ -25,14 +25,6 @@ import {
 } from '@theqrl/web3-types';
 
 // Array consists of: returnType parameter, mock RPC result, expected output
-export const getHashRateValidData: [DataFormat, Numbers, Numbers][] = [
-	[DEFAULT_RETURN_FORMAT, '0x38a', '0x38a'],
-	[{ ...DEFAULT_RETURN_FORMAT, number: FMT_NUMBER.STR }, '0x38a', '906'],
-	[{ ...DEFAULT_RETURN_FORMAT, number: FMT_NUMBER.NUMBER }, '0x38a', 906],
-	[{ ...DEFAULT_RETURN_FORMAT, number: FMT_NUMBER.BIGINT }, '0x38a', BigInt('0x38a')],
-];
-
-// Array consists of: returnType parameter, mock RPC result, expected output
 export const getGasPriceValidData: [DataFormat, any, any][] = [
 	[DEFAULT_RETURN_FORMAT, '0x1dfd14000', '0x1dfd14000'],
 	[{ ...DEFAULT_RETURN_FORMAT, number: FMT_NUMBER.STR }, '0x1dfd14000', '8049999872'],

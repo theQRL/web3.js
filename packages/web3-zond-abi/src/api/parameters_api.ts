@@ -28,7 +28,7 @@ import { formatParam, isAbiFragment, mapTypes, modifyParams } from '../utils.js'
  * @returns - The ABI encoded parameters
  * @example
  * ```ts
- * const res = web3.eth.abi.encodeParameters(
+ * const res = web3.zond.abi.encodeParameters(
  *    ["uint256", "string"],
  *    ["2345675643", "Hello!%"]
  *  );
@@ -79,31 +79,31 @@ export const encodeParameters = (abi: ReadonlyArray<AbiInput>, params: unknown[]
  * @returns -  The ABI encoded parameter
  * @example
  * ```ts
- *  const res = web3.eth.abi.encodeParameter("uint256", "2345675643");
+ *  const res = web3.zond.abi.encodeParameter("uint256", "2345675643");
  *  console.log(res);
  *  0x000000000000000000000000000000000000000000000000000000008bd02b7b
  *
- *  const res = web3.eth.abi.encodeParameter("uint", "2345675643");
+ *  const res = web3.zond.abi.encodeParameter("uint", "2345675643");
  *
  *  console.log(res);
  *  >0x000000000000000000000000000000000000000000000000000000008bd02b7b
  *
- *    const res = web3.eth.abi.encodeParameter("bytes32", "0xdf3234");
+ *    const res = web3.zond.abi.encodeParameter("bytes32", "0xdf3234");
  *
  *  console.log(res);
  *  >0xdf32340000000000000000000000000000000000000000000000000000000000
  *
- *   const res = web3.eth.abi.encodeParameter("bytes", "0xdf3234");
+ *   const res = web3.zond.abi.encodeParameter("bytes", "0xdf3234");
  *
  *  console.log(res);
  *  > 0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000003df32340000000000000000000000000000000000000000000000000000000000
  *
- *   const res = web3.eth.abi.encodeParameter("bytes32[]", ["0xdf3234", "0xfdfd"]);
+ *   const res = web3.zond.abi.encodeParameter("bytes32[]", ["0xdf3234", "0xfdfd"]);
  *
  *  console.log(res);
  *  > 0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002df32340000000000000000000000000000000000000000000000000000000000fdfd000000000000000000000000000000000000000000000000000000000000
  *
- *  const res = web3.eth.abi.encodeParameter(
+ *  const res = web3.zond.abi.encodeParameter(
  *    {
  *      ParentStruct: {
  *        propertyOne: "uint256",
@@ -193,14 +193,14 @@ export const decodeParametersWith = (
  * @returns - The result object containing the decoded parameters.
  * @example
  * ```ts
- * let res = web3.eth.abi.decodeParameters(
+ * let res = web3.zond.abi.decodeParameters(
  *    ["string", "uint256"],
  *    "0x000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000ea000000000000000000000000000000000000000000000000000000000000000848656c6c6f212521000000000000000000000000000000000000000000000000"
  *  );
  *  console.log(res);
  *  > { '0': 'Hello!%!', '1': 234n, __length__: 2 }
  *
- * let res = web3.eth.abi.decodeParameters(
+ * let res = web3.zond.abi.decodeParameters(
  *    [
  *      {
  *        type: "string",
@@ -222,7 +222,7 @@ export const decodeParametersWith = (
  *  myNumber: 234n
  * }
  *
- * const res = web3.eth.abi.decodeParameters(
+ * const res = web3.zond.abi.decodeParameters(
  *    [
  *      "uint8[]",
  *      {
@@ -302,14 +302,14 @@ export const decodeParameters = (
  * @returns - The decoded parameter
  * @example
  * ```ts
- *   const res = web3.eth.abi.decodeParameter(
+ *   const res = web3.zond.abi.decodeParameter(
  *    "uint256",
  *    "0x0000000000000000000000000000000000000000000000000000000000000010"
  *  );
  *  console.log(res);
  * > 16n
  *
- *  const res = web3.eth.abi.decodeParameter(
+ *  const res = web3.zond.abi.decodeParameter(
  *    "string",
  *    "0x0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000848656c6c6f212521000000000000000000000000000000000000000000000000"
  *  );
@@ -317,7 +317,7 @@ export const decodeParameters = (
  *  console.log(res);
  *  > Hello!%!
  *
- *  const res = web3.eth.abi.decodeParameter(
+ *  const res = web3.zond.abi.decodeParameter(
  *    {
  *      ParentStruct: {
  *        propertyOne: "uint256",

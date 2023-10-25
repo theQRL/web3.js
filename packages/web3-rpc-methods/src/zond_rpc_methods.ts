@@ -20,7 +20,6 @@ import {
 	BlockNumberOrTag,
 	Filter,
 	HexString32Bytes,
-	HexString8Bytes,
 	HexStringBytes,
 	TransactionCallAPI,
 	TransactionWithSenderAPI,
@@ -48,20 +47,6 @@ export async function getSyncing(requestManager: Web3RequestManager) {
 export async function getCoinbase(requestManager: Web3RequestManager) {
 	return requestManager.send({
 		method: 'zond_coinbase',
-		params: [],
-	});
-}
-
-export async function getMining(requestManager: Web3RequestManager) {
-	return requestManager.send({
-		method: 'zond_mining',
-		params: [],
-	});
-}
-
-export async function getHashRate(requestManager: Web3RequestManager) {
-	return requestManager.send({
-		method: 'zond_hashrate',
 		params: [],
 	});
 }
@@ -147,30 +132,6 @@ export async function getBlockTransactionCountByNumber(
 
 	return requestManager.send({
 		method: 'zond_getBlockTransactionCountByNumber',
-		params: [blockNumber],
-	});
-}
-
-export async function getUncleCountByBlockHash(
-	requestManager: Web3RequestManager,
-	blockHash: HexString32Bytes,
-) {
-	validator.validate(['bytes32'], [blockHash]);
-
-	return requestManager.send({
-		method: 'zond_getUncleCountByBlockHash',
-		params: [blockHash],
-	});
-}
-
-export async function getUncleCountByBlockNumber(
-	requestManager: Web3RequestManager,
-	blockNumber: BlockNumberOrTag,
-) {
-	validator.validate(['blockNumberOrTag'], [blockNumber]);
-
-	return requestManager.send({
-		method: 'zond_getUncleCountByBlockNumber',
 		params: [blockNumber],
 	});
 }
@@ -346,32 +307,6 @@ export async function getTransactionReceipt(
 	});
 }
 
-export async function getUncleByBlockHashAndIndex(
-	requestManager: Web3RequestManager,
-	blockHash: HexString32Bytes,
-	uncleIndex: Uint,
-) {
-	validator.validate(['bytes32', 'hex'], [blockHash, uncleIndex]);
-
-	return requestManager.send({
-		method: 'zond_getUncleByBlockHashAndIndex',
-		params: [blockHash, uncleIndex],
-	});
-}
-
-export async function getUncleByBlockNumberAndIndex(
-	requestManager: Web3RequestManager,
-	blockNumber: BlockNumberOrTag,
-	uncleIndex: Uint,
-) {
-	validator.validate(['blockNumberOrTag', 'hex'], [blockNumber, uncleIndex]);
-
-	return requestManager.send({
-		method: 'zond_getUncleByBlockNumberAndIndex',
-		params: [blockNumber, uncleIndex],
-	});
-}
-
 export async function getCompilers(requestManager: Web3RequestManager) {
 	return requestManager.send({
 		method: 'zond_getCompilers',
@@ -462,40 +397,6 @@ export async function getLogs(requestManager: Web3RequestManager, filter: Filter
 	return requestManager.send({
 		method: 'zond_getLogs',
 		params: [filter],
-	});
-}
-
-export async function getWork(requestManager: Web3RequestManager) {
-	return requestManager.send({
-		method: 'zond_getWork',
-		params: [],
-	});
-}
-
-export async function submitWork(
-	requestManager: Web3RequestManager,
-	nonce: HexString8Bytes,
-	hash: HexString32Bytes,
-	digest: HexString32Bytes,
-) {
-	validator.validate(['bytes8', 'bytes32', 'bytes32'], [nonce, hash, digest]);
-
-	return requestManager.send({
-		method: 'zond_submitWork',
-		params: [nonce, hash, digest],
-	});
-}
-
-export async function submitHashrate(
-	requestManager: Web3RequestManager,
-	hashRate: HexString32Bytes,
-	id: HexString32Bytes,
-) {
-	validator.validate(['bytes32', 'bytes32'], [hashRate, id]);
-
-	return requestManager.send({
-		method: 'zond_submitHashrate',
-		params: [hashRate, id],
 	});
 }
 

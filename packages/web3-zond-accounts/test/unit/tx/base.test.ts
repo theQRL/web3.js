@@ -286,25 +286,6 @@ describe('[BaseTransaction]', () => {
 		}
 	});
 
-	// it('getSenderPublicKey() -> should throw if s-value is greater than secp256k1n/2', () => {
-	// 	// EIP-2: All transaction signatures whose s-value is greater than secp256k1n/2 are considered invalid.
-	// 	// Reasoning: https://ethereum.stackexchange.com/a/55728
-	// 	for (const txType of txTypes) {
-	// 		for (const [i, tx] of txType.txs.entries()) {
-	// 			const { privateKey } = txType.fixtures[i];
-	// 			if (privateKey === undefined) {
-	// 				continue;
-	// 			}
-	// 			let signedTx = tx.sign(hexToBytes(privateKey));
-	// 			signedTx = JSON.parse(JSON.stringify(signedTx)); // deep clone
-	// 			(signedTx as any).s = SECP256K1_ORDER + BigInt(1);
-	// 			expect(() => {
-	// 				signedTx.getSenderPublicKey();
-	// 			}).toThrow();
-	// 		}
-	// 	}
-	// });
-
 	it('verifySignature()->valid', () => {
 		for (const txType of txTypes) {
 			for (const [i, tx] of txType.txs.entries()) {

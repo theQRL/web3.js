@@ -14,7 +14,6 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { zondRpcMethods } from '@theqrl/web3-rpc-methods';
 
 import Web3Zond from '../../src/index';
 import * as rpcMethodWrappers from '../../src/rpc_method_wrappers';
@@ -22,13 +21,11 @@ import {
 	getBlockNumberValidData,
 	getChainIdValidData,
 	getGasPriceValidData,
-	getHashRateValidData,
 } from '../fixtures/rpc_methods_wrappers';
 import {
 	estimateGasValidData,
 	getBalanceValidData,
 	getBlockTransactionCountValidData,
-	getBlockUncleCountValidData,
 	getBlockValidData,
 	getCodeValidData,
 	getFeeHistoryValidData,
@@ -39,10 +36,8 @@ import {
 	getTransactionFromBlockValidData,
 	getTransactionReceiptValidData,
 	getTransactionValidData,
-	getUncleValidData,
 	sendSignedTransactionValidData,
 	signValidData,
-	submitWorkValidData,
 	tx,
 	txReceipt,
 } from '../fixtures/web3_zond_methods_with_parameters';
@@ -64,27 +59,6 @@ describe('web3_eth_methods_with_parameters', () => {
 
 	describe('should call RPC method with expected parameters', () => {
 		describe('only has returnFormat parameter', () => {
-			describe('getHashRate', () => {
-				it.each(getHashRateValidData)('returnFormat: %s', async returnFormat => {
-					await web3Zond.getHashRate(returnFormat);
-					expect(rpcMethodWrappers.getHashRate).toHaveBeenCalledWith(
-						web3Zond,
-						returnFormat,
-					);
-				});
-			});
-
-			describe('getHashrate', () => {
-				it.each(getHashRateValidData)('returnFormat: %s', async returnFormat => {
-					// eslint-disable-next-line deprecation/deprecation
-					await web3Zond.getHashrate(returnFormat);
-					expect(rpcMethodWrappers.getHashRate).toHaveBeenCalledWith(
-						web3Zond,
-						returnFormat,
-					);
-				});
-			});
-
 			describe('getGasPrice', () => {
 				it.each(getGasPriceValidData)('returnFormat: %s', async returnFormat => {
 					await web3Zond.getGasPrice(returnFormat);
@@ -150,32 +124,6 @@ describe('web3_eth_methods_with_parameters', () => {
 						async (input, rpcMethodParameters) => {
 							await web3Zond.getBlockTransactionCount(...input);
 							expect(rpcMethodWrappers.getBlockTransactionCount).toHaveBeenCalledWith(
-								web3Zond,
-								...rpcMethodParameters,
-							);
-						},
-					);
-				});
-
-				describe('getBlockUncleCount', () => {
-					it.each(getBlockUncleCountValidData)(
-						'input: %s\nrpcMethodParameters: %s',
-						async (input, rpcMethodParameters) => {
-							await web3Zond.getBlockUncleCount(...input);
-							expect(rpcMethodWrappers.getBlockUncleCount).toHaveBeenCalledWith(
-								web3Zond,
-								...rpcMethodParameters,
-							);
-						},
-					);
-				});
-
-				describe('getUncle', () => {
-					it.each(getUncleValidData)(
-						'input: %s\nrpcMethodParameters: %s',
-						async (input, rpcMethodParameters) => {
-							await web3Zond.getUncle(...input);
-							expect(rpcMethodWrappers.getUncle).toHaveBeenCalledWith(
 								web3Zond,
 								...rpcMethodParameters,
 							);
@@ -362,18 +310,6 @@ describe('web3_eth_methods_with_parameters', () => {
 							);
 						},
 					);
-				});
-			});
-
-			describe("doesn't have returnFormat parameter", () => {
-				describe('submitWork', () => {
-					it.each(submitWorkValidData)('input: %s', async input => {
-						await web3Zond.submitWork(...input);
-						expect(zondRpcMethods.submitWork).toHaveBeenCalledWith(
-							web3Zond.requestManager,
-							...input,
-						);
-					});
 				});
 			});
 		});

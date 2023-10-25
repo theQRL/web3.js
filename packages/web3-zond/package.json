@@ -1,6 +1,6 @@
 {
 	"name": "@theqrl/web3-zond",
-	"version": "4.2.0",
+	"version": "0.1.0",
 	"description": "Web3 module to interact with the Ethereum blockchain and smart contracts.",
 	"main": "./lib/commonjs/index.js",
 	"module": "./lib/esm/index.js",
@@ -47,7 +47,7 @@
 		"test:e2e:firefox": "npx cypress run --headless --browser firefox"
 	},
 	"devDependencies": {
-		"@theqrl/web3-providers-http": "^4.0.6",
+		"@theqrl/web3-providers-http": "^0.1.0",
 		"@types/jest": "^28.1.6",
 		"@typescript-eslint/eslint-plugin": "^5.30.7",
 		"@typescript-eslint/parser": "^5.30.7",
@@ -62,17 +62,17 @@
 		"typescript": "^4.7.4"
 	},
 	"dependencies": {
-		"@theqrl/wallet.js": "^0.1.1",
-		"@theqrl/web3-core": "^4.2.0",
-		"@theqrl/web3-errors": "^1.1.2",
-		"@theqrl/web3-net": "^4.0.6",
-		"@theqrl/web3-providers-ws": "^4.0.6",
-		"@theqrl/web3-rpc-methods": "^1.1.2",
-		"@theqrl/web3-types": "^1.2.0",
-		"@theqrl/web3-utils": "^4.0.6",
-		"@theqrl/web3-validator": "^2.0.2",
-		"@theqrl/web3-zond-abi": "^4.1.2",
-		"@theqrl/web3-zond-accounts": "^4.0.6",
+		"@theqrl/wallet.js": "^0.1.0",
+		"@theqrl/web3-core": "^0.1.0",
+		"@theqrl/web3-errors": "^0.1.0",
+		"@theqrl/web3-net": "^0.1.0",
+		"@theqrl/web3-providers-ws": "^0.1.0",
+		"@theqrl/web3-rpc-methods": "^0.1.0",
+		"@theqrl/web3-types": "^0.1.0",
+		"@theqrl/web3-utils": "^0.1.0",
+		"@theqrl/web3-validator": "^0.1.0",
+		"@theqrl/web3-zond-abi": "^0.1.0",
+		"@theqrl/web3-zond-accounts": "^0.1.0",
 		"setimmediate": "^1.0.5"
 	}
 }

@@ -50,14 +50,14 @@ describe('getTransactionFromOrToAttr', () => {
 		it.each(invalidGetTransactionFromOrToAttrDataForWallet)(
 			'$title with wallet',
 			({ input, output }) => {
-				const privateKey =
+				const seed =
 					'0x348ce564d427a3311b6536bbcff9390d69395b06ed6c486954e971d960fe8709';
 
 				// setup wallet
 				const web3Zond = new Web3Zond('http://localhost:8545');
 				const accountProvider = createAccountProvider(web3Zond);
 				const wallet = new Wallet(accountProvider);
-				web3Zond.wallet?.add(privateKey);
+				web3Zond.wallet?.add(seed);
 				web3Zond['_wallet'] = wallet;
 
 				const { role, transaction } = input;

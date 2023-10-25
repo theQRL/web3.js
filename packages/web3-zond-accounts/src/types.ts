@@ -41,7 +41,7 @@ export type SignResult = SignatureObject & {
 	message?: string;
 };
 
-export type SignFunction = (data: string, privateKey: string) => SignResult;
+export type SignFunction = (data: string, seed: string) => SignResult;
 
 // https://github.com/ethereum/wiki/wiki/Web3-Secret-Storage-Definition
 

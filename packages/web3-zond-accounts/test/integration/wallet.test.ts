@@ -78,9 +78,9 @@ describe('Wallet', () => {
 
 		it('should override account object for existing address', () => {
 			const temp1 = accountProvider.create();
-			const account1 = { address: temp1.address, privateKey: temp1.privateKey } as never;
+			const account1 = { address: temp1.address, seed: temp1.seed } as never;
 			const temp2 = accountProvider.create();
-			const account2 = { address: temp1.address, privateKey: temp2.privateKey } as never;
+			const account2 = { address: temp1.address, seed: temp2.seed } as never;
 
 			wallet.add(account1);
 			expect(wallet.get(temp1.address)).toEqual(account1);
@@ -240,9 +240,9 @@ describe('Wallet', () => {
 
 	// 		expect(wallet).toHaveLength(2);
 	// 		expect(wallet.get(0)?.address).toEqual(account1.address);
-	// 		expect(wallet.get(0)?.privateKey).toEqual(account1.privateKey);
+	// 		expect(wallet.get(0)?.seed).toEqual(account1.seed);
 	// 		expect(wallet.get(1)?.address).toEqual(account2.address);
-	// 		expect(wallet.get(1)?.privateKey).toEqual(account2.privateKey);
+	// 		expect(wallet.get(1)?.seed).toEqual(account2.seed);
 	// 	});
 	// });
 

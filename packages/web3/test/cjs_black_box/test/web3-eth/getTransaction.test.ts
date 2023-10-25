@@ -25,7 +25,7 @@ import {
 // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
 const Web3 = require('web3').default;
 
-describe('CJS - Black Box Unit Tests - web3.eth.getTransaction', () => {
+describe('CJS - Black Box Unit Tests - web3.zond.getTransaction', () => {
 	let web3: typeof Web3;
 
 	beforeAll(() => {
@@ -61,7 +61,7 @@ describe('CJS - Black Box Unit Tests - web3.eth.getTransaction', () => {
 	// 			value: BigInt(0),
 	// 		};
 
-	// 		const response = await web3.eth.getTransaction(
+	// 		const response = await web3.zond.getTransaction(
 	// 			'0x133048bfcf6c0f7f8d1f5681df9607802894667acb46f4a3ba8ba187421dfc2b',
 	// 		);
 	// 		// eslint-disable-next-line jest/no-standalone-expect

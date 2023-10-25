@@ -29,7 +29,7 @@ import {
 import { ERC20TokenAbi, ERC20TokenBytecode } from '../../../shared_fixtures/contracts/ERC20Token';
 
 describeIf(getSystemTestBackend() === 'geth')(
-	'Black Box Unit Tests - web3.eth.Contract',
+	'Black Box Unit Tests - web3.zond.Contract',
 	() => {
 		describe('Geth - ERC20', () => {
 			let account;

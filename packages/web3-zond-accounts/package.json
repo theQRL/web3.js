@@ -1,6 +1,6 @@
 {
 	"name": "@theqrl/web3-zond-accounts",
-	"version": "4.0.6",
+	"version": "0.1.0",
 	"description": "Package for managing Ethereum accounts and signing",
 	"main": "./lib/commonjs/index.js",
 	"module": "./lib/esm/index.js",
@@ -42,7 +42,7 @@
 		"test:integration": "jest --config=./test/integration/jest.config.js"
 	},
 	"devDependencies": {
-		"@theqrl/web3-providers-ipc": "^4.0.6",
+		"@theqrl/web3-providers-ipc": "^0.1.0",
 		"@types/jest": "^28.1.6",
 		"@typescript-eslint/eslint-plugin": "^5.30.7",
 		"@typescript-eslint/parser": "^5.30.7",
@@ -60,11 +60,11 @@
 	"dependencies": {
 		"@ethereumjs/rlp": "^4.0.1",
 		"@theqrl/dilithium5": "^0.0.9",
-		"@theqrl/wallet.js": "^0.1.1",
-		"@theqrl/web3-errors": "^1.1.2",
-		"@theqrl/web3-types": "^1.2.0",
-		"@theqrl/web3-utils": "^4.0.6",
-		"@theqrl/web3-validator": "^2.0.2",
+		"@theqrl/wallet.js": "^0.1.0",
+		"@theqrl/web3-errors": "^0.1.0",
+		"@theqrl/web3-types": "^0.1.0",
+		"@theqrl/web3-utils": "^0.1.0",
+		"@theqrl/web3-validator": "^0.1.0",
 		"crc-32": "^1.2.2",
 		"ethereum-cryptography": "^2.0.0",
 		"sha3": "^2.1.4"

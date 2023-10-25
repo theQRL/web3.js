@@ -101,7 +101,7 @@ describe('defaults', () => {
 
 		// TODO(rgeraldes24)
 		/*
-		// The code of this test case is identical to the pervious one except for `eth.enableExperimentalFeatures = true`
+		// The code of this test case is identical to the pervious one except for `zond.enableExperimentalFeatures = true`
 		// TODO: And this test case will be removed once https://github.com/web3/web3.js/issues/5521 is implemented.
 		itIf(isSocket)(
 			'should fail if transaction was not mined within `transactionBlockTimeout` blocks - when subscription is used',

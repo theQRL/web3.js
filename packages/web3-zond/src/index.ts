@@ -16,7 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /**
- * The `web3-eth` package allows you to interact with an Ethereum blockchain and Ethereum smart contracts.
+ * The `web3-zond` package allows you to interact with a Zond blockchain and Zond smart contracts.
  *
  * To use this package standalone and use its methods use:
  * ```ts
@@ -39,11 +39,11 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
  * import Web3 from '@theqrl/web3';
  *
  * const web3 = new Web3(Web3.givenProvider || 'ws://some.local-or-remote.node:8546');
- * web3.eth.getBalance('0x407d73d8a49eeb85d32cf465507dd71d507100c1').then(console.log);
+ * web3.zond.getBalance('0x407d73d8a49eeb85d32cf465507dd71d507100c1').then(console.log);
  * > 1000000000000n
  *```
  *
- * With `web3-eth` you can also subscribe (if supported by provider) to events in the Ethereum Blockchain, using the `subscribe` function. See more at the {@link Web3Zond.subscribe} function.
+ * With `web3-zond` you can also subscribe (if supported by provider) to events in the Zond Blockchain, using the `subscribe` function. See more at the {@link Web3Zond.subscribe} function.
  */
 /**
  *

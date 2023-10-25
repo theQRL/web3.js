@@ -119,26 +119,6 @@ export const getCoinbase = async (web3Context: Web3Context<ZondExecutionAPI>) =>
 	zondRpcMethods.getCoinbase(web3Context.requestManager);
 
 /**
- * View additional documentations here: {@link Web3Zond.isMining}
- * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
- */
-export const isMining = async (web3Context: Web3Context<ZondExecutionAPI>) =>
-	zondRpcMethods.getMining(web3Context.requestManager);
-
-/**
- * View additional documentations here: {@link Web3Zond.getHashRate}
- * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
- */
-export async function getHashRate<ReturnFormat extends DataFormat>(
-	web3Context: Web3Context<ZondExecutionAPI>,
-	returnFormat: ReturnFormat,
-) {
-	const response = await zondRpcMethods.getHashRate(web3Context.requestManager);
-
-	return format({ format: 'uint' }, response as Numbers, returnFormat);
-}
-
-/**
  * View additional documentations here: {@link Web3Zond.getGasPrice}
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  */
@@ -288,69 +268,6 @@ export async function getBlockTransactionCount<ReturnFormat extends DataFormat>(
 	}
 
 	return format({ format: 'uint' }, response as Numbers, returnFormat);
-}
-
-/**
- * View additional documentations here: {@link Web3Zond.getBlockUncleCount}
- * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
- */
-export async function getBlockUncleCount<ReturnFormat extends DataFormat>(
-	web3Context: Web3Context<ZondExecutionAPI>,
-	block: Bytes | BlockNumberOrTag = web3Context.defaultBlock,
-	returnFormat: ReturnFormat,
-) {
-	let response;
-	if (isBytes(block)) {
-		const blockHashFormatted = format({ format: 'bytes32' }, block, ZOND_DATA_FORMAT);
-		response = await zondRpcMethods.getUncleCountByBlockHash(
-			web3Context.requestManager,
-			blockHashFormatted as HexString,
-		);
-	} else {
-		const blockNumberFormatted = isBlockTag(block as string)
-			? (block as BlockTag)
-			: format({ format: 'uint' }, block as Numbers, ZOND_DATA_FORMAT);
-		response = await zondRpcMethods.getUncleCountByBlockNumber(
-			web3Context.requestManager,
-			blockNumberFormatted,
-		);
-	}
-
-	return format({ format: 'uint' }, response as Numbers, returnFormat);
-}
-
-/**
- * View additional documentations here: {@link Web3Zond.getUncle}
- * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
- */
-export async function getUncle<ReturnFormat extends DataFormat>(
-	web3Context: Web3Context<ZondExecutionAPI>,
-	block: Bytes | BlockNumberOrTag = web3Context.defaultBlock,
-	uncleIndex: Numbers,
-	returnFormat: ReturnFormat,
-) {
-	const uncleIndexFormatted = format({ format: 'uint' }, uncleIndex, ZOND_DATA_FORMAT);
-
-	let response;
-	if (isBytes(block)) {
-		const blockHashFormatted = format({ format: 'bytes32' }, block, ZOND_DATA_FORMAT);
-		response = await zondRpcMethods.getUncleByBlockHashAndIndex(
-			web3Context.requestManager,
-			blockHashFormatted as HexString,
-			uncleIndexFormatted,
-		);
-	} else {
-		const blockNumberFormatted = isBlockTag(block as string)
-			? (block as BlockTag)
-			: format({ format: 'uint' }, block as Numbers, ZOND_DATA_FORMAT);
-		response = await zondRpcMethods.getUncleByBlockNumberAndIndex(
-			web3Context.requestManager,
-			blockNumberFormatted,
-			uncleIndexFormatted,
-		);
-	}
-
-	return format(blockSchema, response as unknown as Block, returnFormat);
 }
 
 /**

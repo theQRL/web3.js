@@ -23,7 +23,7 @@ type BrowserError = { code: number; name: string };
 
 /**
  * Wallet is an in memory `wallet` that can hold multiple accounts.
- * These accounts can be used when using web3.eth.sendTransaction().
+ * These accounts can be used when using web3.zond.sendTransaction().
  *
  * ### Parameters
  *  Web3AccountProvider - AccountProvider for the wallet
@@ -31,11 +31,11 @@ type BrowserError = { code: number; name: string };
  * ```ts
  * import Web3 from '@theqrl/web3';
  * const web3 = new Web3("https://localhost:8454")
- * web3.eth.accounts.wallet
+ * web3.zond.accounts.wallet
  * > Wallet(0) [
  *   _accountProvider: {
  *     create: [Function: create],
- *     privateKeyToAccount: [Function: privateKeyToAccount],
+ *     publicKeyToAccount: [Function: publicKeyToAccount],
  *     decrypt: [Function: decrypt]
  *   },
  *   _addressMap: Map(0) {},
@@ -88,25 +88,25 @@ export class Wallet<
 	 * @param numberOfAccounts - Number of accounts to create. Leave empty to create an empty wallet.
 	 * @returns The wallet
 	 * ```ts
-	 * web3.eth.accounts.wallet.create(2)
+	 * web3.zond.accounts.wallet.create(2)
 	 * > Wallet(2) [
 	 *   {
 	 *     address: '0xde38310a42B751AE57d30cFFF4a0A3c52A442fCE',
-	 *     privateKey: '0x6422c9d28efdcbee93c1d32a5fc6fd6fa081b985487885296cf8c9bbb5872600',
+	 *     seed: '0x6422c9d28efdcbee93c1d32a5fc6fd6fa081b985487885296cf8c9bbb5872600',
 	 *     signTransaction: [Function: signTransaction],
 	 *     sign: [Function: sign],
 	 *     encrypt: [Function: encrypt]
 	 *   },
 	 *   {
 	 *     address: '0x766BF755246d924B1d017Fdb5390f38a60166691',
-	 *     privateKey: '0x756530f13c0eb636ebdda655335f5dea9921e3362e2e588b0ad59e556f7751f0',
+	 *     seed: '0x756530f13c0eb636ebdda655335f5dea9921e3362e2e588b0ad59e556f7751f0',
 	 *     signTransaction: [Function: signTransaction],
 	 *     sign: [Function: sign],
 	 *     encrypt: [Function: encrypt]
 	 *   },
 	 *   _accountProvider: {
 	 *     create: [Function: create],
-	 *     privateKeyToAccount: [Function: privateKeyToAccount],
+	 *     publicKeyToAccount: [Function: publicKeyToAccount],
 	 *     decrypt: [Function: decrypt]
 	 *   },
 	 *   _addressMap: Map(2) {
@@ -134,18 +134,18 @@ export class Wallet<
 	 * @returns The wallet
 	 *
 	 * ```ts
-	 * web3.eth.accounts.wallet.add('0xbce9b59981303e76c4878b1a6d7b088ec6b9dd5c966b7d5f54d7a749ff683387');
+	 * web3.zond.accounts.wallet.add('0xbce9b59981303e76c4878b1a6d7b088ec6b9dd5c966b7d5f54d7a749ff683387');
 	 * > Wallet(1) [
 	 *   {
 	 *     address: '0x85D70633b90e03e0276B98880286D0D055685ed7',
-	 *     privateKey: '0xbce9b59981303e76c4878b1a6d7b088ec6b9dd5c966b7d5f54d7a749ff683387',
+	 *     seed: '0xbce9b59981303e76c4878b1a6d7b088ec6b9dd5c966b7d5f54d7a749ff683387',
 	 *     signTransaction: [Function: signTransaction],
 	 *     sign: [Function: sign],
 	 *     encrypt: [Function: encrypt]
 	 *   },
 	 *   _accountProvider: {
 	 *     create: [Function: create],
-	 *     privateKeyToAccount: [Function: privateKeyToAccount],
+	 *     publicKeyToAccount: [Function: publicKeyToAccount],
 	 *     decrypt: [Function: decrypt]
 	 *   },
 	 *   _addressMap: Map(1) { '0x85d70633b90e03e0276b98880286d0d055685ed7' => 0 },
@@ -195,15 +195,15 @@ export class Wallet<
 	 * @param addressOrIndex - The account address, or index in the wallet.
 	 * @returns true if the wallet was removed. false if it couldn't be found.
 	 * ```ts
-	 * web3.eth.accounts.wallet.add('0xbce9b59981303e76c4878b1a6d7b088ec6b9dd5c966b7d5f54d7a749ff683387');
+	 * web3.zond.accounts.wallet.add('0xbce9b59981303e76c4878b1a6d7b088ec6b9dd5c966b7d5f54d7a749ff683387');
 	 *
-	 * web3.eth.accounts.wallet.remove('0x85D70633b90e03e0276B98880286D0D055685ed7');
+	 * web3.zond.accounts.wallet.remove('0x85D70633b90e03e0276B98880286D0D055685ed7');
 	 * > true
-	 * web3.eth.accounts.wallet
+	 * web3.zond.accounts.wallet
 	 * > Wallet(0) [
 	 * _accountProvider: {
 	 *   create: [Function: create],
-	 *   privateKeyToAccount: [Function: privateKeyToAccount],
+	 *   publicKeyToAccount: [Function: publicKeyToAccount],
 	 *   decrypt: [Function: decrypt]
 	 * },
 	 * _addressMap: Map(0) {},
@@ -238,11 +238,11 @@ export class Wallet<
 	 * @returns The wallet object
 	 * ```ts
 	 *
-	 * web3.eth.accounts.wallet.clear();
+	 * web3.zond.accounts.wallet.clear();
 	 * > Wallet(0) [
 	 * _accountProvider: {
 	 *   create: [Function: create],
-	 *   privateKeyToAccount: [Function: privateKeyToAccount],
+	 *   publicKeyToAccount: [Function: publicKeyToAccount],
 	 *   decrypt: [Function: decrypt]
 	 * },
 	 * _addressMap: Map(0) {},
@@ -267,8 +267,8 @@ export class Wallet<
 	 * @returns An array of the encrypted keystore v3.
 	 *
 	 * ```ts
-	 * web3.eth.accounts.wallet.create(1)
-	 * web3.eth.accounts.wallet.encrypt("abc").then(console.log);
+	 * web3.zond.accounts.wallet.create(1)
+	 * web3.zond.accounts.wallet.encrypt("abc").then(console.log);
 	 * > [
 	 * '{"version":3,"id":"fa46e213-a7c3-4844-b903-dd14d39cc7db",
 	 * "address":"fa3e41a401609103c241431cbdee8623ae2a321a","crypto":
@@ -295,7 +295,7 @@ export class Wallet<
 	 * @returns The decrypted wallet object
 	 *
 	 * ```ts
-	 * web3.eth.accounts.wallet.decrypt([
+	 * web3.zond.accounts.wallet.decrypt([
 	 * { version: 3,
 	 * id: '83191a81-aaca-451f-b63d-0c5f3b849289',
 	 * address: '06f702337909c06c82b09b7a22f0a2f0855d1f68',
@@ -330,28 +330,28 @@ export class Wallet<
 	 * > Wallet {
 	 *   _accountProvider: {
 	 *     create: [Function: create],
-	 *     privateKeyToAccount: [Function: privateKeyToAccount],
+	 *     publicKeyToAccount: [Function: publicKeyToAccount],
 	 *     decrypt: [Function: decrypt]
 	 *   },
 	 *   _defaultKeyName: 'web3js_wallet',
 	 *   _accounts: {
 	 *     '0x85d70633b90e03e0276b98880286d0d055685ed7': {
 	 *       address: '0x85D70633b90e03e0276B98880286D0D055685ed7',
-	 *       privateKey: '0xbce9b59981303e76c4878b1a6d7b088ec6b9dd5c966b7d5f54d7a749ff683387',
+	 *       seed: '0xbce9b59981303e76c4878b1a6d7b088ec6b9dd5c966b7d5f54d7a749ff683387',
 	 *       signTransaction: [Function: signTransaction],
 	 *       sign: [Function: sign],
 	 *       encrypt: [Function: encrypt]
 	 *     },
 	 *     '0x06f702337909c06c82b09b7a22f0a2f0855d1f68': {
 	 *       address: '0x06F702337909C06C82B09B7A22F0a2f0855d1F68',
-	 *       privateKey: '87a51da18900da7398b3bab03996833138f269f8f66dd1237b98df6b9ce14573',
+	 *       seed: '87a51da18900da7398b3bab03996833138f269f8f66dd1237b98df6b9ce14573',
 	 *       signTransaction: [Function: signTransaction],
 	 *       sign: [Function: sign],
 	 *       encrypt: [Function: encrypt]
 	 *     },
 	 *     '0xb5d89661b59a9af0b34f58d19138baa2de48baaf': {
 	 *       address: '0xB5d89661B59a9aF0b34f58D19138bAa2de48BAaf',
-	 *       privateKey: '7ee61c5282979aae9dd795bb6a54e8bdc2bfe009acb64eb9a67322eec3b3da6e',
+	 *       seed: '7ee61c5282979aae9dd795bb6a54e8bdc2bfe009acb64eb9a67322eec3b3da6e',
 	 *       signTransaction: [Function: signTransaction],
 	 *       sign: [Function: sign],
 	 *       encrypt: [Function: encrypt]
@@ -384,7 +384,7 @@ export class Wallet<
 	 * @param keyName - (optional) The key used for the local storage position, defaults to `"web3js_wallet"`.
 	 * @returns Will return boolean value true if saved properly
 	 * ```ts
-	 * web3.eth.accounts.wallet.save('test#!$');
+	 * web3.zond.accounts.wallet.save('test#!$');
 	 * >true
 	 * ```
 	 */
@@ -412,9 +412,9 @@ export class Wallet<
 	 * @returns Returns the wallet object
 	 *
 	 * ```ts
-	 * web3.eth.accounts.wallet.save('test#!$');
+	 * web3.zond.accounts.wallet.save('test#!$');
 	 * > true
-	 * web3.eth.accounts.wallet.load('test#!$');
+	 * web3.zond.accounts.wallet.load('test#!$');
 	 * { defaultKeyName: "web3js_wallet",
 	 *   length: 0,
 	 *   _accounts: Accounts {_requestManager: RequestManager, givenProvider: Proxy, providers: {…}, _provider: WebsocketProvider, …},

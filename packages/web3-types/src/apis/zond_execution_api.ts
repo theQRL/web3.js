@@ -22,7 +22,6 @@ import {
 	HexStringSingleByte,
 	HexString256Bytes,
 	FeeHistoryBase,
-	HexString8Bytes,
 	Uint256,
 	BlockNumberOrTag,
 	Filter,
@@ -179,13 +178,6 @@ export type ZondExecutionAPI = {
 	zond_getBlockByNumber: (blockNumber: BlockNumberOrTag, hydrated: boolean) => BlockAPI;
 	zond_getBlockTransactionCountByHash: (blockHash: HexString32Bytes) => Uint;
 	zond_getBlockTransactionCountByNumber: (blockNumber: BlockNumberOrTag) => Uint;
-	zond_getUncleCountByBlockHash: (blockHash: HexString32Bytes) => Uint;
-	zond_getUncleCountByBlockNumber: (blockNumber: BlockNumberOrTag) => Uint;
-	zond_getUncleByBlockHashAndIndex: (blockHash: HexString32Bytes, uncleIndex: Uint) => BlockAPI;
-	zond_getUncleByBlockNumberAndIndex: (
-		blockNumber: BlockNumberOrTag,
-		uncleIndex: Uint,
-	) => BlockAPI;
 
 	// https://github.com/ethereum/execution-apis/blob/main/src/eth/transaction.yaml
 	zond_getTransactionByHash: (transactionHash: HexString32Bytes) => TransactionInfoAPI | undefined;
@@ -231,17 +223,6 @@ export type ZondExecutionAPI = {
 	zond_getFilterChanges: (filterIdentifier: Uint) => FilterResultsAPI;
 	zond_getFilterLogs: (filterIdentifier: Uint) => FilterResultsAPI;
 	zond_getLogs: (filter: Filter) => FilterResultsAPI;
-
-	// https://github.com/ethereum/execution-apis/blob/main/src/eth/mining.yaml
-	zond_mining: () => boolean;
-	zond_hashrate: () => Uint;
-	zond_getWork: () => [HexString32Bytes, HexString32Bytes, HexString32Bytes];
-	zond_submitWork: (
-		nonce: HexString8Bytes,
-		hash: HexString32Bytes,
-		digest: HexString32Bytes,
-	) => boolean;
-	zond_submitHashrate: (hashRate: HexString32Bytes, id: HexString32Bytes) => boolean;
 
 	// https://github.com/ethereum/execution-apis/blob/main/src/eth/sign.yaml
 	zond_sign: (address: Address, message: HexStringBytes) => HexString256Bytes;

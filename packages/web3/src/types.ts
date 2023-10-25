@@ -29,8 +29,7 @@ import {
 import {
 	//encrypt,
 	hashMessage,
-	//recover,
-	//recoverTransaction,
+	recoverTransaction,
 	sign,
 	signTransaction,
 	Wallet,
@@ -79,10 +78,9 @@ export interface Web3ZondInterface extends Zond {
 			transaction: Transaction,
 			seed: Bytes,
 		) => ReturnType<typeof signTransaction>;
-		//recoverTransaction: typeof recoverTransaction;
+		recoverTransaction: typeof recoverTransaction;
 		hashMessage: typeof hashMessage;
 		sign: typeof sign;
-		//recover: typeof recover;
 		//encrypt: typeof encrypt;
 		// decrypt: (
 		// 	keystore: string,

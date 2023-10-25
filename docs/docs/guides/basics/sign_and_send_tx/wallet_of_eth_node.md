@@ -16,14 +16,14 @@ const web3 = new Web3(/* PROVIDER*/);
 
 // Second step: add an account to the Ethereum node and unlock it
 const account = {
-	privateKey: '0xb45b02f408a0dd0996aab2b55a54f4ed7735f82b133c0786a9ff372ffaaf11bd',
+	seed: '0xb45b02f408a0dd0996aab2b55a54f4ed7735f82b133c0786a9ff372ffaaf11bd',
 	address: '0xe4beef667408b99053dc147ed19592ada0d77f59',
 };
 
 // if you use ganache backend, use a private key with 0x
-await web3.eth.personal.importRawKey(account.privateKey);
+await web3.eth.personal.importRawKey(account.seed);
 // if you use geth backend, use a private key without 0x
-await web3.eth.personal.importRawKey(account.privateKey.slice(2));
+await web3.eth.personal.importRawKey(account.seed.slice(2));
 
 // unlock account
 await web3Personal.unlockAccount(account.address, 'anyPassword', 100000000);
@@ -59,14 +59,14 @@ const web3 = new Web3(/* PROVIDER*/);
 
 // Second step: add an account to the Ethereum node and unlock it
 const account = {
-	privateKey: '0xb45b02f408a0dd0996aab2b55a54f4ed7735f82b133c0786a9ff372ffaaf11bd',
+	seed: '0xb45b02f408a0dd0996aab2b55a54f4ed7735f82b133c0786a9ff372ffaaf11bd',
 	address: '0xe4beef667408b99053dc147ed19592ada0d77f59',
 };
 
 // if you use ganache backend, use a private key with 0x
-await web3.eth.personal.importRawKey(account.privateKey);
+await web3.eth.personal.importRawKey(account.seed);
 // if you use geth backend, use a private key without 0x
-await web3.eth.personal.importRawKey(account.privateKey.slice(2));
+await web3.eth.personal.importRawKey(account.seed.slice(2));
 
 // unlock account
 await web3.eth.personal.unlockAccount(account.address, 'anyPassword', 100000000);

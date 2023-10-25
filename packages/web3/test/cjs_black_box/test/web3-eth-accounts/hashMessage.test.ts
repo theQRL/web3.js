@@ -28,7 +28,7 @@ const Web3 = require('web3').default;
 
 jest.setTimeout(15000);
 
-describe('CJS - Black Box Unit Tests - web3.eth.accounts.hashMessage', () => {
+describe('CJS - Black Box Unit Tests - web3.zond.accounts.hashMessage', () => {
 	let web3: typeof Web3;
 
 	beforeAll(() => {
@@ -40,7 +40,7 @@ describe('CJS - Black Box Unit Tests - web3.eth.accounts.hashMessage', () => {
 	});
 
 	it('should hash provided message', () => {
-		expect(web3.eth.accounts.hashMessage('Hello World')).toBe(
+		expect(web3.zond.accounts.hashMessage('Hello World')).toBe(
 			'0xa1de988600a42c4b4ab089b619297c17d53cffae5d5120d82d8a92d0bb3b78f2',
 		);
 	});

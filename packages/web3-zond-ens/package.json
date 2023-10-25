@@ -1,6 +1,6 @@
 {
 	"name": "@theqrl/web3-zond-ens",
-	"version": "4.0.6",
+	"version": "0.1.0",
 	"description": "This package has ENS functions for interacting with Ethereum Name Service.",
 	"main": "./lib/commonjs/index.js",
 	"module": "./lib/esm/index.js",
@@ -59,13 +59,13 @@
 	},
 	"dependencies": {
 		"@adraffy/ens-normalize": "^1.8.8",
-		"@theqrl/web3-core": "^4.2.0",
-		"@theqrl/web3-errors": "^1.1.2",
-		"@theqrl/web3-zond": "^4.2.0",
-		"@theqrl/web3-zond-contract": "^4.1.0",
-		"@theqrl/web3-net": "^4.0.6",
-		"@theqrl/web3-types": "^1.2.0",
-		"@theqrl/web3-utils": "^4.0.6",
-		"@theqrl/web3-validator": "^2.0.2"
+		"@theqrl/web3-core": "^0.1.0",
+		"@theqrl/web3-errors": "^0.1.0",
+		"@theqrl/web3-zond": "^0.1.0",
+		"@theqrl/web3-zond-contract": "^0.1.0",
+		"@theqrl/web3-net": "^0.1.0",
+		"@theqrl/web3-types": "^0.1.0",
+		"@theqrl/web3-utils": "^0.1.0",
+		"@theqrl/web3-validator": "^0.1.0"
 	}
 }

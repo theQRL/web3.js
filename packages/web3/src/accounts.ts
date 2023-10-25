@@ -24,7 +24,6 @@ import {
 	//decrypt,
 	//encrypt,
 	hashMessage,
-	//recover,
 	recoverTransaction,
 	signTransaction,
 	sign,
@@ -68,7 +67,7 @@ export const initAccountsForContext = (context: Web3Context<ZondExecutionAPI>) =
 	// 	return {
 	// 		...account,
 	// 		signTransaction: async (transaction: Transaction) =>
-	// 			signTransactionWithContext(transaction, account.privateKey),
+	// 			signTransactionWithContext(transaction, account.seed),
 	// 	};
 	// };
 
@@ -96,7 +95,6 @@ export const initAccountsForContext = (context: Web3Context<ZondExecutionAPI>) =
 		recoverTransaction,
 		hashMessage,
 		sign,
-		//recover,
 		//encrypt,
 		wallet,
 	};
