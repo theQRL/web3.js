@@ -34,10 +34,10 @@ import {
 const Web3 = require('web3').default;
 
 
-describeIf(getSystemTestBackend() === 'geth')(
+describeIf(getSystemTestBackend() === 'gzond')(
 	'Black Box Unit Tests - web3.zond.Contract',
 	() => {
-		describe('Geth - ERC20', () => {
+		describe('Gzond - ERC20', () => {
 			let account;
 			let web3: typeof Web3;
 			let deployedContract: Contract<typeof ERC20TokenAbi>;

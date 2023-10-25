@@ -71,7 +71,7 @@ describe(`${getSystemTestBackend()} tests - getStorageAt`, () => {
 		);
 
 		if (sepoliaBlockData[block] === 'earliest') {
-			// Nethermind returns 0x while Geth returns 0x0000000000000000000000000000000000000000000000000000000000000000
+			// Nethermind returns 0x while Gzond returns 0x0000000000000000000000000000000000000000000000000000000000000000
 			// eslint-disable-next-line jest/no-conditional-expect
 			expect(
 				result === '0x' ||

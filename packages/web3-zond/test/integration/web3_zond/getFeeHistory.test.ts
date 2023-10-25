@@ -25,7 +25,7 @@ import {
 } from '../../fixtures/system_test_utils';
 import { feeHistorySchema } from '../../../src/schemas';
 
-describeIf(getSystemTestBackend().includes('geth'))('Web3Zond.getFeeHistory', () => {
+describeIf(getSystemTestBackend().includes('gzond'))('Web3Zond.getFeeHistory', () => {
 	let web3Zond: Web3Zond;
 	let systemProvider: string | SupportedProviders;
 

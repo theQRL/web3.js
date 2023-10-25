@@ -20,7 +20,7 @@ const addAccount = async (address, seed) => {
 	if (mainAcc === undefined) {
 		mainAcc = address;
 		await web3Personal.importRawKey(
-			getSystemTestBackend() === 'geth' ? seed.slice(2) : seed,
+			getSystemTestBackend() === 'gzond' ? seed.slice(2) : seed,
 			'123456',
 		);
 		await web3Personal.unlockAccount(mainAcc, '123456', 15000);
@@ -36,13 +36,13 @@ const addAccount = async (address, seed) => {
 
 	// if (!accountList.find(acc => acc.address === address)) {
 	// 	await web3Personal.importRawKey(
-	// 		getSystemTestBackend() === 'geth' ? seed.slice(2) : seed,
+	// 		getSystemTestBackend() === 'gzond' ? seed.slice(2) : seed,
 	// 		'123456',
 	// 	);
 	// }
 
 	await web3Personal.importRawKey(
-		getSystemTestBackend() === 'geth' ? seed.slice(2) : seed,
+		getSystemTestBackend() === 'gzond' ? seed.slice(2) : seed,
 		'123456',
 	);
 	

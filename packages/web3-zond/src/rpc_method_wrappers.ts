@@ -832,7 +832,7 @@ export async function signTransaction<ReturnFormat extends DataFormat>(
 		formatTransaction(transaction, ZOND_DATA_FORMAT),
 	);
 	// Some clients only return the encoded signed transaction (e.g. Ganache)
-	// while clients such as Geth return the desired SignedTransactionInfoAPI object
+	// while clients such as Gzond return the desired SignedTransactionInfoAPI object
 	return isString(response as HexStringBytes)
 		? decodeSignedTransaction(response as HexStringBytes, returnFormat, {
 				fillInputAndData: true,
@@ -984,7 +984,7 @@ export async function getProof<ReturnFormat extends DataFormat>(
 	return format(accountSchema, response as unknown as AccountObject, returnFormat);
 }
 
-// TODO Throwing an error with Geth, but not Infura
+// TODO Throwing an error with Gzond, but not Infura
 // TODO gasUsedRatio and reward not formatting
 /**
  * View additional documentations here: {@link Web3Zond.getFeeHistory}

@@ -163,7 +163,7 @@ describe('[Common]: Merge/POS specific logic', () => {
 	});
 
 	it('should get the correct merge hardfork at genesis', async () => {
-		const c = Common.fromGethGenesis(postMerge, { chain: 'post-merge' });
+		const c = Common.fromGzondGenesis(postMerge, { chain: 'post-merge' });
 		expect(c.getHardforkByBlockNumber(0)).toEqual(Hardfork.London);
 		expect(c.getHardforkByBlockNumber(0, BigInt(0))).toEqual(Hardfork.Merge);
 	});

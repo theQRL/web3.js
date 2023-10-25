@@ -21,7 +21,7 @@ import * as timestampJson from '../../fixtures/common/shanghai-time.json';
 
 describe('[Common]: Timestamp Hardfork logic', () => {
 	it('shanghai-time', () => {
-		const c = Common.fromGethGenesis(timestampJson, {
+		const c = Common.fromGzondGenesis(timestampJson, {
 			chain: 'withdrawals',
 		});
 		expect(c.getHardforkByBlockNumber(1, undefined, 0)).toEqual(Hardfork.MergeForkIdTransition);
@@ -35,7 +35,7 @@ describe('[Common]: Timestamp Hardfork logic', () => {
 			shardingForkTime: timestampJson.config.shanghaiTime,
 		};
 		const modifiedJson = { ...timestampJson, config };
-		const c = Common.fromGethGenesis(modifiedJson, {
+		const c = Common.fromGzondGenesis(modifiedJson, {
 			chain: 'modified',
 		});
 		expect(c.getHardforkByBlockNumber(1, undefined, 0)).toEqual(Hardfork.MergeForkIdTransition);
@@ -48,7 +48,7 @@ describe('[Common]: Timestamp Hardfork logic', () => {
 			shardingForkTime: timestampJson.config.shanghaiTime + 1000,
 		};
 		const modifiedJson = { ...timestampJson, config };
-		const c = Common.fromGethGenesis(modifiedJson, {
+		const c = Common.fromGzondGenesis(modifiedJson, {
 			chain: 'modified',
 		});
 		expect(c.getHardforkByBlockNumber(1, undefined, 0)).toEqual(Hardfork.MergeForkIdTransition);

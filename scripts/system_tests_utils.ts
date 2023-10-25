@@ -253,7 +253,7 @@ export const createNewAccount = async (config?: {
 		const web3Personal = new Personal(clientUrl);
 		if (!config?.doNotImport) {
 			await web3Personal.importRawKey(
-				getSystemTestBackend() === 'geth' ? acc.seed.slice(2) : acc.seed,
+				getSystemTestBackend() === 'gzond' ? acc.seed.slice(2) : acc.seed,
 				config.password ?? '123456',
 			);
 		}

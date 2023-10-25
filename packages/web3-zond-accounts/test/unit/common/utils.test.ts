@@ -17,13 +17,13 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import { hexToBytes } from '@theqrl/web3-utils';
 import { Common } from '../../../src/common/common';
 import { Hardfork } from '../../../src/common';
-import { parseGethGenesis } from '../../../src/common/utils';
+import { parseGzondGenesis } from '../../../src/common/utils';
 import testnet from '../../fixtures/common/testnetValid.json';
 import invalidSpuriousDragon from '../../fixtures/common/invalid-spurious-dragon.json';
 import poa from '../../fixtures/common/poa.json';
 import postMerge from '../../fixtures/common/post-merge.json';
 import noExtraData from '../../fixtures/common/no-extra-data.json';
-import gethGenesisKiln from '../../fixtures/common/geth-genesis-kiln.json';
+import gzondGenesisKiln from '../../fixtures/common/gzond-genesis-kiln.json';
 import postMergeHardfork from '../../fixtures/common/post-merge-hardfork.json';
 
 describe('[Utils/Parse]', () => {
@@ -42,19 +42,19 @@ describe('[Utils/Parse]', () => {
 		merge: '0x013fd1b5',
 	};
 
-	it('should parse geth params file', async () => {
-		const params = parseGethGenesis(testnet, 'rinkeby');
+	it('should parse gzond params file', async () => {
+		const params = parseGzondGenesis(testnet, 'rinkeby');
 		expect(params.genesis.nonce).toBe('0x0000000000000042');
 	});
 
 	it('should throw with invalid Spurious Dragon blocks', async () => {
 		expect(() => {
-			parseGethGenesis(invalidSpuriousDragon, 'bad_params');
+			parseGzondGenesis(invalidSpuriousDragon, 'bad_params');
 		}).toThrow();
 	});
 
 	it('should import poa network params correctly', async () => {
-		let params = parseGethGenesis(poa, 'poa');
+		let params = parseGzondGenesis(poa, 'poa');
 		expect(params.genesis.nonce).toBe('0x0000000000000000');
 		expect(params.consensus).toEqual({
 			type: 'poa',
@@ -62,24 +62,24 @@ describe('[Utils/Parse]', () => {
 			clique: { period: 15, epoch: 30000 },
 		});
 		poa.nonce = '00';
-		params = parseGethGenesis(poa, 'poa');
+		params = parseGzondGenesis(poa, 'poa');
 		expect(params.genesis.nonce).toBe('0x0000000000000000');
 		expect(params.hardfork).toEqual(Hardfork.London);
 	});
 
 	it('should generate expected hash with london block zero and base fee per gas defined', async () => {
-		const params = parseGethGenesis(postMerge, 'post-merge');
+		const params = parseGzondGenesis(postMerge, 'post-merge');
 		expect(params.genesis.baseFeePerGas).toEqual(postMerge.baseFeePerGas);
 	});
 
 	it('should successfully parse genesis file with no extraData', async () => {
-		const params = parseGethGenesis(noExtraData, 'noExtraData');
+		const params = parseGzondGenesis(noExtraData, 'noExtraData');
 		expect(params.genesis.extraData).toBe('0x');
 		expect(params.genesis.timestamp).toBe('0x10');
 	});
 
 	it('should successfully parse kiln genesis and set forkhash', async () => {
-		const common = Common.fromGethGenesis(gethGenesisKiln, {
+		const common = Common.fromGzondGenesis(gzondGenesisKiln, {
 			chain: 'customChain',
 			genesisHash: hexToBytes(
 				'51c7fe41be669f69c45c33a56982cbde405313342d9e2b00d7c91a7b284dd4f8',
@@ -110,8 +110,8 @@ describe('[Utils/Parse]', () => {
 		// Ok lets schedule shanghai at block 0, this should force merge to be scheduled at just after
 		// genesis if even mergeForkIdTransition is not confirmed to be post merge
 		// This will also check if the forks are being correctly sorted based on block
-		Object.assign(gethGenesisKiln.config, { shanghaiTime: Math.floor(Date.now() / 1000) });
-		const common1 = Common.fromGethGenesis(gethGenesisKiln, {
+		Object.assign(gzondGenesisKiln.config, { shanghaiTime: Math.floor(Date.now() / 1000) });
+		const common1 = Common.fromGzondGenesis(gzondGenesisKiln, {
 			chain: 'customChain',
 		});
 		// merge hardfork is now scheduled just after shanghai even if mergeForkIdTransition is not confirmed
@@ -136,7 +136,7 @@ describe('[Utils/Parse]', () => {
 	});
 
 	it('should successfully parse genesis with hardfork scheduled post merge', async () => {
-		const common = Common.fromGethGenesis(postMergeHardfork, {
+		const common = Common.fromGzondGenesis(postMergeHardfork, {
 			chain: 'customChain',
 		});
 		expect(common.hardforks().map(hf => hf.name)).toEqual([

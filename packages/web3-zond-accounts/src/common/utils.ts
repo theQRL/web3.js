@@ -36,8 +36,8 @@ export const stripHexPrefix = (str: string): string => {
 	return isHexPrefixed(str) ? str.slice(2) : str;
 };
 /**
- * Transforms Geth formatted nonce (i.e. hex string) to 8 byte 0x-prefixed string used internally
- * @param nonce string parsed from the Geth genesis file
+ * Transforms Gzond formatted nonce (i.e. hex string) to 8 byte 0x-prefixed string used internally
+ * @param nonce string parsed from the Gzond genesis file
  * @returns nonce as a 0x-prefixed 8 byte string
  */
 function formatNonce(nonce: string): string {
@@ -63,14 +63,14 @@ const intToHex = function (i: number) {
 };
 
 /**
- * Converts Geth genesis parameters to an EthereumJS compatible `CommonOpts` object
- * @param json object representing the Geth genesis file
+ * Converts Gzond genesis parameters to an EthereumJS compatible `CommonOpts` object
+ * @param json object representing the Gzond genesis file
  * @param optional mergeForkIdPostMerge which clarifies the placement of MergeForkIdTransition
  * hardfork, which by default is post merge as with the merged eth networks but could also come
  * before merge like in kiln genesis
  * @returns genesis parameters in a `CommonOpts` compliant object
  */
-function parseGethParams(json: any, mergeForkIdPostMerge = true) {
+function parseGzondParams(json: any, mergeForkIdPostMerge = true) {
 	// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 	const {
 		name,
@@ -96,22 +96,22 @@ function parseGethParams(json: any, mergeForkIdPostMerge = true) {
 	// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 	const { chainId }: { chainId: number } = config;
 
-	// geth is not strictly putting empty fields with a 0x prefix
+	// gzond is not strictly putting empty fields with a 0x prefix
 	if (extraData === '') {
 		extraData = '0x';
 	}
-	// geth may use number for timestamp
+	// gzond may use number for timestamp
 	if (!isHexPrefixed(timestamp)) {
 		// eslint-disable-next-line radix
 		timestamp = intToHex(parseInt(timestamp));
 	}
-	// geth may not give us a nonce strictly formatted to an 8 byte hex string
+	// gzond may not give us a nonce strictly formatted to an 8 byte hex string
 	if (nonce.length !== 18) {
 		nonce = formatNonce(nonce);
 	}
 
 	// EIP155 and EIP158 are both part of Spurious Dragon hardfork and must occur at the same time
-	// but have different configuration parameters in geth genesis parameters
+	// but have different configuration parameters in gzond genesis parameters
 	// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
 	if (config.eip155Block !== config.eip158Block) {
 		throw new Error(
@@ -126,7 +126,7 @@ function parseGethParams(json: any, mergeForkIdPostMerge = true) {
 		genesis: {
 			timestamp,
 			// eslint-disable-next-line radix
-			gasLimit: parseInt(gasLimit), // geth gasLimit and difficulty are hex strings while ours are `number`s
+			gasLimit: parseInt(gasLimit), // gzond gasLimit and difficulty are hex strings while ours are `number`s
 			// eslint-disable-next-line radix
 			difficulty: parseInt(difficulty),
 			nonce,
@@ -145,7 +145,7 @@ function parseGethParams(json: any, mergeForkIdPostMerge = true) {
 						type: 'poa',
 						algorithm: 'clique',
 						clique: {
-							// The recent geth genesis seems to be using blockperiodseconds
+							// The recent gzond genesis seems to be using blockperiodseconds
 							// and epochlength for clique specification
 							// see: https://hackmd.io/PqZgMpnkSWCWv5joJoFymQ
 							// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
@@ -266,21 +266,21 @@ function parseGethParams(json: any, mergeForkIdPostMerge = true) {
 }
 
 /**
- * Parses a genesis.json exported from Geth into parameters for Common instance
- * @param json representing the Geth genesis file
+ * Parses a genesis.json exported from Gzond into parameters for Common instance
+ * @param json representing the Gzond genesis file
  * @param name optional chain name
  * @returns parsed params
  */
-export function parseGethGenesis(json: any, name?: string, mergeForkIdPostMerge?: boolean) {
+export function parseGzondGenesis(json: any, name?: string, mergeForkIdPostMerge?: boolean) {
 	try {
 		if (['config', 'difficulty', 'gasLimit', 'alloc'].some(field => !(field in json))) {
-			throw new Error('Invalid format, expected geth genesis fields missing');
+			throw new Error('Invalid format, expected gzond genesis fields missing');
 		}
 		if (name !== undefined) {
 			// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, no-param-reassign
 			json.name = name;
 		}
-		return parseGethParams(json, mergeForkIdPostMerge);
+		return parseGzondParams(json, mergeForkIdPostMerge);
 	} catch (e: any) {
 		// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/restrict-template-expressions
 		throw new Error(`Error parsing parameters file: ${e.message}`);

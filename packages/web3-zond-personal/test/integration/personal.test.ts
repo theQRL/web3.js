@@ -82,7 +82,7 @@ describe('personal integration tests', () => {
 		expect(isHexStrict(receipt)).toBe(true);
 	});
 
-	itIf(getSystemTestBackend() === 'geth')('sign', async () => {
+	itIf(getSystemTestBackend() === 'gzond')('sign', async () => {
 		const password = '123456';
 		const addr = (await createTempAccount({ password })).address;
 		await zondPersonal.unlockAccount(addr, password, 100000);
@@ -103,7 +103,7 @@ describe('personal integration tests', () => {
 
 	it('importRawKey', async () => {
 		const { address, seed } = createAccount();
-		const rawKey = getSystemTestBackend() === 'geth' ? seed.slice(2) : seed;
+		const rawKey = getSystemTestBackend() === 'gzond' ? seed.slice(2) : seed;
 		const key = await zondPersonal.importRawKey(rawKey, '123456');
 		expect(toChecksumAddress(key).toLowerCase()).toBe(address.toLowerCase());
 	});

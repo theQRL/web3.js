@@ -128,7 +128,7 @@ export abstract class BaseTransaction<TransactionObject> {
 
 		this._validateCannotExceedMaxInteger({ value: this.value });
 
-		// geth limits gasLimit to 2^64-1
+		// gzond limits gasLimit to 2^64-1
 		this._validateCannotExceedMaxInteger({ gasLimit: this.gasLimit }, 64);
 
 		// EIP-2681 limits nonce to 2^64-1 (cannot equal 2^64-1)

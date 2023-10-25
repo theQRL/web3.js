@@ -134,7 +134,7 @@ export interface CustomCommonOpts extends BaseOpts {
 	baseChain?: string | number | Chain | bigint;
 }
 
-export interface GethConfigOpts extends BaseOpts {
+export interface GzondConfigOpts extends BaseOpts {
 	chain?: string;
 	genesisHash?: Uint8Array;
 	mergeForkIdPostMerge?: boolean;

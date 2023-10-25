@@ -19,7 +19,7 @@ import { EventEmitter } from 'events';
 import type { Numbers } from '@theqrl/web3-types';
 import { bytesToHex, hexToBytes, uint8ArrayConcat } from '@theqrl/web3-utils';
 import { TypeOutput } from './types.js';
-import { intToUint8Array, toType, parseGethGenesis } from './utils.js';
+import { intToUint8Array, toType, parseGzondGenesis } from './utils.js';
 import goerli from './chains/goerli.js';
 import mainnet from './chains/mainnet.js';
 import sepolia from './chains/sepolia.js';
@@ -39,7 +39,7 @@ import type {
 	CustomCommonOpts,
 	EthashConfig,
 	GenesisBlockConfig,
-	GethConfigOpts,
+	GzondConfigOpts,
 	HardforkConfig,
 } from './types.js';
 
@@ -185,16 +185,16 @@ export class Common extends EventEmitter {
 	}
 
 	/**
-	 * Static method to load and set common from a geth genesis json
-	 * @param genesisJson json of geth configuration
+	 * Static method to load and set common from a gzond genesis json
+	 * @param genesisJson json of gzond configuration
 	 * @param { chain, eips, genesisHash, hardfork, mergeForkIdPostMerge } to further configure the common instance
 	 * @returns Common
 	 */
-	public static fromGethGenesis(
+	public static fromGzondGenesis(
 		genesisJson: any,
-		{ chain, eips, genesisHash, hardfork, mergeForkIdPostMerge }: GethConfigOpts,
+		{ chain, eips, genesisHash, hardfork, mergeForkIdPostMerge }: GzondConfigOpts,
 	): Common {
-		const genesisParams = parseGethGenesis(genesisJson, chain, mergeForkIdPostMerge);
+		const genesisParams = parseGzondGenesis(genesisJson, chain, mergeForkIdPostMerge);
 		const common = new Common({
 			chain: genesisParams.name ?? 'custom',
 			customChains: [genesisParams],

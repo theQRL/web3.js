@@ -5,7 +5,7 @@ ORIGARGS=("$@")
 . scripts/env.sh
 
 helpFunction() {
-	echo "Usage: $0 <geth | testnet | mainnet> <http | ws> [node | electron | firefox | chrome] [coverage | sync]"
+	echo "Usage: $0 <gzond | testnet | mainnet> <http | ws> [node | electron | firefox | chrome] [coverage | sync]"
 	exit 1 # Exit script after printing help
 }
 BACKEND=${ORIGARGS[0]}
@@ -13,7 +13,7 @@ MODE=${ORIGARGS[1]}
 ENGINE=${ORIGARGS[2]}
 TEST_OPTION=${ORIGARGS[3]}
 
-SUPPORTED_BACKENDS=("geth" "testnet" "mainnet")
+SUPPORTED_BACKENDS=("gzond" "testnet" "mainnet")
 SUPPORTED_MODE=("http" "ws" "ipc")
 # if you will add a new browser please also add it in the system_test_utils.ts => isBrowser
 SUPPORTED_ENGINES=("node" "electron" "firefox" "chrome" "")
@@ -47,7 +47,7 @@ TEST_COMMAND=""
 
 if [[ $MODE == "ipc" ]]; then
         export WEB3_SYSTEM_TEST_PROVIDER=$IPC_PATH
-        BACKEND=geth-binary
+        BACKEND=gzond-binary
 fi
 
 if [[ $ENGINE == "node" ]] || [[ $ENGINE == "" ]]; then
@@ -63,7 +63,7 @@ else
 fi
 
 
-if [[ $BACKEND == "geth" || $BACKEND == "geth-binary" ]]; then
+if [[ $BACKEND == "gzond" || $BACKEND == "gzond-binary" ]]; then
 	yarn "$BACKEND:start:background" && yarn generate:accounts && yarn $TEST_COMMAND && yarn "$BACKEND:stop"
 else
 	yarn $TEST_COMMAND

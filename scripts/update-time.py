@@ -21,7 +21,7 @@ def write_file(absolute_path, data):
     f.close()
 
 
-def update_time_geth_config(timestamp):
+def update_time_gzond_config(timestamp):
     target_file = os.path.join(base_path, "go-zond/params/config.go")
     data = read_file(target_file)
 
@@ -33,7 +33,7 @@ def update_time_geth_config(timestamp):
     write_file(target_file, data)
 
 
-def update_time_geth_genesis(timestamp):
+def update_time_gzond_genesis(timestamp):
     target_file = os.path.join(base_path, "go-zond/core/genesis.go")
     data = read_file(target_file)
 
@@ -87,7 +87,7 @@ def update_genesis_hash():
 
 
 def update_genesis_json(timestamp):
-    target_file = "scripts/execution/genesis.json"
+    target_file = os.path.join(base_path, "execution/genesis.json")
     data = read_file(target_file)
 
     timestamp_var_loc = data.find("timestamp")
@@ -100,8 +100,8 @@ def update_genesis_json(timestamp):
 def main():
     timestamp = int(time()) + 120
 
-    update_time_geth_config(timestamp)
-    update_time_geth_genesis(timestamp)
+    update_time_gzond_config(timestamp)
+    update_time_gzond_genesis(timestamp)
     update_genesis_hash()
     #update_prysmctl_command(timestamp)
     update_genesis_json(timestamp)

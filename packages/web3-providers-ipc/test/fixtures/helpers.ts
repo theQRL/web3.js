@@ -45,7 +45,7 @@ const removeIfExists = () => {
 		fs.unlinkSync(IPC_PATH);
 	}
 };
-export const startGethServer = async (): Promise<{ path: string; close: () => void }> => {
+export const startGzondServer = async (): Promise<{ path: string; close: () => void }> => {
 	removeIfExists();
 	await execPromise(createSymlink);
 	return {

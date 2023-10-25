@@ -296,7 +296,7 @@ describe('Web3Zond.sendSignedTransaction', () => {
 
 			// TODO Confirmations are dependent on the next block being mined,
 			// this is manually triggering the next block to be created since both
-			// Geth and Ganache wait for transaction before mining a block.
+			// Gzond and Ganache wait for transaction before mining a block.
 			// This should be revisited to implement a better solution
 			await web3Zond.sendTransaction({
 				from: tempAcc.address,
@@ -347,7 +347,7 @@ describe('Web3Zond.sendSignedTransaction', () => {
 				name: 'TransactionRevertInstructionError',
 				innerError: undefined,
 				reason:
-					getSystemTestBackend() === 'geth'
+					getSystemTestBackend() === 'gzond'
 						? expect.stringContaining(
 								'err: max fee per gas less than block base fee: address 0x',
 						  )
@@ -385,7 +385,7 @@ describe('Web3Zond.sendSignedTransaction', () => {
 				message: 'Transaction has been reverted by the EVM',
 				innerError: undefined,
 				reason:
-					getSystemTestBackend() === 'geth'
+					getSystemTestBackend() === 'gzond'
 						? expect.stringContaining(
 								'err: insufficient funds for gas * price + value: address 0x',
 						  )
@@ -425,7 +425,7 @@ describe('Web3Zond.sendSignedTransaction', () => {
 				name: 'TransactionRevertInstructionError',
 				code: 402,
 				reason:
-					getSystemTestBackend() === 'geth'
+					getSystemTestBackend() === 'gzond'
 						? 'execution reverted: This is a send revert'
 						: 'VM Exception while processing transaction: revert This is a send revert',
 				signature: '0x08c379a0',
@@ -462,7 +462,7 @@ describe('Web3Zond.sendSignedTransaction', () => {
 				name: 'TransactionRevertWithCustomError',
 				code: 438,
 				reason:
-					getSystemTestBackend() === 'geth'
+					getSystemTestBackend() === 'gzond'
 						? 'execution reverted'
 						: 'VM Exception while processing transaction: revert',
 				signature: '0x72090e4d',
@@ -503,7 +503,7 @@ describe('Web3Zond.sendSignedTransaction', () => {
 				name: 'TransactionRevertWithCustomError',
 				code: 438,
 				reason:
-					getSystemTestBackend() === 'geth'
+					getSystemTestBackend() === 'gzond'
 						? 'execution reverted'
 						: 'VM Exception while processing transaction: revert',
 				signature: '0xc85bda60',
@@ -548,7 +548,7 @@ describe('Web3Zond.sendSignedTransaction', () => {
 				name: 'TransactionRevertInstructionError',
 				innerError: undefined,
 				reason:
-					getSystemTestBackend() === 'geth'
+					getSystemTestBackend() === 'gzond'
 						? 'execution reverted: This is a send revert'
 						: 'VM Exception while processing transaction: revert This is a send revert',
 				signature: '0x08c379a0',

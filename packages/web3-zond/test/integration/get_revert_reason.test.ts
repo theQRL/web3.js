@@ -60,7 +60,7 @@ describe('Web3Zond.getRevertReason', () => {
 		const response = await getRevertReason(web3Zond, transaction);
 
 		switch (getSystemTestBackend()) {
-			case 'geth':
+			case 'gzond':
 				expect(response).toMatchObject({
 					reason: 'execution reverted: This is a call revert',
 					signature: '0x08c379a0',
@@ -84,7 +84,7 @@ describe('Web3Zond.getRevertReason', () => {
 		const response = await getRevertReason(web3Zond, transaction);
 
 		switch (getSystemTestBackend()) {
-			case 'geth':
+			case 'gzond':
 				expect(response).toMatchObject({
 					reason: 'execution reverted: This is a send revert',
 					signature: '0x08c379a0',
@@ -109,7 +109,7 @@ describe('Web3Zond.getRevertReason', () => {
 
 		const response = await getRevertReason(web3Zond, transaction);
 		switch (getSystemTestBackend()) {
-			case 'geth':
+			case 'gzond':
 				expect(response).toBe(
 					'err: intrinsic gas too low: have 0, want 21544 (supplied gas 0)',
 				);
@@ -131,7 +131,7 @@ describe('Web3Zond.getRevertReason', () => {
 
 		const response = await getRevertReason(web3Zond, transaction, SimpleRevertAbi);
 		switch (getSystemTestBackend()) {
-			case 'geth':
+			case 'gzond':
 				expect(response).toMatchObject({
 					data: '',
 					reason: 'execution reverted',
@@ -158,7 +158,7 @@ describe('Web3Zond.getRevertReason', () => {
 
 		const response = await getRevertReason(web3Zond, transaction, SimpleRevertAbi);
 		switch (getSystemTestBackend()) {
-			case 'geth':
+			case 'gzond':
 				expect(response).toMatchObject({
 					data: '000000000000000000000000000000000000000000000000000000000000002a0000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000001c5468697320697320616e206572726f72207769746820706172616d7300000000',
 					reason: 'execution reverted',

@@ -25,7 +25,7 @@ import {
 } from '../fixtures/system_test_utils';
 
 describe('contract', () => {
-	describeIf(getSystemTestBackend() === 'geth')('createAccessList', () => {
+	describeIf(getSystemTestBackend() === 'gzond')('createAccessList', () => {
 		let contract: Contract<typeof GreeterAbi>;
 		let deployOptions: Record<string, unknown>;
 		let sendOptions: Record<string, unknown>;

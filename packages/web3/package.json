@@ -53,8 +53,8 @@
 		"test:watch": "npm test -- --watch",
 		"test:unit": "jest --config=./test/unit/jest.config.js",
 		"test:integration": "jest --config=./test/integration/jest.config.js --forceExit",
-		"test:blackbox:geth:http": "./scripts/black_box_test.sh geth http",
-		"test:blackbox:geth:ws": "./scripts/black_box_test.sh geth ws"
+		"test:blackbox:gzond:http": "./scripts/black_box_test.sh gzond http",
+		"test:blackbox:gzond:ws": "./scripts/black_box_test.sh gzond ws"
 	},
 	"devDependencies": {
 		"@theqrl/web3-providers-ipc": "^0.1.0",

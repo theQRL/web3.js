@@ -171,7 +171,7 @@ export interface BlockHeaderOutput {
 	readonly baseFeePerGas?: Numbers;
 
 	// These fields are returned when the RPC client is Nethermind,
-	// but aren't available in other clients such as Geth
+	// but aren't available in other clients such as Gzond
 	readonly author?: Address;
 	readonly totalDifficulty?: Numbers;
 	readonly size?: Numbers;

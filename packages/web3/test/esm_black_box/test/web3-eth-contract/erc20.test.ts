@@ -28,10 +28,10 @@ import {
 } from '../../../shared_fixtures/system_tests_utils';
 import { ERC20TokenAbi, ERC20TokenBytecode } from '../../../shared_fixtures/contracts/ERC20Token';
 
-describeIf(getSystemTestBackend() === 'geth')(
+describeIf(getSystemTestBackend() === 'gzond')(
 	'Black Box Unit Tests - web3.zond.Contract',
 	() => {
-		describe('Geth - ERC20', () => {
+		describe('Gzond - ERC20', () => {
 			let account;
 			let web3: Web3;
 			let deployedContract: Contract<typeof ERC20TokenAbi>;
