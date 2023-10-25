@@ -17,7 +17,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import {
 	ConnectionEvent,
 	Eip1193EventName,
-	EthExecutionAPI,
+	ZondExecutionAPI,
 	JsonRpcBatchRequest,
 	JsonRpcBatchResponse,
 	JsonRpcId,
@@ -38,7 +38,7 @@ import {
 	Web3ProviderEventCallback,
 	Web3ProviderMessageEventCallback,
 	Web3ProviderStatus,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 import {
 	ConnectionError,
 	ConnectionNotOpenError,
@@ -47,7 +47,7 @@ import {
 	PendingRequestsOnReconnectingError,
 	RequestAlreadySentError,
 	Web3WSProviderError,
-} from 'web3-errors';
+} from '@theqrl/web3-errors';
 import { Eip1193Provider } from './web3_eip1193_provider.js';
 import { ChunkResponseParser } from './chunk_response_parser.js';
 import { isNullish } from './validation.js';
@@ -72,7 +72,7 @@ export abstract class SocketProvider<
 	MessageEvent,
 	CloseEvent,
 	ErrorEvent,
-	API extends Web3APISpec = EthExecutionAPI,
+	API extends Web3APISpec = ZondExecutionAPI,
 > extends Eip1193Provider<API> {
 	protected isReconnecting: boolean;
 	protected readonly _socketPath: string;

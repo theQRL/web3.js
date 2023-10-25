@@ -14,7 +14,7 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { bytesToHex } from 'web3-utils';
+import { bytesToHex } from '@theqrl/web3-utils';
 import Web3, { FMT_BYTES, FMT_NUMBER } from '../../../src';
 import {
 	closeOpenConnection,
@@ -43,7 +43,7 @@ describe(`${getSystemTestBackend()} tests - call`, () => {
 			format: Object.values(FMT_BYTES),
 		}),
 	)('should call retrieve method from deployed contract', async ({ format }) => {
-		const result = await web3.eth.call(
+		const result = await web3.zond.call(
 			{
 				to: getE2ETestContractAddress(),
 				input: '0x18160ddd',

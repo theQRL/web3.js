@@ -21,7 +21,7 @@ import { getDataFormat } from '../fixtures/web3_net_methods';
 
 jest.mock('../../src/rpc_method_wrappers');
 
-describe('web3_eth_methods', () => {
+describe('web3_zond_methods', () => {
 	let web3Net: Net;
 
 	beforeAll(() => {

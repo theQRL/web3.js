@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { SupportedProviders, Web3NetAPI } from 'web3-types';
+import { SupportedProviders, Web3NetAPI } from '@theqrl/web3-types';
 import Net from '../../src';
 
 import { closeOpenConnection, getSystemTestProvider } from '../fixtures/system_tests_utils';
@@ -40,7 +40,7 @@ describe('Web3 net', () => {
 
 	it('should be able to get id', async () => {
 		const networkId = await web3Net.getId();
-		expect(networkId).toBe(BigInt(1337));
+		expect(networkId).toBe(BigInt(1));
 	});
 
 	it('should be able to listen', async () => {

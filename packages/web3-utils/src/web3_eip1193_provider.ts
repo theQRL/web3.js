@@ -15,23 +15,23 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import {
-	EthExecutionAPI,
+	ZondExecutionAPI,
 	HexString,
 	ProviderConnectInfo,
 	Web3APIMethod,
 	Web3APIPayload,
 	Web3APISpec,
 	Web3BaseProvider,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 import { EventEmitter } from 'events';
-import { EIP1193ProviderRpcError } from 'web3-errors';
+import { EIP1193ProviderRpcError } from '@theqrl/web3-errors';
 import { toPayload } from './json_rpc.js';
 
 /**
  * This is an abstract class, which extends {@link Web3BaseProvider} class. This class is used to implement a provider that adheres to the EIP-1193 standard for Ethereum providers.
  */
 export abstract class Eip1193Provider<
-	API extends Web3APISpec = EthExecutionAPI,
+	API extends Web3APISpec = ZondExecutionAPI,
 > extends Web3BaseProvider<API> {
 	protected readonly _eventEmitter: EventEmitter = new EventEmitter();
 	private _chainId: HexString = '';
@@ -43,7 +43,7 @@ export abstract class Eip1193Provider<
 			ResponseType
 		>(
 			toPayload({
-				method: 'eth_chainId',
+				method: 'zond_chainId',
 				params: [],
 			}) as Web3APIPayload<API, Web3APIMethod<API>>,
 		);
@@ -53,7 +53,7 @@ export abstract class Eip1193Provider<
 	private async _getAccounts(): Promise<HexString[]> {
 		const data = await (this as Web3BaseProvider<API>).request<Web3APIMethod<API>, HexString[]>(
 			toPayload({
-				method: 'eth_accounts',
+				method: 'zond_accounts',
 				params: [],
 			}) as Web3APIPayload<API, Web3APIMethod<API>>,
 		);

@@ -17,7 +17,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 /* eslint-disable max-classes-per-file */
 
-import { JsonRpcError, TransactionReceipt, HexString } from 'web3-types';
+import { JsonRpcError, TransactionReceipt, HexString } from '@theqrl/web3-types';
 import {
 	ERR_CONTRACT,
 	ERR_CONTRACT_ABI_MISSING,

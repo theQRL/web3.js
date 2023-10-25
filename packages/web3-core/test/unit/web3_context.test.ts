@@ -16,8 +16,8 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 // eslint-disable-next-line max-classes-per-file
-import { ExistingPluginNamespaceError } from 'web3-errors';
-import HttpProvider from 'web3-providers-http';
+import { ExistingPluginNamespaceError } from '@theqrl/web3-errors';
+import HttpProvider from '@theqrl/web3-providers-http';
 import { Web3Context, Web3PluginBase } from '../../src/web3_context';
 import { Web3RequestManager } from '../../src/web3_request_manager';
 

@@ -60,7 +60,7 @@ With the implementation above, the call that will be made to the provider will b
 {
   id: "[GUID-STRING]", // something like: '3f839900-afdd-4553-bca7-b4e2b835c687'
   jsonrpc: '2.0',
-  method: 'eth_subscribe',
+  method: 'zond_subscribe',
   // The `someCustomSubscription` below is the name of the subscription provided by the node you are connected to.
   // And the `args` is the variable that has the type you provided at the second generic type
   //  at your class definition. That is in the snippet above: `{customArg: string}`.
@@ -129,7 +129,7 @@ const web3 = new Web3({
 
 // subscribe at the provider:
 // Note: this will internally initialize a new instance of `MyCustomSubscription`,
-// call `_buildSubscriptionParams`, and then send the `eth_subscribe` RPC call.
+// call `_buildSubscriptionParams`, and then send the `zond_subscribe` RPC call.
 const sub = web3.subscriptionManager.subscribe('custom', args);
 
 // listen to the emitted event:
@@ -142,7 +142,7 @@ sub.on('data', result => {
 To unsubscribe:
 
 ```ts
-// this will send `eth_unsubscribe` to stop the subscription.
+// this will send `zond_unsubscribe` to stop the subscription.
 await sub.unsubscribe();
 ```
 

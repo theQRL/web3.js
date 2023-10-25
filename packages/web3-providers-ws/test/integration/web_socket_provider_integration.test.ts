@@ -15,9 +15,9 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { Web3WSProviderError } from 'web3-errors';
+import { Web3WSProviderError } from '@theqrl/web3-errors';
 import {
-	EthExecutionAPI,
+	ZondExecutionAPI,
 	JsonRpcId,
 	JsonRpcNotification,
 	JsonRpcResponse,
@@ -25,8 +25,8 @@ import {
 	ProviderRpcError,
 	SocketRequestItem,
 	Web3APIPayload,
-} from 'web3-types';
-import { Web3DeferredPromise } from 'web3-utils';
+} from '@theqrl/web3-types';
+import { Web3DeferredPromise } from '@theqrl/web3-utils';
 import WebSocketProvider from '../../src/index';
 import {
 	createTempAccount,
@@ -43,7 +43,7 @@ describeIf(isWs)('WebSocketProvider - implemented methods', () => {
 	let clientWsUrl: string;
 	let tempAccount: string;
 	let webSocketProvider: WebSocketProvider;
-	let jsonRpcPayload: Web3APIPayload<EthExecutionAPI, 'eth_getBalance'>;
+	let jsonRpcPayload: Web3APIPayload<ZondExecutionAPI, 'zond_getBalance'>;
 	// helper function
 
 	beforeAll(async () => {
@@ -54,9 +54,9 @@ describeIf(isWs)('WebSocketProvider - implemented methods', () => {
 		jsonRpcPayload = {
 			jsonrpc: '2.0',
 			id: 42,
-			method: 'eth_getBalance',
+			method: 'zond_getBalance',
 			params: [tempAccount, 'latest'],
-		} as Web3APIPayload<EthExecutionAPI, 'eth_getBalance'>;
+		} as Web3APIPayload<ZondExecutionAPI, 'zond_getBalance'>;
 		webSocketProvider = new WebSocketProvider(
 			clientWsUrl,
 			{},
@@ -220,19 +220,19 @@ describeIf(isWs)('WebSocketProvider - implemented methods', () => {
 	});
 	describe('send multiple Requests on same connection with valid payload and receive response tests', () => {
 		// eslint-disable-next-line jest/expect-expect
-		let jsonRpcPayload2: Web3APIPayload<EthExecutionAPI, 'eth_mining'>;
-		let jsonRpcPayload3: Web3APIPayload<EthExecutionAPI, 'eth_hashrate'>;
+		let jsonRpcPayload2: Web3APIPayload<ZondExecutionAPI, 'zond_mining'>;
+		let jsonRpcPayload3: Web3APIPayload<ZondExecutionAPI, 'zond_hashrate'>;
 		beforeAll(() => {
 			jsonRpcPayload2 = {
 				jsonrpc: '2.0',
 				id: 43,
-				method: 'eth_mining',
-			} as Web3APIPayload<EthExecutionAPI, 'eth_mining'>;
+				method: 'zond_mining',
+			} as Web3APIPayload<ZondExecutionAPI, 'zond_mining'>;
 			jsonRpcPayload3 = {
 				jsonrpc: '2.0',
 				id: 44,
-				method: 'eth_hashrate',
-			} as Web3APIPayload<EthExecutionAPI, 'eth_hashrate'>;
+				method: 'zond_hashrate',
+			} as Web3APIPayload<ZondExecutionAPI, 'zond_hashrate'>;
 		});
 
 		it('should send multiple requests', async () => {

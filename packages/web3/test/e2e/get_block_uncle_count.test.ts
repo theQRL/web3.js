@@ -57,7 +57,7 @@ describe(`${getSystemTestBackend()} tests - getBlockUncleCount`, () => {
 			],
 		}),
 	)('getBlockUncleCount', async ({ block }) => {
-		const result = await web3.eth.getBlockUncleCount(blockData[block]);
+		const result = await web3.zond.getBlockUncleCount(blockData[block]);
 
 		expect(result).toBe(BigInt(0));
 	});

@@ -17,7 +17,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 /* eslint-disable max-classes-per-file */
 
-import { ConnectionEvent } from 'web3-types';
+import { ConnectionEvent } from '@theqrl/web3-types';
 import {
 	ERR_CONN,
 	ERR_CONN_INVALID,

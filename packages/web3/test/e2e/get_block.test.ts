@@ -14,10 +14,10 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { validator } from 'web3-validator';
-import { blockSchema } from 'web3-eth';
-import { Block, Transaction } from 'web3-types';
-import { format as formatter } from 'web3-utils';
+import { validator } from '@theqrl/web3-validator';
+import { blockSchema } from '@theqrl/web3-zond';
+import { Block, Transaction } from '@theqrl/web3-types';
+import { format as formatter } from '@theqrl/web3-utils';
 
 import Web3, { FMT_BYTES, FMT_NUMBER } from '../../src';
 import { getSystemE2ETestProvider } from './e2e_utils';
@@ -60,7 +60,7 @@ describe(`${getSystemTestBackend()} tests - getBlock`, () => {
 		}),
 	)('getBlock', async ({ hydrated, block, format }) => {
 		const result = {
-			...(await web3.eth.getBlock(blockData[block], hydrated, {
+			...(await web3.zond.getBlock(blockData[block], hydrated, {
 				number: format as FMT_NUMBER,
 				bytes: FMT_BYTES.HEX,
 			})),

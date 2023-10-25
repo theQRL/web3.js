@@ -16,7 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { EventEmitter } from 'stream';
-import { Web3APIPayload, EthExecutionAPI, JsonRpcResponse, Web3ProviderStatus } from 'web3-types';
+import { Web3APIPayload, ZondExecutionAPI, JsonRpcResponse, Web3ProviderStatus } from '@theqrl/web3-types';
 // eslint-disable-next-line import/no-relative-packages
 import { sleep } from '../../../../fixtures/utils';
 import { SocketProvider } from '../../src/socket_provider';
@@ -38,7 +38,7 @@ class TestProvider extends SocketProvider<any, any, any> {
 	// eslint-disable-next-line
 	protected _onCloseEvent(_event: any): void {}
 	// eslint-disable-next-line
-	protected _sendToSocket(_payload: Web3APIPayload<EthExecutionAPI, any>): void {}
+	protected _sendToSocket(_payload: Web3APIPayload<ZondExecutionAPI, any>): void {}
 	// eslint-disable-next-line
 	protected _parseResponses(_event: any): JsonRpcResponse[] {
 		return [] as JsonRpcResponse[];

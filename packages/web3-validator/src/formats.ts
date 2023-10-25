@@ -14,7 +14,7 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { Filter } from 'web3-types';
+import { Filter } from '@theqrl/web3-types';
 import { ValidInputTypes } from './types.js';
 import { isAddress } from './validation/address.js';
 import { isBlockNumber, isBlockNumberOrTag, isBlockTag } from './validation/block.js';

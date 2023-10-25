@@ -24,7 +24,7 @@ import { GreeterAbi, GreeterBytecode } from '../../shared_fixtures/build/Greeter
 import {
 	getAllowedSendTransaction,
 	getE2ETestAccountAddress,
-	getE2ETestAccountPrivateKey,
+	getE2ETestAccountSeed,
 	getSystemE2ETestProvider,
 } from '../e2e_utils';
 
@@ -38,7 +38,7 @@ describe(`${getSystemTestBackend()} tests - contract`, () => {
 	beforeAll(() => {
 		if (getAllowedSendTransaction()) {
 			web3 = new Web3(provider);
-			web3.eth.accounts.wallet.add(getE2ETestAccountPrivateKey());
+			web3.zond.accounts.wallet.add(getE2ETestAccountSeed());
 		}
 	});
 
@@ -47,21 +47,21 @@ describe(`${getSystemTestBackend()} tests - contract`, () => {
 	});
 
 	itIf(getAllowedSendTransaction())('should deploy a contract', async () => {
-		const contract = new web3.eth.Contract(GreeterAbi, undefined, {
+		const contract = new web3.zond.Contract(GreeterAbi, undefined, {
 			provider: getSystemE2ETestProvider(),
 		}).deploy({
 			data: GreeterBytecode,
 			arguments: [initialGreet],
 		});
-		const signedTransaction = await web3.eth.accounts.signTransaction(
+		const signedTransaction = await web3.zond.accounts.signTransaction(
 			{
 				from: getE2ETestAccountAddress(),
 				input: contract.encodeABI(),
 				gas: await contract.estimateGas(),
 			},
-			getE2ETestAccountPrivateKey(),
+			getE2ETestAccountSeed(),
 		);
-		const result = await web3.eth.sendSignedTransaction(signedTransaction.rawTransaction);
+		const result = await web3.zond.sendSignedTransaction(signedTransaction.rawTransaction);
 		deployedContractAddress = result.contractAddress as string;
 
 		// TODO This should work, but throws a type error
@@ -90,7 +90,7 @@ describe(`${getSystemTestBackend()} tests - contract`, () => {
 
 	itIf(getAllowedSendTransaction())('should call setGreeting on deployed contract', async () => {
 		const expectedGreet = 'Where we’re going, we don’t need roads';
-		const contract = new web3.eth.Contract(GreeterAbi, deployedContractAddress, {
+		const contract = new web3.zond.Contract(GreeterAbi, deployedContractAddress, {
 			provider: getSystemE2ETestProvider(),
 		});
 
@@ -98,17 +98,17 @@ describe(`${getSystemTestBackend()} tests - contract`, () => {
 		// eslint-disable-next-line jest/no-standalone-expect
 		expect(greeting).toBe(initialGreet);
 
-		const signedTransaction = await web3.eth.accounts.signTransaction(
+		const signedTransaction = await web3.zond.accounts.signTransaction(
 			{
 				from: getE2ETestAccountAddress(),
 				to: deployedContractAddress,
 				input: contract.methods.setGreeting(expectedGreet).encodeABI(),
 				gas: await contract.methods.setGreeting(expectedGreet).estimateGas(),
 			},
-			getE2ETestAccountPrivateKey(),
+			getE2ETestAccountSeed(),
 		);
 
-		const result = await web3.eth.sendSignedTransaction(signedTransaction.rawTransaction);
+		const result = await web3.zond.sendSignedTransaction(signedTransaction.rawTransaction);
 
 		greeting = await contract.methods.greet().call();
 		// eslint-disable-next-line jest/no-standalone-expect

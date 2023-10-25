@@ -32,7 +32,7 @@ describe(`${getSystemTestBackend()} tests - isListening`, () => {
 	});
 
 	it('should get the listening status for the connected node', async () => {
-		const result = await web3.eth.net.isListening();
+		const result = await web3.zond.net.isListening();
 		expect(typeof result).toBe('boolean');
 	});
 });

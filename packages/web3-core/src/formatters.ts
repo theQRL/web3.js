@@ -15,8 +15,8 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { FormatterError } from 'web3-errors';
-import { Iban } from 'web3-eth-iban';
+import { FormatterError } from '@theqrl/web3-errors';
+import { Iban } from '@theqrl/web3-zond-iban';
 import {
 	BlockTags,
 	Filter,
@@ -36,7 +36,7 @@ import {
 	SyncOutput,
 	TransactionInput,
 	TransactionOutput,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 import {
 	fromUtf8,
 	hexToNumber,
@@ -50,8 +50,8 @@ import {
 	toNumber,
 	toUtf8,
 	utf8ToHex,
-} from 'web3-utils';
-import { isBlockTag, isHex, isNullish } from 'web3-validator';
+} from '@theqrl/web3-utils';
+import { isBlockTag, isHex, isNullish } from '@theqrl/web3-validator';
 
 /* eslint-disable deprecation/deprecation */
 /**
@@ -223,7 +223,7 @@ export const inputTransactionFormatter = (options: TransactionInput, defaultAcco
 
 /**
  * @deprecated Use format function from web3-utils package instead
- * Hex encodes the data passed to eth_sign and personal_sign
+ * Hex encodes the data passed to zond_sign and personal_sign
  */
 export const inputSignFormatter = (data: string) => (isHexStrict(data) ? data : utf8ToHex(data));
 

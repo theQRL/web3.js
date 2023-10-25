@@ -15,9 +15,9 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { Numbers, HexString, BlockNumberOrTag, Common } from 'web3-types';
-import { ConfigHardforkMismatchError, ConfigChainMismatchError } from 'web3-errors';
-import { isNullish, toHex } from 'web3-utils';
+import { Numbers, HexString, BlockNumberOrTag, Common } from '@theqrl/web3-types';
+import { ConfigHardforkMismatchError, ConfigChainMismatchError } from '@theqrl/web3-errors';
+import { isNullish, toHex } from '@theqrl/web3-utils';
 import { TransactionTypeParser } from './types.js';
 // eslint-disable-next-line import/no-cycle
 import { TransactionBuilder } from './web3_context.js';
@@ -108,8 +108,8 @@ export abstract class Web3Config
 
 	/**
 	 * The `handleRevert` options property returns the revert reason string if enabled for the following methods:
-	 * - web3.eth.sendTransaction()
-	 * - web3.eth.call()
+	 * - web3.zond.sendTransaction()
+	 * - web3.zond.call()
 	 * - myContract.methods.myMethod().call()
 	 * - myContract.methods.myMethod().send()
 	 * Default is `false`.
@@ -148,8 +148,8 @@ export abstract class Web3Config
 
 	/**
 	 * This default address is used as the default `from` property, if no `from` property is specified in for the following methods:
-	 * - web3.eth.sendTransaction()
-	 * - web3.eth.call()
+	 * - web3.zond.sendTransaction()
+	 * - web3.zond.call()
 	 * - myContract.methods.myMethod().call()
 	 * - myContract.methods.myMethod().send()
 	 */
@@ -166,11 +166,11 @@ export abstract class Web3Config
 
 	/**
 	 * The default block is used for certain methods. You can override it by passing in the defaultBlock as last parameter. The default value is `"latest"`.
-	 * - web3.eth.getBalance()
-	 * - web3.eth.getCode()
-	 * - web3.eth.getTransactionCount()
-	 * - web3.eth.getStorageAt()
-	 * - web3.eth.call()
+	 * - web3.zond.getBalance()
+	 * - web3.zond.getCode()
+	 * - web3.zond.getTransactionCount()
+	 * - web3.zond.getStorageAt()
+	 * - web3.zond.call()
 	 * - myContract.methods.myMethod().call()
 	 */
 	public get defaultBlock() {

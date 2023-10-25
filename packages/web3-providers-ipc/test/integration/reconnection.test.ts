@@ -17,7 +17,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 import { IpcProvider } from '../../src';
 
-import { startGethServer } from '../fixtures/helpers';
+import { startGzondServer } from '../fixtures/helpers';
 import {
 	describeIf,
 	getSystemTestProviderUrl,
@@ -89,7 +89,7 @@ describeIf(isIpc)('IpcSocketProvider - reconnection', () => {
 			await waitForEvent(web3Provider, 'disconnect');
 		});
 		it('should connect, disconnect, try reconnect and reach max attempts', async () => {
-			const server = await startGethServer();
+			const server = await startGzondServer();
 			const web3Provider = new IpcProvider(
 				server.path,
 				{},

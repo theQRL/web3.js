@@ -15,8 +15,8 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { Contract } from 'web3-eth-contract';
-import { ContractInitOptions } from 'web3-types';
+import { Contract } from '@theqrl/web3-zond-contract';
+import { ContractInitOptions } from '@theqrl/web3-types';
 import { Web3 } from '../../src/web3';
 
 describe('Web3 object', () => {
@@ -32,8 +32,8 @@ describe('Web3 object', () => {
 			httpProviderOptions: undefined,
 		});
 	});
-	describe('creating a Contract object with the constructor at Web3 -> eth.Contract', () => {
-		const Web3Contract = new Web3().eth.Contract;
+	describe('creating a Contract object with the constructor at Web3 -> zond.Contract', () => {
+		const Web3Contract = new Web3().zond.Contract;
 		const abi = [{ name: 'any', type: 'function' }];
 		const address = '0x0000000000000000000000000000000000000000';
 		const options = { gas: '100' };

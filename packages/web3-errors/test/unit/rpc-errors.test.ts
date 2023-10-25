@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { JsonRpcIdentifier } from 'web3-types';
+import { JsonRpcIdentifier } from '@theqrl/web3-types';
 
 import * as rpcErrors from '../../src/errors/rpc_errors';
 import { RpcErrorMessages } from '../../src/errors/rpc_error_messages';

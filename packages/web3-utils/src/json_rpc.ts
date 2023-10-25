@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { isNullish } from 'web3-validator';
+import { isNullish } from '@theqrl/web3-validator';
 import {
 	JsonRpcPayload,
 	JsonRpcResponse,
@@ -27,8 +27,8 @@ import {
 	JsonRpcRequest,
 	JsonRpcBatchResponse,
 	JsonRpcSubscriptionResult,
-} from 'web3-types';
-import { rpcErrorsMap } from 'web3-errors';
+} from '@theqrl/web3-types';
+import { rpcErrorsMap } from '@theqrl/web3-errors';
 import { uuidV4 } from './uuid.js';
 
 // check if code is a valid rpc server error code

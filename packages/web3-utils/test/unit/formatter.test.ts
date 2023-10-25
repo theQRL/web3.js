@@ -23,7 +23,7 @@ import {
 	FormatType,
 	HexString,
 	Numbers,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 import { expectTypeOf, typecheck } from '@humeris/espresso-shot';
 import { isDataFormatValid, convertScalarValueValid } from '../fixtures/formatter';
 import { format, isDataFormat, convertScalarValue } from '../../src/formatter';

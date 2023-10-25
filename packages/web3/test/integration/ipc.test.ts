@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { IpcProvider } from 'web3-providers-ipc';
+import { IpcProvider } from '@theqrl/web3-providers-ipc';
 import {
 	getSystemTestProvider,
 	describeIf,
@@ -23,10 +23,10 @@ import {
 	closeOpenConnection,
 	waitForSocketConnect,
 } from '../shared_fixtures/system_tests_utils';
-import Web3, { EthExecutionAPI, SupportedProviders } from '../../src/index';
+import Web3, { ZondExecutionAPI, SupportedProviders } from '../../src/index';
 
 describe('Web3 instance', () => {
-	let provider: SupportedProviders<EthExecutionAPI> | string;
+	let provider: SupportedProviders<ZondExecutionAPI> | string;
 	let web3: Web3;
 
 	beforeAll(() => {

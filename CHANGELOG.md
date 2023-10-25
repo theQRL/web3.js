@@ -819,7 +819,7 @@ should use 4.0.1-alpha.0 for testing.
 #### web3-eth
 
 -   `Web3EthExecutionAPI` is now imported via `web3-types` instead of `web3_eth_execution_api.ts` (#5441)
--   Replace the imported methods from `rpc_methods.ts` with `ethRpcMethods` imports from `web3-rpc-methods` (#5441)
+-   Replace the imported methods from `rpc_methods.ts` with `zondRpcMethods` imports from `web3-rpc-methods` (#5441)
 -   `Web3NetAPI` is now imported from `web3-types` instead of `web3-net` (#5441)
 -   Moved `rpc_methods` tests to `web3-rpc-methods` (#5441)
 -   Implemented the logic for `transactionBlockTimeout` (#5294)
@@ -1509,7 +1509,7 @@ should use 4.0.1-alpha.0 for testing.
 #### web3-eth
 
 -   `formatTransaction` no longer throws a `TransactionDataAndInputError` if it's passed a transaction object with both `data` and `input` properties set (as long as they are the same value) (#6064)
--   Refactored documentation for `rpc_method_wrappers` to point to the previously duplicated documentation found under the `Web3Eth` class documentation (#6054)
+-   Refactored documentation for `rpc_method_wrappers` to point to the previously duplicated documentation found under the `Web3Zond` class documentation (#6054)
 -   Replaced Buffer for Uint8Array (#6004)
 -   Refactored `defaultTransactionTypeParser` to return correct EIP-2718 types, prior implementation was prioritizing `transaction.hardfork` and ignoring the use of `transaction.gasLimit`. `defaultTransactionTypeParser` will now throw `InvalidPropertiesForTransactionTypeError`s for properties are used that are incompatible with `transaction.type` (#6102)
 -   `prepareTransactionForSigning` and `defaultTransactionBuilder` now accepts optional `fillGasPrice` flag and by default will not fill gas(#6071)
@@ -1796,7 +1796,7 @@ If there are any bugs, improvements, optimizations or any new feature proposal f
 #### web3-eth
 
 -   A `rpc_method_wrapper` (`signTypedData`) for the rpc calls `eth_signTypedData` and `eth_signTypedData_v4` (#6286)
--   A `signTypedData` method to the `Web3Eth` class (#6286)
+-   A `signTypedData` method to the `Web3Zond` class (#6286)
 
 #### web3-eth-abi
 

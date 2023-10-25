@@ -15,62 +15,61 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { EthExecutionAPI, Bytes, Transaction, KeyStore, ETH_DATA_FORMAT } from 'web3-types';
-import { format } from 'web3-utils';
-import { Web3Context } from 'web3-core';
-import { prepareTransactionForSigning } from 'web3-eth';
+import { ZondExecutionAPI, Bytes, Transaction, /*KeyStore,*/ ZOND_DATA_FORMAT } from '@theqrl/web3-types';
+import { format } from '@theqrl/web3-utils';
+import { Web3Context } from '@theqrl/web3-core';
+import { prepareTransactionForSigning } from '@theqrl/web3-zond';
 import {
 	create,
-	decrypt,
-	encrypt,
+	//decrypt,
+	//encrypt,
 	hashMessage,
-	privateKeyToAccount,
-	recover,
 	recoverTransaction,
 	signTransaction,
 	sign,
 	Wallet,
-} from 'web3-eth-accounts';
+	seedToAccount,
+} from '@theqrl/web3-zond-accounts';
 
 /**
  * Initialize the accounts module for the given context.
  *
- * To avoid multiple package dependencies for `web3-eth-accounts` we are creating
- * this function in `web3` package. In future the actual `web3-eth-accounts` package
+ * To avoid multiple package dependencies for `@theqrl/web3-zond-accounts` we are creating
+ * this function in `web3` package. In future the actual `@theqrl/web3-zond-accounts` package
  * should be converted to context aware.
  */
-export const initAccountsForContext = (context: Web3Context<EthExecutionAPI>) => {
-	const signTransactionWithContext = async (transaction: Transaction, privateKey: Bytes) => {
+export const initAccountsForContext = (context: Web3Context<ZondExecutionAPI>) => {
+	const signTransactionWithContext = async (transaction: Transaction, seed: Bytes) => {
 		const tx = await prepareTransactionForSigning(transaction, context);
 
-		const privateKeyBytes = format({ format: 'bytes' }, privateKey, ETH_DATA_FORMAT);
+		const seedBytes = format({ format: 'bytes' }, seed, ZOND_DATA_FORMAT);
 
-		return signTransaction(tx, privateKeyBytes);
+		return signTransaction(tx, seedBytes);
 	};
 
-	const privateKeyToAccountWithContext = (privateKey: Uint8Array | string) => {
-		const account = privateKeyToAccount(privateKey);
+	const seedToAccountWithContext = (seed: Uint8Array | string) => {
+		const account = seedToAccount(seed);
 
 		return {
 			...account,
 			signTransaction: async (transaction: Transaction) =>
-				signTransactionWithContext(transaction, account.privateKey),
+				signTransactionWithContext(transaction, account.seed),
 		};
 	};
 
-	const decryptWithContext = async (
-		keystore: KeyStore | string,
-		password: string,
-		options?: Record<string, unknown>,
-	) => {
-		const account = await decrypt(keystore, password, (options?.nonStrict as boolean) ?? true);
+	// const decryptWithContext = async (
+	// 	keystore: KeyStore | string,
+	// 	password: string,
+	// 	options?: Record<string, unknown>,
+	// ) => {
+	// 	const account = await decrypt(keystore, password, (options?.nonStrict as boolean) ?? true);
 
-		return {
-			...account,
-			signTransaction: async (transaction: Transaction) =>
-				signTransactionWithContext(transaction, account.privateKey),
-		};
-	};
+	// 	return {
+	// 		...account,
+	// 		signTransaction: async (transaction: Transaction) =>
+	// 			signTransactionWithContext(transaction, account.seed),
+	// 	};
+	// };
 
 	const createWithContext = () => {
 		const account = create();
@@ -78,26 +77,25 @@ export const initAccountsForContext = (context: Web3Context<EthExecutionAPI>) =>
 		return {
 			...account,
 			signTransaction: async (transaction: Transaction) =>
-				signTransactionWithContext(transaction, account.privateKey),
+				signTransactionWithContext(transaction, account.seed),
 		};
 	};
 
 	const wallet = new Wallet({
 		create: createWithContext,
-		privateKeyToAccount: privateKeyToAccountWithContext,
-		decrypt: decryptWithContext,
+		seedToAccount: seedToAccountWithContext,
+		//decrypt: decryptWithContext,
 	});
 
 	return {
 		signTransaction: signTransactionWithContext,
 		create: createWithContext,
-		privateKeyToAccount: privateKeyToAccountWithContext,
-		decrypt: decryptWithContext,
+		seedToAccount: seedToAccountWithContext,
+		//decrypt: decryptWithContext,
 		recoverTransaction,
 		hashMessage,
 		sign,
-		recover,
-		encrypt,
+		//encrypt,
 		wallet,
 	};
 };

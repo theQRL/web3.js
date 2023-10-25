@@ -28,9 +28,9 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 // You should have received a copy of the GNU Lesser General Public License
 // along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 // */
-import { Web3RequestManager } from 'web3-core';
+import { Web3RequestManager } from '@theqrl/web3-core';
 
-import { ethRpcMethods } from '../../../src/index';
+import { zondRpcMethods } from '../../../src/index';
 
 describe('getProtocolVersion', () => {
 	let requestManagerSendSpy: jest.Mock;
@@ -43,9 +43,9 @@ describe('getProtocolVersion', () => {
 	});
 
 	it('should call requestManager.send with getProtocolVersion method', async () => {
-		await ethRpcMethods.getProtocolVersion(requestManager);
+		await zondRpcMethods.getProtocolVersion(requestManager);
 		expect(requestManagerSendSpy).toHaveBeenCalledWith({
-			method: 'eth_protocolVersion',
+			method: 'zond_protocolVersion',
 			params: [],
 		});
 	});

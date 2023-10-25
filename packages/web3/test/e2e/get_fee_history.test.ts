@@ -14,7 +14,7 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { feeHistorySchema } from 'web3-eth';
+import { feeHistorySchema } from '@theqrl/web3-zond';
 
 import Web3, { FMT_BYTES, FMT_NUMBER, Numbers } from '../../src';
 import { getSystemE2ETestProvider } from './e2e_utils';
@@ -67,7 +67,7 @@ describe(`${getSystemTestBackend()} tests - estimateGas`, () => {
 			format: Object.values(FMT_NUMBER),
 		}),
 	)('getFeeHistory', async ({ blockCount, newestBlock, rewardPercentiles, format }) => {
-		const result = await web3.eth.getFeeHistory(
+		const result = await web3.zond.getFeeHistory(
 			blockCount,
 			blockData[newestBlock],
 			rewardPercentiles,

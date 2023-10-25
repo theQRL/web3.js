@@ -23,7 +23,7 @@ import {
 	Numbers,
 	TransactionReceipt,
 	Web3ValidationErrorObject,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 import {
 	ERR_RAW_TX_UNDEFINED,
 	ERR_TX,

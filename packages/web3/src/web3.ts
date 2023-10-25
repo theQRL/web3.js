@@ -21,37 +21,37 @@ import {
 	Web3ContextObject,
 	Web3SubscriptionConstructor,
 	isSupportedProvider,
-} from 'web3-core';
-import { Web3Eth, RegisteredSubscription, registeredSubscriptions } from 'web3-eth';
-import Contract from 'web3-eth-contract';
-import { ENS, registryAddresses } from 'web3-eth-ens';
-import { Iban } from 'web3-eth-iban';
-import { Personal } from 'web3-eth-personal';
-import { Net } from 'web3-net';
-import * as utils from 'web3-utils';
-import { isNullish } from 'web3-utils';
+} from '@theqrl/web3-core';
+import { Web3Zond, RegisteredSubscription, registeredSubscriptions } from '@theqrl/web3-zond';
+import Contract from '@theqrl/web3-zond-contract';
+import { ENS, registryAddresses } from '@theqrl/web3-zond-ens';
+import { Iban } from '@theqrl/web3-zond-iban';
+import { Personal } from '@theqrl/web3-zond-personal';
+import { Net } from '@theqrl/web3-net';
+import * as utils from '@theqrl/web3-utils';
+import { isNullish } from '@theqrl/web3-utils';
 import {
 	Address,
 	ContractAbi,
 	ContractInitOptions,
-	EthExecutionAPI,
+	ZondExecutionAPI,
 	SupportedProviders,
-} from 'web3-types';
-import { InvalidMethodParamsError } from 'web3-errors';
+} from '@theqrl/web3-types';
+import { InvalidMethodParamsError } from '@theqrl/web3-errors';
 import abi from './abi.js';
 import { initAccountsForContext } from './accounts.js';
-import { Web3EthInterface } from './types.js';
+import { Web3ZondInterface } from './types.js';
 import { Web3PkgInfo } from './version.js';
 
 export class Web3<
 	CustomRegisteredSubscription extends {
-		[key: string]: Web3SubscriptionConstructor<EthExecutionAPI>;
+		[key: string]: Web3SubscriptionConstructor<ZondExecutionAPI>;
 	} = RegisteredSubscription,
-> extends Web3Context<EthExecutionAPI, CustomRegisteredSubscription & RegisteredSubscription> {
+> extends Web3Context<ZondExecutionAPI, CustomRegisteredSubscription & RegisteredSubscription> {
 	public static version = Web3PkgInfo.version;
 	public static utils = utils;
 	public static modules = {
-		Web3Eth,
+		Web3Zond,
 		Iban,
 		Net,
 		ENS,
@@ -60,19 +60,19 @@ export class Web3<
 
 	public utils: typeof utils;
 
-	public eth: Web3EthInterface;
+	public zond: Web3ZondInterface;
 
 	public constructor(
 		providerOrContext?:
 			| string
-			| SupportedProviders<EthExecutionAPI>
-			| Web3ContextInitOptions<EthExecutionAPI, CustomRegisteredSubscription>,
+			| SupportedProviders<ZondExecutionAPI>
+			| Web3ContextInitOptions<ZondExecutionAPI, CustomRegisteredSubscription>,
 	) {
 		if (
 			isNullish(providerOrContext) ||
 			(typeof providerOrContext === 'string' && providerOrContext.trim() === '') ||
 			(typeof providerOrContext !== 'string' &&
-				!isSupportedProvider(providerOrContext as SupportedProviders<EthExecutionAPI>) &&
+				!isSupportedProvider(providerOrContext as SupportedProviders<ZondExecutionAPI>) &&
 				!(providerOrContext as Web3ContextInitOptions).provider)
 		) {
 			console.warn(
@@ -80,7 +80,7 @@ export class Web3<
 			);
 		}
 
-		let contextInitOptions: Web3ContextInitOptions<EthExecutionAPI> = {};
+		let contextInitOptions: Web3ContextInitOptions<ZondExecutionAPI> = {};
 		if (
 			typeof providerOrContext === 'string' ||
 			isSupportedProvider(providerOrContext as SupportedProviders)
@@ -96,7 +96,7 @@ export class Web3<
 		}
 
 		contextInitOptions.registeredSubscriptions = {
-			// all the Eth standard subscriptions
+			// all the Zond standard subscriptions
 			...registeredSubscriptions,
 			// overridden and combined with any custom subscriptions
 			...(contextInitOptions.registeredSubscriptions ?? {}),
@@ -153,10 +153,10 @@ export class Web3<
 			}
 		}
 
-		const eth = self.use(Web3Eth);
+		const zond = self.use(Web3Zond);
 
-		// Eth Module
-		this.eth = Object.assign(eth, {
+		// Zond Module
+		this.zond = Object.assign(zond, {
 			// ENS module
 			ens: self.use(ENS, registryAddresses.main), // registry address defaults to main network
 

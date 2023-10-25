@@ -23,7 +23,7 @@ import {
 	SupportedProviders,
 	Web3APISpec,
 	Web3BaseProvider,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 
 export const isWeb3Provider = <API extends Web3APISpec>(
 	provider: SupportedProviders<API>,

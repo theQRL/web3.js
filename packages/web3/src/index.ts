@@ -19,7 +19,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
  * This is the main (or 'umbrella') class of the web3.js library.
  *
  * ```ts
- * import Web3 from 'web3';
+ * import Web3 from '@theqrl/web3';
  *
  * > Web3.utils
  * > Web3.version
@@ -41,20 +41,20 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
  *  `Object` A list of module constructors:
  *
  *
- *  + `Eth` - `Constructor`: The Eth module for interacting with the Ethereum network
+ *  + `Zond` - `Constructor`: The Zond module for interacting with the Zond network
  *
  *
  *  + `Net` - `Constructor`: The Net module for interacting with network properties.
  *
  *
- *  + `Personal` - `constructor`: The Personal module for interacting with the Ethereum accounts (web3.eth.personal).
+ *  + `Personal` - `constructor`: The Personal module for interacting with the Zond accounts (web3.zond.personal).
  *
  * #### Example
  *
  * ```ts
  * Web3.modules
  * > {
- *   	Eth: Eth(provider),
+ *   	Zond: Zond(provider),
  *   	Net: Net(provider),
  *   	Personal: Personal(provider),
  *   }
@@ -64,15 +64,15 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
  *
  * # Web3 Instance
  *
- * The Web3 class is an umbrella package to house all Ethereum related modules.
+ * The Web3 class is an umbrella package to house all Zond related modules.
  *
  * ```ts
- * import Web3 from 'web3';
+ * import Web3 from '@theqrl/web3';
  *
- * // "Web3.givenProvider" will be set if in an Ethereum supported browser.
+ * // "Web3.givenProvider" will be set if in an Zond supported browser.
  * const web3 = new Web3(Web3.givenProvider || 'ws://some.local-or-remote.node:8546');
  *
- * > web3.eth
+ * > web3.zond
  * > web3.utils
  * > web3.version
  * ```
@@ -103,13 +103,13 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
  *
  * ```ts
  * web3.setProvider(myProvider)
- * web3.eth.setProvider(myProvider)
+ * web3.zond.setProvider(myProvider)
  * ...
  * ```
  *
  * Will change the provider for its module.
  *
- * **_NOTE:_** When called on the umbrella package web3 it will also set the provider for all sub modules web3.eth  etc.
+ * **_NOTE:_** When called on the umbrella package web3 it will also set the provider for all sub modules web3.zond  etc.
  *
  * #### Parameters
  *  `Object`  - `myProvider`: a valid provider.
@@ -119,9 +119,9 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
  *
  * See details: {@link Web3.setProvider}
  *
- * #### Example: Local Geth Node
+ * #### Example: Local Zond Node
  * ```ts
- * import Web3 from "web3";
+ * import Web3 from "@theqrl/web3";
  * let web3: Web3 = new Web3('http://localhost:8545');
  * // or
  * let web3: Web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:8545'));
@@ -134,11 +134,11 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
  * //todo add IPC provider
  * ```
  *
- * #### Example: Remote Geth Node
+ * #### Example: Remote Zond Node
  *
  * ```ts
  * // Using a remote node provider, like Alchemy (https://www.alchemyapi.io/supernode), is simple.
- * import Web3 from "web3";
+ * import Web3 from "@theqrl/web3";
  * let web3: Web3 = new Web3("https://eth-mainnet.alchemyapi.io/v2/your-api-key");
  * ```
  *
@@ -146,7 +146,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
  *
  * ```ts
  * web3.providers
- * web3.eth.providers
+ * web3.zond.providers
  * ```
  * Contains the current available providers.
  *
@@ -165,16 +165,16 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
  *
  * #### Example
  * ```ts
- * import Web3 from 'web3';
+ * import Web3 from '@theqrl/web3';
  * // use the given Provider or instantiate a new websocket provider
  * let web3 = new Web3(Web3.givenProvider || 'ws://remotenode.com:8546');
  * // or
  * let web3 = new Web3(Web3.givenProvider || new Web3.providers.WebsocketProvider('ws://remotenode.com:8546'));
  *
  * // Using the IPC provider in node.js
- * var web3 = new Web3(new Web3.providers.IpcProvider('/Users/myuser/Library/Ethereum/geth.ipc')); // mac os path
- * // on windows the path is: "\\\\.\\pipe\\geth.ipc"
- * // on linux the path is: "/users/myuser/.ethereum/geth.ipc"
+ * var web3 = new Web3(new Web3.providers.IpcProvider('/Users/myuser/Library/Zond/gzond.ipc')); // mac os path
+ * // on windows the path is: "\\\\.\\pipe\\gzond.ipc"
+ * // on linux the path is: "/users/myuser/.zond/gzond.ipc"
  * ```
  * #### Configuration
  *
@@ -184,7 +184,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
  * //Http
  * //===
  *
- * import Web3HttpProvider, { HttpProviderOptions } from "web3-providers-http";
+ * import Web3HttpProvider, { HttpProviderOptions } from "@theqrl/web3-providers-http";
  *
  * let options: HttpProviderOptions = {
  * 	providerOptions: {
@@ -207,7 +207,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
  * 	ClientOptions,
  * 	ClientRequestArgs,
  * 	ReconnectOptions,
- * } from "web3-providers-ws";
+ * } from "@theqrl/web3-providers-ws";
  *
  *
  * let clientOptions: ClientOptions = {
@@ -250,10 +250,10 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
  *
  * ```ts
  * web3.givenProvider
- * web3.eth.givenProvider
+ * web3.zond.givenProvider
  * ...
  * ```
- * When using web3.js in an Ethereum compatible browser, it will set with the current native provider by that browser.
+ * When using web3.js in an Zond compatible browser, it will set with the current native provider by that browser.
  * Will return the given provider by the (browser) environment, otherwise `undefined`.
  *
  * #### Returns
@@ -265,7 +265,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
  *
  * ```ts
  * web3.currentProvider
- * web3.eth.currentProvider
+ * web3.zond.currentProvider
  * ...
  * ```
  * Will return the current provider, otherwise `undefined`.
@@ -298,12 +298,12 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
  * ```ts
  * let request1: JsonRpcOptionalRequest = {
  * 	id: 10,
- * 	method: 'eth_getBalance',
+ * 	method: 'zond_getBalance',
  * 	params: ["0xdc6bad79dab7ea733098f66f6c6f9dd008da3258", 'latest'],
  * };
  * let request2: JsonRpcOptionalRequest = {
  * 	id: 11,
- * 	method: 'eth_getBalance',
+ * 	method: 'zond_getBalance',
  * 	params: ["0x962f9a9c2a6c092474d24def35eccb3d9363265e", 'latest'],
  * };
  *
@@ -331,33 +331,33 @@ export default Web3;
  * Named exports for all objects which are the default-exported-object in their packages
  */
 export { Web3 };
-export { Web3Context, Web3PluginBase, Web3EthPluginBase } from 'web3-core';
-export { Web3Eth } from 'web3-eth';
-export { Contract } from 'web3-eth-contract';
-export { Iban } from 'web3-eth-iban';
-export { Personal } from 'web3-eth-personal';
-export { Net } from 'web3-net';
-export { HttpProvider } from 'web3-providers-http';
-export { WebSocketProvider } from 'web3-providers-ws';
-export { Web3Validator } from 'web3-validator';
+export { Web3Context, Web3PluginBase, Web3ZondPluginBase } from '@theqrl/web3-core';
+export { Web3Zond } from '@theqrl/web3-zond';
+export { Contract } from '@theqrl/web3-zond-contract';
+export { Iban } from '@theqrl/web3-zond-iban';
+export { Personal } from '@theqrl/web3-zond-personal';
+export { Net } from '@theqrl/web3-net';
+export { HttpProvider } from '@theqrl/web3-providers-http';
+export { WebSocketProvider } from '@theqrl/web3-providers-ws';
+export { Web3Validator } from '@theqrl/web3-validator';
 
 /**
  * Export all packages grouped by name spaces
  */
-export * as core from 'web3-core';
-export * as errors from 'web3-errors';
-export * as eth from './eth.exports.js';
-export * as net from 'web3-net';
+export * as core from '@theqrl/web3-core';
+export * as errors from '@theqrl/web3-errors';
+export * as zond from './zond.exports.js';
+export * as net from '@theqrl/web3-net';
 export * as providers from './providers.exports.js';
-export * as rpcMethods from 'web3-rpc-methods';
-export * as types from 'web3-types';
-export * as utils from 'web3-utils';
-export * as validator from 'web3-validator';
+export * as rpcMethods from '@theqrl/web3-rpc-methods';
+export * as types from '@theqrl/web3-types';
+export * as utils from '@theqrl/web3-utils';
+export * as validator from '@theqrl/web3-validator';
 
 /**
  * Export all types from `web3-types` without a namespace (in addition to being available at `types` namespace).
  * To enable the user to write: `function something(): Web3Api` without the need for `types.Web3Api`.
  * And the same for `web3-errors`. Because this package contains error classes and constants.
  */
-export * from 'web3-errors';
-export * from 'web3-types';
+export * from '@theqrl/web3-errors';
+export * from '@theqrl/web3-types';

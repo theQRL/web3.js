@@ -61,7 +61,7 @@ describe('Web3Subscription', () => {
 
 			expect(requestManager.send).toHaveBeenCalledTimes(1);
 			expect(requestManager.send).toHaveBeenCalledWith({
-				method: 'eth_subscribe',
+				method: 'zond_subscribe',
 				params: ['newHeads'],
 			});
 		});
@@ -95,7 +95,7 @@ describe('Web3Subscription', () => {
 
 			expect(requestManager.send).toHaveBeenCalledTimes(1);
 			expect(requestManager.send).toHaveBeenCalledWith({
-				method: 'eth_unsubscribe',
+				method: 'zond_unsubscribe',
 				params: ['sub-id'],
 			});
 		});
@@ -133,7 +133,7 @@ describe('Web3Subscription without subscription manager - (deprecated)', () => {
 
 			expect(requestManager.send).toHaveBeenCalledTimes(1);
 			expect(requestManager.send).toHaveBeenCalledWith({
-				method: 'eth_subscribe',
+				method: 'zond_subscribe',
 				params: ['newHeads'],
 			});
 		});

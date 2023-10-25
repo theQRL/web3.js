@@ -16,7 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 /* eslint-disable jest/no-conditional-expect */
 
-import { Numbers, TransactionInfo } from 'web3-types';
+import { Numbers, TransactionInfo } from '@theqrl/web3-types';
 
 import Web3 from '../../src';
 import { getSystemE2ETestProvider } from './e2e_utils';
@@ -64,7 +64,7 @@ describe(`${getSystemTestBackend()} tests - getTransactionFromBlock`, () => {
 			transactionIndex: ['0x1', '1', 1, BigInt(1)],
 		}),
 	)('getTransactionFromBlock', async ({ block, transactionIndex }) => {
-		const result = await web3.eth.getTransactionFromBlock(blockData[block], transactionIndex);
+		const result = await web3.zond.getTransactionFromBlock(blockData[block], transactionIndex);
 
 		if (blockData[block] === 'earliest') {
 			// eslint-disable-next-line no-null/no-null
@@ -87,9 +87,8 @@ describe(`${getSystemTestBackend()} tests - getTransactionFromBlock`, () => {
 				gas: expect.any(BigInt),
 				input: expect.any(String),
 				type: expect.any(BigInt),
-				v: expect.any(BigInt),
-				s: expect.any(String),
-				r: expect.any(String),
+				publicKey: expect.any(String),
+				signature: expect.any(String),
 				// TODO These values are included when fetching the transaction from
 				// Nethermind, but not Infura
 				// https://github.com/web3/web3.js/issues/5997

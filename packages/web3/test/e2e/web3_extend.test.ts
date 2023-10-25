@@ -14,7 +14,7 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { isNumber } from 'web3-validator';
+import { isNumber } from '@theqrl/web3-validator';
 
 import Web3 from '../../src';
 import { getSystemE2ETestProvider } from './e2e_utils';
@@ -38,7 +38,7 @@ describe(`${getSystemTestBackend()} tests - Web3 extend`, () => {
 			methods: [
 				{
 					name: 'getL2BlockInfo',
-					call: 'eth_blockNumber',
+					call: 'zond_blockNumber',
 				},
 			],
 		});

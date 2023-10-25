@@ -14,10 +14,10 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { Web3PluginBase } from 'web3-core';
-import Contract from 'web3-eth-contract';
-import { Address, ContractAbi, DataFormat, DEFAULT_RETURN_FORMAT, Numbers } from 'web3-types';
-import { format, numberToHex } from 'web3-utils';
+import { Web3PluginBase } from '@theqrl/web3-core';
+import Contract from '@theqrl/web3-zond-contract';
+import { Address, ContractAbi, DataFormat, DEFAULT_RETURN_FORMAT, Numbers } from '@theqrl/web3-types';
+import { format, numberToHex } from '@theqrl/web3-utils';
 // eslint-disable-next-line require-extensions/require-extensions
 import { ERC20TokenAbi } from './ERC20Token';
 // eslint-disable-next-line require-extensions/require-extensions

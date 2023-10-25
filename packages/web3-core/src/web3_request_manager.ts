@@ -22,11 +22,11 @@ import {
 	ResponseError,
 	rpcErrorsMap,
 	RpcError,
-} from 'web3-errors';
-import HttpProvider from 'web3-providers-http';
-import WSProvider from 'web3-providers-ws';
+} from '@theqrl/web3-errors';
+import HttpProvider from '@theqrl/web3-providers-http';
+import WSProvider from '@theqrl/web3-providers-ws';
 import {
-	EthExecutionAPI,
+	ZondExecutionAPI,
 	JsonRpcBatchRequest,
 	JsonRpcBatchResponse,
 	JsonRpcPayload,
@@ -42,8 +42,8 @@ import {
 	Web3APISpec,
 	Web3BaseProvider,
 	Web3BaseProviderConstructor,
-} from 'web3-types';
-import { isNullish, isPromise, jsonRpc, isResponseRpcError } from 'web3-utils';
+} from '@theqrl/web3-types';
+import { isNullish, isPromise, jsonRpc, isResponseRpcError } from '@theqrl/web3-utils';
 import {
 	isEIP1193Provider,
 	isLegacyRequestProvider,
@@ -67,7 +67,7 @@ const availableProviders: {
 };
 
 export class Web3RequestManager<
-	API extends Web3APISpec = EthExecutionAPI,
+	API extends Web3APISpec = ZondExecutionAPI,
 > extends Web3EventEmitter<{
 	[key in Web3RequestManagerEvent]: SupportedProviders<API> | undefined;
 }> {

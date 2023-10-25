@@ -60,7 +60,7 @@ describe(`${getSystemTestBackend()} tests - getProof`, () => {
 			],
 		}),
 	)('getProof', async ({ block }) => {
-		const result = await web3.eth.getProof(
+		const result = await web3.zond.getProof(
 			'0x0000000000000000000000000000000000000000',
 			[],
 			blockData[block],

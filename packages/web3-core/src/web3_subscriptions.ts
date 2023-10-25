@@ -20,7 +20,7 @@ import {
 	BlockOutput,
 	DEFAULT_RETURN_FORMAT,
 	DataFormat,
-	EthExecutionAPI,
+	ZondExecutionAPI,
 	JsonRpcSubscriptionResult,
 	JsonRpcSubscriptionResultOld,
 	JsonRpcNotification,
@@ -28,9 +28,9 @@ import {
 	HexString,
 	Web3APIParams,
 	Web3APISpec,
-} from 'web3-types';
-import { jsonRpc } from 'web3-utils';
-import { SubscriptionError } from 'web3-errors';
+} from '@theqrl/web3-types';
+import { jsonRpc } from '@theqrl/web3-utils';
+import { SubscriptionError } from '@theqrl/web3-errors';
 
 // eslint-disable-next-line import/no-cycle
 import { Web3SubscriptionManager } from './web3_subscription_manager.js';
@@ -47,7 +47,7 @@ export abstract class Web3Subscription<
 	EventMap extends Web3EventMap,
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	ArgsType = any,
-	API extends Web3APISpec = EthExecutionAPI,
+	API extends Web3APISpec = ZondExecutionAPI,
 	// The following generic type is just to define the type `CombinedEventMap` and use it inside the class
 	// 	it combines the user passed `EventMap` with the `CommonSubscriptionEvents`
 	//	However, this type definition could be refactored depending on the closure of
@@ -135,7 +135,7 @@ export abstract class Web3Subscription<
 
 	public async sendSubscriptionRequest(): Promise<string> {
 		this._id = await this._subscriptionManager.requestManager.send({
-			method: 'eth_subscribe',
+			method: 'zond_subscribe',
 			params: this._buildSubscriptionParams(),
 		});
 
@@ -166,8 +166,8 @@ export abstract class Web3Subscription<
 
 	public async sendUnsubscribeRequest() {
 		await this._subscriptionManager.requestManager.send({
-			method: 'eth_unsubscribe',
-			params: [this.id] as Web3APIParams<API, 'eth_unsubscribe'>,
+			method: 'zond_unsubscribe',
+			params: [this.id] as Web3APIParams<API, 'zond_unsubscribe'>,
 		});
 		this._id = undefined;
 	}
@@ -186,7 +186,7 @@ export abstract class Web3Subscription<
 	}
 
 	// eslint-disable-next-line class-methods-use-this
-	protected _buildSubscriptionParams(): Web3APIParams<API, 'eth_subscribe'> {
+	protected _buildSubscriptionParams(): Web3APIParams<API, 'zond_subscribe'> {
 		// This should be overridden in the subclass
 		throw new Error('Implement in the child class');
 	}

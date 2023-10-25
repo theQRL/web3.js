@@ -14,7 +14,7 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { Transaction } from './eth_types.js';
+import { Transaction } from './zond_types.js';
 import { HexString } from './primitives_types.js';
 
 export type Cipher = 'aes-128-ctr' | 'aes-128-cbc' | 'aes-256-cbc';
@@ -63,34 +63,29 @@ export type KeyStore = {
 export interface Web3BaseWalletAccount {
 	[key: string]: unknown;
 	readonly address: string;
-	readonly privateKey: string;
+	readonly seed: string;
 	readonly signTransaction: (tx: Transaction) => Promise<{
 		readonly messageHash: HexString;
-		readonly r: HexString;
-		readonly s: HexString;
-		readonly v: HexString;
+		readonly signature: HexString;
 		readonly rawTransaction: HexString;
 		readonly transactionHash: HexString;
 	}>;
 	readonly sign: (data: Record<string, unknown> | string) => {
 		readonly messageHash: HexString;
-		readonly r: HexString;
-		readonly s: HexString;
-		readonly v: HexString;
 		readonly message?: string;
 		readonly signature: HexString;
 	};
-	readonly encrypt: (password: string, options?: Record<string, unknown>) => Promise<KeyStore>;
+	// readonly encrypt: (password: string, options?: Record<string, unknown>) => Promise<KeyStore>;
 }
 
 export interface Web3AccountProvider<T> {
-	privateKeyToAccount: (privateKey: string) => T;
+	seedToAccount: (seed: string) => T;
 	create: () => T;
-	decrypt: (
-		keystore: KeyStore | string,
-		password: string,
-		options?: Record<string, unknown>,
-	) => Promise<T>;
+	// decrypt: (
+	// 	keystore: KeyStore | string,
+	// 	password: string,
+	// 	options?: Record<string, unknown>,
+	// ) => Promise<T>;
 }
 
 export abstract class Web3BaseWallet<T extends Web3BaseWalletAccount> extends Array<T> {
@@ -106,15 +101,15 @@ export abstract class Web3BaseWallet<T extends Web3BaseWalletAccount> extends Ar
 	public abstract get(addressOrIndex: string | number): T | undefined;
 	public abstract remove(addressOrIndex: string | number): boolean;
 	public abstract clear(): this;
-	public abstract encrypt(
-		password: string,
-		options?: Record<string, unknown>,
-	): Promise<KeyStore[]>;
-	public abstract decrypt(
-		encryptedWallet: KeyStore[],
-		password: string,
-		options?: Record<string, unknown>,
-	): Promise<this>;
-	public abstract save(password: string, keyName?: string): Promise<boolean | never>;
-	public abstract load(password: string, keyName?: string): Promise<this | never>;
+	// public abstract encrypt(
+	// 	password: string,
+	// 	options?: Record<string, unknown>,
+	// ): Promise<KeyStore[]>;
+	// public abstract decrypt(
+	// 	encryptedWallet: KeyStore[],
+	// 	password: string,
+	// 	options?: Record<string, unknown>,
+	// ): Promise<this>;
+	// public abstract save(password: string, keyName?: string): Promise<boolean | never>;
+	// public abstract load(password: string, keyName?: string): Promise<this | never>;
 }

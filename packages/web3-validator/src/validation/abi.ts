@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { AbiParameter } from 'web3-types';
+import { AbiParameter } from '@theqrl/web3-types';
 // eslint-disable-next-line require-extensions/require-extensions
 import { ShortValidationSchema } from '../types';
 

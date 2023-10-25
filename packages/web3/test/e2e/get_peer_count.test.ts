@@ -32,7 +32,7 @@ describe(`${getSystemTestBackend()} tests - getPeerCount`, () => {
 	});
 
 	it('should get the peer count for the connected node', async () => {
-		const result = await web3.eth.net.getPeerCount();
+		const result = await web3.zond.net.getPeerCount();
 		expect(typeof result).toBe('bigint');
 	});
 });

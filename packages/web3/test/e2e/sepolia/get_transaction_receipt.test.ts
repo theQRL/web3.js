@@ -14,8 +14,8 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { Bytes } from 'web3-types';
-import { bytesToUint8Array, hexToBytes } from 'web3-utils';
+import { Bytes } from '@theqrl/web3-types';
+import { bytesToUint8Array, hexToBytes } from '@theqrl/web3-utils';
 
 import Web3 from '../../../src';
 import { getSystemE2ETestProvider, getE2ETestContractAddress } from '../e2e_utils';
@@ -57,7 +57,7 @@ describe(`${getSystemTestBackend()} tests - getTransactionReceipt`, () => {
 			],
 		}),
 	)('getTransactionReceipt', async ({ transactionHash }) => {
-		const result = await web3.eth.getTransactionReceipt(transactionHash);
+		const result = await web3.zond.getTransactionReceipt(transactionHash);
 
 		expect(result).toMatchObject({
 			blockHash: '0xdb1cb1fc3867fa28e4ba2297fbb1e65b81a3212beb1b73cbcbfe40c4192ee948',

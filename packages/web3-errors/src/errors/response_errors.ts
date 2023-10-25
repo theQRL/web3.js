@@ -21,7 +21,7 @@ import {
 	JsonRpcPayload,
 	JsonRpcResponse,
 	JsonRpcResponseWithError,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 import { BaseWeb3Error } from '../web3_error_base.js';
 import { ERR_INVALID_RESPONSE, ERR_RESPONSE } from '../error_codes.js';
 

@@ -16,48 +16,48 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { format, SocketProvider } from 'web3-utils';
+import { format, SocketProvider } from '@theqrl/web3-utils';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import {
 	create as _createAccount,
-	decrypt,
-	privateKeyToAccount,
+	//decrypt,
+	seedToAccount,
 	signTransaction,
-} from 'web3-eth-accounts';
+} from '@theqrl/web3-zond-accounts';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { prepareTransactionForSigning, Web3Eth } from 'web3-eth';
+import { prepareTransactionForSigning, Web3Zond } from '@theqrl/web3-zond';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { Web3Context } from 'web3-core';
+import { Web3Context } from '@theqrl/web3-core';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import {
-	EthExecutionAPI,
+	ZondExecutionAPI,
 	Bytes,
 	Web3BaseProvider,
 	Transaction,
-	KeyStore,
+	//KeyStore,
 	ProviderConnectInfo,
 	Web3ProviderEventCallback,
 	ProviderRpcError,
 	JsonRpcSubscriptionResult,
 	JsonRpcNotification,
-	ETH_DATA_FORMAT,
+	ZOND_DATA_FORMAT,
 	SupportedProviders,
 	Web3APISpec,
-	Web3EthExecutionAPI,
-} from 'web3-types';
+	Web3ZondExecutionAPI,
+} from '@theqrl/web3-types';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { Personal } from 'web3-eth-personal';
+import { Personal } from '@theqrl/web3-zond-personal';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import Web3 from 'web3';
+import Web3 from '@theqrl/web3';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { NonPayableMethodObject } from 'web3-eth-contract';
+import { NonPayableMethodObject } from '@theqrl/web3-zond-contract';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import HttpProvider from 'web3-providers-http';
+import HttpProvider from '@theqrl/web3-providers-http';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { IpcProvider } from 'web3-providers-ipc';
+import { IpcProvider } from '@theqrl/web3-providers-ipc';
 import accountsString from './accounts.json';
 
 /**
@@ -75,7 +75,7 @@ export const DEFAULT_SYSTEM_ENGINE = 'node';
 export const getSystemTestProviderUrl = (): string =>
 	getEnvVar('WEB3_SYSTEM_TEST_PROVIDER') ?? DEFAULT_SYSTEM_PROVIDER;
 
-export const getSystemTestProvider = <API extends Web3APISpec = Web3EthExecutionAPI>():
+export const getSystemTestProvider = <API extends Web3APISpec = Web3ZondExecutionAPI>():
 	| string
 	| SupportedProviders<API> => {
 	const url = getSystemTestProviderUrl();
@@ -174,25 +174,26 @@ export const closeOpenConnection = async (web3Context: Web3Context) => {
 	}
 };
 
-export const createAccountProvider = (context: Web3Context<EthExecutionAPI>) => {
-	const signTransactionWithContext = async (transaction: Transaction, privateKey: Bytes) => {
+export const createAccountProvider = (context: Web3Context<ZondExecutionAPI>) => {
+	const signTransactionWithContext = async (transaction: Transaction, seed: Bytes) => {
 		const tx = await prepareTransactionForSigning(transaction, context);
 
-		const privateKeyBytes = format({ format: 'bytes' }, privateKey, ETH_DATA_FORMAT);
+		const seedBytes = format({ format: 'bytes' }, seed, ZOND_DATA_FORMAT);
 
-		return signTransaction(tx, privateKeyBytes);
+		return signTransaction(tx, seedBytes);
 	};
 
-	const privateKeyToAccountWithContext = (privateKey: Uint8Array | string) => {
-		const account = privateKeyToAccount(privateKey);
+	const seedToAccountWithContext = (seed: Uint8Array | string) => {
+		const account = seedToAccount(seed);
 
 		return {
 			...account,
 			signTransaction: async (transaction: Transaction) =>
-				signTransactionWithContext(transaction, account.privateKey),
+				signTransactionWithContext(transaction, account.seed),
 		};
 	};
 
+	/*
 	const decryptWithContext = async (
 		keystore: string | KeyStore,
 		password: string,
@@ -203,9 +204,10 @@ export const createAccountProvider = (context: Web3Context<EthExecutionAPI>) => 
 		return {
 			...account,
 			signTransaction: async (transaction: Transaction) =>
-				signTransactionWithContext(transaction, account.privateKey),
+				signTransactionWithContext(transaction, account.seed),
 		};
 	};
+	*/
 
 	const createWithContext = () => {
 		const account = _createAccount();
@@ -213,24 +215,25 @@ export const createAccountProvider = (context: Web3Context<EthExecutionAPI>) => 
 		return {
 			...account,
 			signTransaction: async (transaction: Transaction) =>
-				signTransactionWithContext(transaction, account.privateKey),
+				signTransactionWithContext(transaction, account.seed),
 		};
 	};
 
 	return {
 		create: createWithContext,
-		privateKeyToAccount: privateKeyToAccountWithContext,
-		decrypt: decryptWithContext,
+		seedToAccount: seedToAccountWithContext,
+		//decrypt: decryptWithContext,
 	};
 };
 
 export const refillAccount = async (from: string, to: string, value: string | number) => {
-	const web3Eth = new Web3Eth(DEFAULT_SYSTEM_PROVIDER);
+	const web3Zond = new Web3Zond(DEFAULT_SYSTEM_PROVIDER);
 
-	await web3Eth.sendTransaction({
+	await web3Zond.sendTransaction({
 		from,
 		to,
 		value,
+		type: BigInt(2),
 	});
 };
 
@@ -238,11 +241,11 @@ let mainAcc: string;
 export const createNewAccount = async (config?: {
 	unlock?: boolean;
 	refill?: boolean;
-	privateKey?: string;
+	seed?: string;
 	password?: string;
 	doNotImport?: boolean;
-}): Promise<{ address: string; privateKey: string }> => {
-	const acc = config?.privateKey ? privateKeyToAccount(config?.privateKey) : _createAccount();
+}): Promise<{ address: string; seed: string }> => {
+	const acc = config?.seed ? seedToAccount(config?.seed) : _createAccount();
 
 	const clientUrl = DEFAULT_SYSTEM_PROVIDER;
 
@@ -250,7 +253,7 @@ export const createNewAccount = async (config?: {
 		const web3Personal = new Personal(clientUrl);
 		if (!config?.doNotImport) {
 			await web3Personal.importRawKey(
-				getSystemTestBackend() === 'geth' ? acc.privateKey.slice(2) : acc.privateKey,
+				getSystemTestBackend() === 'gzond' ? acc.seed.slice(2) : acc.seed,
 				config.password ?? '123456',
 			);
 		}
@@ -263,12 +266,12 @@ export const createNewAccount = async (config?: {
 		if (!mainAcc) {
 			[mainAcc] = await web3Personal.getAccounts();
 		}
-		await refillAccount(mainAcc, acc.address, '100000000000000000');
+		await refillAccount(mainAcc, acc.address, '10000000000000000000');
 	}
 
-	return { address: acc.address.toLowerCase(), privateKey: acc.privateKey };
+	return { address: acc.address.toLowerCase(), seed: acc.seed! };
 };
-let tempAccountList: { address: string; privateKey: string }[] = [];
+let tempAccountList: { address: string; seed: string }[] = [];
 const walletsOnWorker = 20;
 
 if (tempAccountList.length === 0) {
@@ -279,20 +282,20 @@ export const createTempAccount = async (
 	config: {
 		unlock?: boolean;
 		refill?: boolean;
-		privateKey?: string;
+		seed?: string;
 		password?: string;
 	} = {},
-): Promise<{ address: string; privateKey: string }> => {
+): Promise<{ address: string; seed: string }> => {
 	if (
 		config.unlock === false ||
 		config.refill === false ||
-		config.privateKey ||
+		config.seed ||
 		config.password
 	) {
 		return createNewAccount({
 			unlock: config.unlock ?? true,
 			refill: config.refill ?? true,
-			privateKey: config.privateKey,
+			seed: config.seed,
 			password: config.password,
 		});
 	}
@@ -305,7 +308,7 @@ export const createTempAccount = async (
 	await createNewAccount({
 		unlock: true,
 		refill: false,
-		privateKey: acc.privateKey,
+		seed: acc.seed,
 		doNotImport: true,
 	});
 	currentIndex += 1;
@@ -316,7 +319,7 @@ export const createTempAccount = async (
 export const getSystemTestAccountsWithKeys = async (): Promise<
 	{
 		address: string;
-		privateKey: string;
+		seed: string;
 	}[]
 > => {
 	const acc = await createTempAccount();
@@ -331,11 +334,11 @@ export const getSystemTestAccounts = async (): Promise<string[]> =>
 export const signTxAndSendEIP1559 = async (
 	provider: unknown,
 	tx: Transaction,
-	privateKey: string,
+	seed: string,
 ) => {
 	const web3 = new Web3(provider as Web3BaseProvider);
-	const acc = web3.eth.accounts.privateKeyToAccount(privateKey);
-	web3.eth.wallet?.add(privateKey);
+	const acc = web3.zond.accounts.seedToAccount(seed);
+	web3.zond.wallet?.add(seed);
 
 	const txObj = {
 		...tx,
@@ -344,17 +347,17 @@ export const signTxAndSendEIP1559 = async (
 		from: acc.address,
 	};
 
-	return web3.eth.sendTransaction(txObj, undefined, { checkRevertBeforeSending: false });
+	return web3.zond.sendTransaction(txObj, undefined, { checkRevertBeforeSending: false });
 };
 
 export const signTxAndSendEIP2930 = async (
 	provider: unknown,
 	tx: Transaction,
-	privateKey: string,
+	seed: string,
 ) => {
 	const web3 = new Web3(provider as Web3BaseProvider);
-	const acc = web3.eth.accounts.privateKeyToAccount(privateKey);
-	web3.eth.wallet?.add(privateKey);
+	const acc = web3.zond.accounts.seedToAccount(seed);
+	web3.zond.wallet?.add(seed);
 	const txObj = {
 		...tx,
 		type: '0x1',
@@ -362,14 +365,14 @@ export const signTxAndSendEIP2930 = async (
 		from: acc.address,
 	};
 
-	return web3.eth.sendTransaction(txObj, undefined, { checkRevertBeforeSending: false });
+	return web3.zond.sendTransaction(txObj, undefined, { checkRevertBeforeSending: false });
 };
 
 export const signAndSendContractMethodEIP1559 = async (
 	provider: unknown,
 	address: string,
 	method: NonPayableMethodObject,
-	privateKey: string,
+	seed: string,
 ) =>
 	signTxAndSendEIP1559(
 		provider,
@@ -377,14 +380,14 @@ export const signAndSendContractMethodEIP1559 = async (
 			to: address,
 			data: method.encodeABI(),
 		},
-		privateKey,
+		seed,
 	);
 
 export const signAndSendContractMethodEIP2930 = async (
 	provider: unknown,
 	address: string,
 	method: NonPayableMethodObject,
-	privateKey: string,
+	seed: string,
 ) =>
 	signTxAndSendEIP2930(
 		provider,
@@ -392,13 +395,13 @@ export const signAndSendContractMethodEIP2930 = async (
 			to: address,
 			data: method.encodeABI(),
 		},
-		privateKey,
+		seed,
 	);
 
 export const createLocalAccount = async (web3: Web3) => {
-	const account = web3.eth.accounts.create();
-	await refillAccount((await createTempAccount()).address, account.address, '10000000000000000');
-	web3.eth.accounts.wallet.add(account);
+	const account = web3.zond.accounts.create();
+	await refillAccount((await createTempAccount()).address, account.address, '100000000000000000000');
+	web3.zond.accounts.wallet.add(account);
 	return account;
 };
 /* eslint-disable @typescript-eslint/no-unsafe-call */
@@ -459,11 +462,12 @@ export const sendFewSampleTxs = async (cnt = 1) => {
 	for (let i = 0; i < cnt; i += 1) {
 		res.push(
 			// eslint-disable-next-line no-await-in-loop
-			await web3.eth.sendTransaction({
+			await web3.zond.sendTransaction({
 				to: toAcc.address,
 				value: '0x1',
 				from: fromAcc.address,
 				gas: '300000',
+				type: BigInt(2),
 			}),
 		);
 	}

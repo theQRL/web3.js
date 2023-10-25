@@ -23,7 +23,7 @@ import {
 import {
 	getAllowedSendTransaction,
 	getE2ETestAccountAddress,
-	getE2ETestAccountPrivateKey,
+	getE2ETestAccountSeed,
 	getSystemE2ETestProvider,
 } from '../e2e_utils';
 
@@ -50,11 +50,11 @@ describe(`${getSystemTestBackend()} tests - sendSignedTransaction`, () => {
 				gas: 21000,
 				type: 0,
 			};
-			const signedTransaction = await web3.eth.accounts.signTransaction(
+			const signedTransaction = await web3.zond.accounts.signTransaction(
 				transaction,
-				getE2ETestAccountPrivateKey(),
+				getE2ETestAccountSeed(),
 			);
-			const result = await web3.eth.sendSignedTransaction(signedTransaction.rawTransaction);
+			const result = await web3.zond.sendSignedTransaction(signedTransaction.rawTransaction);
 
 			// TODO This should work, but throws a type error
 			// for root not being included in expected object.
@@ -91,11 +91,11 @@ describe(`${getSystemTestBackend()} tests - sendSignedTransaction`, () => {
 				gas: 21000,
 				type: 1,
 			};
-			const signedTransaction = await web3.eth.accounts.signTransaction(
+			const signedTransaction = await web3.zond.accounts.signTransaction(
 				transaction,
-				getE2ETestAccountPrivateKey(),
+				getE2ETestAccountSeed(),
 			);
-			const result = await web3.eth.sendSignedTransaction(signedTransaction.rawTransaction);
+			const result = await web3.zond.sendSignedTransaction(signedTransaction.rawTransaction);
 
 			// TODO This should work, but throws a type error
 			// for root not being included in expected object.
@@ -131,11 +131,11 @@ describe(`${getSystemTestBackend()} tests - sendSignedTransaction`, () => {
 				value: 1,
 				gas: 21000,
 			};
-			const signedTransaction = await web3.eth.accounts.signTransaction(
+			const signedTransaction = await web3.zond.accounts.signTransaction(
 				transaction,
-				getE2ETestAccountPrivateKey(),
+				getE2ETestAccountSeed(),
 			);
-			const result = await web3.eth.sendSignedTransaction(signedTransaction.rawTransaction);
+			const result = await web3.zond.sendSignedTransaction(signedTransaction.rawTransaction);
 
 			// TODO This should work, but throws a type error
 			// for root not being included in expected object.

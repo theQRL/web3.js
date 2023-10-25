@@ -15,8 +15,8 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { Bytes, Transaction } from 'web3-types';
-import Eth from 'web3-eth';
+import { Bytes, Transaction } from '@theqrl/web3-types';
+import Zond from '@theqrl/web3-zond';
 import {
 	decodeLog,
 	decodeParameter,
@@ -25,37 +25,36 @@ import {
 	encodeFunctionSignature,
 	encodeParameter,
 	encodeParameters,
-} from 'web3-eth-abi';
+} from '@theqrl/web3-zond-abi';
 import {
-	encrypt,
+	//encrypt,
 	hashMessage,
-	recover,
 	recoverTransaction,
 	sign,
 	signTransaction,
 	Wallet,
 	Web3Account,
-} from 'web3-eth-accounts';
-import { Contract } from 'web3-eth-contract';
-import { ENS } from 'web3-eth-ens';
-import { Net } from 'web3-net';
-import { Iban } from 'web3-eth-iban';
-import { Personal } from 'web3-eth-personal';
+} from '@theqrl/web3-zond-accounts';
+import { Contract } from '@theqrl/web3-zond-contract';
+import { ENS } from '@theqrl/web3-zond-ens';
+import { Net } from '@theqrl/web3-net';
+import { Iban } from '@theqrl/web3-zond-iban';
+import { Personal } from '@theqrl/web3-zond-personal';
 
 /**
- * The Ethereum interface for main web3 object. It provides extra methods in addition to `web3-eth` interface.
+ * The Zond interface for main web3 object. It provides extra methods in addition to `web3-zond` interface.
  *
- * {@link web3_eth.Web3Eth} for details about the `Eth` interface.
+ * {@link web3_zond.Web3Zond} for details about the `Zond` interface.
  */
-export interface Web3EthInterface extends Eth {
+export interface Web3ZondInterface extends Zond {
 	/**
-	 * Extended [Contract](/api/web3-eth-contract/class/Contract) constructor for main `web3` object. See [Contract](/api/web3-eth-contract/class/Contract) for further details.
+	 * Extended [Contract](/api/web3-zond-contract/class/Contract) constructor for main `web3` object. See [Contract](/api/web3-zond-contract/class/Contract) for further details.
 	 *
-	 * You can use `.setProvider` on this constructor to set provider for **all the instances** of the contracts which were created by `web3.eth.Contract`.
+	 * You can use `.setProvider` on this constructor to set provider for **all the instances** of the contracts which were created by `web3.zond.Contract`.
 	 * Please check the {@doclink guides/web3_upgrade_guide/x/providers_migration_guide | following guide} to understand more about setting provider.
 	 *
 	 * ```ts
-	 * web3.eth.Contract.setProvider(myProvider)
+	 * web3.zond.Contract.setProvider(myProvider)
 	 * ```
 	 */
 	Contract: typeof Contract;
@@ -74,21 +73,20 @@ export interface Web3EthInterface extends Eth {
 	};
 	accounts: {
 		create: () => Web3Account;
-		privateKeyToAccount: (privateKey: Uint8Array | string) => Web3Account;
+		seedToAccount: (seed: Uint8Array | string) => Web3Account;
 		signTransaction: (
 			transaction: Transaction,
-			privateKey: Bytes,
+			seed: Bytes,
 		) => ReturnType<typeof signTransaction>;
 		recoverTransaction: typeof recoverTransaction;
 		hashMessage: typeof hashMessage;
 		sign: typeof sign;
-		recover: typeof recover;
-		encrypt: typeof encrypt;
-		decrypt: (
-			keystore: string,
-			password: string,
-			options?: Record<string, unknown>,
-		) => Promise<Web3Account>;
+		//encrypt: typeof encrypt;
+		// decrypt: (
+		// 	keystore: string,
+		// 	password: string,
+		// 	options?: Record<string, unknown>,
+		// ) => Promise<Web3Account>;
 		wallet: Wallet;
 	};
 	personal: Personal;

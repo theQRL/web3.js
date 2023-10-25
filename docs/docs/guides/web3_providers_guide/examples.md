@@ -482,7 +482,7 @@ Follow these steps to connect to the Ethereum network with MetaMask and web3.js,
 					// Note: Even though, you can also get the accounts from `await web3.eth.getAccounts()`,
 					// 	you still need to make a call to any MetaMask RPC to cause MetaMask to ask for concent.
 					const accounts = await window.ethereum.request({
-						method: 'eth_requestAccounts',
+						method: 'zond_requestAccounts',
 					});
 					console.log('Accounts requested from MetaMask RPC: ', accounts);
 

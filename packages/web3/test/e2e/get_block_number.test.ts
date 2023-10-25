@@ -14,7 +14,7 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { isBigInt, isHexStrict, isNumber, isString } from 'web3-validator';
+import { isBigInt, isHexStrict, isNumber, isString } from '@theqrl/web3-validator';
 
 import Web3, { FMT_BYTES, FMT_NUMBER } from '../../src';
 import { getSystemE2ETestProvider } from './e2e_utils';
@@ -41,7 +41,7 @@ describe(`${getSystemTestBackend()} tests - getBlockNumber`, () => {
 			format: Object.values(FMT_NUMBER),
 		}),
 	)('getBlockNumber', async ({ format }) => {
-		const result = await web3.eth.getBlockNumber({
+		const result = await web3.zond.getBlockNumber({
 			number: format as FMT_NUMBER,
 			bytes: FMT_BYTES.HEX,
 		});

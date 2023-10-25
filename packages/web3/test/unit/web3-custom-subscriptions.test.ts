@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { Web3Subscription, Web3SubscriptionManager } from 'web3-core';
+import { Web3Subscription, Web3SubscriptionManager } from '@theqrl/web3-core';
 import { Web3 } from '../../src/web3';
 
 class CustomSubscription extends Web3Subscription<
@@ -60,7 +60,7 @@ describe('Web3 Custom Subscriptions', () => {
 							/[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}/i,
 						),
 						jsonrpc: '2.0',
-						method: 'eth_subscribe',
+						method: 'zond_subscribe',
 						params: ['someCustomSubscription', args],
 					});
 					resolve(true);

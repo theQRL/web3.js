@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { Web3Account } from 'web3-eth-accounts';
+import { Web3Account } from '@theqrl/web3-zond-accounts';
 import {
 	getSystemTestProvider,
 	createNewAccount,
@@ -47,39 +47,43 @@ describe('web3.accounts', () => {
 
 	describe('create', () => {
 		it('should create account', () => {
-			const account: Web3Account = web3.eth.accounts.create();
+			const account: Web3Account = web3.zond.accounts.create();
 
 			expect(account).toEqual(
 				expect.objectContaining({
 					address: expect.stringMatching(hexRegx),
-					privateKey: expect.stringMatching(hexRegx),
+					seed: expect.stringMatching(hexRegx),
 				}),
 			);
 		});
 
 		describe('signTransaction', () => {
 			it('should be able to sign the transaction from created account', async () => {
-				const account: Web3Account = web3.eth.accounts.create();
+				const account: Web3Account = web3.zond.accounts.create();
 				const tx = {
 					from: account.address,
 					to: tempAccount,
 					value: web3.utils.toWei('0.00001', 'ether'),
 					gas: '0x5218',
 					data: '0x1',
+					type: 2,
+					maxFeePerGas: '0x19475bd7f8',
+					maxPriorityFeePerGas: '0x5eae5feec',
 				};
 
 				// Fund this account with some ether
 				await expect(
-					web3.eth.sendTransaction({
+					web3.zond.sendTransaction({
 						from: tempAccount,
 						to: account.address,
-						value: web3.utils.toWei('0.00005', 'ether'),
+						value: web3.utils.toWei('2', 'ether'),
+						type: 2,
 					}),
 				).resolves.toBeDefined();
 
 				const txWithGas = {
 					...tx,
-					gasPrice: '0x271000',
+					//gasPrice: '0x271000',
 				};
 				// Sign the tx from that account
 				const signedTx = await account.signTransaction(txWithGas);
@@ -89,22 +93,20 @@ describe('web3.accounts', () => {
 						messageHash: expect.stringMatching(hexRegx),
 						rawTransaction: expect.stringMatching(hexRegx),
 						transactionHash: expect.stringMatching(hexRegx),
-						v: expect.stringMatching(hexRegx),
-						r: expect.stringMatching(hexRegx),
-						s: expect.stringMatching(hexRegx),
+						signature: expect.stringMatching(hexRegx),
 					}),
 				);
 
 				// The signed transaction is accepted by the node
 				await expect(
-					web3.eth.sendSignedTransaction(signedTx.rawTransaction),
+					web3.zond.sendSignedTransaction(signedTx.rawTransaction),
 				).resolves.toEqual(
 					expect.objectContaining({ transactionHash: signedTx.transactionHash }),
 				);
 			});
 
 			it('should throw error if gas is to low', async () => {
-				const account: Web3Account = web3.eth.accounts.create();
+				const account: Web3Account = web3.zond.accounts.create();
 
 				const tx = {
 					from: account.address,
@@ -112,7 +114,10 @@ describe('web3.accounts', () => {
 					value: web3.utils.toWei('0.1', 'ether'),
 					gas: '0x1',
 					data: '0x1',
-					gasPrice: '0x38562',
+					//gasPrice: '0x38562',
+					maxFeePerGas: '0x19475bd7f8',
+					maxPriorityFeePerGas: '0x5eae5feec',
+					type: 2,
 				};
 
 				await expect(account.signTransaction(tx)).rejects.toThrow('gasLimit is too low.');
@@ -121,7 +126,7 @@ describe('web3.accounts', () => {
 			// TODO This test should fail, but it's not. Need to debug further to figure out why.
 			// eslint-disable-next-line jest/no-disabled-tests
 			it.skip('should throw error if signed by private key not associated with "from" field', async () => {
-				const account: Web3Account = web3.eth.accounts.create();
+				const account: Web3Account = web3.zond.accounts.create();
 
 				const tx = {
 					from: tempAccount,
@@ -129,6 +134,7 @@ describe('web3.accounts', () => {
 					value: web3.utils.toWei('0.1', 'ether'),
 					gas: '0x1',
 					data: '0x1',
+					type: 2,
 				};
 
 				await expect(account.signTransaction(tx)).rejects.toThrow('Error');
@@ -138,7 +144,7 @@ describe('web3.accounts', () => {
 
 	describe('signTransaction', () => {
 		it('should be able to sign the transaction from created account', async () => {
-			const account: Web3Account = web3.eth.accounts.create();
+			const account: Web3Account = web3.zond.accounts.create();
 
 			const tx = {
 				from: account.address,
@@ -146,40 +152,42 @@ describe('web3.accounts', () => {
 				value: web3.utils.toWei('0.1', 'ether'),
 				gas: '0x5218',
 				data: '0x1',
-				gasPrice: '0x48523',
+				//gasPrice: '0x48523',
+				type: 2,
+				maxFeePerGas: '0x19475bd7f8',
+				maxPriorityFeePerGas: '0x5eae5feec',
 			};
 
 			// Fund this account with some ether
 			await expect(
-				web3.eth.sendTransaction({
+				web3.zond.sendTransaction({
 					from: tempAccount,
 					to: account.address,
 					value: web3.utils.toWei('0.5', 'ether'),
+					type: 2,
 				}),
 			).resolves.toBeDefined();
 
 			// Sign the tx from that account
-			const signedTx = await web3.eth.accounts.signTransaction(tx, account.privateKey);
+			const signedTx = await web3.zond.accounts.signTransaction(tx, account.seed);
 
 			expect(signedTx).toEqual(
 				expect.objectContaining({
 					messageHash: expect.stringMatching(hexRegx),
 					rawTransaction: expect.stringMatching(hexRegx),
 					transactionHash: expect.stringMatching(hexRegx),
-					v: expect.stringMatching(hexRegx),
-					r: expect.stringMatching(hexRegx),
-					s: expect.stringMatching(hexRegx),
+					signature: expect.stringMatching(hexRegx),
 				}),
 			);
 
 			// The signed transaction is accepted by the node
-			await expect(web3.eth.sendSignedTransaction(signedTx.rawTransaction)).resolves.toEqual(
+			await expect(web3.zond.sendSignedTransaction(signedTx.rawTransaction)).resolves.toEqual(
 				expect.objectContaining({ transactionHash: signedTx.transactionHash }),
 			);
 		});
 
 		it('should throw error if gas is to low', async () => {
-			const account: Web3Account = web3.eth.accounts.create();
+			const account: Web3Account = web3.zond.accounts.create();
 
 			const tx = {
 				from: account.address,
@@ -187,20 +195,23 @@ describe('web3.accounts', () => {
 				value: web3.utils.toWei('0.1', 'ether'),
 				gas: '0x1',
 				data: '0x1',
-				gasPrice: '0x1',
+				//gasPrice: '0x1',
+				type: 2,
+				maxFeePerGas: '0x19475bd7f8',
+				maxPriorityFeePerGas: '0x5eae5feec',
 			};
 
-			await expect(web3.eth.accounts.signTransaction(tx, account.privateKey)).rejects.toThrow(
+			await expect(web3.zond.accounts.signTransaction(tx, account.seed)).rejects.toThrow(
 				'gasLimit is too low.',
 			);
 		});
 	});
 
-	describe('privateKeyToAccount', () => {
-		it('should create account from private key', async () => {
+	describe('seedToAccount', () => {
+		it('should create account from seed', async () => {
 			const acc = await createNewAccount();
-			const createdAccount: Web3Account = web3.eth.accounts.privateKeyToAccount(
-				acc.privateKey,
+			const createdAccount: Web3Account = web3.zond.accounts.seedToAccount(
+				acc.seed,
 			);
 			expect(acc.address.toLowerCase()).toBe(createdAccount.address.toLowerCase());
 		});

@@ -28,13 +28,13 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 // You should have received a copy of the GNU Lesser General Public License
 // along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 // */
-import { Web3RequestManager } from 'web3-core';
-import { validator } from 'web3-validator';
+import { Web3RequestManager } from '@theqrl/web3-core';
+import { validator } from '@theqrl/web3-validator';
 
-import { ethRpcMethods } from '../../../src/index';
+import { zondRpcMethods } from '../../../src/index';
 import { testData } from './fixtures/get_fee_history';
 
-jest.mock('web3-validator');
+jest.mock('@theqrl/web3-validator');
 
 describe('getFeeHistory', () => {
 	let requestManagerSendSpy: jest.Mock;
@@ -49,9 +49,9 @@ describe('getFeeHistory', () => {
 	it.each(testData)(
 		'should call requestManager.send with getFeeHistory method and expect parameters\n Title: %s\n Input parameters: %s',
 		async (_, inputParameters) => {
-			await ethRpcMethods.getFeeHistory(requestManager, ...inputParameters);
+			await zondRpcMethods.getFeeHistory(requestManager, ...inputParameters);
 			expect(requestManagerSendSpy).toHaveBeenCalledWith({
-				method: 'eth_feeHistory',
+				method: 'zond_feeHistory',
 				params: inputParameters,
 			});
 		},
@@ -61,7 +61,7 @@ describe('getFeeHistory', () => {
 		'should call validator.validate with expected params\n Title: %s\n Input parameters: %s',
 		async (_, inputParameters) => {
 			const validatorSpy = jest.spyOn(validator, 'validate');
-			await ethRpcMethods.getFeeHistory(requestManager, ...inputParameters);
+			await zondRpcMethods.getFeeHistory(requestManager, ...inputParameters);
 			const [expectedBlockCount, expectedNewestBlock, expectedRewardPercentiles] =
 				inputParameters;
 			expect(validatorSpy).toHaveBeenCalledWith(

@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 /* eslint-disable import/no-relative-packages */
-import Web3 from 'web3';
+import Web3 from '@theqrl/web3';
 
 import {
 	closeOpenConnection,
@@ -37,12 +37,12 @@ describe('ESM - Black Box Unit Tests - web3.BatchRequest', () => {
 	it('should make a batch request', async () => {
 		const request1 = {
 			id: 42,
-			method: 'eth_getBalance',
+			method: 'zond_getBalance',
 			params: ['0x4242000000000000000000000000000000000000', 'latest'],
 		};
 		const request2 = {
 			id: 24,
-			method: 'eth_getBalance',
+			method: 'zond_getBalance',
 			params: ['0x2424000000000000000000000000000000000000', 'latest'],
 		};
 

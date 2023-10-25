@@ -44,7 +44,7 @@ myContract
 	.send()
 	.on('send', payload => {
 		console.log(payload);
-		// {id: <1>, jsonrpc: '2.0', method: 'eth_sendTransaction', params: [txObject] }
+		// {id: <1>, jsonrpc: '2.0', method: 'zond_sendTransaction', params: [txObject] }
 	});
 
 // 4.x

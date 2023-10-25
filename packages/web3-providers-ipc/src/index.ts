@@ -16,15 +16,15 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { Socket, SocketConstructorOpts } from 'net';
-import { ConnectionNotOpenError, InvalidClientError } from 'web3-errors';
-import { ReconnectOptions, SocketProvider, toUtf8 } from 'web3-utils';
+import { ConnectionNotOpenError, InvalidClientError } from '@theqrl/web3-errors';
+import { ReconnectOptions, SocketProvider, toUtf8 } from '@theqrl/web3-utils';
 import {
-	EthExecutionAPI,
+	ZondExecutionAPI,
 	Web3APIMethod,
 	Web3APIPayload,
 	Web3APISpec,
 	Web3ProviderStatus,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 import { existsSync } from 'fs';
 
 /**
@@ -59,7 +59,7 @@ import { existsSync } from 'fs';
  * 	);
  * ```
  */
-export default class IpcProvider<API extends Web3APISpec = EthExecutionAPI> extends SocketProvider<
+export default class IpcProvider<API extends Web3APISpec = ZondExecutionAPI> extends SocketProvider<
 	Uint8Array | string,
 	CloseEvent,
 	Error,

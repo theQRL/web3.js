@@ -19,21 +19,39 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 import {
 	ERR_PRIVATE_KEY_LENGTH,
+	ERR_PUBLIC_KEY_LENGTH,
 	ERR_INVALID_PRIVATE_KEY,
 	ERR_INVALID_SIGNATURE,
+	ERR_INVALID_PUBLIC_KEY,
 	ERR_UNSUPPORTED_KDF,
 	ERR_KEY_DERIVATION_FAIL,
 	ERR_KEY_VERSION_UNSUPPORTED,
 	ERR_INVALID_PASSWORD,
 	ERR_IV_LENGTH,
 	ERR_PBKDF2_ITERATIONS,
+	ERR_INVALID_SEED,
+	ERR_SEED_LENGTH,
 } from '../error_codes.js';
 import { BaseWeb3Error } from '../web3_error_base.js';
 
 export class PrivateKeyLengthError extends BaseWeb3Error {
 	public code = ERR_PRIVATE_KEY_LENGTH;
 	public constructor() {
-		super(`Private key must be 32 bytes.`);
+		super(`Private key must be 4864 bytes.`);
+	}
+}
+
+export class PublicKeyLengthError extends BaseWeb3Error {
+	public code = ERR_PUBLIC_KEY_LENGTH;
+	public constructor() {
+		super(`Public key must be 2592 bytes.`);
+	}
+}
+
+export class SeedLengthError extends BaseWeb3Error {
+	public code = ERR_SEED_LENGTH;
+	public constructor() {
+		super(`Seed must be 48 bytes.`);
 	}
 }
 
@@ -41,6 +59,13 @@ export class InvalidPrivateKeyError extends BaseWeb3Error {
 	public code = ERR_INVALID_PRIVATE_KEY;
 	public constructor() {
 		super(`Invalid Private Key, Not a valid string or uint8Array`);
+	}
+}
+
+export class InvalidSeedError extends BaseWeb3Error {
+	public code = ERR_INVALID_SEED;
+	public constructor() {
+		super(`Invalid Seed, Not a valid string or uint8Array`);
 	}
 }
 
@@ -90,5 +115,12 @@ export class PBKDF2IterationsError extends BaseWeb3Error {
 	public code = ERR_PBKDF2_ITERATIONS;
 	public constructor() {
 		super('c > 1000, pbkdf2 is less secure with less iterations');
+	}
+}
+
+export class InvalidPublicKeyError extends BaseWeb3Error {
+	public code = ERR_INVALID_PUBLIC_KEY;
+	public constructor() {
+		super(`Invalid Public Key, Not a valid string or uint8Array`);
 	}
 }

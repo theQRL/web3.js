@@ -15,26 +15,26 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import * as eth from 'web3-eth';
-import * as ethAccounts from 'web3-eth-accounts';
-import { SignTransactionResult, Web3Account } from 'web3-eth-accounts';
-import { Web3EthInterface } from '../../src/types';
+import * as zond from '@theqrl/web3-zond';
+import * as zondAccounts from '@theqrl/web3-zond-accounts';
+import { SignTransactionResult, Web3Account } from '@theqrl/web3-zond-accounts';
+import { Web3ZondInterface } from '../../src/types';
 import { Web3 } from '../../src';
 
-jest.mock('web3-eth-accounts');
-jest.mock('web3-eth');
+jest.mock('@theqrl/web3-zond-accounts');
+jest.mock('@theqrl/web3-zond');
 
-describe('test new Web3().eth.accounts', () => {
-	let accounts: Web3EthInterface['accounts'];
+describe('test new Web3().zond.accounts', () => {
+	let accounts: Web3ZondInterface['accounts'];
 
 	beforeAll(() => {
 		const web3 = new Web3();
-		accounts = web3.eth.accounts;
+		accounts = web3.zond.accounts;
 	});
 
 	beforeEach(() => {
-		jest.spyOn(eth, 'prepareTransactionForSigning').mockReturnValue({} as Promise<any>);
-		jest.spyOn(ethAccounts, 'signTransaction').mockReturnValue(
+		jest.spyOn(zond, 'prepareTransactionForSigning').mockReturnValue({} as Promise<any>);
+		jest.spyOn(zondAccounts, 'signTransaction').mockReturnValue(
 			undefined as unknown as Promise<SignTransactionResult>,
 		);
 	});
@@ -45,52 +45,52 @@ describe('test new Web3().eth.accounts', () => {
 	it('`signTransaction` should call the original `prepareTransactionForSigning` and `signTransaction`', async () => {
 		await accounts.signTransaction({}, '');
 
-		expect(eth.prepareTransactionForSigning).toHaveBeenCalledTimes(1);
-		expect(ethAccounts.signTransaction).toHaveBeenCalledTimes(1);
+		expect(zond.prepareTransactionForSigning).toHaveBeenCalledTimes(1);
+		expect(zondAccounts.signTransaction).toHaveBeenCalledTimes(1);
 	});
 
-	it('`privateKeyToAccount` should call the original `privateKeyToAccount` and add `signTransaction`', async () => {
-		jest.spyOn(ethAccounts, 'privateKeyToAccount').mockReturnValue({
-			privateKey: '',
+	it('`seedToAccount` should call the original `seedToAccount` and add `signTransaction`', async () => {
+		jest.spyOn(zondAccounts, 'seedToAccount').mockReturnValue({
+			seed: '',
 		} as unknown as Web3Account);
 
-		const account = accounts.privateKeyToAccount('');
-		expect(ethAccounts.privateKeyToAccount).toHaveBeenCalledTimes(1);
+		const account = accounts.seedToAccount('');
+		expect(zondAccounts.seedToAccount).toHaveBeenCalledTimes(1);
 
 		await account.signTransaction({});
 
-		expect(eth.prepareTransactionForSigning).toHaveBeenCalledTimes(1);
-		expect(ethAccounts.signTransaction).toHaveBeenCalledTimes(1);
+		expect(zond.prepareTransactionForSigning).toHaveBeenCalledTimes(1);
+		expect(zondAccounts.signTransaction).toHaveBeenCalledTimes(1);
 	});
 
-	it('`decrypt` should call the original `decrypt` and add `signTransaction`', async () => {
-		jest.spyOn(ethAccounts, 'decrypt').mockReturnValue({
-			privateKey: '',
-		} as unknown as Promise<Web3Account>);
+	// it('`decrypt` should call the original `decrypt` and add `signTransaction`', async () => {
+	// 	jest.spyOn(zondAccounts, 'decrypt').mockReturnValue({
+	// 		privateKey: '',
+	// 	} as unknown as Promise<Web3Account>);
 
-		await accounts.decrypt('', '', { nonStrict: false });
-		expect(ethAccounts.decrypt).toHaveBeenCalledWith('', '', false);
+	// 	await accounts.decrypt('', '', { nonStrict: false });
+	// 	expect(zondAccounts.decrypt).toHaveBeenCalledWith('', '', false);
 
-		const account = await accounts.decrypt('', '');
-		expect(ethAccounts.decrypt).toHaveBeenCalledWith('', '', true);
+	// 	const account = await accounts.decrypt('', '');
+	// 	expect(zondAccounts.decrypt).toHaveBeenCalledWith('', '', true);
 
-		await account.signTransaction({});
+	// 	await account.signTransaction({});
 
-		expect(eth.prepareTransactionForSigning).toHaveBeenCalledTimes(1);
-		expect(ethAccounts.signTransaction).toHaveBeenCalledTimes(1);
-	});
+	// 	expect(zond.prepareTransactionForSigning).toHaveBeenCalledTimes(1);
+	// 	expect(zondAccounts.signTransaction).toHaveBeenCalledTimes(1);
+	// });
 
 	it('`create` should call the original `create` and add `signTransaction`', async () => {
-		jest.spyOn(ethAccounts, 'create').mockReturnValue({
-			privateKey: '',
+		jest.spyOn(zondAccounts, 'create').mockReturnValue({
+			seed: '',
 		} as unknown as Web3Account);
 		const account = accounts.create();
 
-		expect(ethAccounts.create).toHaveBeenCalledTimes(1);
+		expect(zondAccounts.create).toHaveBeenCalledTimes(1);
 
 		await account.signTransaction({});
 
-		expect(eth.prepareTransactionForSigning).toHaveBeenCalledTimes(1);
-		expect(ethAccounts.signTransaction).toHaveBeenCalledTimes(1);
+		expect(zond.prepareTransactionForSigning).toHaveBeenCalledTimes(1);
+		expect(zondAccounts.signTransaction).toHaveBeenCalledTimes(1);
 	});
 });

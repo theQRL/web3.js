@@ -78,7 +78,7 @@ describeIf((isIpc || isWs) && isSyncTest)('Sync nodes test', () => {
 
 	describe('Start/end syncing', () => {
 		it('should emit start syncing and end syncing events', async () => {
-			const subs = await web3Node2.eth.subscribe('syncing');
+			const subs = await web3Node2.zond.subscribe('syncing');
 			const dataPromise = new Promise(resolve => {
 				subs.on('data', resolve);
 			});

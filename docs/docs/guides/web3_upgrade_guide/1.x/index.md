@@ -77,13 +77,13 @@ batch.add(
 const request1 = {
 	jsonrpc: '2.0',
 	id: 10,
-	method: 'eth_getBalance',
+	method: 'zond_getBalance',
 	params: ['0xf4ffff492596ac13fee6126846350433bf9a5021', 'latest'],
 };
 const request2 = {
 	jsonrpc: '2.0',
 	id: 12,
-	method: 'eth_getBalance',
+	method: 'zond_getBalance',
 	params: ['0xdc6bad79dab7ea733098f66f6c6f9dd008da3258', 'latest'],
 };
 batch.add(request1);
@@ -130,7 +130,7 @@ Similarly some useable types from the old package `web3-core` are also moved to 
 
 ```ts
 // in 1.x
-import type { Transaction, TransactionReceipt } from 'web3-core';
+import type { Transaction, TransactionReceipt } from '@theqrl/web3-core';
 
 // in 4.x
 import type { Transaction, TransactionReceipt } from 'web3-types';
@@ -148,7 +148,7 @@ web3.extend({
 	methods: [
 		{
 			name: 'getBalance',
-			call: 'eth_getBalance',
+			call: 'zond_getBalance',
 			params: 2,
 			inputFormatter: [
 				web3.extend.formatters.inputAddressFormatter,
@@ -158,7 +158,7 @@ web3.extend({
 		},
 		{
 			name: 'getGasPriceSuperFunction',
-			call: 'eth_gasPriceSuper',
+			call: 'zond_gasPriceSuper',
 			params: 2,
 			inputFormatter: [null, web3.utils.numberToHex],
 		},
@@ -180,11 +180,11 @@ web3.extend({
 	methods: [
 		{
 			name: 'getBalance',
-			call: 'eth_getBalance',
+			call: 'zond_getBalance',
 		},
 		{
 			name: 'getGasPriceSuperFunction',
-			call: 'eth_gasPriceSuper',
+			call: 'zond_gasPriceSuper',
 		},
 	],
 });
@@ -199,7 +199,7 @@ Starting 4.x releases, the package `web3-core-helpers` will not be maintained an
 import { formatters } from 'web3-core-helpers';
 
 // in 4.x
-import { formatters } from 'web3-core';
+import { formatters } from '@theqrl/web3-core';
 ```
 
 ### PromiEvent
@@ -211,7 +211,7 @@ Starting 4.x releases, the package `web3-core-promievent` will not be maintained
 import Web3PromiEvent from 'web3-core-promievent';
 
 // in 4.x
-import { Web3PromiEvent } from 'web3-core';
+import { Web3PromiEvent } from '@theqrl/web3-core';
 ```
 
 The `PromiEvent` class does not support `removeEventListener` or `addEventListener`. Instead we recommend to use `on` and `off`.

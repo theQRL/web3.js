@@ -5,7 +5,7 @@ ORIGARGS=("$@")
 . scripts/env.sh
 
 helpFunction() {
-	echo "Usage: $0 <ganache | geth | infura> <http | ws>"
+	echo "Usage: $0 <gzond> <http | ws>"
 	exit 1 # Exit script after printing help
 }
 
@@ -13,7 +13,7 @@ BACKEND=${ORIGARGS[0]}
 MODE=${ORIGARGS[1]}
 PROVIDER_URL=${ORIGARGS[2]}
 
-SUPPORTED_BACKENDS=("ganache" "geth" "infura")
+SUPPORTED_BACKENDS=("gzond")
 SUPPORTED_MODE=("http" "ws")
 
 if [[ ! " ${SUPPORTED_BACKENDS[*]} " =~ " ${BACKEND} " ]]; then
@@ -34,36 +34,10 @@ cd test/esm_black_box
 yarn --update-checksums
 yarn
 
-if [[ ${BACKEND} == "infura" ]]
-then
-    if [ ! $INFURA_HTTP ] || [ ! $INFURA_WSS ]
-    then
-        echo "No Infura provider URL specified"
-        exit 1
-    elif [ $MODE == "http" ]
-    then
-        WEB3_SYSTEM_TEST_PROVIDER=$INFURA_HTTP
-    else
-        WEB3_SYSTEM_TEST_PROVIDER=$INFURA_WSS
-    fi
-fi
 yarn "test:$BACKEND:$MODE"
 
 cd test/cjs_black_box
 yarn --update-checksums
 yarn
 
-if [[ ${BACKEND} == "infura" ]]
-then
-    if [ ! $INFURA_HTTP ] || [ ! $INFURA_WSS ]
-    then
-        echo "No Infura provider URL specified"
-        exit 1
-    elif [ $MODE == "http" ]
-    then
-        WEB3_SYSTEM_TEST_PROVIDER=$INFURA_HTTP
-    else
-        WEB3_SYSTEM_TEST_PROVIDER=$INFURA_WSS
-    fi
-fi
 yarn "test:$BACKEND:$MODE"

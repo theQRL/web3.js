@@ -14,13 +14,13 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { netRpcMethods } from 'web3-rpc-methods';
+import { netRpcMethods } from '@theqrl/web3-rpc-methods';
 
 import { Net } from '../../src';
 import { getIdValidData, getPeerCountValidData } from '../fixtures/rpc_method_wrappers';
 import { getId, getPeerCount, isListening } from '../../src/rpc_method_wrappers';
 
-jest.mock('web3-rpc-methods');
+jest.mock('@theqrl/web3-rpc-methods');
 
 describe('rpc_method_wrappers', () => {
 	let web3Net: Net;

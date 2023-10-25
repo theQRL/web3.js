@@ -45,16 +45,16 @@ describeIf(isWs || isHttp)('web3.contract.setProvider', () => {
 	});
 
 	test('create few contracts and check providers', () => {
-		const c1 = new web3.eth.Contract([]);
-		const c2 = new web3.eth.Contract([]);
+		const c1 = new web3.zond.Contract([]);
+		const c2 = new web3.zond.Contract([]);
 
 		expect(c1.provider).toBe(web3.provider);
 		expect(c2.provider).toBe(web3.provider);
 	});
 
 	test('create few contracts and check providers. set different provider', () => {
-		const c1 = new web3.eth.Contract([]);
-		const c2 = new web3.eth.Contract([]);
+		const c1 = new web3.zond.Contract([]);
+		const c2 = new web3.zond.Contract([]);
 
 		expect(c1.provider).toBe(web3.provider);
 		expect(c2.provider).toBe(web3.provider);
@@ -66,8 +66,8 @@ describeIf(isWs || isHttp)('web3.contract.setProvider', () => {
 	});
 
 	test('create few contracts, set different provider to contract and check other contract', () => {
-		const c1 = new web3.eth.Contract([]);
-		const c2 = new web3.eth.Contract([]);
+		const c1 = new web3.zond.Contract([]);
+		const c2 = new web3.zond.Contract([]);
 
 		expect(c1.provider).toBe(web3.provider);
 		expect(c2.provider).toBe(web3.provider);

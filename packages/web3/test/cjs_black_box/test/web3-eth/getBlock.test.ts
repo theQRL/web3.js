@@ -14,8 +14,8 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { validator } from 'web3-validator';
-import { blockSchema } from 'web3-eth';
+import { validator } from '@theqrl/web3-validator';
+import { blockSchema } from '@theqrl/web3-zond';
 import {
 	closeOpenConnection,
 	getSystemTestProvider,
@@ -26,7 +26,7 @@ import {
 // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
 const Web3 = require('web3').default;
 
-describe('CJS - Black Box Unit Tests - web3.eth.getBlock', () => {
+describe('CJS - Black Box Unit Tests - web3.zond.getBlock', () => {
 	let web3: typeof Web3;
 
 	beforeAll(() => {
@@ -38,13 +38,13 @@ describe('CJS - Black Box Unit Tests - web3.eth.getBlock', () => {
 	});
 
 	it('should get the latest block and validate it against blockSchema', async () => {
-		const response = await web3.eth.getBlock('latest');
+		const response = await web3.zond.getBlock('latest');
 		expect(response).toBeDefined();
 		expect(validator.validateJSONSchema(blockSchema, response)).toBeUndefined();
 	});
 
 	it('should get the latest block and validate it against blockSchema - hydrated = true', async () => {
-		const response = await web3.eth.getBlock('latest', true);
+		const response = await web3.zond.getBlock('latest', true);
 		expect(response).toBeDefined();
 		expect(validator.validateJSONSchema(blockSchema, response)).toBeUndefined();
 	});
