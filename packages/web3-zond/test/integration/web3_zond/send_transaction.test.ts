@@ -239,7 +239,6 @@ describe('Web3Zond.sendTransaction', () => {
 	});
 
 	describe('Transaction Types', () => {
-		// TODO(rgeraldes24)
 		/*
 		it('should send a successful type 0x0 transaction', async () => {
 			const transaction: Transaction = {
@@ -449,8 +448,6 @@ describe('Web3Zond.sendTransaction', () => {
 			).contractAddress as Address;
 		});
 
-		// @TODO(rgeraldes24)
-		/*
 		it('Should throw TransactionRevertInstructionError because gas too low', async () => {
 			const transaction: Transaction = {
 				from: tempAcc.address,
@@ -475,7 +472,7 @@ describe('Web3Zond.sendTransaction', () => {
 					.on('error', error => expect(error).toMatchObject(expectedThrownError)),
 			).rejects.toMatchObject(expectedThrownError);
 		});
-		*/
+		
 		it('Should throw TransactionRevertInstructionError because insufficient funds', async () => {
 			const transaction: Transaction = {
 				from: tempAcc.address,

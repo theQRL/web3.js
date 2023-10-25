@@ -25,6 +25,8 @@ import {
 	InvalidPasswordError,
 	IVLengthError,
 	PBKDF2IterationsError,
+	InvalidSeedError,
+	SeedLengthError,
 } from '@theqrl/web3-errors';
 import { CipherOptions, KeyStore } from '@theqrl/web3-types';
 import { hexToBytes } from '@theqrl/web3-utils';
@@ -207,13 +209,13 @@ export const transactionsTestData: [TxData | AccessListEIP2930TxData | FeeMarket
 	*/
 ];
 
-// export const invalidSeedtoAccountData: [
-// 	any,
-// 	PrivateKeyLengthError | InvalidPrivateKeyError,
-// ][] = [
-// 	['', new InvalidPrivateKeyError()],
-// 	[new Uint8Array([]), new PrivateKeyLengthError()],
-// ];
+export const invalidSeedtoAccountData: [
+	any,
+	SeedLengthError | InvalidSeedError,
+][] = [
+	['', new InvalidSeedError()],
+	[new Uint8Array([]), new SeedLengthError()],
+];
 
 export const validEncryptData: [[any, string | Uint8Array, CipherOptions], KeyStore][] = [
 	[

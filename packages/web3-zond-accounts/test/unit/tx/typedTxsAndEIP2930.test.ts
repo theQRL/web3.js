@@ -87,7 +87,6 @@ describe('[AccessListEIP2930Transaction / FeeMarketEIP1559Transaction] -> EIP-29
 				);
 			}).toThrow();
 
-			// TODO (rgeraldes24)
 			// expect(() => {
 			// 	txType.class.fromTxData(
 			// 		{
@@ -290,7 +289,6 @@ describe('[AccessListEIP2930Transaction / FeeMarketEIP1559Transaction] -> EIP-29
 				tx.getSenderPublicKey();
 			}).toThrow();
 
-			// TODO (rgeraldes24) review
 			// expect(() => {
 			// 	const high = SECP256K1_ORDER_DIV_2 + BigInt(1);
 			// 	const _tx = txType.class.fromTxData({ s: high, r: 1, v: 1 }, { common });
@@ -469,7 +467,6 @@ describe('[AccessListEIP2930Transaction] -> Class Specific Tests', () => {
 	// Data from
 	// https://github.com/INFURA/go-ethlibs/blob/75b2a52a39d353ed8206cffaf68d09bd1b154aae/eth/transaction_signing_test.go#L87
 
-	// TODO(rgeraldes24) - accesslist tx
 	// it('should sign transaction correctly and return expected JSON', () => {
 	// 	const _address = hexToBytes('0000000000000000000000000000000000001337');
 	// 	const slot1 = hexToBytes(

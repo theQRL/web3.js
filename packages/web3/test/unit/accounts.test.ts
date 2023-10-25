@@ -49,20 +49,19 @@ describe('test new Web3().zond.accounts', () => {
 		expect(zondAccounts.signTransaction).toHaveBeenCalledTimes(1);
 	});
 
-	// TODO(rgeraldes24)
-	// it('`privateKeyToAccount` should call the original `privateKeyToAccount` and add `signTransaction`', async () => {
-	// 	jest.spyOn(zondAccounts, 'privateKeyToAccount').mockReturnValue({
-	// 		privateKey: '',
-	// 	} as unknown as Web3Account);
+	it('`seedToAccount` should call the original `seedToAccount` and add `signTransaction`', async () => {
+		jest.spyOn(zondAccounts, 'seedToAccount').mockReturnValue({
+			seed: '',
+		} as unknown as Web3Account);
 
-	// 	const account = accounts.privateKeyToAccount('');
-	// 	expect(zondAccounts.privateKeyToAccount).toHaveBeenCalledTimes(1);
+		const account = accounts.seedToAccount('');
+		expect(zondAccounts.seedToAccount).toHaveBeenCalledTimes(1);
 
-	// 	await account.signTransaction({});
+		await account.signTransaction({});
 
-	// 	expect(zond.prepareTransactionForSigning).toHaveBeenCalledTimes(1);
-	// 	expect(zondAccounts.signTransaction).toHaveBeenCalledTimes(1);
-	// });
+		expect(zond.prepareTransactionForSigning).toHaveBeenCalledTimes(1);
+		expect(zondAccounts.signTransaction).toHaveBeenCalledTimes(1);
+	});
 
 	// it('`decrypt` should call the original `decrypt` and add `signTransaction`', async () => {
 	// 	jest.spyOn(zondAccounts, 'decrypt').mockReturnValue({

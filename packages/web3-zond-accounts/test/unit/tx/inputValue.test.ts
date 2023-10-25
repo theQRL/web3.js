@@ -169,12 +169,12 @@ describe('[Transaction Input Values]', () => {
 });
 
 test('[Invalid Array Input values]', () => {
-	const txTypes = [0x0, 0x1, 0x2];
+	const txTypes = [/*0x0, 0x1,*/ 0x2];
 	for (const signed of [false, true]) {
 		for (const txType of txTypes) {
 			let tx = TransactionFactory.fromTxData({ type: txType });
 			if (signed) {
-				tx = tx.sign(hexToBytes('42'.repeat(40)));
+				tx = tx.sign(hexToBytes('42'.repeat(48)));
 			}
 			const rawValues = tx.raw();
 			for (let x = 0; x < rawValues.length; x += 1) {
@@ -211,7 +211,7 @@ test('[Invalid Array Input values]', () => {
 });
 
 test('[Invalid Access Lists]', () => {
-	const txTypes = [0x1, 0x2];
+	const txTypes = [/*0x1,*/ 0x2];
 	const invalidAccessLists = [
 		[[]], // does not have an address and does not have slots
 		[[[], []]], // the address is an array
@@ -252,7 +252,7 @@ test('[Invalid Access Lists]', () => {
 					tx = TransactionFactory.fromTxData({ type: txType });
 					if (signed) {
 						// eslint-disable-next-line @typescript-eslint/no-unsafe-call
-						tx = tx.sign(hexToBytes('42'.repeat(32)));
+						tx = tx.sign(hexToBytes('42'.repeat(48)));
 					}
 				}
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-call

@@ -82,8 +82,7 @@ describe('defaults', () => {
 			// Some providers (mostly used for development) will make blocks only when there are new transactions
 			// So, send 2 transactions, one after another, because in this test `transactionBlockTimeout = 2`.
 			// eslint-disable-next-line no-void
-			// TODO(rgeraldes24)
-			//await sendFewSampleTxs(2);
+			// await sendFewSampleTxs(2);
 
 			try {
 				await sentTx;
@@ -99,9 +98,8 @@ describe('defaults', () => {
 			await closeOpenConnection(web3.zond);
 		});
 
-		// TODO(rgeraldes24)
 		/*
-		// The code of this test case is identical to the pervious one except for `zond.enableExperimentalFeatures = true`
+		// The code of this test case is identical to the previous one except for `zond.enableExperimentalFeatures = true`
 		// TODO: And this test case will be removed once https://github.com/web3/web3.js/issues/5521 is implemented.
 		itIf(isSocket)(
 			'should fail if transaction was not mined within `transactionBlockTimeout` blocks - when subscription is used',

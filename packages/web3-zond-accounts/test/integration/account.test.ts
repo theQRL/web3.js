@@ -34,7 +34,7 @@ import {
 	//invalidDecryptData,
 	//invalidEncryptData,
 	//invalidKeyStore,
-	//invalidSeedtoAccountData,
+	invalidSeedtoAccountData,
 	invalidPublicKeyToAddressData,
 	signatureRecoverData,
 	transactionsTestData,
@@ -77,17 +77,16 @@ describe('accounts', () => {
 		describe('valid cases', () => {
 			it.each(validSeedtoAccountData)('%s', (input, output) => {
 				expect(
-					JSON.stringify(seedToAccount(input.address/*, input.ignoreLength*/)),
+					JSON.stringify(seedToAccount(input.address, input.ignoreLength)),
 				).toEqual(JSON.stringify(output));
 			});
 		});
 
-		// TODO(rgeraldes24): fix
-		// describe('invalid cases', () => {
-		// 	it.each(invalidSeedtoAccountData)('%s', (input, output) => {
-		// 		expect(() => seedToAccount(input)).toThrow(output);
-		// 	});
-		// });
+		describe('invalid cases', () => {
+			it.each(invalidSeedtoAccountData)('%s', (input, output) => {
+				expect(() => seedToAccount(input)).toThrow(output);
+			});
+		});
 	});
 
 	describe('Signing and Recovery of Transaction', () => {

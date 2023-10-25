@@ -75,7 +75,6 @@ export interface Web3BaseWalletAccount {
 		readonly message?: string;
 		readonly signature: HexString;
 	};
-	// TODO(rgeraldes24): enable
 	// readonly encrypt: (password: string, options?: Record<string, unknown>) => Promise<KeyStore>;
 }
 

@@ -114,8 +114,6 @@ export class Transaction extends BaseTransaction<Transaction> {
 	public constructor(txData: TxData, opts: TxOptions = {}) {
 		super({ ...txData, type: TRANSACTION_TYPE }, opts);
 
-		// TODO(rgeraldes24) - review chain id part
-		// https://github.com/rgeraldes24/web3.js/blob/main/packages/web3-eth-accounts/src/tx/legacyTransaction.ts#L125
 		this.common = this._getCommon(opts.common)
 
 		this.gasPrice = uint8ArrayToBigInt(
@@ -141,7 +139,6 @@ export class Transaction extends BaseTransaction<Transaction> {
 				// v and chain ID meet EIP-155 conditions
 				// eslint-disable-next-line no-lonely-if
 				
-				// TODO(rgeraldes): review
 				// if (meetsEIP155(this.v!, this.common.chainId())) {
 				// 	this.activeCapabilities.push(Capability.EIP155ReplayProtection);
 				// }
@@ -205,7 +202,7 @@ export class Transaction extends BaseTransaction<Transaction> {
 
 		if (this.supports(Capability.EIP155ReplayProtection)) {
 			values.push(toUint8Array(this.common.chainId()));
-			// TODO (rgeraldes24): the following fields might be removed in the future
+			// @NOTE(rgeraldes24): the following fields might be removed in the future
 			values.push(unpadUint8Array(toUint8Array(0)));
 			values.push(unpadUint8Array(toUint8Array(0)));
 		}

@@ -26,3 +26,5 @@ export const MAX_UINT64 = BigInt('0xffffffffffffffff');
 export const MAX_INTEGER = BigInt(
 	'0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
 );
+
+export const SEED_BYTES = 48;

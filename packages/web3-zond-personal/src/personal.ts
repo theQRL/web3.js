@@ -185,7 +185,6 @@ export class Personal extends Web3Context<ZondPersonalAPI> {
 	public async signTransaction(tx: Transaction, passphrase: string) {
 		return rpcWrappers.signTransaction(this.requestManager, tx, passphrase);
 	}
-	// @TODO(rgeraldes24): review docs
 	/**
 	 * Calculates an Zond specific signature with:
 	 * sign(keccak256("\x19Zond Signed Message:\n" + dataToSign.length + dataToSign)))

@@ -88,7 +88,6 @@ describe('personal integration tests', () => {
 		await zondPersonal.unlockAccount(addr, password, 100000);
 		await zondPersonal.sign('0xdeadbeaf', addr, password);
 		//const signature = await zondPersonal.sign('0xdeadbeaf', addr, password);
-		// TODO (rgeraldes24)
 		//const address = await zondPersonal.ecRecover('0xdeadbeaf', signature);
 		// eslint-disable-next-line jest/no-standalone-expect
 		//expect(key).toBe(address);

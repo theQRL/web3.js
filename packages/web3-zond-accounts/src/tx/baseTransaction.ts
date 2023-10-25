@@ -17,7 +17,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 import { Numbers } from '@theqrl/web3-types';
 import { bytesToHex } from '@theqrl/web3-utils';
-import { MAX_INTEGER, MAX_UINT64 } from './constants.js';
+import { MAX_INTEGER, MAX_UINT64, SEED_BYTES } from './constants.js';
 import {
 	Chain,
 	Common,
@@ -126,8 +126,6 @@ export abstract class BaseTransaction<TransactionObject> {
 		this.signature = signatureB.length > 0 ? signatureB : undefined;
 		this.publicKey = publicKeyB.length > 0 ? publicKeyB : undefined;
 
-		// TODO(rgeraldes24): review these limits
-		//this._validateCannotExceedMaxInteger({ value: this.value, signature: this.signature, publicKey: this.publicKey });
 		this._validateCannotExceedMaxInteger({ value: this.value });
 
 		// geth limits gasLimit to 2^64-1
@@ -324,11 +322,10 @@ export abstract class BaseTransaction<TransactionObject> {
 	 * ```
 	 */
 	public sign(seed: Uint8Array): TransactionObject {
-		// TODO(rgeraldes) seed length
-		// if (privateKey.length !== CryptoSecretKeyBytes) {
-		// 	const msg = this._errorMsg(`Private key must be ${CryptoSecretKeyBytes} bytes in length.`);
-		// 	throw new Error(msg);
-		// }
+		if (seed.length !== SEED_BYTES) {
+			const msg = this._errorMsg(`Seed must be ${SEED_BYTES} bytes in length.`);
+			throw new Error(msg);
+		}
 		
 		// Hack for the constellation that we have got a legacy tx after spuriousDragon with a non-EIP155 conforming signature
 		// and want to recreate a signature (where EIP155 should be applied)

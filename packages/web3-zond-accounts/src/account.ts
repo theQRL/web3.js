@@ -19,6 +19,7 @@ import {
 	InvalidPublicKeyError,
 	InvalidSeedError,
 	PublicKeyLengthError,
+	SeedLengthError,
 	TransactionSigningError,
 	UndefinedRawTransactionError,
 } from '@theqrl/web3-errors';
@@ -60,11 +61,10 @@ import { Dilithium, getDilithiumAddressFromPK } from '@theqrl/wallet.js'
 export const parseAndValidatePublicKey = (data: Bytes, ignoreLength?: boolean): Uint8Array => {
 	let publicKeyUint8Array: Uint8Array;
 
-	// TODO(rgeraldes24): review length
 	// To avoid the case of 1 character less in a hex string which is prefixed with '0' by using 'bytesToUint8Array'
-	// if (!ignoreLength && typeof data === 'string' && isHexStrict(data) && data.length !== 2592) {
-	// 	throw new PublicKeyLengthError();
-	// }
+	if (!ignoreLength && typeof data === 'string' && isHexStrict(data) && data.length !== 5186) {
+		throw new PublicKeyLengthError();
+	}
 
 	try {
 		publicKeyUint8Array = data instanceof Uint8Array ? data : bytesToUint8Array(data);
@@ -411,13 +411,13 @@ export const publicKeyToAddress = (publicKey: Bytes): string => {
 /**
  * Get the seed Uint8Array after the validation
  */
-export const parseAndValidateSeed = (data: Bytes /*, ignoreLength?: boolean*/): Uint8Array => {
+export const parseAndValidateSeed = (data: Bytes , ignoreLength?: boolean): Uint8Array => {
 	let seedUint8Array: Uint8Array;
 
 	// To avoid the case of 1 character less in a hex string which is prefixed with '0' by using 'bytesToUint8Array'
-	// if (!ignoreLength && typeof data === 'string' && isHexStrict(data) && data.length !== 66) {
-	// 	throw new PrivateKeyLengthError();
-	// }
+	if (!ignoreLength && typeof data === 'string' && isHexStrict(data) && data.length !== 98) {
+		throw new SeedLengthError();
+	}
 
 	try {
 		seedUint8Array = data instanceof Uint8Array ? data : bytesToUint8Array(data);
@@ -425,9 +425,9 @@ export const parseAndValidateSeed = (data: Bytes /*, ignoreLength?: boolean*/): 
 		throw new InvalidSeedError();
 	}
 
-	// if (!ignoreLength && seedUint8Array.byteLength !== 32) {
-	// 	throw new PrivateKeyLengthError();
-	// }
+	if (!ignoreLength && seedUint8Array.byteLength !== 48) {
+		throw new SeedLengthError();
+	}
 
 	return seedUint8Array;
 };
@@ -454,8 +454,8 @@ export const parseAndValidateSeed = (data: Bytes /*, ignoreLength?: boolean*/): 
  * 	}
  * ```
  */
-export const seedToAccount = (seed: Bytes/*, ignoreLength?: boolean*/): Web3Account => {
-	const seedUint8Array = parseAndValidateSeed(seed/*, ignoreLength*/);
+export const seedToAccount = (seed: Bytes, ignoreLength?: boolean): Web3Account => {
+	const seedUint8Array = parseAndValidateSeed(seed, ignoreLength);
 	const buf = Buffer.from(seedUint8Array);
 	const acc = new Dilithium(buf);
 
