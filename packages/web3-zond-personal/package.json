@@ -1,6 +1,6 @@
 {
 	"name": "@theqrl/web3-zond-personal",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"description": "Web3 module to interact with the Ethereum blockchain accounts stored in the node.",
 	"main": "./lib/commonjs/index.js",
 	"module": "./lib/esm/index.js",
@@ -42,26 +42,26 @@
 		"test:integration": "jest --config=./test/integration/jest.config.js"
 	},
 	"dependencies": {
-		"@theqrl/web3-core": "^0.1.0",
-		"@theqrl/web3-zond": "^0.1.0",
-		"@theqrl/web3-rpc-methods": "^0.1.0",
-		"@theqrl/web3-types": "^0.1.0",
-		"@theqrl/web3-utils": "^0.1.0",
-		"@theqrl/web3-validator": "^0.1.0"
+		"@theqrl/web3-core": "^0.2.0",
+		"@theqrl/web3-rpc-methods": "^0.2.0",
+		"@theqrl/web3-types": "^0.2.0",
+		"@theqrl/web3-utils": "^0.2.0",
+		"@theqrl/web3-validator": "^0.2.0",
+		"@theqrl/web3-zond": "^0.2.0"
 	},
 	"devDependencies": {
+		"@theqrl/web3-providers-ws": "^0.2.0",
 		"@types/jest": "^28.1.6",
 		"@typescript-eslint/eslint-plugin": "^5.30.7",
 		"@typescript-eslint/parser": "^5.30.7",
 		"eslint": "^8.20.0",
-		"eslint-config-base-web3": "0.1.0",
+		"eslint-config-base-web3": "^0.2.0",
 		"eslint-config-prettier": "^8.5.0",
 		"eslint-plugin-import": "^2.26.0",
 		"jest": "^28.1.3",
 		"jest-extended": "^3.0.1",
 		"prettier": "^2.7.1",
 		"ts-jest": "^28.0.7",
-		"typescript": "^4.7.4",
-		"@theqrl/web3-providers-ws": "^0.1.0"
+		"typescript": "^4.7.4"
 	}
 }

@@ -1,6 +1,6 @@
 {
 	"name": "@theqrl/web3-zond-abi",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"description": "Web3 module encode and decode EVM in/output.",
 	"main": "./lib/commonjs/index.js",
 	"module": "./lib/esm/index.js",
@@ -44,9 +44,9 @@
 	"dependencies": {
 		"@ethersproject/abi": "^5.7.0",
 		"@ethersproject/bignumber": "^5.7.0",
-		"@theqrl/web3-errors": "^0.1.0",
-		"@theqrl/web3-types": "^0.1.0",
-		"@theqrl/web3-utils": "^0.1.0"
+		"@theqrl/web3-errors": "^0.2.0",
+		"@theqrl/web3-types": "^0.2.0",
+		"@theqrl/web3-utils": "^0.2.0"
 	},
 	"devDependencies": {
 		"@humeris/espresso-shot": "^4.0.0",
@@ -55,7 +55,7 @@
 		"@typescript-eslint/eslint-plugin": "^5.30.7",
 		"@typescript-eslint/parser": "^5.30.7",
 		"eslint": "^8.20.0",
-		"eslint-config-base-web3": "0.1.0",
+		"eslint-config-base-web3": "^0.2.0",
 		"eslint-config-prettier": "^8.5.0",
 		"eslint-plugin-import": "^2.26.0",
 		"jest": "^28.1.3",
