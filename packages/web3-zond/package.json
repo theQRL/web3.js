@@ -1,6 +1,9 @@
 {
 	"name": "@theqrl/web3-zond",
 	"version": "0.2.0",
+  "publishConfig": {
+    "access": "public"
+  },
 	"description": "Web3 module to interact with the Ethereum blockchain and smart contracts.",
 	"main": "./lib/commonjs/index.js",
 	"module": "./lib/esm/index.js",
@@ -74,5 +77,6 @@
 		"@theqrl/web3-zond-abi": "^0.2.0",
 		"@theqrl/web3-zond-accounts": "^0.2.0",
 		"setimmediate": "^1.0.5"
-	}
+	},
+	"gitHead": "d4f3246946fec86d908a215b27568aa8faea88d7"
 }

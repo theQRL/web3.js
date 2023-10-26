@@ -1,6 +1,9 @@
 {
 	"name": "@theqrl/web3-zond-accounts",
 	"version": "0.2.0",
+  "publishConfig": {
+    "access": "public"
+  },
 	"description": "Package for managing Ethereum accounts and signing",
 	"main": "./lib/commonjs/index.js",
 	"module": "./lib/esm/index.js",
@@ -68,5 +71,6 @@
 		"crc-32": "^1.2.2",
 		"ethereum-cryptography": "^2.0.0",
 		"sha3": "^2.1.4"
-	}
+	},
+	"gitHead": "d4f3246946fec86d908a215b27568aa8faea88d7"
 }

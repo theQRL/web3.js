@@ -1,7 +1,10 @@
 {
 	"name": "@theqrl/web3",
 	"version": "0.2.0",
-	"description": "Zond JavaScript API",
+  "publishConfig": {
+    "access": "public"
+	},
+  "description": "Zond JavaScript API",
 	"main": "./lib/commonjs/index.js",
 	"module": "./lib/esm/index.js",
 	"exports": {
@@ -91,5 +94,6 @@
 		"@theqrl/web3-zond-ens": "^0.2.0",
 		"@theqrl/web3-zond-iban": "^0.2.0",
 		"@theqrl/web3-zond-personal": "^0.2.0"
-	}
+	},
+	"gitHead": "d4f3246946fec86d908a215b27568aa8faea88d7"
 }

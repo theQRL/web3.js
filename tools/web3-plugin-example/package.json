@@ -1,6 +1,9 @@
 {
 	"name": "@theqrl/web3-plugin-example",
 	"version": "0.2.0",
+  "publishConfig": {
+    "access": "public"
+  },
 	"description": "Example implementations of Web3.js' 4.x plugin system",
 	"repository": "https://github.com/ChainSafe/web3.js",
 	"engines": {
@@ -58,5 +61,6 @@
 		"@theqrl/web3-utils": "^0.1.0",
 		"@theqrl/web3-zond-abi": "^0.1.0",
 		"@theqrl/web3-zond-contract": "^0.1.0"
-	}
+	},
+	"gitHead": "d4f3246946fec86d908a215b27568aa8faea88d7"
 }

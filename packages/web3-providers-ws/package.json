@@ -1,6 +1,9 @@
 {
 	"name": "@theqrl/web3-providers-ws",
 	"version": "0.2.0",
+  "publishConfig": {
+    "access": "public"
+  },
 	"description": "Websocket provider for Web3 4.x.x",
 	"main": "./lib/commonjs/index.js",
 	"module": "./lib/esm/index.js",
@@ -66,5 +69,6 @@
 		"@types/ws": "8.5.3",
 		"isomorphic-ws": "^5.0.0",
 		"ws": "^8.8.1"
-	}
+	},
+	"gitHead": "d4f3246946fec86d908a215b27568aa8faea88d7"
 }

@@ -1,6 +1,9 @@
 {
 	"name": "@theqrl/web3-zond-iban",
 	"version": "0.2.0",
+  "publishConfig": {
+    "access": "public"
+  },
 	"description": "This package converts Ethereum addresses to IBAN addresses and vice versa.",
 	"main": "./lib/commonjs/index.js",
 	"module": "./lib/esm/index.js",
@@ -60,5 +63,6 @@
 		"@theqrl/web3-types": "^0.2.0",
 		"@theqrl/web3-utils": "^0.2.0",
 		"@theqrl/web3-validator": "^0.2.0"
-	}
+	},
+	"gitHead": "d4f3246946fec86d908a215b27568aa8faea88d7"
 }
