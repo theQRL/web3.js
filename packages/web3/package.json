@@ -90,6 +90,6 @@
 		"@theqrl/web3-zond-ens": "^0.1.0",
 		"@theqrl/web3-zond-iban": "^0.1.0",
 		"@theqrl/web3-zond-personal": "^0.1.0",
-		"web3-types": "^0.1.0"
+		"@theqrl/web3-types": "^0.1.0"
 	}
 }
