@@ -1,5 +1,5 @@
 {
-	"name": "eslint-config-base-web3",
+	"name": "@theqrl/eslint-config-base-web3",
 	"version": "0.2.0",
 	"description": "Base eslint config for Web3 project.",
 	"author": "ChainSafe Systems",
