@@ -27,7 +27,7 @@ import {
 	Uint256,
 	Web3ZondExecutionAPI,
 } from '@theqrl/web3-types';
-import { Eip712TypedData } from 'web3-types/src/eth_types';
+import { Eip712TypedData } from '@theqrl/web3-types/src/zond_types';
 import { validator } from '@theqrl/web3-validator';
 
 export async function getProtocolVersion(requestManager: Web3RequestManager) {

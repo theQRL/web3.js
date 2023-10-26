@@ -355,7 +355,7 @@ export * as utils from '@theqrl/web3-utils';
 export * as validator from '@theqrl/web3-validator';
 
 /**
- * Export all types from `web3-types` without a namespace (in addition to being available at `types` namespace).
+ * Export all types from `@theqrl/web3-types` without a namespace (in addition to being available at `types` namespace).
  * To enable the user to write: `function something(): Web3Api` without the need for `types.Web3Api`.
  * And the same for `web3-errors`. Because this package contains error classes and constants.
  */

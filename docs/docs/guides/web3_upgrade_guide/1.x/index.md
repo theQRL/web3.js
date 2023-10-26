@@ -123,7 +123,7 @@ import type {
 	Web3BaseProvider as Provider,
 	Web3ProviderRequestCallback as Callback,
 	JsonRpcResponse,
-} from 'web3-types';
+} from '@theqrl/web3-types';
 ```
 
 Similarly some useable types from the old package `web3-core` are also moved to `web3-types`
@@ -133,7 +133,7 @@ Similarly some useable types from the old package `web3-core` are also moved to 
 import type { Transaction, TransactionReceipt } from '@theqrl/web3-core';
 
 // in 4.x
-import type { Transaction, TransactionReceipt } from 'web3-types';
+import type { Transaction, TransactionReceipt } from '@theqrl/web3-types';
 ```
 
 ### Web3 Extend

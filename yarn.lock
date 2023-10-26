@@ -1845,7 +1845,7 @@
     randombytes "^2.1.0"
     sha3 "^2.1.4"
 
-"@theqrl/wallet.js@^0.1.1":
+"@theqrl/wallet.js@^0.1.0":
   version "0.1.1"
   resolved "https://registry.yarnpkg.com/@theqrl/wallet.js/-/wallet.js-0.1.1.tgz#4a400d6aa8e886a2953ddbf6f43de1cee1f6d82b"
   integrity sha512-AmR73Nbgfibi9L5tOS59m1E8+/8Me5VG03h/qpRZFcHqVYOYb1w0+PB6BiV55kEInavHVXyhUWU1+tJByv1tjw==
@@ -11473,11 +11473,6 @@ web3-provider-engine@16.0.3:
     ws "^5.1.1"
     xhr "^2.2.0"
     xtend "^4.0.1"
-
-web3-types@^1.2.0:
-  version "1.2.0"
-  resolved "https://registry.yarnpkg.com/web3-types/-/web3-types-1.2.0.tgz#176bfe53d7e46c2488d6b95c98df8f6cb1fe1375"
-  integrity sha512-ljx8mrkrOI8fRqvgOdxfpKYoso6n7I8T9LsqXl+Mz2Db0L+2H15an0xgdoWYpKndTPiU2NKRWFiopYifBQzcxQ==
 
 webidl-conversions@^3.0.0:
   version "3.0.1"
