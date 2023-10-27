@@ -1,9 +1,9 @@
 {
 	"name": "@theqrl/web3-zond-abi",
 	"version": "0.2.0",
-  "publishConfig": {
-    "access": "public"
-  },
+	"publishConfig": {
+		"access": "public"
+	},
 	"description": "Web3 module encode and decode EVM in/output.",
 	"main": "./lib/commonjs/index.js",
 	"module": "./lib/esm/index.js",
@@ -58,7 +58,7 @@
 		"@typescript-eslint/eslint-plugin": "^5.30.7",
 		"@typescript-eslint/parser": "^5.30.7",
 		"eslint": "^8.20.0",
-		"eslint-config-base-web3": "^0.2.0",
+		"@theqrl/eslint-config-base-web3": "^0.2.0",
 		"eslint-config-prettier": "^8.5.0",
 		"eslint-plugin-import": "^2.26.0",
 		"jest": "^28.1.3",

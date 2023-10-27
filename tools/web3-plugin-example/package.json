@@ -1,9 +1,9 @@
 {
 	"name": "@theqrl/web3-plugin-example",
 	"version": "0.2.0",
-  "publishConfig": {
-    "access": "public"
-  },
+	"publishConfig": {
+		"access": "public"
+	},
 	"description": "Example implementations of Web3.js' 4.x plugin system",
 	"repository": "https://github.com/ChainSafe/web3.js",
 	"engines": {
@@ -46,7 +46,7 @@
 		"@typescript-eslint/eslint-plugin": "^5.30.7",
 		"@typescript-eslint/parser": "^5.30.7",
 		"eslint": "^8.20.0",
-		"eslint-config-base-web3": "^0.2.0",
+		"@theqrl/eslint-config-base-web3": "^0.2.0",
 		"eslint-config-prettier": "^8.5.0",
 		"eslint-plugin-import": "^2.26.0",
 		"jest": "^28.1.3",
