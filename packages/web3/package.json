@@ -1,10 +1,10 @@
 {
 	"name": "@theqrl/web3",
-	"version": "0.2.0",
-  "publishConfig": {
-    "access": "public"
+	"version": "0.2.1",
+	"publishConfig": {
+		"access": "public"
 	},
-  "description": "Zond JavaScript API",
+	"description": "Zond JavaScript API",
 	"main": "./lib/commonjs/index.js",
 	"module": "./lib/esm/index.js",
 	"exports": {
@@ -60,13 +60,13 @@
 		"test:blackbox:gzond:ws": "./scripts/black_box_test.sh gzond ws"
 	},
 	"devDependencies": {
-		"@theqrl/web3-providers-ipc": "^0.2.0",
+		"@theqrl/eslint-config-base-web3": "^0.2.1",
+		"@theqrl/web3-providers-ipc": "^0.2.1",
 		"@truffle/hdwallet-provider": "^2.0.12",
 		"@types/jest": "^28.1.6",
 		"@typescript-eslint/eslint-plugin": "^5.30.7",
 		"@typescript-eslint/parser": "^5.30.7",
 		"eslint": "^8.20.0",
-		"@theqrl/eslint-config-base-web3": "^0.2.0",
 		"eslint-config-prettier": "^8.5.0",
 		"eslint-plugin-import": "^2.26.0",
 		"hardhat": "^2.12.2",
@@ -78,22 +78,22 @@
 		"typescript": "^4.7.4"
 	},
 	"dependencies": {
-		"@theqrl/web3-core": "^0.2.0",
-		"@theqrl/web3-errors": "^0.2.0",
-		"@theqrl/web3-net": "^0.2.0",
-		"@theqrl/web3-providers-http": "^0.2.0",
-		"@theqrl/web3-providers-ws": "^0.2.0",
-		"@theqrl/web3-rpc-methods": "^0.2.0",
-		"@theqrl/web3-types": "^0.2.0",
-		"@theqrl/web3-utils": "^0.2.0",
-		"@theqrl/web3-validator": "^0.2.0",
-		"@theqrl/web3-zond": "^0.2.0",
-		"@theqrl/web3-zond-abi": "^0.2.0",
-		"@theqrl/web3-zond-accounts": "^0.2.0",
-		"@theqrl/web3-zond-contract": "^0.2.0",
-		"@theqrl/web3-zond-ens": "^0.2.0",
-		"@theqrl/web3-zond-iban": "^0.2.0",
-		"@theqrl/web3-zond-personal": "^0.2.0"
+		"@theqrl/web3-core": "^0.2.1",
+		"@theqrl/web3-errors": "^0.2.1",
+		"@theqrl/web3-net": "^0.2.1",
+		"@theqrl/web3-providers-http": "^0.2.1",
+		"@theqrl/web3-providers-ws": "^0.2.1",
+		"@theqrl/web3-rpc-methods": "^0.2.1",
+		"@theqrl/web3-types": "^0.2.1",
+		"@theqrl/web3-utils": "^0.2.1",
+		"@theqrl/web3-validator": "^0.2.1",
+		"@theqrl/web3-zond": "^0.2.1",
+		"@theqrl/web3-zond-abi": "^0.2.1",
+		"@theqrl/web3-zond-accounts": "^0.2.1",
+		"@theqrl/web3-zond-contract": "^0.2.1",
+		"@theqrl/web3-zond-ens": "^0.2.1",
+		"@theqrl/web3-zond-iban": "^0.2.1",
+		"@theqrl/web3-zond-personal": "^0.2.1"
 	},
 	"gitHead": "d4f3246946fec86d908a215b27568aa8faea88d7"
 }

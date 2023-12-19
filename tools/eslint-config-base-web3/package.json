@@ -1,9 +1,9 @@
 {
 	"name": "@theqrl/eslint-config-base-web3",
-	"version": "0.2.0",
-  "publishConfig": {
-    "access": "public"
-  },
+	"version": "0.2.1",
+	"publishConfig": {
+		"access": "public"
+	},
 	"description": "Base eslint config for Web3 project.",
 	"author": "ChainSafe Systems",
 	"private": true,
