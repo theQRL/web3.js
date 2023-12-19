@@ -16,7 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { CloseEvent } from 'ws';
-import { ProviderRpcError } from 'web3-types/src/web3_api_types';
+import { ProviderRpcError } from '@theqrl/web3-types/src/web3_api_types';
 import WebSocketProvider from '../../src';
 
 import { createProxy } from '../fixtures/proxy';

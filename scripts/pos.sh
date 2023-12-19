@@ -9,6 +9,16 @@ helpFunction() {
 }
 
 download(){
+	if [ ! -e "$TMP_FOLDER" ]
+    then
+        mkdir "$TMP_FOLDER"
+    fi
+
+	if [ ! -e "$TMP_FOLDER/logs" ]
+   	then
+        mkdir "$TMP_FOLDER/logs"
+    fi
+
 	if [ ! -e "$TMP_FOLDER/execution" ]
     then
 		cp -r scripts/execution $TMP_FOLDER
@@ -21,12 +31,12 @@ download(){
 
     if [ ! -e "$TMP_FOLDER/go-zond" ]
     then
-        git clone https://github.com/cyyber/go-zond ${TMP_FOLDER}/go-zond
+        git clone https://github.com/theQRL/go-zond ${TMP_FOLDER}/go-zond
     fi
 
 	if [ ! -e "$TMP_FOLDER/qrysm" ]
     then
-        git clone https://github.com/cyyber/qrysm ${TMP_FOLDER}/qrysm
+        git clone https://github.com/theQRL/qrysm ${TMP_FOLDER}/qrysm
     fi
 }
 
@@ -34,7 +44,7 @@ buildQrysm() {
 	cd ${TMP_FOLDER}/qrysm
 	go build -o=${TMP_FOLDER}/bin/beacon-chain ./cmd/beacon-chain
 	go build -o=${TMP_FOLDER}/bin/validator ./cmd/validator
-	go build -o=${TMP_FOLDER}/bin/prysmctl ./cmd/prysmctl
+	go build -o=${TMP_FOLDER}/bin/qrysmctl ./cmd/qrysmctl
 	cd ..
 	cd ..
 }
@@ -52,13 +62,13 @@ start() {
 
 	echo "Create network files..."
 	GENESIS_TIME=$(bash python scripts/update-time.py $TMP_FOLDER | tail -n 1)
-	${TMP_FOLDER}/bin/prysmctl testnet generate-genesis \
+	${TMP_FOLDER}/bin/qrysmctl testnet generate-genesis \
 		--fork=capella \
 		--num-validators=64 \
-		--geth-genesis-json-in=$TMP_FOLDER/execution/genesis.json \
+		--gzond-genesis-json-in=$TMP_FOLDER/execution/genesis.json \
 		--output-ssz=$TMP_FOLDER/consensus/genesis.ssz \
 		--chain-config-file=$TMP_FOLDER/consensus/config.yml \
-		--deposit-json-file=$TMP_FOLDER/consensus/validator_keys/deposit_data-1694686035.json  \
+		--deposit-json-file=$TMP_FOLDER/consensus/validator_keys/deposit_data-1702900864.json  \
 		--genesis-time="${GENESIS_TIME}"
 
 	buildGzond
