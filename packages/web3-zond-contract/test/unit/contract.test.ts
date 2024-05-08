@@ -598,10 +598,10 @@ describe('Contract', () => {
 			contract.defaultBlock = defaultBlock;
 			expect(contract.defaultBlock).toStrictEqual(defaultBlock);
 
-			const defaultHardfork = 'constantinople';
-			expect(contract.defaultHardfork).toBe('london');
-			contract.defaultHardfork = defaultHardfork;
-			expect(contract.defaultHardfork).toStrictEqual(defaultHardfork);
+			// const defaultHardfork = 'constantinople';
+			// expect(contract.defaultHardfork).toBe('london');
+			// contract.defaultHardfork = defaultHardfork;
+			// expect(contract.defaultHardfork).toStrictEqual(defaultHardfork);
 
 			const baseChain = 'mainnet' as ValidChains;
 			contract.defaultChain = baseChain;

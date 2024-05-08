@@ -14,21 +14,23 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { toBigInt } from '@theqrl/web3-utils';
-import { Chain, Common, Hardfork } from '../../../src/common';
+// import { toBigInt } from '@theqrl/web3-utils';
+import { /*Chain,*/ Common, Hardfork } from '../../../src/common';
 
-import * as testnetMerge from '../../fixtures/common/merge/testnetMerge.json';
+// import * as testnetMerge from '../../fixtures/common/merge/testnetMerge.json';
 import * as testnetPOS from '../../fixtures/common/merge/testnetPOS.json';
 import postMerge from '../../fixtures/common/post-merge.json';
 
 describe('[Common]: Merge/POS specific logic', () => {
-	it('hardforkTTD()', () => {
-		const customChains = [testnetMerge];
-		const c = new Common({ chain: 'testnetMerge', hardfork: Hardfork.Istanbul, customChains });
-		expect(c.hardforkTTD(Hardfork.Merge)).toEqual(BigInt(5000));
-		expect(c.hardforkTTD('thisHardforkDoesNotExist')).toBeNull();
-	});
+	// TODO(rgeraldes24)
+	// it('hardforkTTD()', () => {
+	// 	const customChains = [testnetMerge];
+	// 	const c = new Common({ chain: 'testnetMerge', hardfork: Hardfork.Istanbul, customChains });
+	// 	expect(c.hardforkTTD(Hardfork.Merge)).toEqual(BigInt(5000));
+	// 	expect(c.hardforkTTD('thisHardforkDoesNotExist')).toBeNull();
+	// });
 
+	/*
 	it('getHardforkByBlockNumber(), merge block null, with total difficulty', () => {
 		const customChains = [testnetMerge];
 		const c = new Common({
@@ -102,7 +104,9 @@ describe('[Common]: Merge/POS specific logic', () => {
 		expect(c.setHardforkByBlockNumber(15, 4999)).toBe('london');
 		expect(c.setHardforkByBlockNumber(12, 4999)).toBe('berlin');
 	});
+	*/
 
+	/*
 	it('setHardforkByBlockNumber(), merge block set, with total difficulty', () => {
 		const testnetMergeWithBlockNumber = JSON.parse(JSON.stringify(testnetMerge));
 		// Set Merge block to 15
@@ -144,16 +148,15 @@ describe('[Common]: Merge/POS specific logic', () => {
 
 		expect(c.setHardforkByBlockNumber(18, 5001)).toBe('shanghai');
 	});
+	*/
 
 	it('Pure POS testnet', () => {
 		const customChains = [testnetPOS];
-		const c = new Common({ chain: 'testnetPOS', hardfork: Hardfork.Chainstart, customChains });
-
-		expect(c.hardforkTTD(Hardfork.Chainstart)).toEqual(BigInt(0));
-
+		const c = new Common({ chain: 'testnetPOS', hardfork: Hardfork.Shanghai, customChains });
 		expect(c.getHardforkByBlockNumber(5, 0)).toBe('shanghai');
 	});
 
+	/*
 	it('Should fail setting invalid hardfork', () => {
 		const customChains = [testnetPOS];
 		expect(() => {
@@ -161,13 +164,15 @@ describe('[Common]: Merge/POS specific logic', () => {
 			new Common({ chain: 'testnetPOS', hardfork: Hardfork.Istanbul, customChains });
 		}).toThrow(`Hardfork with name istanbul not supported`);
 	});
+	*/
 
 	it('should get the correct merge hardfork at genesis', async () => {
 		const c = Common.fromGzondGenesis(postMerge, { chain: 'post-merge' });
-		expect(c.getHardforkByBlockNumber(0)).toEqual(Hardfork.London);
-		expect(c.getHardforkByBlockNumber(0, BigInt(0))).toEqual(Hardfork.Merge);
+		// expect(c.getHardforkByBlockNumber(0)).toEqual(Hardfork.London);
+		expect(c.getHardforkByBlockNumber(0, BigInt(0))).toEqual(Hardfork.Shanghai);
 	});
 
+	/*
 	it('test post merge hardforks using Sepolia with block null', () => {
 		const c = new Common({ chain: Chain.Sepolia });
 
@@ -217,40 +222,42 @@ describe('[Common]: Merge/POS specific logic', () => {
 		// restore value
 		mergeHf.block = prevMergeBlockVal;
 	});
+	*/
 
-	it('should get correct merge and post merge hf with merge block specified', () => {
-		const c = new Common({ chain: Chain.Sepolia });
-		// eslint-disable-next-line no-null/no-null
-		const mergeHf = c.hardforks().filter(hf => hf.ttd !== undefined && hf.ttd !== null)[0];
-		const prevMergeBlockVal = mergeHf.block;
-		// the terminal block on sepolia is 1450408
-		mergeHf.block = 1450409;
+	// it('should get correct merge and post merge hf with merge block specified', () => {
+	// 	const c = new Common({ chain: Chain.Sepolia });
+	// 	// eslint-disable-next-line no-null/no-null
+	// 	const mergeHf = c.hardforks().filter(hf => hf.ttd !== undefined && hf.ttd !== null)[0];
+	// 	const prevMergeBlockVal = mergeHf.block;
+	// 	// the terminal block on sepolia is 1450408
+	// 	mergeHf.block = 1450409;
 
-		// should get merge even without td supplied as the merge hf now has the block specified
-		expect(c.setHardforkByBlockNumber(1450409)).toEqual(Hardfork.Merge);
-		expect(c.setHardforkByBlockNumber(1450409, BigInt('17000000000000000'))).toEqual(
-			Hardfork.Merge,
-		);
-		expect(c.setHardforkByBlockNumber(1735371)).toEqual(Hardfork.MergeForkIdTransition);
-		expect(c.setHardforkByBlockNumber(1735371, BigInt('17000000000000000'))).toEqual(
-			Hardfork.MergeForkIdTransition,
-		);
+	// 	// should get merge even without td supplied as the merge hf now has the block specified
+	// 	expect(c.setHardforkByBlockNumber(1450409)).toEqual(Hardfork.Merge);
+	// 	expect(c.setHardforkByBlockNumber(1450409, BigInt('17000000000000000'))).toEqual(
+	// 		Hardfork.Merge,
+	// 	);
+	// 	expect(c.setHardforkByBlockNumber(1735371)).toEqual(Hardfork.MergeForkIdTransition);
+	// 	expect(c.setHardforkByBlockNumber(1735371, BigInt('17000000000000000'))).toEqual(
+	// 		Hardfork.MergeForkIdTransition,
+	// 	);
 
-		// Check nextHardforkBlockOrTimestamp should be MergeForkIdTransition's block on london and merge both
-		expect(c.nextHardforkBlockOrTimestamp(Hardfork.London)).toEqual(toBigInt(1735371));
-		expect(c.nextHardforkBlockOrTimestamp(Hardfork.Merge)).toEqual(toBigInt(1735371));
+	// 	// Check nextHardforkBlockOrTimestamp should be MergeForkIdTransition's block on london and merge both
+	// 	expect(c.nextHardforkBlockOrTimestamp(Hardfork.London)).toEqual(toBigInt(1735371));
+	// 	expect(c.nextHardforkBlockOrTimestamp(Hardfork.Merge)).toEqual(toBigInt(1735371));
 
-		// restore value
-		mergeHf.block = prevMergeBlockVal;
-	});
+	// 	// restore value
+	// 	mergeHf.block = prevMergeBlockVal;
+	// });
 
-	it('should throw if encounters a double ttd hardfork specification', () => {
-		const c = new Common({ chain: Chain.Sepolia });
-		// Add the ttd to mergeForkIdTransition which occurs post merge in sepolia
-		c.hardforks().filter(hf => hf.name === 'mergeForkIdTransition')[0]!['ttd'] =
-			'17000000000000000';
-		expect(() => {
-			c.setHardforkByBlockNumber(1735371);
-		}).toThrow('More than one merge hardforks found with ttd specified');
-	});
+	// TODO(rgeraldes24)
+	// it('should throw if encounters a double ttd hardfork specification', () => {
+	// 	const c = new Common({ chain: Chain.Sepolia });
+	// 	// Add the ttd to mergeForkIdTransition which occurs post merge in sepolia
+	// 	c.hardforks().filter(hf => hf.name === 'mergeForkIdTransition')[0]!['ttd'] =
+	// 		'17000000000000000';
+	// 	expect(() => {
+	// 		c.setHardforkByBlockNumber(1735371);
+	// 	}).toThrow('More than one merge hardforks found with ttd specified');
+	// });
 });

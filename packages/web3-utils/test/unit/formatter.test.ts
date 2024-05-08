@@ -39,25 +39,20 @@ type TestTransactionInfoType = {
 
 type TestBlockType = {
 	readonly parentHash: Bytes;
-	readonly sha3Uncles: Bytes;
 	readonly miner: Bytes;
 	readonly stateRoot: Bytes;
 	readonly transactionsRoot: Bytes;
 	readonly receiptsRoot: Bytes;
 	readonly logsBloom?: Bytes;
-	readonly difficulty?: Numbers;
 	readonly number?: Numbers;
 	readonly gasLimit: Numbers;
 	readonly gasUsed: Numbers;
 	readonly timestamp: Numbers;
 	readonly extraData: Bytes;
 	readonly mixHash: Bytes;
-	readonly nonce?: Numbers;
-	readonly totalDifficulty: Numbers;
 	readonly baseFeePerGas?: Numbers;
 	readonly size: Numbers;
 	readonly transactions: Bytes[] | TestTransactionInfoType[];
-	readonly uncles: Bytes[];
 	readonly hash?: Bytes;
 };
 
@@ -298,21 +293,17 @@ describe('formatter', () => {
 
 				return expectTypeOf<T>().toBe<{
 					readonly parentHash: string;
-					readonly sha3Uncles: string;
 					readonly miner: string;
 					readonly stateRoot: string;
 					readonly transactionsRoot: string;
 					readonly receiptsRoot: string;
 					readonly logsBloom?: string;
-					readonly difficulty?: string;
 					readonly number?: string;
 					readonly gasLimit: string;
 					readonly gasUsed: string;
 					readonly timestamp: string;
 					readonly extraData: string;
 					readonly mixHash: string;
-					readonly nonce?: string;
-					readonly totalDifficulty: string;
 					readonly baseFeePerGas?: string;
 					readonly size: string;
 					readonly transactions:
@@ -324,7 +315,6 @@ describe('formatter', () => {
 								readonly hash: string;
 								readonly transactionIndex?: string;
 						  }[];
-					readonly uncles: string[];
 					readonly hash?: string;
 				}>();
 			});
@@ -339,21 +329,17 @@ describe('formatter', () => {
 
 					return expectTypeOf<T>().toBe<{
 						readonly parentHash: Uint8Array;
-						readonly sha3Uncles: Uint8Array;
 						readonly miner: Uint8Array;
 						readonly stateRoot: Uint8Array;
 						readonly transactionsRoot: Uint8Array;
 						readonly receiptsRoot: Uint8Array;
 						readonly logsBloom?: Uint8Array;
-						readonly difficulty?: bigint;
 						readonly number?: bigint;
 						readonly gasLimit: bigint;
 						readonly gasUsed: bigint;
 						readonly timestamp: bigint;
 						readonly extraData: Uint8Array;
 						readonly mixHash: Uint8Array;
-						readonly nonce?: bigint;
-						readonly totalDifficulty: bigint;
 						readonly baseFeePerGas?: bigint;
 						readonly size: bigint;
 						readonly transactions:
@@ -365,7 +351,6 @@ describe('formatter', () => {
 									readonly hash: Uint8Array;
 									readonly transactionIndex?: bigint;
 							  }[];
-						readonly uncles: Uint8Array[];
 						readonly hash?: Uint8Array;
 					}>();
 				},
@@ -381,21 +366,17 @@ describe('formatter', () => {
 
 					return expectTypeOf<T>().toBe<{
 						readonly parentHash: Uint8Array;
-						readonly sha3Uncles: Uint8Array;
 						readonly miner: Uint8Array;
 						readonly stateRoot: Uint8Array;
 						readonly transactionsRoot: Uint8Array;
 						readonly receiptsRoot: Uint8Array;
 						readonly logsBloom?: Uint8Array;
-						readonly difficulty?: number;
 						readonly number?: number;
 						readonly gasLimit: number;
 						readonly gasUsed: number;
 						readonly timestamp: number;
 						readonly extraData: Uint8Array;
 						readonly mixHash: Uint8Array;
-						readonly nonce?: number;
-						readonly totalDifficulty: number;
 						readonly baseFeePerGas?: number;
 						readonly size: number;
 						readonly transactions:
@@ -407,7 +388,6 @@ describe('formatter', () => {
 									readonly hash: Uint8Array;
 									readonly transactionIndex?: number;
 							  }[];
-						readonly uncles: Uint8Array[];
 						readonly hash?: Uint8Array;
 					}>();
 				},

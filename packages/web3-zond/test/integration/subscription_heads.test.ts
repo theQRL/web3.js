@@ -51,14 +51,12 @@ describeIf(isSocket)('subscription', () => {
 						expect(typeof data.stateRoot).toBe('string');
 						expect(typeof data.transactionsRoot).toBe('string');
 						expect(typeof data.logsBloom).toBe('string');
-						expect(typeof data.difficulty).toBe('bigint');
 						expect(typeof data.number).toBe('bigint');
 						expect(typeof data.gasLimit).toBe('bigint');
 						expect(typeof data.gasUsed).toBe('bigint');
 						expect(typeof data.timestamp).toBe('bigint');
 						expect(typeof data.extraData).toBe('string');
 						expect(typeof data.nonce).toBe('bigint');
-						expect(typeof data.sha3Uncles).toBe('string');
 						expect(typeof data.baseFeePerGas).toBe('bigint');
 						expect(typeof data.mixHash).toBe('string');
 					} catch (error) {

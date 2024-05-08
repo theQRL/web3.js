@@ -1,30 +1,10 @@
 {
 	"config": {
-		"chainId": 32382,
-		"homesteadBlock": 0,
-		"daoForkSupport": true,
-		"eip150Block": 0,
-		"eip155Block": 0,
-		"eip158Block": 0,
-		"byzantiumBlock": 0,
-		"constantinopleBlock": 0,
-		"petersburgBlock": 0,
-		"istanbulBlock": 0,
-		"muirGlacierBlock": 0,
-		"berlinBlock": 0,
-		"londonBlock": 0,
-		"arrowGlacierBlock": 0,
-		"grayGlacierBlock": 0,
-		"shanghaiTime": 0,
-		"terminalTotalDifficulty": 0,
-                "terminalTotalDifficultyPassed": true,
-		"ethash": {}
+		"chainId": 32382
 	},
-	"nonce": "0x0",
 	"timestamp": "0x6537e138",
 	"extraData": "0x426574614e65742c205a6f6e642c20584d53532c2044696c69746869756d2121",
 	"gasLimit": "0x1c9c380",
-	"difficulty": "0x1",
 	"alloc": {
 		"14dc79964da2c08b23698b3d3cc7ca32193d9955": {
 			"balance": "0x21e19e0c9bab2400000"

@@ -76,11 +76,6 @@ describe(`${getSystemTestBackend()} tests - getTransaction`, () => {
 			v: BigInt('0x0'),
 			s: '0x58f3924a7c468ab3df1a46ecef93910b4c05a13c3c3a9f4bf87b11f912b2748a',
 			r: '0x7fcc0285117b5613d0766b0bcd6cab69538bc0991b2bc4ddebbcc3cb5b4d8fb0',
-			// TODO These values are included when fetching the transaction from
-			// Nethermind, but not Infura
-			// to: null,
-			// value: '0x0',
-			// yParity: '0x0'
 		});
 	});
 });

@@ -469,32 +469,6 @@ describe('formatters', () => {
 			expect(result).toEqual(expect.objectContaining({ number: hexToNumberResult }));
 		});
 
-		it('should convert "difficulty" to bigint', () => {
-			jest.spyOn(formatters, 'outputBigIntegerFormatter').mockReturnValue(
-				'outputBigIntegerFormatterResult' as any,
-			);
-			const result = outputBlockFormatter({ ...validBlock, difficulty: 'difficulty' } as any);
-
-			expect(formatters.outputBigIntegerFormatter).toHaveBeenCalledWith('difficulty');
-			expect(result).toEqual(
-				expect.objectContaining({ difficulty: 'outputBigIntegerFormatterResult' }),
-			);
-		});
-
-		it('should convert "totalDifficulty" to bigint', () => {
-			jest.spyOn(formatters, 'outputBigIntegerFormatter').mockReturnValue(
-				'outputBigIntegerFormatterResult' as any,
-			);
-			const result = outputBlockFormatter({
-				...validBlock,
-				totalDifficulty: 'totalDifficulty',
-			} as any);
-
-			expect(formatters.outputBigIntegerFormatter).toHaveBeenCalledWith('totalDifficulty');
-			expect(result).toEqual(
-				expect.objectContaining({ totalDifficulty: 'outputBigIntegerFormatterResult' }),
-			);
-		});
 
 		it('should format "transactions" with correct formatter', () => {
 			const transactions = ['trs1', 'trs2'];

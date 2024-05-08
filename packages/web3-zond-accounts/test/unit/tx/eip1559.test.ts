@@ -145,7 +145,7 @@ describe('[FeeMarketEIP1559Transaction]', () => {
 		const seed = hexToBytes(data.seed.slice(2));
 		const txn = FeeMarketEIP1559Transaction.fromTxData(data, { common, freeze: false });
 		const newCommon = new Common({
-			chain: Chain.Goerli,
+			chain: Chain.Mainnet,
 			hardfork: Hardfork.London,
 			eips: [2537],
 		});

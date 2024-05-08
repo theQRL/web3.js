@@ -15,17 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 export type ForkName =
-	| 'London+3860'
-	| 'London'
-	| 'Berlin'
-	| 'Istanbul'
-	| 'Byzantium'
-	| 'ConstantinopleFix'
-	| 'Constantinople'
-	| 'EIP150'
-	| 'EIP158'
-	| 'Frontier'
-	| 'Homestead';
+	| 'Shanghai';
 
 export type ForkNamesMap = { [forkName in ForkName]: string };
 

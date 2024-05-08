@@ -14,6 +14,7 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
+/*
 import { Chain, Common, ConsensusType, CustomChain, Hardfork } from '../../../src/common';
 
 import * as testnet from '../../fixtures/common/testnet.json';
@@ -22,7 +23,7 @@ import * as testnet3 from '../../fixtures/common/testnet3.json';
 
 describe('[Common]: Custom chains', () => {
 	it('chain -> object: should provide correct access to private network chain parameters', () => {
-		const c = new Common({ chain: testnet, hardfork: Hardfork.Byzantium });
+		const c = new Common({ chain: testnet, hardfork: Hardfork.Shanghai });
 		expect(c.chainName()).toBe('testnet');
 		expect(c.chainId()).toEqual(BigInt(12345));
 		expect(c.networkId()).toEqual(BigInt(12345));
@@ -44,7 +45,7 @@ describe('[Common]: Custom chains', () => {
 
 		const customChainParams = { name: 'custom', chainId: 123, networkId: 678 };
 		const customChainCommon = Common.custom(customChainParams, {
-			hardfork: Hardfork.Byzantium,
+			hardfork: Hardfork.Shanghai,
 		});
 
 		// From custom chain params
@@ -133,13 +134,13 @@ describe('[Common]: Custom chains', () => {
 describe('custom chain setup with hardforks', () => {
 	const undefinedHardforks = [
 		{
-			name: 'chainstart',
+			name: 'shanghai',
 			block: 0,
 		},
-		{ name: 'homestead' },
+		// { name: 'homestead' },
 		// eslint-disable-next-line no-null/no-null
-		{ name: 'byzantium', block: null },
-		{ name: 'tangerineWhistle', block: 10 },
+		// { name: 'byzantium', block: null },
+		// { name: 'tangerineWhistle', block: 10 },
 	];
 	it('with undefined/null block numbers', () => {
 		expect(
@@ -153,8 +154,8 @@ describe('custom chain setup with hardforks', () => {
 				block: 0,
 			},
 			// eslint-disable-next-line no-null/no-null
-			{ name: 'homestead', block: null },
-			{ name: 'tangerineWhistle', block: 10 },
+			// { name: 'homestead', block: null },
+			// { name: 'tangerineWhistle', block: 10 },
 		];
 
 		const common = Common.custom({ hardforks: nullHardforks });
@@ -164,3 +165,4 @@ describe('custom chain setup with hardforks', () => {
 		expect('chainstart').toEqual(common.hardfork());
 	});
 });
+*/

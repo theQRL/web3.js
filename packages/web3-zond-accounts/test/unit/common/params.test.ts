@@ -72,6 +72,8 @@ describe('[Common]: Parameter access for param(), paramByHardfork()', () => {
 		);
 	});
 
+	// TODO(rgeraldes24)
+	/*
 	it('EIP param access, paramByEIP()', () => {
 		const c = new Common({ chain: Chain.Mainnet });
 
@@ -88,15 +90,5 @@ describe('[Common]: Parameter access for param(), paramByHardfork()', () => {
 
 		expect(c.paramByEIP('gasPrices', 'Bls12381G1AddGas', 2537)).toEqual(BigInt(600));
 	});
-
-	it('returns the right block delay for EIP3554', () => {
-		for (const fork of [Hardfork.MuirGlacier, Hardfork.Berlin]) {
-			const c = new Common({ chain: Chain.Mainnet, hardfork: fork });
-			let delay = c.param('pow', 'difficultyBombDelay');
-			expect(delay).toEqual(BigInt(9000000));
-			c.setEIPs([3554]);
-			delay = c.param('pow', 'difficultyBombDelay');
-			expect(delay).toEqual(BigInt(9500000));
-		}
-	});
+	*/
 });

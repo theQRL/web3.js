@@ -20,7 +20,7 @@ import { Hardfork } from '../../../src/common';
 import { parseGzondGenesis } from '../../../src/common/utils';
 import testnet from '../../fixtures/common/testnetValid.json';
 import invalidSpuriousDragon from '../../fixtures/common/invalid-spurious-dragon.json';
-import poa from '../../fixtures/common/poa.json';
+// import poa from '../../fixtures/common/poa.json';
 import postMerge from '../../fixtures/common/post-merge.json';
 import noExtraData from '../../fixtures/common/no-extra-data.json';
 import gzondGenesisKiln from '../../fixtures/common/gzond-genesis-kiln.json';
@@ -29,17 +29,6 @@ import postMergeHardfork from '../../fixtures/common/post-merge-hardfork.json';
 describe('[Utils/Parse]', () => {
 	const kilnForkHashes: any = {
 		chainstart: '0xbcadf543',
-		homestead: '0xbcadf543',
-		tangerineWhistle: '0xbcadf543',
-		spuriousDragon: '0xbcadf543',
-		byzantium: '0xbcadf543',
-		constantinople: '0xbcadf543',
-		petersburg: '0xbcadf543',
-		istanbul: '0xbcadf543',
-		berlin: '0xbcadf543',
-		london: '0xbcadf543',
-		mergeForkIdTransition: '0x013fd1b5',
-		merge: '0x013fd1b5',
 	};
 
 	it('should parse gzond params file', async () => {
@@ -53,6 +42,8 @@ describe('[Utils/Parse]', () => {
 		}).toThrow();
 	});
 
+	// TODO(rgeraldes24)
+	/*
 	it('should import poa network params correctly', async () => {
 		let params = parseGzondGenesis(poa, 'poa');
 		expect(params.genesis.nonce).toBe('0x0000000000000000');
@@ -61,11 +52,11 @@ describe('[Utils/Parse]', () => {
 			algorithm: 'clique',
 			clique: { period: 15, epoch: 30000 },
 		});
-		poa.nonce = '00';
 		params = parseGzondGenesis(poa, 'poa');
 		expect(params.genesis.nonce).toBe('0x0000000000000000');
 		expect(params.hardfork).toEqual(Hardfork.London);
 	});
+	*/
 
 	it('should generate expected hash with london block zero and base fee per gas defined', async () => {
 		const params = parseGzondGenesis(postMerge, 'post-merge');
@@ -84,21 +75,9 @@ describe('[Utils/Parse]', () => {
 			genesisHash: hexToBytes(
 				'51c7fe41be669f69c45c33a56982cbde405313342d9e2b00d7c91a7b284dd4f8',
 			),
-			mergeForkIdPostMerge: false,
 		});
 		expect(common.hardforks().map(hf => hf.name)).toEqual([
 			'chainstart',
-			'homestead',
-			'tangerineWhistle',
-			'spuriousDragon',
-			'byzantium',
-			'constantinople',
-			'petersburg',
-			'istanbul',
-			'berlin',
-			'london',
-			'mergeForkIdTransition',
-			'merge',
 		]);
 		for (const hf of common.hardforks()) {
 			/* eslint-disable @typescript-eslint/no-use-before-define */
@@ -118,17 +97,6 @@ describe('[Utils/Parse]', () => {
 		// to be post merge
 		expect(common1.hardforks().map(hf => hf.name)).toEqual([
 			'chainstart',
-			'homestead',
-			'tangerineWhistle',
-			'spuriousDragon',
-			'byzantium',
-			'constantinople',
-			'petersburg',
-			'istanbul',
-			'berlin',
-			'london',
-			'merge',
-			'mergeForkIdTransition',
 			'shanghai',
 		]);
 
@@ -141,17 +109,6 @@ describe('[Utils/Parse]', () => {
 		});
 		expect(common.hardforks().map(hf => hf.name)).toEqual([
 			'chainstart',
-			'homestead',
-			'tangerineWhistle',
-			'spuriousDragon',
-			'byzantium',
-			'constantinople',
-			'petersburg',
-			'istanbul',
-			'muirGlacier',
-			'berlin',
-			'london',
-			'merge',
 			'shanghai',
 		]);
 

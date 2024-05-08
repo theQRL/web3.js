@@ -16,7 +16,6 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 export const mainnetBlock = {
 	baseFeePerGas: '0x474472184',
-	difficulty: '0x0',
 	extraData: '0xd883010b05846765746888676f312e32302e32856c696e7578',
 	gasLimit: '0x1c9c380',
 	gasUsed: '0x143f430',
@@ -29,11 +28,9 @@ export const mainnetBlock = {
 	number: '0x103dab0',
 	parentHash: '0x28ad78b5598691f1eb3aee2a17540496b539fb4f72ca5eaa461a331791cfc7cd',
 	receiptsRoot: '0x78017242efd230482ca0a6ca47a5c3bed5a275b6e3b09223ff8e2354f3136772',
-	sha3Uncles: '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347',
 	size: '0x493d0',
 	stateRoot: '0x637b62addfc277cb5ae4aac3c8b3bfc8e49ebe9369d07d9757c5f1f2ec937306',
 	timestamp: '0x64363eef',
-	totalDifficulty: '0xc70d815d562d3cfa955',
 	transactions: [
 		'0xfe87d41469efbea299780c8e218590753e0893ee2d2d65f867d9c9c7b9ed591f',
 		'0x603caf7d4be62e5946268fa1b594029c40fab23826d388729367c37649ea3967',
@@ -233,7 +230,6 @@ export const mainnetBlock = {
 		'0xfaeaf9b4a6c5fcac8005239112a27f9c059e7aeb436f31f192a80c1691c29f29',
 	],
 	transactionsRoot: '0x2b0f787500743395385ad4a4142693bffd51d508cae1fdd675d269842b9bc2b0',
-	uncles: [],
 };
 
 export const mainnetBlockData: {

@@ -405,35 +405,6 @@ export default {
 			"d": "Maximum size extra data may be after Genesis"
 		}
 	},
-	"pow": {
-		"minimumDifficulty": {
-			"v": 131072,
-			"d": "The minimum that the difficulty may ever be"
-		},
-		"difficultyBoundDivisor": {
-			"v": 2048,
-			"d": "The bound divisor of the difficulty, used in the update calculations"
-		},
-		"durationLimit": {
-			"v": 13,
-			"d": "The decision boundary on the blocktime duration used to determine whether difficulty should go up or not"
-		},
-		"epochDuration": {
-			"v": 30000,
-			"d": "Duration between proof-of-work epochs"
-		},
-		"timebombPeriod": {
-			"v": 100000,
-			"d": "Exponential difficulty timebomb period"
-		},
-		"minerReward": {
-			"v": "5000000000000000000",
-			"d": "the amount a miner get rewarded for mining a block"
-		},
-		"difficultyBombDelay": {
-			"v": 0,
-			"d": "the amount of blocks to delay the difficulty bomb with"
-		}
-	}
+	"pos": {}
 }
  ;

@@ -41,14 +41,12 @@ export const methodsInInterface: { [T: string]: string } = {
 };
 
 /**
- * An object holding the addressed of the ENS registries on the different networks (mainnet, goerli).
+ * An object holding the addressed of the ENS registries on the different networks (mainnet).
  */
 export const registryAddresses: { [T: string]: string } = {
 	main: '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e',
-	goerli: '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e',
 };
 
 export const networkIds: { [T: string]: string } = {
 	'0x1': 'main',
-	'0x5': 'goerli',
 };

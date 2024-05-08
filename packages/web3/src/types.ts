@@ -39,7 +39,6 @@ import { Contract } from '@theqrl/web3-zond-contract';
 import { ENS } from '@theqrl/web3-zond-ens';
 import { Net } from '@theqrl/web3-net';
 import { Iban } from '@theqrl/web3-zond-iban';
-import { Personal } from '@theqrl/web3-zond-personal';
 
 /**
  * The Zond interface for main web3 object. It provides extra methods in addition to `web3-zond` interface.
@@ -89,5 +88,4 @@ export interface Web3ZondInterface extends Zond {
 		// ) => Promise<Web3Account>;
 		wallet: Wallet;
 	};
-	personal: Personal;
 }

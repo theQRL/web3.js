@@ -102,7 +102,7 @@ export abstract class BaseTransaction<TransactionObject> {
 	 *
 	 * @hidden
 	 */
-	protected DEFAULT_HARDFORK: string | Hardfork = Hardfork.Merge;
+	protected DEFAULT_HARDFORK: string | Hardfork = Hardfork.Shanghai;
 
 	public constructor(
 		txData: TxData | AccessListEIP2930TxData | FeeMarketEIP1559TxData,
@@ -201,10 +201,8 @@ export abstract class BaseTransaction<TransactionObject> {
 		const txFee = this.common.param('gasPrices', 'tx');
 		let fee = this.getDataFee();
 		if (txFee) fee += txFee;
-		if (this.common.gteHardfork('homestead') && this.toCreationAddress()) {
-			const txCreationFee = this.common.param('gasPrices', 'txCreation');
-			if (txCreationFee) fee += txCreationFee;
-		}
+		const txCreationFee = this.common.param('gasPrices', 'txCreation');
+		if (txCreationFee) fee += txCreationFee;
 		return fee;
 	}
 

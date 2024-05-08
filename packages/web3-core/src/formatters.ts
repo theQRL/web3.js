@@ -433,14 +433,6 @@ export const outputBlockFormatter = (block: BlockInput): BlockOutput => {
 		modifiedBlock.number = hexToNumber(block.number);
 	}
 
-	if (block.difficulty) {
-		modifiedBlock.difficulty = outputBigIntegerFormatter(block.difficulty);
-	}
-
-	if (block.totalDifficulty) {
-		modifiedBlock.totalDifficulty = outputBigIntegerFormatter(block.totalDifficulty);
-	}
-
 	if (block.transactions && Array.isArray(block.transactions)) {
 		modifiedBlock.transactions = block.transactions.map(outputTransactionFormatter);
 	}
