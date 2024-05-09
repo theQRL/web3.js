@@ -44,7 +44,7 @@ export const methodsInInterface: { [T: string]: string } = {
  * An object holding the addressed of the ZNS registries on the different networks (mainnet).
  */
 export const registryAddresses: { [T: string]: string } = {
-	main: '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e',
+	main: '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e', // TODO(rgeraldes24)
 };
 
 export const networkIds: { [T: string]: string } = {
