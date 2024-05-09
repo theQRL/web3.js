@@ -19,6 +19,7 @@ getOS(){
     esac
 }
 getDownloadLink(){
+    # TODO(rgeraldes24)
     case "$OS" in
       SOLARIS*) LINK="-" ;;
       OSX*)  LINK="https://gethstore.blob.core.windows.net/builds/geth-darwin-amd64-1.12.2-bed84606.tar.gz" ;;
@@ -36,7 +37,7 @@ setArchiveFolder(){
     done
 }
 download(){
-    if [ ! -e "$TMP_FOLDER/geth" ]
+    if [ ! -e "$TMP_FOLDER/gzond" ]
     then
         getOS
         getDownloadLink
@@ -45,12 +46,12 @@ download(){
             mkdir "$TMP_FOLDER"
         fi
 
-        wget -O "$TMP_FOLDER/geth.tar.gz" "$LINK"
-        tar -xf "$TMP_FOLDER/geth.tar.gz" -C "$TMP_FOLDER"
-        rm "$TMP_FOLDER/geth.tar.gz"
+        wget -O "$TMP_FOLDER/gzond.tar.gz" "$LINK"
+        tar -xf "$TMP_FOLDER/gzond.tar.gz" -C "$TMP_FOLDER"
+        rm "$TMP_FOLDER/gzond.tar.gz"
         setArchiveFolder
         echo "$FOLDER"
-        mv "$FOLDER/geth" "$TMP_FOLDER/geth"
+        mv "$FOLDER/gzond" "$TMP_FOLDER/gzond"
         rm -rf "$FOLDER"
     fi
 }
@@ -58,14 +59,14 @@ download(){
 start() {
     download
 	if [ -z "${ORIGARGS[1]}" ]; then
-		echo "Starting geth..."
-		echo "geth --ipcpath $IPC_PATH --nodiscover --nousb --ws --ws.addr 0.0.0.0 --ws.port $WEB3_SYSTEM_TEST_PORT --http --http.addr 0.0.0.0 --http.port $WEB3_SYSTEM_TEST_PORT --allow-insecure-unlock --http.api personal,web3,zond,admin,debug,txpool,net --ws.api personal,web3,zond,admin,debug,miner,txpool,net --dev --mine --dev.period=0 "
-		${TMP_FOLDER}/geth --ipcpath $IPC_PATH --nodiscover --nousb --ws --ws.addr 0.0.0.0 --ws.port $WEB3_SYSTEM_TEST_PORT --http --http.addr 0.0.0.0 --http.port $WEB3_SYSTEM_TEST_PORT --allow-insecure-unlock --http.api personal,web3,zond,admin,debug,txpool,net --ws.api personal,web3,zond,admin,debug,miner,txpool,net --dev --mine --dev.period=0 --rpc.enabledeprecatedpersonal
+		echo "Starting gzond..."
+		echo "gzond --ipcpath $IPC_PATH --nodiscover --nousb --ws --ws.addr 0.0.0.0 --ws.port $WEB3_SYSTEM_TEST_PORT --http --http.addr 0.0.0.0 --http.port $WEB3_SYSTEM_TEST_PORT --allow-insecure-unlock --http.api web3,zond,admin,debug,txpool,net --ws.api web3,zond,admin,debug,miner,txpool,net --dev "
+		${TMP_FOLDER}/gzond --ipcpath $IPC_PATH --nodiscover --nousb --ws --ws.addr 0.0.0.0 --ws.port $WEB3_SYSTEM_TEST_PORT --http --http.addr 0.0.0.0 --http.port $WEB3_SYSTEM_TEST_PORT --allow-insecure-unlock --http.api web3,zond,admin,debug,txpool,net --ws.api web3,zond,admin,debug,miner,txpool,net --dev
 	else
-		echo "Starting geth..."
-		echo "geth --ipcpath $IPC_PATH --nodiscover --nousb --ws --ws.addr 0.0.0.0 --ws.port $WEB3_SYSTEM_TEST_PORT --http --http.addr 0.0.0.0 --http.port $WEB3_SYSTEM_TEST_PORT --allow-insecure-unlock --http.api personal,web3,zond,admin,debug,txpool,net --ws.api personal,web3,zond,admin,debug,miner,txpool,net --dev --mine --dev.period=0  &>/dev/null &"
-		${TMP_FOLDER}/geth --ipcpath $IPC_PATH --nodiscover --nousb --ws --ws.addr 0.0.0.0 --ws.port $WEB3_SYSTEM_TEST_PORT --http --http.addr 0.0.0.0 --http.port $WEB3_SYSTEM_TEST_PORT --allow-insecure-unlock --http.api personal,web3,zond,admin,debug,txpool,net --ws.api personal,web3,zond,admin,debug,miner,txpool,net --dev --mine --dev.period=0 --rpc.enabledeprecatedpersonal &>/dev/null &
-		echo "Waiting for geth..."
+		echo "Starting gzond..."
+		echo "gzond --ipcpath $IPC_PATH --nodiscover --nousb --ws --ws.addr 0.0.0.0 --ws.port $WEB3_SYSTEM_TEST_PORT --http --http.addr 0.0.0.0 --http.port $WEB3_SYSTEM_TEST_PORT --allow-insecure-unlock --http.api web3,zond,admin,debug,txpool,net --ws.api web3,zond,admin,debug,miner,txpool,net --dev &>/dev/null &"
+		${TMP_FOLDER}/gzond --ipcpath $IPC_PATH --nodiscover --nousb --ws --ws.addr 0.0.0.0 --ws.port $WEB3_SYSTEM_TEST_PORT --http --http.addr 0.0.0.0 --http.port $WEB3_SYSTEM_TEST_PORT --allow-insecure-unlock --http.api web3,zond,admin,debug,txpool,net --ws.api web3,zond,admin,debug,miner,txpool,net --dev &>/dev/null &
+		echo "Waiting for gzond..."
 		npx wait-port -t 10000 "$WEB3_SYSTEM_TEST_PORT"
 	fi
 }
@@ -73,10 +74,10 @@ start() {
 startSync() {
     download
 
-    ${TMP_FOLDER}/geth --datadir ./tmp/data1 init ./scripts/genesis.json
-    ${TMP_FOLDER}/geth --datadir ./tmp/data2 init ./scripts/genesis.json
-    ${TMP_FOLDER}/geth --datadir ./tmp/data1 --ipcpath $IPC_PATH_1 --nodiscover --networkid 1234 --ws --ws.addr 0.0.0.0 --ws.port 18545 --http --http.addr 0.0.0.0 --http.port 18545 --http.api personal,web3,zond,admin,debug,txpool,net --ws.api personal,web3,zond,admin,debug,miner,txpool,net &>/dev/null &
-    ${TMP_FOLDER}/geth --datadir ./tmp/data2 --ipcpath $IPC_PATH_2 --nodiscover --networkid 1234 --port 30304 --authrpc.port 8552 --ws --ws.addr 0.0.0.0 --ws.port 28545 --http --http.addr 0.0.0.0 --http.port 28545 --http.api personal,web3,zond,admin,debug,txpool,net --ws.api personal,web3,zond,admin,debug,miner,txpool,net &>/dev/null &
+    ${TMP_FOLDER}/gzond --datadir ./tmp/data1 init ./scripts/genesis.json
+    ${TMP_FOLDER}/gzond --datadir ./tmp/data2 init ./scripts/genesis.json
+    ${TMP_FOLDER}/gzond --datadir ./tmp/data1 --ipcpath $IPC_PATH_1 --nodiscover --networkid 1234 --ws --ws.addr 0.0.0.0 --ws.port 18545 --http --http.addr 0.0.0.0 --http.port 18545 --http.api web3,zond,admin,debug,txpool,net --ws.api web3,zond,admin,debug,miner,txpool,net &>/dev/null &
+    ${TMP_FOLDER}/gzond --datadir ./tmp/data2 --ipcpath $IPC_PATH_2 --nodiscover --networkid 1234 --port 30304 --authrpc.port 8552 --ws --ws.addr 0.0.0.0 --ws.port 28545 --http --http.addr 0.0.0.0 --http.port 28545 --http.api web3,zond,admin,debug,txpool,net --ws.api web3,zond,admin,debug,miner,txpool,net &>/dev/null &
 
     npx wait-port -t 10000 18545
     npx wait-port -t 10000 28545
@@ -89,7 +90,7 @@ syncStop() {
 	stop
 }
 stop() {
-	echo "Stopping geth ..."
+	echo "Stopping gzond ..."
     processID=`lsof -Fp -i:${WEB3_SYSTEM_TEST_PORT}| grep '^p'`
 	kill -9 ${processID##p}
 }

@@ -331,7 +331,6 @@ export { Web3 };
 export { Web3Context, Web3PluginBase, Web3ZondPluginBase } from '@theqrl/web3-core';
 export { Web3Zond } from '@theqrl/web3-zond';
 export { Contract } from '@theqrl/web3-zond-contract';
-export { Iban } from '@theqrl/web3-zond-iban';
 export { Net } from '@theqrl/web3-net';
 export { HttpProvider } from '@theqrl/web3-providers-http';
 export { WebSocketProvider } from '@theqrl/web3-providers-ws';

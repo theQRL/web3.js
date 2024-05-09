@@ -32,7 +32,7 @@ const accountSchema = {
 	type: 'object',
 	required: ['address', 'seed'],
 	// TODO Should validation functions as well
-	// required: ['address', 'seed', 'signTransaction', 'sign', 'encrypt'],
+	// required: ['address', 'seed', 'signTransaction', 'sign'],
 	properties: {
 		address: { type: 'string' },
 		seed: { type: 'string' },
@@ -55,7 +55,6 @@ describe('Black Box Unit Tests - web3.zond.accounts.create', () => {
 		expect(response).toBeDefined();
 		expect(response.signTransaction).toBeDefined();
 		expect(response.sign).toBeDefined();
-		expect(response.encrypt).toBeDefined();
 		expect(validator.validateJSONSchema(accountSchema, response)).toBeUndefined();
 	});
 });

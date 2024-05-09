@@ -4,7 +4,7 @@
 	"publishConfig": {
 		"access": "public"
 	},
-	"description": "This package has ENS functions for interacting with Ethereum Name Service.",
+	"description": "This package has ENS functions for interacting with Zond Name Service.",
 	"main": "./lib/commonjs/index.js",
 	"module": "./lib/esm/index.js",
 	"exports": {

@@ -32,7 +32,7 @@ const accountSchema = {
 	type: 'object',
 	required: ['address', 'seed'],
 	// TODO Should validation functions as well
-	// required: ['address', 'seed', 'signTransaction', 'sign', 'encrypt'],
+	// required: ['address', 'seed', 'signTransaction', 'sign'],
 	properties: {
 		address: { type: 'string' },
 		seed: { type: 'string' },

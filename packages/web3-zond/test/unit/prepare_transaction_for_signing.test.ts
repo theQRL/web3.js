@@ -58,6 +58,7 @@ describe('prepareTransactionForSigning', () => {
 				// @ts-expect-error - Mocked implementation doesn't have correct method signature
 				jest.spyOn(zondRpcMethods, 'getBlockByNumber').mockImplementation(() => mockBlock);
 
+				// TODO(rgeraldes24)
 				const ethereumjsTx = await prepareTransactionForSigning(
 					expectedTransaction,
 					web3Context,

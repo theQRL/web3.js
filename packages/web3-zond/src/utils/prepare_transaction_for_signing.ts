@@ -34,6 +34,7 @@ import { validateTransactionForSigning } from '../validation.js';
 import { formatTransaction } from './format_transaction.js';
 import { transactionBuilder } from './transaction_builder.js';
 
+// TODO(rgeraldes24)
 const getEthereumjsTxDataFromTransaction = (
 	transaction: FormatType<PopulatedUnsignedTransaction, typeof ZOND_DATA_FORMAT>,
 ) => ({

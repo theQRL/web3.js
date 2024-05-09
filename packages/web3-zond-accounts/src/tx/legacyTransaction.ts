@@ -36,7 +36,7 @@ import { Capability } from './types.js';
 const TRANSACTION_TYPE = 0;
 
 /**
- * An Ethereum non-typed (legacy) transaction
+ * A Zond non-typed (legacy) transaction
  */
 // eslint-disable-next-line no-use-before-define
 export class Transaction extends BaseTransaction<Transaction> {

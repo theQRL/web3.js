@@ -16,7 +16,6 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { FormatterError } from '@theqrl/web3-errors';
-import { Iban } from '@theqrl/web3-zond-iban';
 import {
 	BlockTags,
 	Filter,
@@ -120,18 +119,12 @@ export const inputDefaultBlockNumberFormatter = (
  * @param address
  */
 export const inputAddressFormatter = (address: string): string | never => {
-	if (Iban.isValid(address) && Iban.isDirect(address)) {
-		const iban = new Iban(address);
-
-		return iban.toAddress().toLowerCase();
-	}
-
 	if (isAddress(address)) {
 		return `0x${address.toLowerCase().replace('0x', '')}`;
 	}
 
 	throw new FormatterError(
-		`Provided address ${address} is invalid, the capitalization checksum test failed, or it's an indirect IBAN address which can't be converted.`,
+		`Provided address ${address} is invalid, the capitalization checksum test failed.`,
 	);
 };
 
@@ -223,7 +216,7 @@ export const inputTransactionFormatter = (options: TransactionInput, defaultAcco
 
 /**
  * @deprecated Use format function from web3-utils package instead
- * Hex encodes the data passed to zond_sign and personal_sign
+ * Hex encodes the data passed to zond_sign
  */
 export const inputSignFormatter = (data: string) => (isHexStrict(data) ? data : utf8ToHex(data));
 

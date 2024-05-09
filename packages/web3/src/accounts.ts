@@ -21,8 +21,6 @@ import { Web3Context } from '@theqrl/web3-core';
 import { prepareTransactionForSigning } from '@theqrl/web3-zond';
 import {
 	create,
-	//decrypt,
-	//encrypt,
 	hashMessage,
 	recoverTransaction,
 	signTransaction,
@@ -57,20 +55,6 @@ export const initAccountsForContext = (context: Web3Context<ZondExecutionAPI>) =
 		};
 	};
 
-	// const decryptWithContext = async (
-	// 	keystore: KeyStore | string,
-	// 	password: string,
-	// 	options?: Record<string, unknown>,
-	// ) => {
-	// 	const account = await decrypt(keystore, password, (options?.nonStrict as boolean) ?? true);
-
-	// 	return {
-	// 		...account,
-	// 		signTransaction: async (transaction: Transaction) =>
-	// 			signTransactionWithContext(transaction, account.seed),
-	// 	};
-	// };
-
 	const createWithContext = () => {
 		const account = create();
 
@@ -84,18 +68,15 @@ export const initAccountsForContext = (context: Web3Context<ZondExecutionAPI>) =
 	const wallet = new Wallet({
 		create: createWithContext,
 		seedToAccount: seedToAccountWithContext,
-		//decrypt: decryptWithContext,
 	});
 
 	return {
 		signTransaction: signTransactionWithContext,
 		create: createWithContext,
 		seedToAccount: seedToAccountWithContext,
-		//decrypt: decryptWithContext,
 		recoverTransaction,
 		hashMessage,
 		sign,
-		//encrypt,
 		wallet,
 	};
 };

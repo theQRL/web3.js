@@ -2,7 +2,7 @@
   <img src="assets/logo/web3js.jpg" width="500" alt="web3.js" />
 </p>
 
-# web3.js - Eth
+# web3.js - Zond
 
 ![ES Version](https://img.shields.io/badge/ES-2020-yellow)
 ![Node Version](https://img.shields.io/badge/node-14.x-green)
@@ -11,7 +11,7 @@
 
 This is a sub-package of [web3.js][repo].
 
-`web3-eth` contains modules to interact with the Ethereum blockchain and smart contracts.
+`web3-zond` contains modules to interact with the Zond blockchain and smart contracts.
 
 ## Installation
 
@@ -20,13 +20,13 @@ You can install the package either using [NPM](https://www.npmjs.com/package/web
 ### Using NPM
 
 ```bash
-npm install web3-eth
+npm install web3-zond
 ```
 
 ### Using Yarn
 
 ```bash
-yarn add web3-eth
+yarn add web3-zond
 ```
 
 ## Getting Started

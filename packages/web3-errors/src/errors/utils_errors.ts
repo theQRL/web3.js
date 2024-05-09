@@ -55,7 +55,7 @@ export class InvalidAddressError extends InvalidValueError {
 	public code = ERR_INVALID_ADDRESS;
 
 	public constructor(value: unknown) {
-		super(value, 'invalid ethereum address');
+		super(value, 'invalid zond address');
 	}
 }
 

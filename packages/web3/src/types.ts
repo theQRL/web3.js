@@ -27,7 +27,6 @@ import {
 	encodeParameters,
 } from '@theqrl/web3-zond-abi';
 import {
-	//encrypt,
 	hashMessage,
 	recoverTransaction,
 	sign,
@@ -38,7 +37,6 @@ import {
 import { Contract } from '@theqrl/web3-zond-contract';
 import { ENS } from '@theqrl/web3-zond-ens';
 import { Net } from '@theqrl/web3-net';
-import { Iban } from '@theqrl/web3-zond-iban';
 
 /**
  * The Zond interface for main web3 object. It provides extra methods in addition to `web3-zond` interface.
@@ -57,7 +55,6 @@ export interface Web3ZondInterface extends Zond {
 	 * ```
 	 */
 	Contract: typeof Contract;
-	Iban: typeof Iban;
 	net: Net;
 	ens: ENS;
 	abi: {
@@ -80,12 +77,6 @@ export interface Web3ZondInterface extends Zond {
 		recoverTransaction: typeof recoverTransaction;
 		hashMessage: typeof hashMessage;
 		sign: typeof sign;
-		//encrypt: typeof encrypt;
-		// decrypt: (
-		// 	keystore: string,
-		// 	password: string,
-		// 	options?: Record<string, unknown>,
-		// ) => Promise<Web3Account>;
 		wallet: Wallet;
 	};
 }

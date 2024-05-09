@@ -7,7 +7,7 @@ sidebar_label: 'Providers'
 
 ## Introduction
 
-web3.js providers are objects responsible for enabling connectivity with the Ethereum network in various ways. Connecting your web application to an Ethereum node is necessary for sending transactions, querying data, and interacting with smart contracts on the network. In this guide, we will explore the different types of providers available in web3.js, how to set them up, and how to use them in your code.
+web3.js providers are objects responsible for enabling connectivity with the Zond network in various ways. Connecting your web application to an Zond node is necessary for sending transactions, querying data, and interacting with smart contracts on the network. In this guide, we will explore the different types of providers available in web3.js, how to set them up, and how to use them in your code.
 
 Connecting to a chain happens through a provider. You can pass the provider to the constructor as in the following example:
 
@@ -17,7 +17,7 @@ import Web3 from 'web3';
 const web3 = new Web3(/* PROVIDER*/);
 
 // calling any method that interact with the network would involve using the early passed provider.
-await web3.eth.sendTransaction({
+await web3.zond.sendTransaction({
 	from,
 	to,
 	value,
@@ -48,21 +48,21 @@ There are multiple ways to set the provider.
 
 ```ts title='Setting a provider'
 web3.setProvider(myProvider);
-web3.eth.setProvider(myProvider);
+web3.zond.setProvider(myProvider);
 web3.Contract.setProvider(myProvider);
 contractInstance.setProvider(myProvider);
 ```
 
 The key rule for setting provider is as follows:
 
-1. Any provider set on the higher level will be applied to all lower levels. e.g. Any provider set using `web3.setProvider` will also be applied to `web3.eth` object.
-2. For contracts `web3.Contract.setProvider` can be used to set provider for **all instances** of contracts created by `web3.eth.Contract`.
+1. Any provider set on the higher level will be applied to all lower levels. e.g. Any provider set using `web3.setProvider` will also be applied to `web3.zond` object.
+2. For contracts `web3.Contract.setProvider` can be used to set provider for **all instances** of contracts created by `web3.zond.Contract`.
 
 ---
 
 ## Examples
 
-### Local Geth Node
+### Local Gzond Node
 
 ```ts
 const { Web3 } = require('web3');
@@ -77,13 +77,13 @@ web3.setProvider(new Web3.providers.WebsocketProvider('ws://localhost:8546'));
 
 // Using the IPC provider in node.js
 const net = require('net');
-const web3 = new Web3('/Users/myuser/Library/Ethereum/geth.ipc', net); // mac os path
+const web3 = new Web3('/Users/myuser/Library/Zond/gzond.ipc', net); // mac os path
 // or
 const web3 = new Web3(
-	new Web3.providers.IpcProvider('/Users/myuser/Library/Ethereum/geth.ipc', net),
+	new Web3.providers.IpcProvider('/Users/myuser/Library/Zond/gzond.ipc', net),
 ); // mac os path
-// on windows the path is: "\\\\.\\pipe\\geth.ipc"
-// on linux the path is: "/users/myuser/.ethereum/geth.ipc"
+// on windows the path is: "\\\\.\\pipe\\gzond.ipc"
+// on linux the path is: "/users/myuser/.zond/gzond.ipc"
 ```
 
 ### Remote Node Provider
@@ -105,13 +105,13 @@ The web3.js 4.x Provider specifications are defined in [web3 base provider](http
 <script>
 	window.addEventListener('load', function () {
 		// Check if web3 is available
-		if (typeof window.ethereum !== 'undefined') {
-			// Use the browser injected Ethereum provider
-			web3 = new Web3(window.ethereum);
+		if (typeof window.zond !== 'undefined') {
+			// Use the browser injected Zond provider
+			web3 = new Web3(window.zond);
 			// Request access to the user's MetaMask account
-			window.ethereum.enable();
+			window.zond.enable();
 			// Get the user's accounts
-			web3.eth.getAccounts().then(function (accounts) {
+			web3.zond.getAccounts().then(function (accounts) {
 				// Show the first account
 				document.getElementById('log').innerHTML =
 					'Connected with MetaMask account: ' + accounts[0];
@@ -119,7 +119,7 @@ The web3.js 4.x Provider specifications are defined in [web3 base provider](http
 		} else {
 			// If web3 is not available, give instructions to install MetaMask
 			document.getElementById('log').innerHTML =
-				'Please install MetaMask to connect with the Ethereum network';
+				'Please install MetaMask to connect with the Zond network';
 		}
 	});
 </script>

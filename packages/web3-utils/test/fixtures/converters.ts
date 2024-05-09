@@ -314,7 +314,7 @@ export const toCheckSumValidData: [string, string][] = [
 	['0xa54D3c09E34aC96807c1CC397404bF2B98DC4eFb', '0xa54d3c09E34aC96807c1CC397404bF2B98DC4eFb'],
 ];
 export const toCheckSumInvalidData: [string, string][] = [
-	['not an address', 'Invalid value given "not an address". Error: invalid ethereum address.'],
+	['not an address', 'Invalid value given "not an address". Error: invalid zond address.'],
 ];
 
 export const bytesToUint8ArrayInvalidData: [any, string][] = bytesToHexInvalidData;

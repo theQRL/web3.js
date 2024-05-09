@@ -21,7 +21,6 @@ import * as abi from '@theqrl/web3-zond-abi';
 import * as accounts from '@theqrl/web3-zond-accounts';
 import * as contract from '@theqrl/web3-zond-contract';
 import * as ens from '@theqrl/web3-zond-ens';
-import * as iban from '@theqrl/web3-zond-iban';
 
 import * as http from '@theqrl/web3-providers-http';
 import * as ws from '@theqrl/web3-providers-ws';
@@ -43,7 +42,6 @@ describe('exports of web3 package', () => {
 			expect(zond.accounts).toEqual(accounts);
 			expect(zond.contract).toEqual(contract);
 			expect(zond.ens).toEqual(ens);
-			expect(zond.iban).toEqual(iban);
 		});
 	});
 

@@ -5,7 +5,7 @@ sidebar_label: 'Node Wallet'
 
 # Using Node Wallet
 
-If Ethereum node has unlocked account in its wallet you can send transaction without need of signing locally in web3.js
+If Zond node has unlocked account in its wallet you can send transaction without need of signing locally in web3.js
 
 ## Transaction
 
@@ -14,24 +14,18 @@ If Ethereum node has unlocked account in its wallet you can send transaction wit
 import Web3 from 'web3';
 const web3 = new Web3(/* PROVIDER*/);
 
-// Second step: add an account to the Ethereum node and unlock it
+// Second step: add an account to the Zond node and unlock it
 const account = {
 	seed: '0xb45b02f408a0dd0996aab2b55a54f4ed7735f82b133c0786a9ff372ffaaf11bd',
 	address: '0xe4beef667408b99053dc147ed19592ada0d77f59',
 };
 
-// if you use ganache backend, use a private key with 0x
-await web3.eth.personal.importRawKey(account.seed);
-// if you use geth backend, use a private key without 0x
-await web3.eth.personal.importRawKey(account.seed.slice(2));
-
-// unlock account
-await web3Personal.unlockAccount(account.address, 'anyPassword', 100000000);
+// TODO(rgeraldes24)
 // Make sure the account has enough eth on balance to send the transaction
 
 // Third step: sign and send the transaction
 try {
-	const receipt = await web3.eth.sendTransaction({
+	const receipt = await web3.zond.sendTransaction({
 		from: account.address,
 		to: '0xe4beef667408b99053dc147ed19592ada0d77f59',
 		value: '0x1',
@@ -46,9 +40,7 @@ try {
 
 List of references:
 
--   [eth.sendTransaction](/api/web3-eth/class/Web3Zond#sendTransaction)
--   [eth.personal.importRawKey](/api/web3-eth-personal/class/Personal#importRawKey)
--   [eth.personal.unlockAccount](/api/web3-eth-personal/class/Personal#unlockAccount)
+-   [zond.sendTransaction](/api/web3-zond/class/Web3Zond#sendTransaction)
 
 ## Contract Transaction
 
@@ -57,25 +49,21 @@ List of references:
 import Web3 from 'web3';
 const web3 = new Web3(/* PROVIDER*/);
 
-// Second step: add an account to the Ethereum node and unlock it
+// Second step: add an account to the Zond node and unlock it
 const account = {
 	seed: '0xb45b02f408a0dd0996aab2b55a54f4ed7735f82b133c0786a9ff372ffaaf11bd',
 	address: '0xe4beef667408b99053dc147ed19592ada0d77f59',
 };
 
-// if you use ganache backend, use a private key with 0x
-await web3.eth.personal.importRawKey(account.seed);
-// if you use geth backend, use a private key without 0x
-await web3.eth.personal.importRawKey(account.seed.slice(2));
 
-// unlock account
-await web3.eth.personal.unlockAccount(account.address, 'anyPassword', 100000000);
-// Make sure the account has enough eth on balance to send the transaction
+// TODO(rgeraldes24)
+
+// Make sure the account has enough zond on balance to send the transaction
 
 // Third step: sign and send the transaction
 try {
 	// deploy
-	const contract = new web3.eth.Contract(ContractAbi);
+	const contract = new web3.zond.Contract(ContractAbi);
 	const contractDeployed = await contract
 		.deploy({
 			input: ContractBytecode,
@@ -103,8 +91,6 @@ try {
 
 List of references:
 
--   [eth.Contract](/api/web3-eth-contract/class/Contract)
--   [eth.personal.importRawKey](/api/web3-eth-personal/class/Personal#importRawKey)
--   [eth.personal.unlockAccount](/api/web3-eth-personal/class/Personal#unlockAccount)
--   [contract.deploy](/api/web3-eth-contract/class/Contract#deploy)
--   [contract.methods](/api/web3-eth-contract/class/Contract#methods)
+-   [zond.Contract](/api/web3-zond-contract/class/Contract)
+-   [contract.deploy](/api/web3-zond-contract/class/Contract#deploy)
+-   [contract.methods](/api/web3-zond-contract/class/Contract#methods)

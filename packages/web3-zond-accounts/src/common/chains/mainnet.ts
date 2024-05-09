@@ -8,7 +8,7 @@ export default {
 		"algorithm": "casper",
 		"casper": {}
 	},
-	"comment": "The Ethereum main chain",
+	"comment": "The Zond main chain",
 	"url": "https://ethstats.net/",
 	"genesis": {
 		"gasLimit": 5000,

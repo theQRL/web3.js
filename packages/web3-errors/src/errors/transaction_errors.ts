@@ -486,7 +486,7 @@ export class TransactionSendTimeoutError extends BaseWeb3Error {
 
 	public constructor(value: { numberOfSeconds: number; transactionHash?: Bytes }) {
 		super(
-			`The connected Ethereum Node did not respond within ${
+			`The connected Zond Node did not respond within ${
 				value.numberOfSeconds
 			} seconds, please make sure your transaction was properly sent and you are connected to a healthy Node. Be aware that transaction might still be pending or mined!\n\tTransaction Hash: ${
 				value.transactionHash ? value.transactionHash.toString() : 'not available'

@@ -81,7 +81,7 @@ export const parseAndValidatePublicKey = (data: Bytes, ignoreLength?: boolean): 
 
 /**
  *
- * Hashes the given message. The data will be UTF-8 HEX decoded and enveloped as follows: "\\x19Ethereum Signed Message:\\n" + message.length + message and hashed using keccak256.
+ * Hashes the given message. The data will be UTF-8 HEX decoded and enveloped as follows: "\\x19Zond Signed Message:\\n" + message.length + message and hashed using keccak256.
  *
  * @param message - A message to hash, if its HEX it will be UTF8 decoded.
  * @returns The hashed message
@@ -99,7 +99,7 @@ export const hashMessage = (message: string): string => {
 	const messageBytes = hexToBytes(messageHex);
 
 	const preamble = hexToBytes(
-		fromUtf8(`\x19Ethereum Signed Message:\n${messageBytes.byteLength}`),
+		fromUtf8(`\x19Zond Signed Message:\n${messageBytes.byteLength}`),
 	);
 
 	const ethMessage = uint8ArrayConcat(preamble, messageBytes);
@@ -109,7 +109,7 @@ export const hashMessage = (message: string): string => {
 
 /**
  * Signs arbitrary data with the private key derived from the given seed.
- * **_NOTE:_** The value passed as the data parameter will be UTF-8 HEX decoded and wrapped as follows: "\\x19Ethereum Signed Message:\\n" + message.length + message
+ * **_NOTE:_** The value passed as the data parameter will be UTF-8 HEX decoded and wrapped as follows: "\\x19Zond Signed Message:\\n" + message.length + message
  *
  * @param data - The data to sign
  * @param seed - The 40 byte seed

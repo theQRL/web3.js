@@ -4,7 +4,7 @@
 	"publishConfig": {
 		"access": "public"
 	},
-	"description": "Web3 module to interact with the Ethereum nodes networking properties.",
+	"description": "Web3 module to interact with the Zond nodes networking properties.",
 	"main": "./lib/commonjs/index.js",
 	"module": "./lib/esm/index.js",
 	"exports": {

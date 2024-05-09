@@ -75,17 +75,11 @@ export interface Web3BaseWalletAccount {
 		readonly message?: string;
 		readonly signature: HexString;
 	};
-	// readonly encrypt: (password: string, options?: Record<string, unknown>) => Promise<KeyStore>;
 }
 
 export interface Web3AccountProvider<T> {
 	seedToAccount: (seed: string) => T;
 	create: () => T;
-	// decrypt: (
-	// 	keystore: KeyStore | string,
-	// 	password: string,
-	// 	options?: Record<string, unknown>,
-	// ) => Promise<T>;
 }
 
 export abstract class Web3BaseWallet<T extends Web3BaseWalletAccount> extends Array<T> {

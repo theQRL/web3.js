@@ -54,7 +54,7 @@ interface TransactionCache {
 /**
  * This base class will likely be subject to further
  * refactoring along the introduction of additional tx types
- * on the Ethereum network.
+ * on the Zond network.
  *
  * It is therefore not recommended to use directly.
  */

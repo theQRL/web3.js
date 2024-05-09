@@ -34,7 +34,7 @@ const address = hexToBytes('0x20982e08c8b5b4d007e4f6c4a637033ce90aa352');
 
 const common = new Common({
 	chain: Chain.Mainnet,
-	hardfork: Hardfork.London,
+	hardfork: Hardfork.Shanghai,
 });
 
 const txTypes = [
@@ -72,7 +72,7 @@ describe('[AccessListEIP2930Transaction / FeeMarketEIP1559Transaction] -> EIP-29
 
 			const nonEIP2930Common = new Common({
 				chain: Chain.Mainnet,
-				hardfork: Hardfork.Istanbul,
+				hardfork: Hardfork.Shanghai,
 			});
 			expect(() => {
 				txType.class.fromTxData({}, { common: nonEIP2930Common });
@@ -306,9 +306,9 @@ describe('[AccessListEIP2930Transaction / FeeMarketEIP1559Transaction] -> EIP-29
 			tx = txType.class.fromTxData({}, { common, freeze: false });
 			expect(tx.getDataFee()).toEqual(BigInt(0));
 
-			const mutableCommon = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.London });
+			const mutableCommon = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Shanghai });
 			tx = txType.class.fromTxData({}, { common: mutableCommon });
-			tx.common.setHardfork(Hardfork.Istanbul);
+			tx.common.setHardfork(Hardfork.Shanghai);
 			expect(tx.getDataFee()).toEqual(BigInt(0));
 		}
 	});
@@ -560,7 +560,7 @@ describe('[AccessListEIP2930Transaction] -> Class Specific Tests', () => {
 		const txn = AccessListEIP2930Transaction.fromTxData({}, { common, freeze: false });
 		const newCommon = new Common({
 			chain: Chain.Mainnet,
-			hardfork: Hardfork.London,
+			hardfork: Hardfork.Shanghai,
 			eips: [2537],
 		});
 		expect(newCommon).not.toEqual(common);

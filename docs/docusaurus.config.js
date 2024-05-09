@@ -32,7 +32,6 @@ const packages = [
 	'@theqrl/web3-zond-abi',
 	'@theqrl/web3-zond-accounts',
 	'@theqrl/web3-zond-ens',
-	'@theqrl/web3-zond-iban',
 	'@theqrl/web3-providers-http',
 	'@theqrl/web3-providers-ws',
 	'@theqrl/web3-providers-ipc',

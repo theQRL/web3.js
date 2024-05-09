@@ -44,16 +44,15 @@ describe('[Utils/Parse]', () => {
 
 	// TODO(rgeraldes24)
 	/*
-	it('should import poa network params correctly', async () => {
+	it('should import po network params correctly', async () => {
 		let params = parseGzondGenesis(poa, 'poa');
 		expect(params.genesis.nonce).toBe('0x0000000000000000');
 		expect(params.consensus).toEqual({
 			type: 'poa',
-			algorithm: 'clique',
+			algorithm: 'casper',
 			clique: { period: 15, epoch: 30000 },
 		});
 		params = parseGzondGenesis(poa, 'poa');
-		expect(params.genesis.nonce).toBe('0x0000000000000000');
 		expect(params.hardfork).toEqual(Hardfork.London);
 	});
 	*/

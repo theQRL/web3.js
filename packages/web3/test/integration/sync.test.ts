@@ -75,12 +75,8 @@ describeIf((isIpc || isWs) && isSyncTest)('Sync nodes test', () => {
 			const syncStartPromise = new Promise(resolve => {
 				subs.on('changed', resolve);
 			});
-			// TODO(rgeraldes24)
-			// await minerStart(web3Node1, 0);
 			const node1Info = await nodeInfo(web3Node1);
 			await addPeer(web3Node2, node1Info.enode);
-			// TODO(rgeraldes24)
-			// await minerStart(web3Node1, 1);
 
 			expect(await syncStartPromise).toBe(true);
 			await dataPromise;
