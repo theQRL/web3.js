@@ -35,7 +35,7 @@ import {
 	Web3Account,
 } from '@theqrl/web3-zond-accounts';
 import { Contract } from '@theqrl/web3-zond-contract';
-import { ENS } from '@theqrl/web3-zond-ens';
+import { ZNS } from '@theqrl/web3-zond-zns';
 import { Net } from '@theqrl/web3-net';
 
 /**
@@ -56,7 +56,7 @@ export interface Web3ZondInterface extends Zond {
 	 */
 	Contract: typeof Contract;
 	net: Net;
-	ens: ENS;
+	zns: ZNS;
 	abi: {
 		encodeEventSignature: typeof encodeFunctionSignature;
 		encodeFunctionCall: typeof encodeFunctionCall;

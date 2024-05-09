@@ -39,9 +39,9 @@ component_management:
     - component_id: "@theqrl/web3-zond-contract"
       paths:
           - /packages/web3-zond-contract/src/
-    - component_id: "@theqrl/web3-zond-ens"
+    - component_id: "@theqrl/web3-zond-zns"
       paths:
-          - /packages/web3-zond-ens/src/
+          - /packages/web3-zond-zns/src/
     - component_id: "@theqrl/web3-net"
       paths:
           - /packages/web3-net/src/

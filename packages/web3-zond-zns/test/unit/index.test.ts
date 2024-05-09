@@ -14,10 +14,12 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
+import * as zns from '../../src';
+import { registryAddresses } from '../../src';
 
-export * from '@theqrl/web3-zond';
-
-export * as abi from '@theqrl/web3-zond-abi';
-export * as accounts from '@theqrl/web3-zond-accounts';
-export * as contract from '@theqrl/web3-zond-contract';
-export * as zns from '@theqrl/web3-zond-zns';
+describe('main package', () => {
+	it('should import', () => {
+		expect(registryAddresses).toBeDefined();
+		expect(zns.ZNS).toBeDefined();
+	});
+});

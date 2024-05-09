@@ -1,4 +1,4 @@
-/*
+﻿/*
 This file is part of web3.js.
 
 web3.js is free software: you can redistribute it and/or modify
@@ -15,9 +15,17 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-export * from '@theqrl/web3-zond';
+export const namehashValidData: [string, string][] = [
+	['', '0x0000000000000000000000000000000000000000000000000000000000000000'],
+	['zond', '0x93cdeb708b7545dc668eb9280176169d1c33cfd8ed6f04690a0bcc88a93fc4ae'],
+	['foo.zond', '0xde9b09fd7c5f901e23a3f19fecc54828e9c848539801e86591bd9801b019f84f'],
+	['FOO.zond', '0xde9b09fd7c5f901e23a3f19fecc54828e9c848539801e86591bd9801b019f84f'],
+];
 
-export * as abi from '@theqrl/web3-zond-abi';
-export * as accounts from '@theqrl/web3-zond-accounts';
-export * as contract from '@theqrl/web3-zond-contract';
-export * as zns from '@theqrl/web3-zond-zns';
+export const normalizeValidData: [string, string][] = [
+	['Öbb.at', 'öbb.at'],
+	['Ⓜ', 'm'],
+	['foo.zond', 'foo.zond'],
+	['Foo.zond', 'foo.zond'],
+	['🦚.zond', '🦚.zond'],
+];

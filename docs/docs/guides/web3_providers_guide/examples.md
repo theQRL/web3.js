@@ -243,7 +243,7 @@ Unsubscribed from new block headers.
 
 The IPC Provider allows you to connect to an Zond node using Inter-Process Communication (IPC) in a Node.js environment. This provider is useful when you have a local Zond node running on your machine and want to interact with it using Node.js.
 
-In the following steps you will run `geth` in development mode and you will run a piece of code that reads the Zond accounts and sends a transaction:
+In the following steps you will run `gzond` in development mode and you will run a piece of code that reads the Zond accounts and sends a transaction:
 
 To connect to the Zond network using the IPC provider, follow these steps:
 

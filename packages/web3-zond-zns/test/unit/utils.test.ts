@@ -1,4 +1,4 @@
-/*
+﻿/*
 This file is part of web3.js.
 
 web3.js is free software: you can redistribute it and/or modify
@@ -15,9 +15,21 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-export * from '@theqrl/web3-zond';
+import { namehash, normalize } from '../../src/utils';
+import { namehashValidData, normalizeValidData } from '../fixtures/utils';
 
-export * as abi from '@theqrl/web3-zond-abi';
-export * as accounts from '@theqrl/web3-zond-accounts';
-export * as contract from '@theqrl/web3-zond-contract';
-export * as zns from '@theqrl/web3-zond-zns';
+describe('zns utils', () => {
+	describe('namehash', () => {
+		describe('valid cases', () => {
+			it.each(namehashValidData)('%s', (input, output) => {
+				expect(namehash(input)).toEqual(output);
+			});
+		});
+	});
+
+	describe('toAscii', () => {
+		it.each(normalizeValidData)('should normalize %s', (input, output) => {
+			expect(normalize(input)).toEqual(output);
+		});
+	});
+});

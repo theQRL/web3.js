@@ -18,28 +18,28 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 /* eslint-disable max-classes-per-file */
 
 import {
-	ERR_ENS_CHECK_INTERFACE_SUPPORT,
-	ERR_ENS_NETWORK_NOT_SYNCED,
-	ERR_ENS_UNSUPPORTED_NETWORK,
+	ERR_ZNS_CHECK_INTERFACE_SUPPORT,
+	ERR_ZNS_NETWORK_NOT_SYNCED,
+	ERR_ZNS_UNSUPPORTED_NETWORK,
 } from '../error_codes.js';
 import { BaseWeb3Error } from '../web3_error_base.js';
 
-export class ENSCheckInterfaceSupportError extends BaseWeb3Error {
-	public code = ERR_ENS_CHECK_INTERFACE_SUPPORT;
+export class ZNSCheckInterfaceSupportError extends BaseWeb3Error {
+	public code = ERR_ZNS_CHECK_INTERFACE_SUPPORT;
 	public constructor(errorDetails: string) {
-		super(`ENS resolver check interface support error. "${errorDetails}"`);
+		super(`ZNS resolver check interface support error. "${errorDetails}"`);
 	}
 }
 
-export class ENSUnsupportedNetworkError extends BaseWeb3Error {
-	public code = ERR_ENS_UNSUPPORTED_NETWORK;
+export class ZNSUnsupportedNetworkError extends BaseWeb3Error {
+	public code = ERR_ZNS_UNSUPPORTED_NETWORK;
 	public constructor(networkType: string) {
-		super(`ENS is not supported on network ${networkType}`);
+		super(`ZNS is not supported on network ${networkType}`);
 	}
 }
 
-export class ENSNetworkNotSyncedError extends BaseWeb3Error {
-	public code = ERR_ENS_NETWORK_NOT_SYNCED;
+export class ZNSNetworkNotSyncedError extends BaseWeb3Error {
+	public code = ERR_ZNS_NETWORK_NOT_SYNCED;
 	public constructor() {
 		super(`Network not synced`);
 	}

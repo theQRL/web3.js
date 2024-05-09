@@ -46,7 +46,7 @@ export class CustomRpcMethodsPlugin extends Web3PluginBase { ... }
 
 ### Extending `Web3ZondPluginBase`
 
-In addition to `Web3PluginBase`, you can choose to extend `Web3ZondPluginBase` which will provide the [Zond JSON RPC API interface](/api/web3-types#EthExecutionAPI), which packages such as `Web3Zond` use, as a generic to your plugin's `requestManager`, giving it type support for the [Zond JSON RPC spec](https://ethereum.github.io/execution-apis/api-documentation/). This would be the recommended approach if your plugin makes Zond JSON RPC calls directly to a provider using web3's provided `requestManager`.
+In addition to `Web3PluginBase`, you can choose to extend `Web3ZondPluginBase` which will provide the [Zond JSON RPC API interface](/api/web3-types#ZondExecutionAPI), which packages such as `Web3Zond` use, as a generic to your plugin's `requestManager`, giving it type support for the [Zond JSON RPC spec](https://ethereum.github.io/execution-apis/api-documentation/). This would be the recommended approach if your plugin makes Zond JSON RPC calls directly to a provider using web3's provided `requestManager`.
 
 ```typescript
 import { Web3ZondPluginBase } from 'web3';

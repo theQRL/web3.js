@@ -28,7 +28,7 @@ For further information about `sideEffects` see [webpack docs](https://webpack.j
 
 4. Use the specific packages which you need,
 
-    For example, if you need `web.eth`:
+    For example, if you need `web.zond`:
 
 ```ts
 import Web3Zond from '@theqrl/web3-zond';

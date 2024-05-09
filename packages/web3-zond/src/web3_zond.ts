@@ -26,7 +26,7 @@ import {
 	HexString32Bytes,
 	Numbers,
 	BlockNumberOrTag,
-	LogsOutput,
+	// LogsOutput,
 	Transaction,
 	TransactionCall,
 	Web3ZondExecutionAPI,
@@ -40,7 +40,7 @@ import {
 } from '@theqrl/web3-types';
 import { isSupportedProvider, Web3Context, Web3ContextInitOptions } from '@theqrl/web3-core';
 import { TransactionNotFound } from '@theqrl/web3-errors';
-import { toChecksumAddress, isNullish } from '@theqrl/web3-utils';
+import { toChecksumAddress /*, isNullish */ } from '@theqrl/web3-utils';
 import { zondRpcMethods } from '@theqrl/web3-rpc-methods';
 
 import * as rpcMethodsWrappers from './rpc_method_wrappers.js';
@@ -1407,25 +1407,26 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 		returnFormat: ReturnType = DEFAULT_RETURN_FORMAT as ReturnType,
 	): Promise<InstanceType<RegisteredSubscription[T]>> {
 		const subscription = await this.subscriptionManager?.subscribe(name, args, returnFormat);
-		if (
-			subscription instanceof LogsSubscription &&
-			name === 'logs' &&
-			typeof args === 'object' &&
-			!isNullish(args.fromBlock) &&
-			Number.isFinite(Number(args.fromBlock))
-		) {
-			setImmediate(() => {
-				this.getPastLogs(args)
-					.then(logs => {
-						for (const log of logs) {
-							subscription._processSubscriptionResult(log as LogsOutput);
-						}
-					})
-					.catch(e => {
-						subscription._processSubscriptionError(e as Error);
-					});
-			});
-		}
+		// TODO(rgeraldes24)
+		// if (
+		// 	subscription instanceof LogsSubscription &&
+		// 	name === 'logs' &&
+		// 	typeof args === 'object' &&
+		// 	!isNullish(args.fromBlock) &&
+		// 	Number.isFinite(Number(args.fromBlock))
+		// ) {
+		// 	setImmediate(() => {
+		// 		this.getPastLogs(args)
+		// 			.then(logs => {
+		// 				for (const log of logs) {
+		// 					subscription._processSubscriptionResult(log as LogsOutput);
+		// 				}
+		// 			})
+		// 			.catch(e => {
+		// 				subscription._processSubscriptionError(e as Error);
+		// 			});
+		// 	});
+		// }
 		return subscription;
 	}
 
