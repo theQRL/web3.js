@@ -45,6 +45,7 @@ import {
 	UnableToPopulateNonceError,
 } from '@theqrl/web3-errors';
 import { bytesToHex, format, hexToBytes } from '@theqrl/web3-utils';
+import { Dilithium } from '@theqrl/wallet.js';
 import { NUMBER_DATA_FORMAT } from '../constants.js';
 // eslint-disable-next-line import/no-cycle
 import { getChainId, getTransactionCount, estimateGas } from '../rpc_method_wrappers.js';
@@ -53,7 +54,6 @@ import { transactionSchema } from '../schemas.js';
 import { InternalTransaction } from '../types.js';
 // eslint-disable-next-line import/no-cycle
 import { getTransactionGasPricing } from './get_transaction_gas_pricing.js';
-import { Dilithium } from '@theqrl/wallet.js';
 
 export const getTransactionFromOrToAttr = (
 	attr: 'from' | 'to',

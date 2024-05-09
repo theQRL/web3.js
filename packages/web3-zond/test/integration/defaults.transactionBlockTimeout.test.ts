@@ -26,11 +26,11 @@ import { SendTransactionEvents } from '../../src';
 import {
 	closeOpenConnection,
 	getSystemTestProvider,
-	//isSocket,
-	//itIf,
-	//waitForOpenConnection,
+	// isSocket,
+	// itIf,
+	// waitForOpenConnection,
 	createLocalAccount,
-	//sendFewSampleTxs,
+	// sendFewSampleTxs,
 } from '../fixtures/system_test_utils';
 
 const MAX_32_SIGNED_INTEGER = 2147483647;
@@ -71,7 +71,7 @@ describe('defaults', () => {
 			> = web3.zond.sendTransaction({
 				from: account1.address,
 				to: account2.address,
-				//gas,
+				// gas,
 				type,
 				value: '0x1',
 				// Give a high nonce so the transaction stuck forever.

@@ -20,7 +20,6 @@ import { format, SocketProvider } from '@theqrl/web3-utils';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import {
 	create as _createAccount,
-	//decrypt,
 	seedToAccount,
 	signTransaction,
 } from '@theqrl/web3-zond-accounts';
@@ -36,7 +35,6 @@ import {
 	Bytes,
 	Web3BaseProvider,
 	Transaction,
-	//KeyStore,
 	ProviderConnectInfo,
 	Web3ProviderEventCallback,
 	ProviderRpcError,
@@ -191,22 +189,6 @@ export const createAccountProvider = (context: Web3Context<ZondExecutionAPI>) =>
 		};
 	};
 
-	/*
-	const decryptWithContext = async (
-		keystore: string | KeyStore,
-		password: string,
-		options?: Record<string, unknown>,
-	) => {
-		const account = await decrypt(keystore, password, (options?.nonStrict as boolean) ?? true);
-
-		return {
-			...account,
-			signTransaction: async (transaction: Transaction) =>
-				signTransactionWithContext(transaction, account.seed),
-		};
-	};
-	*/
-
 	const createWithContext = () => {
 		const account = _createAccount();
 
@@ -220,7 +202,6 @@ export const createAccountProvider = (context: Web3Context<ZondExecutionAPI>) =>
 	return {
 		create: createWithContext,
 		seedToAccount: seedToAccountWithContext,
-		//decrypt: decryptWithContext,
 	};
 };
 

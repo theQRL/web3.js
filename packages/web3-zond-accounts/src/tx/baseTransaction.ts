@@ -17,6 +17,10 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 import { Numbers } from '@theqrl/web3-types';
 import { bytesToHex } from '@theqrl/web3-utils';
+import { 
+	cryptoSignVerify 
+} from '@theqrl/dilithium5';
+import { Dilithium } from '@theqrl/wallet.js';
 import { MAX_INTEGER, MAX_UINT64, SEED_BYTES } from './constants.js';
 import {
 	Chain,
@@ -38,10 +42,6 @@ import type {
 import { Capability } from './types.js';
 import { Address } from './address.js';
 import { checkMaxInitCodeSize } from './utils.js';
-import { 
-	cryptoSignVerify 
-} from '@theqrl/dilithium5';
-import { Dilithium } from '@theqrl/wallet.js';
 
 interface TransactionCache {
 	hash: Uint8Array | undefined;

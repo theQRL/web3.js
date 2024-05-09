@@ -42,6 +42,10 @@ import {
 } from '@theqrl/web3-utils';
 
 import { isHexStrict, isNullish } from '@theqrl/web3-validator';
+import { 
+	CryptoPublicKeyBytes, 
+} from '@theqrl/dilithium5';
+import { Dilithium, getDilithiumAddressFromPK } from '@theqrl/wallet.js'
 import { TransactionFactory } from './tx/transactionFactory.js';
 import type {
 	SignTransactionResult,
@@ -49,11 +53,6 @@ import type {
 	Web3Account,
 	SignResult,
 } from './types.js';
-import { 
-	
-	CryptoPublicKeyBytes, 
-} from '@theqrl/dilithium5';
-import { Dilithium, getDilithiumAddressFromPK } from '@theqrl/wallet.js'
 
 /**
  * Get the public key Uint8Array after the validation

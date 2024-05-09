@@ -19,7 +19,7 @@ import { JsonRpcError } from '@theqrl/web3-types';
 import * as accountErrors from '../../src/errors/account_errors';
 import * as connectionErrors from '../../src/errors/connection_errors';
 import * as contractErrors from '../../src/errors/contract_errors';
-import * as ensErrors from '../../src/errors/ens_errors';
+import * as znsErrors from '../../src/errors/zns_errors';
 import * as genericErrors from '../../src/errors/generic_errors';
 import * as providerErrors from '../../src/errors/provider_errors';
 import * as signatureErrors from '../../src/errors/signature_errors';
@@ -44,7 +44,7 @@ describe('errors', () => {
 			...accountErrors,
 			...connectionErrors,
 			...contractErrors,
-			...ensErrors,
+			...znsErrors,
 			...genericErrors,
 			...providerErrors,
 			...signatureErrors,
