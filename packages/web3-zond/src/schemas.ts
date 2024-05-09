@@ -252,7 +252,7 @@ export const blockSchema = {
 		extraData: {
 			format: 'bytes',
 		},
-		mixHash: {
+		prevRandao: {
 			format: 'bytes32',
 		},
 		baseFeePerGas: {
@@ -355,7 +355,7 @@ export const blockHeaderSchema = {
 		excessDataGas: {
 			format: 'uint',
 		},
-		mixHash: {
+		prevRandao: {
 			format: 'bytes32',
 		},
 		transactions: {

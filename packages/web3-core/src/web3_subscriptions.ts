@@ -63,13 +63,6 @@ export abstract class Web3Subscription<
 		args: ArgsType,
 		options: { subscriptionManager: Web3SubscriptionManager; returnFormat?: DataFormat },
 	);
-	/**
-	 * @deprecated This constructor overloading should not be used
-	 */
-	public constructor(
-		args: ArgsType,
-		options: { requestManager: Web3RequestManager<API>; returnFormat?: DataFormat },
-	);
 	public constructor(
 		public readonly args: ArgsType,
 		options: (
@@ -94,7 +87,7 @@ export abstract class Web3Subscription<
 		}
 		if (requestManager) {
 			// eslint-disable-next-line deprecation/deprecation
-			this._subscriptionManager = new Web3SubscriptionManager(requestManager, {}, true);
+			this._subscriptionManager = new Web3SubscriptionManager(requestManager, {});
 		} else {
 			this._subscriptionManager = subscriptionManager;
 		}

@@ -158,20 +158,6 @@ describe('[Common]: Hardfork logic', () => {
 		expect(c.nextHardforkBlockOrTimestamp()!).toEqual(BigInt(1561651));
 	});
 
-	it('isNextHardforkBlock()', () => {
-		const c = new Common({ chain: Chain.Goerli, hardfork: Hardfork.Istanbul });
-		// eslint-disable-next-line deprecation/deprecation
-		expect(c.isNextHardforkBlock(4460644)).toBe(true);
-		// eslint-disable-next-line deprecation/deprecation
-		expect(c.isNextHardforkBlock(5062605, 'berlin')).toBe(true);
-		// eslint-disable-next-line deprecation/deprecation
-		expect(c.isNextHardforkBlock(5062605, Hardfork.Berlin)).toBe(true);
-		// eslint-disable-next-line deprecation/deprecation
-		expect(c.isNextHardforkBlock(13773000, Hardfork.Byzantium)).toBe(false);
-		// eslint-disable-next-line deprecation/deprecation
-		expect(c.isNextHardforkBlock(13773001, Hardfork.London)).toBe(false);
-	});
-
 	it('hardforkIsActiveOnBlock() / activeOnBlock()', () => {
 		let c = new Common({ chain: Chain.Goerli });
 		expect(c.hardforkIsActiveOnBlock(Hardfork.Istanbul, 1561651)).toBe(true);

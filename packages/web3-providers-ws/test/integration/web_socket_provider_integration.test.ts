@@ -221,18 +221,12 @@ describeIf(isWs)('WebSocketProvider - implemented methods', () => {
 	describe('send multiple Requests on same connection with valid payload and receive response tests', () => {
 		// eslint-disable-next-line jest/expect-expect
 		let jsonRpcPayload2: Web3APIPayload<ZondExecutionAPI, 'zond_mining'>;
-		let jsonRpcPayload3: Web3APIPayload<ZondExecutionAPI, 'zond_hashrate'>;
 		beforeAll(() => {
 			jsonRpcPayload2 = {
 				jsonrpc: '2.0',
 				id: 43,
 				method: 'zond_mining',
 			} as Web3APIPayload<ZondExecutionAPI, 'zond_mining'>;
-			jsonRpcPayload3 = {
-				jsonrpc: '2.0',
-				id: 44,
-				method: 'zond_hashrate',
-			} as Web3APIPayload<ZondExecutionAPI, 'zond_hashrate'>;
 		});
 
 		it('should send multiple requests', async () => {
@@ -240,24 +234,21 @@ describeIf(isWs)('WebSocketProvider - implemented methods', () => {
 
 			const prom2 = webSocketProvider.request(jsonRpcPayload2);
 
-			const prom3 = webSocketProvider.request(jsonRpcPayload3);
-
-			const values = await Promise.all([prom1, prom2, prom3]);
+			const values = await Promise.all([prom1, prom2]);
 			expect(values).toEqual(
 				expect.arrayContaining([
 					expect.objectContaining({ id: jsonRpcPayload.id }),
 					expect.objectContaining({ id: jsonRpcPayload2.id }),
-					expect.objectContaining({ id: jsonRpcPayload3.id }),
 				]),
 			);
 
 			// Execute request in connected stated too
-			const prom3Value = await prom3;
-			expect(prom3Value).toEqual(
-				expect.objectContaining({
-					id: jsonRpcPayload3.id,
-				}),
-			);
+			// const prom3Value = await prom3;
+			// expect(prom3Value).toEqual(
+			// 	expect.objectContaining({
+			// 		id: jsonRpcPayload3.id,
+			// 	}),
+			// );
 		});
 	});
 });

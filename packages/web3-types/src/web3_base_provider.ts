@@ -21,8 +21,6 @@ import { ZondExecutionAPI } from './apis/zond_execution_api.js';
 // eslint-disable-next-line require-extensions/require-extensions
 import {
 	JsonRpcNotification,
-	JsonRpcPayload,
-	JsonRpcResponse,
 	JsonRpcResponseWithError,
 	JsonRpcResponseWithResult,
 	JsonRpcResult,
@@ -75,29 +73,6 @@ export type Web3ProviderRequestCallback<ResultType = unknown> = (
 	response?: JsonRpcResponseWithResult<ResultType>,
 ) => void;
 
-export interface LegacySendProvider {
-	send<R = JsonRpcResult, P = unknown>(
-		payload: JsonRpcPayload<P>,
-		// Used "null" value to match the legacy version
-		// eslint-disable-next-line @typescript-eslint/ban-types
-		callback: (err: Error | null, response?: JsonRpcResponse<R>) => void,
-	): void;
-}
-
-export interface LegacySendAsyncProvider {
-	sendAsync<R = JsonRpcResult, P = unknown>(
-		payload: JsonRpcPayload<P>,
-	): Promise<JsonRpcResponse<R>>;
-}
-
-export interface LegacyRequestProvider {
-	request<R = JsonRpcResult, P = unknown>(
-		payload: JsonRpcPayload<P>,
-		// eslint-disable-next-line @typescript-eslint/ban-types
-		callback: (err: Error | null, response: JsonRpcResponse<R>) => void,
-	): void;
-}
-
 export interface SimpleProvider<API extends Web3APISpec> {
 	request<Method extends Web3APIMethod<API>, ResponseType = Web3APIReturnType<API, Method>>(
 		args: Web3APIPayload<API, Method>,
@@ -149,7 +124,7 @@ export type Eip1193Compatible<API extends Web3APISpec = ZondExecutionAPI> = Omit
 // Provider interface compatible with EIP-1193
 // https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1193.md
 export abstract class Web3BaseProvider<API extends Web3APISpec = ZondExecutionAPI>
-	implements LegacySendProvider, LegacySendAsyncProvider, EIP1193Provider<API>
+	implements EIP1193Provider<API>
 {
 	public static isWeb3Provider(provider: unknown) {
 		return (
@@ -169,38 +144,6 @@ export abstract class Web3BaseProvider<API extends Web3APISpec = ZondExecutionAP
 
 	public abstract getStatus(): Web3ProviderStatus;
 	public abstract supportsSubscriptions(): boolean;
-
-	/**
-	 * @deprecated Please use `.request` instead.
-	 * @param payload - Request Payload
-	 * @param callback - Callback
-	 */
-	public send<ResultType = JsonRpcResult, P = unknown>(
-		payload: JsonRpcPayload<P>,
-		// eslint-disable-next-line @typescript-eslint/ban-types
-		callback: (err: Error | null, response?: JsonRpcResponse<ResultType>) => void,
-	) {
-		this.request<Web3APIMethod<API>, ResultType>(
-			payload as Web3APIPayload<API, Web3APIMethod<API>>,
-		)
-			.then(response => {
-				// eslint-disable-next-line no-null/no-null
-				callback(null, response);
-			})
-			.catch((err: Error | Web3Error) => {
-				callback(err);
-			});
-	}
-
-	/**
-	 * @deprecated Please use `.request` instead.
-	 * @param payload - Request Payload
-	 */
-	public async sendAsync<R = JsonRpcResult, P = unknown>(payload: JsonRpcPayload<P>) {
-		return this.request(payload as Web3APIPayload<API, Web3APIMethod<API>>) as Promise<
-			JsonRpcResponse<R>
-		>;
-	}
 
 	/**
 	 * Modify the return type of the request method to be fully compatible with EIP-1193
@@ -322,9 +265,6 @@ export abstract class Web3BaseProvider<API extends Web3APISpec = ZondExecutionAP
 export type SupportedProviders<API extends Web3APISpec = Web3ZondExecutionAPI> =
 	| EIP1193Provider<API>
 	| Web3BaseProvider<API>
-	| LegacyRequestProvider
-	| LegacySendProvider
-	| LegacySendAsyncProvider
 	| SimpleProvider<API>;
 
 export type Web3BaseProviderConstructor = new <API extends Web3APISpec>(

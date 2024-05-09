@@ -64,7 +64,7 @@ describe(`${getSystemTestBackend()} tests - subscription newHeads`, () => {
 							timestamp: expect.any(BigInt),
 							extraData: expect.any(String),
 							baseFeePerGas: expect.any(BigInt),
-							mixHash: expect.any(String),
+							prevRandao: expect.any(String),
 							withdrawalsRoot: expect.any(String),
 						});
 					} catch (error) {

@@ -104,7 +104,7 @@ export const validateBlock = (b: Block) => {
 	expect(b.gasUsed).toBeDefined();
 	expect(b.timestamp).toBeDefined();
 	expect(b.extraData).toBeDefined();
-	expect(b.mixHash).toMatch(regexHex32);
+	expect(b.prevRandao).toMatch(regexHex32);
 	expect(b.baseFeePerGas).toBeDefined();
 	expect(b.size).toBeDefined();
 	expect(Array.isArray(b.transactions)).toBe(true);

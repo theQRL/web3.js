@@ -161,16 +161,7 @@ export interface BlockHeaderOutput {
 	readonly timestamp: Numbers;
 	readonly extraData?: Bytes;
 	readonly baseFeePerGas?: Numbers;
-
-	// TODO(rgeraldes24)
-	// These fields are returned when the RPC client is Nethermind,
-	// but aren't available in other clients such as Gzond
-	readonly author?: Address;
-	readonly size?: Numbers;
-	readonly excessDataGas?: Numbers;
-	readonly mixHash?: HexString32Bytes;
-	readonly transactions?: TransactionOutput[];
-	readonly withdrawals?: Withdrawals[];
+	readonly prevRandao?: HexString32Bytes;
 }
 
 export interface ReceiptInput {
@@ -194,26 +185,6 @@ export interface ReceiptOutput {
 	readonly contractAddress?: HexString;
 	readonly status: boolean;
 	readonly effectiveGasPrice?: bigint | number;
-}
-
-export interface PostInput {
-	readonly ttl?: HexString;
-	readonly workToProve?: HexString;
-	readonly priority?: HexString;
-	readonly expiry?: HexString;
-	readonly sent?: HexString;
-	readonly workProved?: HexString;
-	readonly topics?: HexString[];
-}
-
-export interface PostOutput {
-	readonly ttl?: bigint | number;
-	readonly workToProve?: bigint | number;
-	readonly priority?: bigint | number;
-	readonly expiry?: bigint | number;
-	readonly sent?: bigint | number;
-	readonly workProved?: bigint | number;
-	readonly topics?: string[];
 }
 
 export interface SyncInput {
@@ -423,7 +394,7 @@ export interface BlockBase<
 	readonly gasUsed: NumberType;
 	readonly timestamp: NumberType;
 	readonly extraData: extraDataType;
-	readonly mixHash: ByteType;
+	readonly prevRandao: ByteType;
 	readonly baseFeePerGas?: NumberType;
 	readonly size: NumberType;
 	readonly transactions: TransactionTypes;

@@ -683,20 +683,6 @@ export class Common extends EventEmitter {
 	}
 
 	/**
-	 * True if block number provided is the hardfork (given or set) change block
-	 * @param blockNumber Number of the block to check
-	 * @param hardfork Hardfork name, optional if HF set
-	 * @returns True if blockNumber is HF block
-	 * @deprecated
-	 */
-	public isHardforkBlock(_blockNumber: Numbers, _hardfork?: string | Hardfork): boolean {
-		const blockNumber = toType(_blockNumber, TypeOutput.BigInt);
-		const hardfork = _hardfork ?? this._hardfork;
-		const block = this.hardforkBlock(hardfork);
-		return typeof block === 'bigint' && block !== BigInt(0) ? block === blockNumber : false;
-	}
-
-	/**
 	 * Returns the change block for the next hardfork after the hardfork provided or set
 	 * @param hardfork Hardfork name, optional if HF set
 	 * @returns Block timestamp, number or null if not available
@@ -757,70 +743,6 @@ export class Common extends EventEmitter {
 		}
 
 		return BigInt(nextHfBlock);
-	}
-
-	/**
-	 * Returns the change block for the next hardfork after the hardfork provided or set
-	 * @param hardfork Hardfork name, optional if HF set
-	 * @returns Block number or null if not available
-	 * @deprecated
-	 */
-	// eslint-disable-next-line @typescript-eslint/ban-types
-	public nextHardforkBlock(_hardfork?: string | Hardfork): bigint | null {
-		const hardfork = _hardfork ?? this._hardfork;
-		let hfBlock = this.hardforkBlock(hardfork);
-		// TODO(rgeraldes24)
-		// If this is a merge hardfork with block not set, then we fallback to previous hardfork
-		// to find the nextHardforkBlock
-		// eslint-disable-next-line no-null/no-null
-		// if (hfBlock === null && hardfork === Hardfork.Merge) {
-		// 	const hfs = this.hardforks();
-		// 	// eslint-disable-next-line no-null/no-null
-		// 	const mergeIndex = hfs.findIndex(hf => hf.ttd !== null && hf.ttd !== undefined);
-		// 	if (mergeIndex < 0) {
-		// 		throw Error(`Merge hardfork should have been found`);
-		// 	}
-		// 	hfBlock = this.hardforkBlock(hfs[mergeIndex - 1].name);
-		// }
-		// eslint-disable-next-line no-null/no-null
-		if (hfBlock === null) {
-			// eslint-disable-next-line no-null/no-null
-			return null;
-		}
-		// Next fork block number or null if none available
-		// Logic: if accumulator is still null and on the first occurrence of
-		// a block greater than the current hfBlock set the accumulator,
-		// pass on the accumulator as the final result from this time on
-		// eslint-disable-next-line no-null/no-null, @typescript-eslint/ban-types
-		const nextHfBlock = this.hardforks().reduce((acc: bigint | null, hf: HardforkConfig) => {
-			// We need to ignore the merge block in our next hardfork calc
-			const block = BigInt(
-				// eslint-disable-next-line no-null/no-null
-				// TODO(rgeraldes24)
-				hf.block === null /*|| (hf.ttd !== undefined && hf.ttd !== null)*/ ? 0 : hf.block,
-			);
-			// Typescript can't seem to follow that the hfBlock is not null at this point
-			// eslint-disable-next-line no-null/no-null
-			return block > hfBlock! && acc === null ? block : acc;
-			// eslint-disable-next-line no-null/no-null
-		}, null);
-		return nextHfBlock;
-	}
-
-	/**
-	 * True if block number provided is the hardfork change block following the hardfork given or set
-	 * @param blockNumber Number of the block to check
-	 * @param hardfork Hardfork name, optional if HF set
-	 * @returns True if blockNumber is HF block
-	 * @deprecated
-	 */
-	public isNextHardforkBlock(_blockNumber: Numbers, _hardfork?: string | Hardfork): boolean {
-		const blockNumber = toType(_blockNumber, TypeOutput.BigInt);
-		const hardfork = _hardfork ?? this._hardfork;
-		// eslint-disable-next-line deprecation/deprecation
-		const nextHardforkBlock = this.nextHardforkBlock(hardfork);
-		// eslint-disable-next-line no-null/no-null
-		return nextHardforkBlock === null ? false : nextHardforkBlock === blockNumber;
 	}
 
 	/**

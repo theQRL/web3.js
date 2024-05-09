@@ -67,14 +67,6 @@ export class Web3SubscriptionManager<
 		requestManager: Web3RequestManager<API>,
 		registeredSubscriptions: RegisteredSubs,
 	);
-	/**
-	 * @deprecated This constructor overloading should not be used
-	 */
-	public constructor(
-		requestManager: Web3RequestManager<API>,
-		registeredSubscriptions: RegisteredSubs,
-		tolerateUnlinkedSubscription: boolean,
-	);
 	public constructor(
 		public readonly requestManager: Web3RequestManager<API>,
 		public readonly registeredSubscriptions: RegisteredSubs,

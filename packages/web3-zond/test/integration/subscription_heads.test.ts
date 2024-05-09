@@ -56,9 +56,8 @@ describeIf(isSocket)('subscription', () => {
 						expect(typeof data.gasUsed).toBe('bigint');
 						expect(typeof data.timestamp).toBe('bigint');
 						expect(typeof data.extraData).toBe('string');
-						expect(typeof data.nonce).toBe('bigint');
 						expect(typeof data.baseFeePerGas).toBe('bigint');
-						expect(typeof data.mixHash).toBe('string');
+						expect(typeof data.prevRandao).toBe('string');
 					} catch (error) {
 						reject(error);
 					}

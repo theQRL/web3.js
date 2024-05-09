@@ -92,7 +92,7 @@ describe('defaultTransactionBuilder', () => {
 		gasUsed: '0x1c96e73',
 		timestamp: '0x55ba467c',
 		extraData: '0x476574682f4c5649562f76312e302e302f6c696e75782f676f312e342e32',
-		mixHash: '0x4fffe9ae21f1c9e15207b1f472d5bbdd68c9595d461666602f2be20daf5e7843',
+		prevRandao: '0x4fffe9ae21f1c9e15207b1f472d5bbdd68c9595d461666602f2be20daf5e7843',
 		size: '0x220',
 		transactions: [
 			'0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b',

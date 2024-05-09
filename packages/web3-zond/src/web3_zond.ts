@@ -315,7 +315,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *    gasUsed: 0n,
 	 *    timestamp: 1658281638n,
 	 *    extraData: '0x',
-	 *    mixHash: '0x0000000000000000000000000000000000000000000000000000000000000000',
+	 *    prevRandao: '0x0000000000000000000000000000000000000000000000000000000000000000',
 	 *    nonce: 0n,
 	 *    baseFeePerGas: 1000000000n,
 	 *    size: 514n,
@@ -340,7 +340,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *    gasUsed: 0,
 	 *    timestamp: 1658281638,
 	 *    extraData: '0x',
-	 *    mixHash: '0x0000000000000000000000000000000000000000000000000000000000000000',
+	 *    prevRandao: '0x0000000000000000000000000000000000000000000000000000000000000000',
 	 *    baseFeePerGas: 1000000000,
 	 *    size: 514,
 	 *    transactions: []

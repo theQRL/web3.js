@@ -49,7 +49,7 @@ type TestBlockType = {
 	readonly gasUsed: Numbers;
 	readonly timestamp: Numbers;
 	readonly extraData: Bytes;
-	readonly mixHash: Bytes;
+	readonly prevRandao: Bytes;
 	readonly baseFeePerGas?: Numbers;
 	readonly size: Numbers;
 	readonly transactions: Bytes[] | TestTransactionInfoType[];
@@ -303,7 +303,7 @@ describe('formatter', () => {
 					readonly gasUsed: string;
 					readonly timestamp: string;
 					readonly extraData: string;
-					readonly mixHash: string;
+					readonly prevRandao: string;
 					readonly baseFeePerGas?: string;
 					readonly size: string;
 					readonly transactions:
@@ -339,7 +339,7 @@ describe('formatter', () => {
 						readonly gasUsed: bigint;
 						readonly timestamp: bigint;
 						readonly extraData: Uint8Array;
-						readonly mixHash: Uint8Array;
+						readonly prevRandao: Uint8Array;
 						readonly baseFeePerGas?: bigint;
 						readonly size: bigint;
 						readonly transactions:
@@ -376,7 +376,7 @@ describe('formatter', () => {
 						readonly gasUsed: number;
 						readonly timestamp: number;
 						readonly extraData: Uint8Array;
-						readonly mixHash: Uint8Array;
+						readonly prevRandao: Uint8Array;
 						readonly baseFeePerGas?: number;
 						readonly size: number;
 						readonly transactions:

@@ -211,7 +211,7 @@ New block header: {
   gasLimit: 6721975,
   gasUsed: 21000,
   hash: '0xd315cecf3336640bcd1301930805370b7fe7528c894b931dcf8a3b1c833b68c8',
-  mixHash: '0x1304070fde1c7bee383f3a59da8bb94d515cbd033b2638046520fb6fb596d827',
+  prevRandao: '0x1304070fde1c7bee383f3a59da8bb94d515cbd033b2638046520fb6fb596d827',
   number: 40,
   parentHash: '0xeb7ce3260911db2596ac843df11dbcbef302e813e1922db413f6f0b2a54d584d',
   receiptsRoot: '0xf78dfb743fbd92ade140711c8bbc542b5e307f0ab7984eff35d751969fe57efa',
