@@ -39,11 +39,6 @@ yarn add web3
 -   :gear: [NodeJS](https://nodejs.org/) (LTS/Fermium)
 -   :toolbox: [Yarn](https://yarnpkg.com/)/[Lerna](https://lerna.js.org/)
 
-## Migration Guide
-
--   [Migration Guide from Web3.js 1.x to 4.x](https://docs.web3js.org/docs/guides/web3_migration_guide)
-    Breaking changes are listed in migration guide and its first step for migrating from Web3.js 1.x to 4.x. If there is any question or discussion feel free to ask in discord, and in case of any bug or new feature request [open issue](https://github.com/web3/web3.js/issues/new) or create a pull request for [contributions](https://github.com/web3/web3.js/blob/4.x/CONTRIBUTIONS.md).
-
 ## Package.json Scripts
 
 | Script           | Description                                        |
