@@ -4,7 +4,7 @@ export default {
 	"comment": "AUTH and AUTHCALL opcodes",
 	"url": "https://eips.ethereum.org/EIPS/eip-3074",
 	"status": "Review",
-	"minimumHardfork": "london",
+	"minimumHardfork": "shanghai",
 	"gasConfig": {},
 	"gasPrices": {
 		"auth": {

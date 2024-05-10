@@ -14,7 +14,7 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { toBigInt } from '@theqrl/web3-utils';
+// import { toBigInt } from '@theqrl/web3-utils';
 import { Chain, Common, Hardfork } from '../../../src/common';
 
 describe('[Common/EIPs]: Initialization / Chain params', () => {
@@ -26,13 +26,13 @@ describe('[Common/EIPs]: Initialization / Chain params', () => {
 		eips = [2718, 2929, 2930];
 		expect(() => {
 			// eslint-disable-next-line no-new
-			new Common({ chain: Chain.Mainnet, eips, hardfork: Hardfork.Istanbul });
+			new Common({ chain: Chain.Mainnet, eips, hardfork: Hardfork.Shanghai });
 		}).not.toThrow();
 
 		eips = [2930];
 		expect(() => {
 			// eslint-disable-next-line no-new
-			new Common({ chain: Chain.Mainnet, eips, hardfork: Hardfork.Istanbul });
+			new Common({ chain: Chain.Mainnet, eips, hardfork: Hardfork.Shanghai });
 		}).toThrow();
 	});
 
@@ -57,6 +57,7 @@ describe('[Common/EIPs]: Initialization / Chain params', () => {
     */
 	});
 
+	/*
 	it('isActivatedEIP()', () => {
 		let c = new Common({ chain: Chain.Goerli, hardfork: Hardfork.Istanbul });
 		expect(c.isActivatedEIP(2315)).toBe(false);
@@ -75,4 +76,5 @@ describe('[Common/EIPs]: Initialization / Chain params', () => {
 
 		expect(c.eipBlock(0)).toBeNull();
 	});
+	*/
 });

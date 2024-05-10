@@ -136,7 +136,7 @@ const eip1559TxValues = {
 
 describe('[Transaction Input Values]', () => {
 	it('Legacy Transaction Values', () => {
-		const common = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Homestead });
+		const common = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Shanghai });
 		const options = { ...baseTxValues, ...legacyTxValues, type: '0' };
 		const legacyTxData = generateCombinations({
 			options,
@@ -149,7 +149,7 @@ describe('[Transaction Input Values]', () => {
 	});
 
 	it('EIP-1559 Transaction Values', () => {
-		const common = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.London });
+		const common = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Shanghai });
 		const options = {
 			...baseTxValues,
 			...accessListEip2930TxValues,

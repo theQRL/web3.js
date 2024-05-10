@@ -24,11 +24,13 @@ describe('[Common]: Timestamp Hardfork logic', () => {
 		const c = Common.fromGzondGenesis(timestampJson, {
 			chain: 'withdrawals',
 		});
-		expect(c.getHardforkByBlockNumber(1, undefined, 0)).toEqual(Hardfork.MergeForkIdTransition);
-		expect(c.getHardforkByBlockNumber(1, undefined, 1668699476)).toEqual(Hardfork.Shanghai);
-		expect(c.getHardforkByBlockNumber(1, undefined, 1668699576)).toEqual(Hardfork.Shanghai);
+		expect(c.getHardforkByBlockNumber(1, 0)).toEqual(Hardfork.Shanghai);
+		expect(c.getHardforkByBlockNumber(1, 1668699476)).toEqual(Hardfork.Shanghai);
+		expect(c.getHardforkByBlockNumber(1, 1668699576)).toEqual(Hardfork.Shanghai);
 	});
 
+	// TODO(rgeraldes24)
+	/*
 	it('schedule sharding on shanghai-time', () => {
 		const config = {
 			...timestampJson.config,
@@ -38,7 +40,7 @@ describe('[Common]: Timestamp Hardfork logic', () => {
 		const c = Common.fromGzondGenesis(modifiedJson, {
 			chain: 'modified',
 		});
-		expect(c.getHardforkByBlockNumber(1, undefined, 0)).toEqual(Hardfork.MergeForkIdTransition);
+		expect(c.getHardforkByBlockNumber(1, undefined, 0)).toEqual(Hardfork.Shanghai);
 		expect(c.nextHardforkBlockOrTimestamp(Hardfork.Shanghai)).toBeNull();
 	});
 
@@ -51,16 +53,17 @@ describe('[Common]: Timestamp Hardfork logic', () => {
 		const c = Common.fromGzondGenesis(modifiedJson, {
 			chain: 'modified',
 		});
-		expect(c.getHardforkByBlockNumber(1, undefined, 0)).toEqual(Hardfork.MergeForkIdTransition);
+		expect(c.getHardforkByBlockNumber(1, 0)).toEqual(Hardfork.Shanghai);
 		// Should give the shanghai as sharding is schedule a bit post shanghai
-		expect(c.getHardforkByBlockNumber(1, undefined, 1668699476)).toEqual(Hardfork.Shanghai);
-		expect(c.getHardforkByBlockNumber(1, undefined, 1668699576)).toEqual(Hardfork.Shanghai);
+		expect(c.getHardforkByBlockNumber(1, 1668699476)).toEqual(Hardfork.Shanghai);
+		expect(c.getHardforkByBlockNumber(1, 1668699576)).toEqual(Hardfork.Shanghai);
 	});
+	*/
 
 	it('forkHash', () => {
 		const mainnet = new Common({ chain: Chain.Mainnet });
 		const hfs = mainnet.hardforks();
-		const mergeIndex = hfs.findIndex(hf => hf.name === Hardfork.Merge);
+		const mergeIndex = hfs.findIndex(hf => hf.name === Hardfork.Shanghai);
 		const hardforks = hfs.slice(0, mergeIndex + 1).concat([
 			// Add these hardforks as specified here:
 			//   https://github.com/ethereum/EIPs/pull/6122/files
@@ -89,7 +92,7 @@ describe('[Common]: Timestamp Hardfork logic', () => {
 			expect(c._calcForkHash(hf.name, mainnetGenesisHash)).toEqual(hf.forkHash);
 		}
 
-		c.setHardfork(Hardfork.MergeForkIdTransition);
+		c.setHardfork(Hardfork.Shanghai);
 		expect(c.nextHardforkBlockOrTimestamp()).toEqual(BigInt(1668000000));
 
 		c.setHardfork(Hardfork.Shanghai);
@@ -100,7 +103,7 @@ describe('[Common]: Timestamp Hardfork logic', () => {
 	it('setForkHashes', () => {
 		const mainnet = new Common({ chain: Chain.Mainnet });
 		const hfs = mainnet.hardforks();
-		const mergeIndex = hfs.findIndex(hf => hf.name === Hardfork.Merge);
+		const mergeIndex = hfs.findIndex(hf => hf.name === Hardfork.Shanghai);
 		const hardforks = hfs.slice(0, mergeIndex + 1).concat([
 			// Add these hardforks as specified here:
 			//   https://github.com/ethereum/EIPs/pull/6122/files

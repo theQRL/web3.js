@@ -4,7 +4,7 @@ export default {
 	"comment": "EVM Object Format (EOF) v1",
 	"url": "https://eips.ethereum.org/EIPS/eip-3540",
 	"status": "Review",
-	"minimumHardfork": "london",
+	"minimumHardfork": "shanghai",
 	"requiredEIPs": [3541],
 	"gasConfig": {},
 	"gasPrices": {},

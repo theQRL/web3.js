@@ -4,7 +4,7 @@ export default {
 	"comment": "Warm COINBASE",
 	"url": "https://eips.ethereum.org/EIPS/eip-3651",
 	"status": "Review",
-	"minimumHardfork": "london",
+	"minimumHardfork": "shanghai",
 	"requiredEIPs": [2929],
 	"gasConfig": {},
 	"gasPrices": {},

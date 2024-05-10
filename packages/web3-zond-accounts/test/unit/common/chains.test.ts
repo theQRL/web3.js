@@ -22,7 +22,7 @@ describe('[Common/Chains]: Initialization / Chain params', () => {
 		expect(c.chainName()).toBe('mainnet');
 		expect(c.chainId()).toEqual(BigInt(1));
 		expect(c.networkId()).toEqual(BigInt(1));
-		expect(c.hardfork()).toEqual(Hardfork.Merge);
+		expect(c.hardfork()).toEqual(Hardfork.Shanghai);
 		expect(c.hardfork()).toEqual(c.DEFAULT_HARDFORK);
 
 		c = new Common({ chain: 1 });
@@ -34,18 +34,18 @@ describe('[Common/Chains]: Initialization / Chain params', () => {
 		expect(c.chainName()).toBe('mainnet');
 		expect(c.chainId()).toEqual(BigInt(1));
 		expect(c.networkId()).toEqual(BigInt(1));
-		expect(c.hardfork()).toEqual(Hardfork.Merge);
+		expect(c.hardfork()).toEqual(Hardfork.Shanghai);
 		expect(c.hardfork()).toEqual(c.DEFAULT_HARDFORK);
 	});
 
 	it('Should initialize with chain and hardfork provided', () => {
-		const c = new Common({ chain: 'mainnet', hardfork: 'byzantium' });
-		expect(c.hardfork()).toBe('byzantium');
+		const c = new Common({ chain: 'mainnet', hardfork: 'shanghai' });
+		expect(c.hardfork()).toBe('shanghai');
 	});
 
 	it('Should initialize with chain and hardfork provided by Chain and Hardfork enums', () => {
-		const c = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Byzantium });
-		expect(c.hardfork()).toBe('byzantium');
+		const c = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Shanghai });
+		expect(c.hardfork()).toBe('shanghai');
 	});
 
 	it('Should handle initialization errors', () => {

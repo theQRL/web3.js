@@ -21,11 +21,11 @@ describe('[Common]: Parameter access for param(), paramByHardfork()', () => {
 		const c = new Common({ chain: Chain.Mainnet, eips: [2537] });
 		expect(c.paramByHardfork('gasPrices', 'ecAdd', 'byzantium')).toEqual(BigInt(500));
 
-		c.setHardfork(Hardfork.Byzantium);
+		c.setHardfork(Hardfork.Shanghai);
 		expect(c.param('gasPrices', 'ecAdd')).toEqual(BigInt(500));
-		c.setHardfork(Hardfork.Istanbul);
+		c.setHardfork(Hardfork.Shanghai);
 		expect(c.param('gasPrices', 'ecAdd')).toEqual(BigInt(150));
-		c.setHardfork(Hardfork.MuirGlacier);
+		c.setHardfork(Hardfork.Shanghai);
 		expect(c.param('gasPrices', 'ecAdd')).toEqual(BigInt(150));
 
 		expect(c.param('gasPrices', 'notexistingvalue')).toEqual(BigInt(0));
@@ -39,7 +39,7 @@ describe('[Common]: Parameter access for param(), paramByHardfork()', () => {
 			c.paramByHardfork('gasPrizes', 'ecAdd', 'byzantium');
 		}).toThrow('Topic gasPrizes not defined');
 
-		c.setHardfork(Hardfork.Byzantium);
+		c.setHardfork(Hardfork.Shanghai);
 		expect(c.param('gasPrices', 'ecAdd')).toEqual(BigInt(500));
 	});
 
@@ -62,7 +62,7 @@ describe('[Common]: Parameter access for param(), paramByHardfork()', () => {
 	});
 
 	it('Access by block number, paramByBlock()', () => {
-		const c = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Byzantium });
+		const c = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Shanghai });
 		expect(c.paramByBlock('pow', 'minerReward', 4370000)).toEqual(BigInt(3000000000000000000));
 		expect(c.paramByBlock('pow', 'minerReward', 4369999)).toEqual(BigInt(5000000000000000000));
 

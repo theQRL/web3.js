@@ -4,7 +4,7 @@ export default {
 	"comment": "Upgrade consensus to Proof-of-Stake",
 	"url": "https://eips.ethereum.org/EIPS/eip-3675",
 	"status": "Final",
-	"minimumHardfork": "london",
+	"minimumHardfork": "shanghai",
 	"requiredEIPs": [],
 	"gasConfig": {},
 	"gasPrices": {},

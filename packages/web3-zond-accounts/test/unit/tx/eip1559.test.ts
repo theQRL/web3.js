@@ -24,7 +24,7 @@ import testdata from '../../fixtures/json/eip1559.json';
 
 const common = new Common({
 	chain: 5,
-	hardfork: Hardfork.London,
+	hardfork: Hardfork.Shanghai,
 });
 // @ts-expect-error set private property
 common._chainParams.chainId = 4;
@@ -146,7 +146,7 @@ describe('[FeeMarketEIP1559Transaction]', () => {
 		const txn = FeeMarketEIP1559Transaction.fromTxData(data, { common, freeze: false });
 		const newCommon = new Common({
 			chain: Chain.Mainnet,
-			hardfork: Hardfork.London,
+			hardfork: Hardfork.Shanghai,
 			eips: [2537],
 		});
 		expect(Object.isFrozen(newCommon)).not.toEqual(common);

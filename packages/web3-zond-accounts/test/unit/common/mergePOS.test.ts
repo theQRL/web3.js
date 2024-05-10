@@ -18,7 +18,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import { /*Chain,*/ Common, Hardfork } from '../../../src/common';
 
 // import * as testnetMerge from '../../fixtures/common/merge/testnetMerge.json';
-import * as testnetPOS from '../../fixtures/common/merge/testnetPOS.json';
+// import * as testnetPOS from '../../fixtures/common/merge/testnetPOS.json';
 import postMerge from '../../fixtures/common/post-merge.json';
 
 describe('[Common]: Merge/POS specific logic', () => {
@@ -151,8 +151,8 @@ describe('[Common]: Merge/POS specific logic', () => {
 	*/
 
 	it('Pure POS testnet', () => {
-		const customChains = [testnetPOS];
-		const c = new Common({ chain: 'testnetPOS', hardfork: Hardfork.Shanghai, customChains });
+		// const customChains = [testnetPOS];
+		const c = new Common({ chain: 'testnetPOS', hardfork: Hardfork.Shanghai /*, customChains */ });
 		expect(c.getHardforkByBlockNumber(5, 0)).toBe('shanghai');
 	});
 

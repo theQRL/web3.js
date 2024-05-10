@@ -476,11 +476,11 @@ export const invalidDecryptData: [[any, string], InvalidKdfError | KeyDerivation
 ];
 
 export const validHashMessageData: [string, string][] = [
-	['🤗', '0x716ce69c5d2d629c168bc02e24a961456bdc5a362d366119305aea73978a0332'],
+	['🤗', '0x5dca29429d962d36cf39f6eaa8aea2aa9bf584bf3a6619ba02e4a976713ee419'],
 	[
 		'Some long text with integers 1233 and special characters and unicode \u1234 as well.',
-		'0xff21294f27c6b1e416215feb0b0b904c552c874c4e11b2314dd3afc1714ed8a8',
+		'0x62bfdbf332b439bf3fdf4b09a59f79185cb3c7d4bf5608ac6e46f92e8639a19c',
 	],
-	['non utf8 string', '0x8862c6a425a83c082216090e4f0e03b64106189e93c29b11d0112e77b477cce2'],
-	['', '0x5f35dce98ba4fba25530a026ed80b2cecdaa31091ba4958b99b52ea1d068adad'],
+	['non utf8 string', '0x3522c3467a6b9a063d7e3bfd9cab19e572e8abcd7023a7559f0d329d655cbeea'],
+	['', '0xf4d7cd857bdb263484abcda09985bc942f6a7d986544fc3202d7a92d20173a54'],
 ];

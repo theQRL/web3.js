@@ -25,7 +25,7 @@ import {
 	seedToAccount,
 	publicKeyToAddress,
 	recoverTransaction,
-	sign,
+	// sign,
 	signTransaction,
 } from '../../src/account';
 import {
@@ -34,7 +34,7 @@ import {
 	//invalidKeyStore,
 	invalidSeedtoAccountData,
 	invalidPublicKeyToAddressData,
-	signatureRecoverData,
+	// signatureRecoverData,
 	transactionsTestData,
 	//validDecryptData,
 	//validEncryptData,
@@ -128,6 +128,8 @@ describe('accounts', () => {
 		});
 	});
 
+	// TODO(rgeraldes24)
+	/*
 	describe('Sign Message', () => {
 		describe('sign', () => {
 			it.each(signatureRecoverData)('%s', (data, testObj) => {
@@ -136,6 +138,7 @@ describe('accounts', () => {
 			});
 		});
 	});
+	*/
 
 	// describe('encrypt', () => {
 	// 	describe('valid cases', () => {

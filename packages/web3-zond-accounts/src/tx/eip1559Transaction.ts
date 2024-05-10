@@ -67,7 +67,7 @@ export class FeeMarketEIP1559Transaction extends BaseTransaction<FeeMarketEIP155
 	 *
 	 * @hidden
 	 */
-	protected DEFAULT_HARDFORK = 'london';
+	protected DEFAULT_HARDFORK = 'shanghai';
 
 	/**
 	 * Instantiate a transaction from a data dictionary.

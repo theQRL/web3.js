@@ -2,7 +2,7 @@ export default {
 	"name": "mainnet",
 	"chainId": 1,
 	"networkId": 1,
-	"defaultHardfork": "merge",
+	"defaultHardfork": "shanghai",
 	"consensus": {
 		"type": "pos",
 		"algorithm": "casper",

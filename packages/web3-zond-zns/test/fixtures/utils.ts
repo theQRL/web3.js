@@ -17,9 +17,9 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 export const namehashValidData: [string, string][] = [
 	['', '0x0000000000000000000000000000000000000000000000000000000000000000'],
-	['zond', '0x93cdeb708b7545dc668eb9280176169d1c33cfd8ed6f04690a0bcc88a93fc4ae'],
-	['foo.zond', '0xde9b09fd7c5f901e23a3f19fecc54828e9c848539801e86591bd9801b019f84f'],
-	['FOO.zond', '0xde9b09fd7c5f901e23a3f19fecc54828e9c848539801e86591bd9801b019f84f'],
+	['zond', '0x7323bd9bffe34774c518704375fd259ef79e92b80a3bba9dc0d1fc4f1cc954f8'],
+	['foo.zond', '0xd824a9cc5be35120faeba837729c78f54d55c6cada77dbbf24941ed283455882'],
+	['FOO.zond', '0xd824a9cc5be35120faeba837729c78f54d55c6cada77dbbf24941ed283455882'],
 ];
 
 export const normalizeValidData: [string, string][] = [

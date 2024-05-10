@@ -74,18 +74,6 @@ def update_genesis_hash():
     write_file(target_file, data)
 
 
-# def update_prysmctl_command(timestamp):
-#     target_file = os.path.join(base_path, "scripts/prysmctl.sh")
-#     data = read_file(target_file)
-
-#     genesis_time_flag_loc = data.find("--genesis-time")
-#     equal_loc = data.find("=", genesis_time_flag_loc)
-#     genesis_time_loc = equal_loc + 1
-
-#     data = data[:genesis_time_loc] + str(timestamp) + data[genesis_time_loc+10:]
-#     write_file(target_file, data)
-
-
 def update_genesis_json(timestamp):
     target_file = os.path.join(base_path, "execution/genesis.json")
     data = read_file(target_file)
@@ -103,7 +91,6 @@ def main():
     update_time_gzond_config(timestamp)
     update_time_gzond_genesis(timestamp)
     update_genesis_hash()
-    #update_prysmctl_command(timestamp)
     update_genesis_json(timestamp)
     print(timestamp)
     sys.stdout.flush()

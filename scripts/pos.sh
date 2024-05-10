@@ -31,12 +31,12 @@ download(){
 
     if [ ! -e "$TMP_FOLDER/go-zond" ]
     then
-        git clone https://github.com/theQRL/go-zond ${TMP_FOLDER}/go-zond
+        git clone https://github.com/cyyber/go-zond ${TMP_FOLDER}/go-zond
     fi
 
 	if [ ! -e "$TMP_FOLDER/qrysm" ]
     then
-        git clone https://github.com/theQRL/qrysm ${TMP_FOLDER}/qrysm
+        git clone https://github.com/cyyber/qrysm ${TMP_FOLDER}/qrysm
     fi
 }
 
@@ -63,12 +63,11 @@ start() {
 	echo "Create network files..."
 	GENESIS_TIME=$(bash python scripts/update-time.py $TMP_FOLDER | tail -n 1)
 	${TMP_FOLDER}/bin/qrysmctl testnet generate-genesis \
-		--fork=capella \
 		--num-validators=64 \
 		--gzond-genesis-json-in=$TMP_FOLDER/execution/genesis.json \
 		--output-ssz=$TMP_FOLDER/consensus/genesis.ssz \
 		--chain-config-file=$TMP_FOLDER/consensus/config.yml \
-		--deposit-json-file=$TMP_FOLDER/consensus/validator_keys/deposit_data-1702900864.json  \
+		--deposit-json-file=$TMP_FOLDER/consensus/validator_keys/deposit_data-1709132951.json  \
 		--genesis-time="${GENESIS_TIME}"
 
 	buildGzond
@@ -84,7 +83,6 @@ start() {
 		--datadir=${TMP_FOLDER}/data \
 		--ipcpath $IPC_PATH \
 		--nodiscover \
-		--nousb \
 		--ws --ws.addr 0.0.0.0 --ws.port $WEB3_SYSTEM_TEST_PORT \
 		--http --http.addr 0.0.0.0 --http.port $WEB3_SYSTEM_TEST_PORT \
 		--allow-insecure-unlock \
@@ -111,7 +109,7 @@ start() {
 		--suggested-fee-recipient=0x123463a4b065722e99115d6c222f267d9cabb524 \
 		--enable-debug-rpc-endpoints >> ${TMP_FOLDER}/logs/beacon.log 2>&1 &
 
-	echo "Waiting for validator..."
+	echo "Waiting for beacon node..."
 	npx wait-port -t 10000 "4000"
 
 	echo "Starting validator..."
@@ -120,7 +118,7 @@ start() {
 		--accept-terms-of-use \
 		--chain-config-file=$TMP_FOLDER/consensus/config.yml \
 		--config-file=$TMP_FOLDER/consensus/config.yml \
-		--wallet-dir=$TMP_FOLDER/consensus/prysm-wallet-v2 \
+		--wallet-dir=$TMP_FOLDER/consensus/qrysm-wallet-v2 \
 		--wallet-password-file=$TMP_FOLDER/consensus/wallet_password.txt \
 		--rpc >> ${TMP_FOLDER}/logs/validator.log 2>&1 &
 

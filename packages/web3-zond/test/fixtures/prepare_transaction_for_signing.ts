@@ -62,7 +62,7 @@ const common: Common = {
 		networkId: 1,
 		chainId: 1,
 	},
-	hardfork: 'istanbul',
+	hardfork: 'shanghai',
 };
 // const commonBerlin: Common = {
 // 	baseChain: 'mainnet',
@@ -80,7 +80,7 @@ const commonLondon: Common = {
 		networkId: 1,
 		chainId: 1,
 	},
-	hardfork: 'london',
+	hardfork: 'shanghai',
 };
 
 // const accessList: AccessList = [

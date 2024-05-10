@@ -19,8 +19,15 @@ import { InvalidBlockError } from '@theqrl/web3-errors';
 import {
 	isBlockTag,
 	isNullish as isNullishValidator,
+	isHexStrict as isHexStrictValidator,
 } from '@theqrl/web3-validator';
 import { BlockNumberOrTag, BlockTags } from '@theqrl/web3-types';
+
+// NOTE(rgeraldes24): used in tests
+/**
+ * @deprecated Will be removed in next release. Please use `web3-validator` package instead.
+ */
+export const isHexStrict = isHexStrictValidator;
 
 /**
  * Compares between block A and block B

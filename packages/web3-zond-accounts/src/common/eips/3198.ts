@@ -4,7 +4,7 @@ export default {
 	"comment": "BASEFEE opcode",
 	"url": "https://eips.ethereum.org/EIPS/eip-3198",
 	"status": "Final",
-	"minimumHardfork": "london",
+	"minimumHardfork": "shanghai",
 	"gasConfig": {},
 	"gasPrices": {
 		"basefee": {
