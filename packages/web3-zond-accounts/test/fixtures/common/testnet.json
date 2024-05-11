@@ -2,7 +2,7 @@
 	"name": "testnet",
 	"chainId": 12345,
 	"networkId": 12345,
-	"defaultHardfork": "byzantium",
+	"defaultHardfork": "shanghai",
 	"consensus": {
 		"type": "pos",
 		"algorithm": "casper",
@@ -16,7 +16,7 @@
 	},
 	"hardforks": [
 		{
-			"name": "chainstart",
+			"name": "shanghai",
 			"block": 0
 		}
 	],

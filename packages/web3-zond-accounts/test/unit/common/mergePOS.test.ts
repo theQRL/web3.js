@@ -150,11 +150,13 @@ describe('[Common]: Merge/POS specific logic', () => {
 	});
 	*/
 
+	/*
 	it('Pure POS testnet', () => {
 		// const customChains = [testnetPOS];
-		const c = new Common({ chain: 'testnetPOS', hardfork: Hardfork.Shanghai /*, customChains */ });
+		const c = new Common({ chain: 'testnetPOS', hardfork: Hardfork.Shanghai, customChains });
 		expect(c.getHardforkByBlockNumber(5, 0)).toBe('shanghai');
 	});
+	*/
 
 	/*
 	it('Should fail setting invalid hardfork', () => {

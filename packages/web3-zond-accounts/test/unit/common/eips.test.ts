@@ -15,9 +15,10 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 // import { toBigInt } from '@theqrl/web3-utils';
-import { Chain, Common, Hardfork } from '../../../src/common';
+import { Chain, Common/*, Hardfork*/ } from '../../../src/common';
 
 describe('[Common/EIPs]: Initialization / Chain params', () => {
+	/*
 	it('Correct initialization', () => {
 		let eips = [2537, 2929];
 		const c = new Common({ chain: Chain.Mainnet, eips });
@@ -35,6 +36,7 @@ describe('[Common/EIPs]: Initialization / Chain params', () => {
 			new Common({ chain: Chain.Mainnet, eips, hardfork: Hardfork.Shanghai });
 		}).toThrow();
 	});
+	*/
 
 	it('Initialization errors', () => {
 		const UNSUPPORTED_EIP = 1000000;

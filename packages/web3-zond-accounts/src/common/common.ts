@@ -419,7 +419,7 @@ export class Common extends EventEmitter {
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
 				for (const elem of EIPs[eip].requiredEIPs) {
 					// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-					if (!(eips.includes(elem) || this.isActivatedEIP(elem))) {
+					if (!(eips.includes(elem) /*|| this.isActivatedEIP(elem)*/)) {
 						throw new Error(
 							// eslint-disable-next-line @typescript-eslint/restrict-template-expressions
 							`${eip} requires EIP ${elem}, but is not included in the EIP list`,
@@ -442,14 +442,18 @@ export class Common extends EventEmitter {
 	 * @param name Parameter name (e.g. 'minGasLimit' for 'gasConfig' topic)
 	 * @returns The value requested or `BigInt(0)` if not found
 	 */
+
 	public param(topic: string, name: string): bigint {
 		// TODO: consider the case that different active EIPs
 		// can change the same parameter
+		// TODO(rgeraldes24)
+		/*
 		let value;
 		for (const eip of this._eips) {
 			value = this.paramByEIP(topic, name, eip);
 			if (value !== undefined) return value;
 		}
+		*/
 		return this.paramByHardfork(topic, name, this._hardfork);
 	}
 
@@ -501,6 +505,7 @@ export class Common extends EventEmitter {
 	 * @returns The value requested or `undefined` if not found
 	 */
 	// eslint-disable-next-line class-methods-use-this
+	/*
 	public paramByEIP(topic: string, name: string, eip: number): bigint | undefined {
 		if (!(eip in EIPs)) {
 			throw new Error(`${eip} not supported`);
@@ -519,6 +524,7 @@ export class Common extends EventEmitter {
 		// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
 		return BigInt(value);
 	}
+	*/
 
 	/**
 	 * Returns a parameter for the hardfork active on block number
@@ -528,6 +534,7 @@ export class Common extends EventEmitter {
 	 * @param td Total difficulty
 	 *    * @returns The value requested or `BigInt(0)` if not found
 	 */
+	/*
 	public paramByBlock(
 		topic: string,
 		name: string,
@@ -537,6 +544,7 @@ export class Common extends EventEmitter {
 		const hardfork = this.getHardforkByBlockNumber(blockNumber, timestamp);
 		return this.paramByHardfork(topic, name, hardfork);
 	}
+	*/
 
 	/**
 	 * Checks if an EIP is activated by either being included in the EIPs
@@ -547,6 +555,7 @@ export class Common extends EventEmitter {
 	 * by the {@link CommonOpts.eips} constructor option
 	 * @param eip
 	 */
+	/*
 	public isActivatedEIP(eip: number): boolean {
 		if (this.eips().includes(eip)) {
 			return true;
@@ -564,6 +573,7 @@ export class Common extends EventEmitter {
 		}
 		return false;
 	}
+	*/
 
 	/**
 	 * Checks if set or provided hardfork is active on block number
@@ -664,6 +674,7 @@ export class Common extends EventEmitter {
 	 * @param eip EIP number
 	 * @returns Block number or null if unscheduled
 	 */
+	/*
 	// eslint-disable-next-line @typescript-eslint/ban-types
 	public eipBlock(eip: number): bigint | null {
 		for (const hfChanges of this.HARDFORK_CHANGES) {
@@ -681,6 +692,7 @@ export class Common extends EventEmitter {
 		// eslint-disable-next-line no-null/no-null
 		return null;
 	}
+	*/
 
 	/**
 	 * Returns the change block for the next hardfork after the hardfork provided or set

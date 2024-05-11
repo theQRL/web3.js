@@ -20,4 +20,4 @@ export * from '@theqrl/web3-zond';
 export * as abi from '@theqrl/web3-zond-abi';
 export * as accounts from '@theqrl/web3-zond-accounts';
 export * as contract from '@theqrl/web3-zond-contract';
-export * as zns from '@theqrl/web3-zond-zns';
+export * as ens from '@theqrl/web3-zond-ens';

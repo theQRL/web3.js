@@ -137,7 +137,7 @@ export abstract class BaseTransaction<TransactionObject> {
 		const createContract = this.to === undefined || this.to === null;
 		const allowUnlimitedInitCodeSize = opts.allowUnlimitedInitCodeSize ?? false;
 		const common = opts.common ?? this._getCommon();
-		if (createContract && common.isActivatedEIP(3860) && !allowUnlimitedInitCodeSize) {
+		if (createContract /*&& common.isActivatedEIP(3860)*/ && !allowUnlimitedInitCodeSize) {
 			checkMaxInitCodeSize(common, this.data.length);
 		}
 	}
@@ -219,8 +219,9 @@ export abstract class BaseTransaction<TransactionObject> {
 			// eslint-disable-next-line @typescript-eslint/no-unused-expressions, no-unused-expressions
 			this.data[i] === 0 ? (cost += txDataZero) : (cost += txDataNonZero);
 		}
+		// TODO(rgeraldes24)
 		// eslint-disable-next-line no-null/no-null
-		if ((this.to === undefined || this.to === null) && this.common.isActivatedEIP(3860)) {
+		if ((this.to === undefined || this.to === null) /* && this.common.isActivatedEIP(3860)*/) {
 			const dataLength = BigInt(Math.ceil(this.data.length / 32));
 			const initCodeCost = this.common.param('gasPrices', 'initCodeWordCost') * dataLength;
 			cost += initCodeCost;

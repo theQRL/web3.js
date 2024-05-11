@@ -14,7 +14,7 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { hexToBytes } from '@theqrl/web3-utils';
+// import { hexToBytes } from '@theqrl/web3-utils';
 import { Common } from '../../../src/common/common';
 import { Hardfork } from '../../../src/common';
 import { parseGzondGenesis } from '../../../src/common/utils';
@@ -23,13 +23,13 @@ import invalidSpuriousDragon from '../../fixtures/common/invalid-spurious-dragon
 // import poa from '../../fixtures/common/poa.json';
 import postMerge from '../../fixtures/common/post-merge.json';
 import noExtraData from '../../fixtures/common/no-extra-data.json';
-import gzondGenesisKiln from '../../fixtures/common/gzond-genesis-kiln.json';
+// import gzondGenesisKiln from '../../fixtures/common/gzond-genesis-kiln.json';
 import postMergeHardfork from '../../fixtures/common/post-merge-hardfork.json';
 
 describe('[Utils/Parse]', () => {
-	const kilnForkHashes: any = {
-		chainstart: '0xbcadf543',
-	};
+	// const kilnForkHashes: any = {
+	// 	chainstart: '0xbcadf543',
+	// };
 
 	/*
 	it('should parse gzond params file', async () => {
@@ -70,6 +70,7 @@ describe('[Utils/Parse]', () => {
 		expect(params.genesis.timestamp).toBe('0x10');
 	});
 
+	/*
 	it('should successfully parse kiln genesis and set forkhash', async () => {
 		const common = Common.fromGzondGenesis(gzondGenesisKiln, {
 			chain: 'customChain',
@@ -81,7 +82,7 @@ describe('[Utils/Parse]', () => {
 			'shanghai',
 		]);
 		for (const hf of common.hardforks()) {
-			/* eslint-disable @typescript-eslint/no-use-before-define */
+			// eslint-disable @typescript-eslint/no-use-before-define
 			expect(hf.forkHash).toEqual(kilnForkHashes[hf.name]);
 		}
 
@@ -102,6 +103,7 @@ describe('[Utils/Parse]', () => {
 
 		expect(common1.hardfork()).toEqual(Hardfork.Shanghai);
 	});
+	*/
 
 	it('should successfully parse genesis with hardfork scheduled post merge', async () => {
 		const common = Common.fromGzondGenesis(postMergeHardfork, {

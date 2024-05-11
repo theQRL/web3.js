@@ -24,7 +24,7 @@ import {
 } from '@theqrl/web3-core';
 import { Web3Zond, RegisteredSubscription, registeredSubscriptions } from '@theqrl/web3-zond';
 import Contract from '@theqrl/web3-zond-contract';
-import { ZNS, registryAddresses } from '@theqrl/web3-zond-zns';
+import { ENS, registryAddresses } from '@theqrl/web3-zond-ens';
 import { Net } from '@theqrl/web3-net';
 import * as utils from '@theqrl/web3-utils';
 import { isNullish } from '@theqrl/web3-utils';
@@ -51,7 +51,7 @@ export class Web3<
 	public static modules = {
 		Web3Zond,
 		Net,
-		ZNS,
+		ENS,
 	};
 
 	public utils: typeof utils;
@@ -153,8 +153,8 @@ export class Web3<
 
 		// Zond Module
 		this.zond = Object.assign(zond, {
-			// ZNS module
-			zns: self.use(ZNS, registryAddresses.main), // registry address defaults to main network
+			// ENS module
+			ens: self.use(ENS, registryAddresses.main), // registry address defaults to main network
 
 			net: self.use(Net),
 

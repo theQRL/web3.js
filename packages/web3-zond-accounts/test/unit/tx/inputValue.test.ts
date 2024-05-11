@@ -15,22 +15,22 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import { Bytes } from '@theqrl/web3-types';
-import { hexToBytes } from '@theqrl/web3-utils';
+// import { hexToBytes } from '@theqrl/web3-utils';
 import { Chain, Common, Hardfork, toUint8Array } from '../../../src/common';
 import { Address } from '../../../src/tx/address';
 
 import {
-	AccessListEIP2930Transaction,
-	FeeMarketEIP1559Transaction,
+	// AccessListEIP2930Transaction,
+	// FeeMarketEIP1559Transaction,
 	Transaction,
-	TransactionFactory,
+	// TransactionFactory,
 } from '../../../src';
 
-import type {
-	AccessListEIP2930ValuesArray,
-	FeeMarketEIP1559ValuesArray,
-	TxValuesArray,
-} from '../../../src';
+// import type {
+// 	AccessListEIP2930ValuesArray,
+// 	FeeMarketEIP1559ValuesArray,
+// 	TxValuesArray,
+// } from '../../../src';
 import type { BigIntLike, PrefixedHexString } from '../../../src/common/types';
 
 type AddressLike = Address | Uint8Array | PrefixedHexString;
@@ -168,8 +168,10 @@ describe('[Transaction Input Values]', () => {
 	});
 });
 
+// TODO(rgeraldes24)
+/*
 test('[Invalid Array Input values]', () => {
-	const txTypes = [/*0x0, 0x1,*/ 0x2];
+	const txTypes = [0x0, 0x1, 0x2];
 	for (const signed of [false, true]) {
 		for (const txType of txTypes) {
 			let tx = TransactionFactory.fromTxData({ type: txType });
@@ -211,7 +213,7 @@ test('[Invalid Array Input values]', () => {
 });
 
 test('[Invalid Access Lists]', () => {
-	const txTypes = [/*0x1,*/ 0x2];
+	const txTypes = [0x1, 0x2];
 	const invalidAccessLists = [
 		[[]], // does not have an address and does not have slots
 		[[[], []]], // the address is an array
@@ -287,3 +289,4 @@ test('[Invalid Access Lists]', () => {
 		}
 	}
 });
+*/

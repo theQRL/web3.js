@@ -138,10 +138,10 @@ export const JSONRPC_ERR_UNSUPPORTED_METHOD = 4200;
 export const JSONRPC_ERR_DISCONNECTED = 4900;
 export const JSONRPC_ERR_CHAIN_DISCONNECTED = 4901;
 
-// ZNS error codes
-export const ERR_ZNS_CHECK_INTERFACE_SUPPORT = 901;
-export const ERR_ZNS_UNSUPPORTED_NETWORK = 902;
-export const ERR_ZNS_NETWORK_NOT_SYNCED = 903;
+// ENS error codes
+export const ERR_ENS_CHECK_INTERFACE_SUPPORT = 901;
+export const ERR_ENS_UNSUPPORTED_NETWORK = 902;
+export const ERR_ENS_NETWORK_NOT_SYNCED = 903;
 
 // Utils error codes
 export const ERR_INVALID_STRING = 1001;

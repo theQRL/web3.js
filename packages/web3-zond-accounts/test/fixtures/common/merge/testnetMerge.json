@@ -2,7 +2,7 @@
 	"name": "testnetMerge",
 	"chainId": 55555,
 	"networkId": 55555,
-	"defaultHardfork": "istanbul",
+	"defaultHardfork": "shanghai",
 	"consensus": {
 		"type": "pos",
 		"algorithm": "casper",
@@ -16,12 +16,8 @@
 	},
 	"hardforks": [
 		{
-			"name": "chainstart",
-			"block": 0
-		},
-		{
 			"name": "shanghai",
-			"block": null
+			"block": 0
 		}
 	],
 	"bootstrapNodes": [

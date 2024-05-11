@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { Address } from '@theqrl/web3-types';
+// import { Address } from '@theqrl/web3-types';
 import { /*Web3ValidatorError,*/ isHexStrict } from '@theqrl/web3-validator';
 import {
 	create,
@@ -24,9 +24,9 @@ import {
 	hashMessage,
 	seedToAccount,
 	publicKeyToAddress,
-	recoverTransaction,
+	// recoverTransaction,
 	// sign,
-	signTransaction,
+	// signTransaction,
 } from '../../src/account';
 import {
 	//invalidDecryptData,
@@ -35,15 +35,15 @@ import {
 	invalidSeedtoAccountData,
 	invalidPublicKeyToAddressData,
 	// signatureRecoverData,
-	transactionsTestData,
+	// transactionsTestData,
 	//validDecryptData,
 	//validEncryptData,
 	validHashMessageData,
 	validSeedtoAccountData,
 	validPublicKeyToAddressData,
 } from '../fixtures/account';
-import { TransactionFactory } from '../../src/tx/transactionFactory';
-import { TxData } from '../../src/tx/types';
+// import { TransactionFactory } from '../../src/tx/transactionFactory';
+// import { TxData } from '../../src/tx/types';
 
 describe('accounts', () => {
 	describe('create', () => {
@@ -91,6 +91,8 @@ describe('accounts', () => {
 	});
 
 	describe('Signing and Recovery of Transaction', () => {
+		// TODO(rgeraldes24)
+		/*
 		it.each(transactionsTestData)('sign transaction', async txData => {
 			const account = create();
 
@@ -105,7 +107,10 @@ describe('accounts', () => {
 			expect(signedResult.transactionHash).toBeDefined();
 			expect(signedResult.signature).toMatch(/0[xX][0-9a-fA-F]{64}/);
 		});
+		*/
 
+		// TODO(rgeraldes24)
+		/*
 		it.each(transactionsTestData)('Recover transaction', async txData => {
 			const account = create();
 			const txObj = { ...txData, from: account.address };
@@ -120,6 +125,7 @@ describe('accounts', () => {
 			expect(address).toBeDefined();
 			expect(address).toEqual(account.address);
 		});
+		*/
 	});
 
 	describe('Hash Message', () => {

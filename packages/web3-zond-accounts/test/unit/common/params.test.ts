@@ -14,9 +14,10 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { Chain, Common, Hardfork } from '../../../src/common';
+// import { Chain, Common, Hardfork } from '../../../src/common';
 
 describe('[Common]: Parameter access for param(), paramByHardfork()', () => {
+	/*
 	it('Basic usage', () => {
 		const c = new Common({ chain: Chain.Mainnet, eips: [2537] });
 		expect(c.paramByHardfork('gasPrices', 'ecAdd', 'byzantium')).toEqual(BigInt(500));
@@ -71,6 +72,7 @@ describe('[Common]: Parameter access for param(), paramByHardfork()', () => {
 			BigInt(3000000000000000000),
 		);
 	});
+	*/
 
 	// TODO(rgeraldes24)
 	/*

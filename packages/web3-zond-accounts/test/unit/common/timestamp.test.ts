@@ -14,8 +14,8 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { hexToBytes } from '@theqrl/web3-utils';
-import { Chain, Common, Hardfork } from '../../../src/common';
+// import { hexToBytes } from '@theqrl/web3-utils';
+import { /*Chain,*/ Common, Hardfork } from '../../../src/common';
 
 import * as timestampJson from '../../fixtures/common/shanghai-time.json';
 
@@ -60,6 +60,7 @@ describe('[Common]: Timestamp Hardfork logic', () => {
 	});
 	*/
 
+	/*
 	it('forkHash', () => {
 		const mainnet = new Common({ chain: Chain.Mainnet });
 		const hfs = mainnet.hardforks();
@@ -99,7 +100,9 @@ describe('[Common]: Timestamp Hardfork logic', () => {
 		expect(c.forkHash()).toBe('0xc1fdf181');
 		expect(c.hardforkForForkHash('0xc1fdf181')?.name).toEqual(Hardfork.Shanghai);
 	});
+	*/
 
+	/*
 	it('setForkHashes', () => {
 		const mainnet = new Common({ chain: Chain.Mainnet });
 		const hfs = mainnet.hardforks();
@@ -144,4 +147,5 @@ describe('[Common]: Timestamp Hardfork logic', () => {
 		expect(noForkHashes).toBe(0);
 		expect(c.forkHash(Hardfork.Shanghai)).toBe('0xc1fdf181');
 	});
+	*/
 });

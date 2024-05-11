@@ -16,14 +16,8 @@ export default {
 	},
 	"hardforks": [
 		{
-			"name": "chainstart",
-			"block": 0,
-			"forkHash": "0xfc64ec04"
-		},
-		{
 			"name": "shanghai",
-			"block": null,
-			"forkHash": null
+			"block": 0
 		}
 	],
 	"bootstrapNodes": [],

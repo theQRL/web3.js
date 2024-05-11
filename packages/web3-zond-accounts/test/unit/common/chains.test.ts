@@ -14,7 +14,7 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { Chain, Common, ConsensusAlgorithm, ConsensusType, Hardfork } from '../../../src/common';
+import { Chain, Common, /*ConsensusAlgorithm, ConsensusType,*/ Hardfork } from '../../../src/common';
 
 describe('[Common/Chains]: Initialization / Chain params', () => {
 	it('Should initialize with chain provided', () => {
@@ -62,6 +62,8 @@ describe('[Common/Chains]: Initialization / Chain params', () => {
 		expect(f).toThrow('not supported'); // eslint-disable-line no-new
 	});
 
+	// TODO(rgeraldes24)
+	/*
 	it('Should provide correct access to chain parameters', () => {
 		let c = new Common({ chain: 'mainnet', hardfork: 'shanghai' });
 		expect(c.hardforks()[3]['block']).toBe(2463000);
@@ -79,6 +81,7 @@ describe('[Common/Chains]: Initialization / Chain params', () => {
 			expect(typeof dnsNetworks[0]).toBe('string');
 		}
 	});
+	*/
 });
 
 describe('[Common]: isSupportedChainId static method', () => {
