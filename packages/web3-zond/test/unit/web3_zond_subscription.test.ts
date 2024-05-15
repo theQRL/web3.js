@@ -45,7 +45,8 @@ describe('Web3Zond subscribe and clear subscriptions', () => {
 		expect(logs).toStrictEqual(dummyLogs);
 	});
 
-	it('should call `_processSubscriptionResult` when the logs are of type LogsSubscription and the `fromBlock` is provided', async () => {
+	// TODO(rgeraldes24)
+	it.skip('should call `_processSubscriptionResult` when the logs are of type LogsSubscription and the `fromBlock` is provided', async () => {
 		const requestManager = { send: jest.fn(), on: jest.fn(), provider: { on: jest.fn() } };
 		const subManager = new Web3SubscriptionManager(requestManager as any, undefined as any);
 

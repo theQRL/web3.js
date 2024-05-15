@@ -23,8 +23,8 @@ import {
 	DataFormat,
 	DEFAULT_RETURN_FORMAT,
 	ZondExecutionAPI,
-	TransactionWithSenderAPI,
-	SignedTransactionInfoAPI,
+	// TransactionWithSenderAPI,
+	// SignedTransactionInfoAPI,
 	Web3BaseWalletAccount,
 	Address,
 	BlockTag,
@@ -33,7 +33,7 @@ import {
 	Filter,
 	HexString,
 	Numbers,
-	HexStringBytes,
+	// HexStringBytes,
 	AccountObject,
 	Block,
 	FeeHistory,
@@ -52,18 +52,18 @@ import {
 import { Web3Context, Web3PromiEvent } from '@theqrl/web3-core';
 import { format, hexToBytes, bytesToUint8Array, numberToHex } from '@theqrl/web3-utils';
 import { TransactionFactory } from '@theqrl/web3-zond-accounts';
-import { isBlockTag, isBytes, isNullish, isString } from '@theqrl/web3-validator';
+import { isBlockTag, isBytes, isNullish/*, isString*/ } from '@theqrl/web3-validator';
 import {
 	ContractExecutionError,
 	InvalidResponseError,
-	SignatureError,
+	// SignatureError,
 	TransactionRevertedWithoutReasonError,
 	TransactionRevertInstructionError,
 	TransactionRevertWithCustomError,
 } from '@theqrl/web3-errors';
 import { zondRpcMethods } from '@theqrl/web3-rpc-methods';
 
-import { decodeSignedTransaction } from './utils/decode_signed_transaction.js';
+// import { decodeSignedTransaction } from './utils/decode_signed_transaction.js';
 import {
 	accountSchema,
 	blockSchema,
@@ -71,7 +71,7 @@ import {
 	logSchema,
 	transactionReceiptSchema,
 	accessListResultSchema,
-	SignatureObjectSchema,
+	// SignatureObjectSchema,
 } from './schemas.js';
 import {
 	SendSignedTransactionEvents,
@@ -496,15 +496,22 @@ export function sendTransaction<
 								signedTransaction.transactionHash,
 							);
 						} else {
-							transactionHash = await trySendTransaction(
-								web3Context,
-								async (): Promise<string> =>
-									zondRpcMethods.sendTransaction(
-										web3Context.requestManager,
-										transactionFormatted as Partial<TransactionWithSenderAPI>,
-									),
-							);
+							throw new Error('Unsigned transactions are not supported!')
 						}
+
+						const signedTransaction = await wallet.signTransaction(
+							transactionFormatted,
+						);
+
+						transactionHash = await trySendTransaction(
+							web3Context,
+							async (): Promise<string> =>
+								zondRpcMethods.sendRawTransaction(
+									web3Context.requestManager,
+									signedTransaction.rawTransaction,
+								),
+							signedTransaction.transactionHash,
+						);
 
 						const transactionHashFormatted = format(
 							{ format: 'bytes32' },
@@ -783,70 +790,6 @@ export function sendSignedTransaction<
 	);
 
 	return promiEvent;
-}
-
-/**
- * View additional documentations here: {@link Web3Zond.sign}
- * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
- */
-export async function sign<ReturnFormat extends DataFormat>(
-	web3Context: Web3Context<ZondExecutionAPI>,
-	message: Bytes,
-	addressOrIndex: Address | number,
-	returnFormat: ReturnFormat,
-) {
-	const messageFormatted = format({ format: 'bytes' }, message, DEFAULT_RETURN_FORMAT);
-	if (web3Context.wallet?.get(addressOrIndex)) {
-		const wallet = web3Context.wallet.get(addressOrIndex) as Web3BaseWalletAccount;
-		const signed = wallet.sign(messageFormatted);
-		return format(SignatureObjectSchema, signed, returnFormat);
-	}
-
-	if (typeof addressOrIndex === 'number') {
-		throw new SignatureError(
-			message,
-			'RPC method "eth_sign" does not support index signatures',
-		);
-	}
-
-	const response = await zondRpcMethods.sign(
-		web3Context.requestManager,
-		addressOrIndex,
-		messageFormatted,
-	);
-
-	return format({ format: 'bytes' }, response as Bytes, returnFormat);
-}
-
-/**
- * View additional documentations here: {@link Web3Zond.signTransaction}
- * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
- */
-export async function signTransaction<ReturnFormat extends DataFormat>(
-	web3Context: Web3Context<ZondExecutionAPI>,
-	transaction: Transaction,
-	returnFormat: ReturnFormat,
-) {
-	const response = await zondRpcMethods.signTransaction(
-		web3Context.requestManager,
-		formatTransaction(transaction, ZOND_DATA_FORMAT),
-	);
-	// Some clients only return the encoded signed transaction (e.g. Ganache)
-	// while clients such as Gzond return the desired SignedTransactionInfoAPI object
-	return isString(response as HexStringBytes)
-		? decodeSignedTransaction(response as HexStringBytes, returnFormat, {
-				fillInputAndData: true,
-		  })
-		: {
-				raw: format(
-					{ format: 'bytes' },
-					(response as SignedTransactionInfoAPI).raw,
-					returnFormat,
-				),
-				tx: formatTransaction((response as SignedTransactionInfoAPI).tx, returnFormat, {
-					fillInputAndData: true,
-				}),
-		  };
 }
 
 // TODO Decide what to do with transaction.to

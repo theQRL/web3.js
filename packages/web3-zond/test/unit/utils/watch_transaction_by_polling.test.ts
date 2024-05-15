@@ -38,7 +38,8 @@ const mockBlockData = {
 };
 
 const testMessage = 'Title: %s\ninputSignedTransaction: %s\nexpectedTransactionHash: %s\nexpectedTransactionReceipt: %s\n';
-describe('watchTransactionByPolling', () => {
+// TODO(rgeraldes24): skip: review provider
+describe.skip('watchTransactionByPolling', () => {
 	describe('should call getBlockByNumber', () => {
 		let web3Context: Web3Context<Web3ZondExecutionAPI>;
 

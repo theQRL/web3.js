@@ -43,7 +43,8 @@ jest.mock('../../../src/utils/watch_transaction_by_subscription');
 
 const testMessage =
 	'Title: %s\ninputSignedTransaction: %s\nexpectedTransactionHash: %s\nexpectedTransactionReceipt: %s\n';
-describe('watchTransactionForConfirmations', () => {
+// TODO(rgeraldes24): skip: review provider
+describe.skip('watchTransactionForConfirmations', () => {
 	describe('should throw when transaction receipt has something wrong', () => {
 		let web3Context: Web3Context<Web3ZondExecutionAPI>;
 

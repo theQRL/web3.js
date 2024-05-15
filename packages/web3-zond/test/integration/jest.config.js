@@ -22,6 +22,7 @@ module.exports = {
 	...base,
 	setupFilesAfterEnv: ['<rootDir>/test/integration/setup.js'],
 	testMatch: ['<rootDir>/test/integration/**/*.(spec|test).(js|ts)'],
+	// testMatch: ['<rootDir>/test/integration/web3_zond/sign_transaction.test.ts'],
 	/**
 	 * restoreMocks [boolean]
 	 *

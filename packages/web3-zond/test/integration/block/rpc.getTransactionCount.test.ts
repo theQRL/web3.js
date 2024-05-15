@@ -101,7 +101,7 @@ describe('rpc with block', () => {
 				format: Object.values(FMT_NUMBER),
 			}),
 		)('getTransactionCount', async ({ block, format }) => {
-			const acc = await createNewAccount({ unlock: true/*, refill: true*/ });
+			const acc = await createNewAccount({ /*, refill: true*/ });
 			await refillAccount(
 				(
 					await createTempAccount()

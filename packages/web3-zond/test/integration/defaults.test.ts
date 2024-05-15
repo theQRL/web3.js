@@ -216,7 +216,7 @@ describe('defaults', () => {
 			expect(zond2.defaultBlock).toBe('earliest');
 
 			// check implementation
-			const acc = await createNewAccount({ refill: true, unlock: true });
+			const acc = await createNewAccount({ refill: true});
 
 			await sendFewTxes({
 				from: acc.address,

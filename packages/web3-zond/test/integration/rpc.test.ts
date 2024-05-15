@@ -106,7 +106,7 @@ describe('rpc', () => {
 		*/
 
 		it('getAccounts', async () => {
-			const account = await createNewAccount({ unlock: true });
+			const account = await createNewAccount();
 			const accList = await web3Zond.getAccounts();
 			const accListLowerCase = accList.map((add: string) => add.toLowerCase());
 			expect(accListLowerCase).toContain(account.address.toLowerCase());

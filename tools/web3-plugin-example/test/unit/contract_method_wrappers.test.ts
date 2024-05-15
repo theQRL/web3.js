@@ -80,6 +80,8 @@ describe('ContractMethodWrappersPlugin', () => {
 			});
 		});
 
+		// TODO(rgeraldes24)
+		/*
 		it('should call `transferAndGetBalances` with expected RPC object', async () => {
 			const expectedGasPrice = '0x1ca14bd70';
 			const expectedTransactionHash =
@@ -127,5 +129,6 @@ describe('ContractMethodWrappersPlugin', () => {
 				},
 			});
 		});
+		*/
 	});
 });

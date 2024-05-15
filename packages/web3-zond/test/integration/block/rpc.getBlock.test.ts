@@ -75,7 +75,7 @@ describe('rpc with block', () => {
 			data: BasicBytecode,
 			arguments: [10, 'string init value'],
 		};
-		tempAcc = await createNewAccount({ unlock: true });
+		tempAcc = await createNewAccount();
 		await refillAccount(
 			(
 				await createTempAccount()

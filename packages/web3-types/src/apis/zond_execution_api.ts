@@ -240,10 +240,6 @@ export type ZondExecutionAPI = {
 	zond_getTransactionCount: (address: Address, blockNumber: BlockNumberOrTag) => Uint;
 	zond_getCode: (address: Address, blockNumber: BlockNumberOrTag) => HexStringBytes;
 
-	// https://github.com/ethereum/execution-apis/blob/main/src/eth/submit.yaml
-	zond_sendTransaction: (
-		transaction: TransactionWithSenderAPI | Partial<TransactionWithSenderAPI>,
-	) => HexString32Bytes;
 	zond_sendRawTransaction: (transaction: HexStringBytes) => HexString32Bytes;
 
 	// https://geth.ethereum.org/docs/rpc/pubsub

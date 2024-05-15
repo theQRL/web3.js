@@ -24,7 +24,7 @@ import {
 } from '@theqrl/web3-types';
 import { Web3Context } from '@theqrl/web3-core';
 import HttpProvider from '@theqrl/web3-providers-http';
-import { isNullish } from '@theqrl/web3-validator';
+// import { isNullish } from '@theqrl/web3-validator';
 import { zondRpcMethods } from '@theqrl/web3-rpc-methods';
 
 import {
@@ -52,7 +52,7 @@ describe('defaultTransactionBuilder', () => {
 	const expectedMaxPriorityFeePerGas = '0x9502f900';
 	const expectedMaxFeePerGas = '0x27f4d46b08';
 	const expectedChainId = '0x1';
-	const defaultTransactionType = '0x0';
+	// const defaultTransactionType = '0x0';
 	const transaction: Transaction = {
 		from: expectedFrom,
 		to: '0x3535353535353535353535353535353535353535',

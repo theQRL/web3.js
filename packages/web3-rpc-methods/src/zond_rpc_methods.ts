@@ -149,46 +149,6 @@ export async function getCode(
 	});
 }
 
-export async function sign(
-	requestManager: Web3RequestManager,
-	address: Address,
-	message: HexStringBytes,
-) {
-	validator.validate(['address', 'hex'], [address, message]);
-
-	return requestManager.send({
-		method: 'zond_sign',
-		params: [address, message],
-	});
-}
-
-// TODO - Validation should be:
-// isTransactionWithSender(transaction)
-// ? validateTransactionWithSender(transaction)
-// : validateTransactionWithSender(transaction, true) with true being a isPartial flag
-export async function signTransaction(
-	requestManager: Web3RequestManager,
-	transaction: TransactionWithSenderAPI | Partial<TransactionWithSenderAPI>,
-) {
-	return requestManager.send({
-		method: 'zond_signTransaction',
-		params: [transaction],
-	});
-}
-
-// TODO - Validation should be:
-// isTransactionWithSender(transaction)
-// ? validateTransactionWithSender(transaction)
-// : validateTransactionWithSender(transaction, true) with true being a isPartial flag
-export async function sendTransaction(
-	requestManager: Web3RequestManager,
-	transaction: TransactionWithSenderAPI | Partial<TransactionWithSenderAPI>,
-) {
-	return requestManager.send({
-		method: 'zond_sendTransaction',
-		params: [transaction],
-	});
-}
 
 export async function sendRawTransaction(
 	requestManager: Web3RequestManager,
