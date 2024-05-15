@@ -55,11 +55,7 @@ describeIf((isIpc || isWs) && isSyncTest)('Sync nodes test', () => {
 			: getSystemTestProviderUrl().replace('/tmp/ipc', '/tmp/ipc2');
 
 		web3Node1 = new Web3(providerPath1);
-		// TODO(rgeraldes24)
-		// await addAccount(web3Node1);
 		web3Node2 = new Web3(providerPath2);
-		// TODO(rgeraldes24)
-		// await addAccount(web3Node2);
 	});
 	afterAll(async () => {
 		await closeOpenConnection(web3Node1);

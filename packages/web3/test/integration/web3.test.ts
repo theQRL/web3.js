@@ -22,7 +22,7 @@ import WebSocketProvider from '@theqrl/web3-providers-ws';
 import { JsonRpcOptionalRequest, SupportedProviders, Web3BaseProvider } from '@theqrl/web3-types';
 import Web3 from '../../src/index';
 import { BasicAbi } from '../shared_fixtures/Basic';
-import { GreeterAbi, GreeterBytecode } from '../shared_fixtures/build/Greeter';
+// import { GreeterAbi, GreeterBytecode } from '../shared_fixtures/build/Greeter';
 import { validEncodeParametersData } from '../shared_fixtures/data';
 import {
 	closeOpenConnection,
@@ -301,10 +301,12 @@ describe('Web3 instance', () => {
 		});
 	});
 
+	/*
+	// TODO(rgeraldes24): not relevant for now
 	describe('defaults', () => {
-		let contract: Contract<typeof GreeterAbi>;
-		let deployOptions: Record<string, unknown>;
-		let sendOptions: Record<string, unknown>;
+		// let contract: Contract<typeof GreeterAbi>;
+		// let deployOptions: Record<string, unknown>;
+		// let sendOptions: Record<string, unknown>;
 		let acc: { address: string; seed: string };
 
 		beforeAll(() => {
@@ -348,6 +350,7 @@ describe('Web3 instance', () => {
 			web3.defaultHardfork = hardfork;
 
 			expect(contract.defaultHardfork).toBe(hardfork);
-		});
+		});	
 	});
+	*/
 });

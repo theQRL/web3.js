@@ -201,8 +201,10 @@ export abstract class BaseTransaction<TransactionObject> {
 		const txFee = this.common.param('gasPrices', 'tx');
 		let fee = this.getDataFee();
 		if (txFee) fee += txFee;
-		const txCreationFee = this.common.param('gasPrices', 'txCreation');
-		if (txCreationFee) fee += txCreationFee;
+		if (this.toCreationAddress()) {
+			const txCreationFee = this.common.param('gasPrices', 'txCreation');
+			if (txCreationFee) fee += txCreationFee;
+		}
 		return fee;
 	}
 
@@ -474,6 +476,7 @@ export abstract class BaseTransaction<TransactionObject> {
 			'to',
 			'value',
 			'data',
+			// TODO(rgeraldes24)
 			'v',
 			'r',
 			's',

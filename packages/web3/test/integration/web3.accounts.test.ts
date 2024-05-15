@@ -36,9 +36,9 @@ describe('web3.accounts', () => {
 		clientUrl = getSystemTestProvider();
 		web3 = new Web3(clientUrl);
 		await waitForOpenConnection(web3);
-	});
-	beforeEach(async () => {
-		tempAccount = (await createTempAccount()).address;
+		const acc = await createTempAccount()
+		tempAccount = acc.address;
+		web3.zond.accounts.wallet.add(acc.seed);
 	});
 
 	afterAll(async () => {
@@ -65,7 +65,6 @@ describe('web3.accounts', () => {
 					to: tempAccount,
 					value: web3.utils.toWei('0.00001', 'ether'),
 					gas: '0x5218',
-					data: '0x1',
 					type: 2,
 					maxFeePerGas: '0x19475bd7f8',
 					maxPriorityFeePerGas: '0x5eae5feec',
@@ -77,7 +76,8 @@ describe('web3.accounts', () => {
 						from: tempAccount,
 						to: account.address,
 						value: web3.utils.toWei('2', 'ether'),
-						type: 2,
+						gas: '0x5218',
+						type: BigInt(2),
 					}),
 				).resolves.toBeDefined();
 
@@ -105,6 +105,7 @@ describe('web3.accounts', () => {
 				);
 			});
 
+
 			it('should throw error if gas is to low', async () => {
 				const account: Web3Account = web3.zond.accounts.create();
 
@@ -114,7 +115,6 @@ describe('web3.accounts', () => {
 					value: web3.utils.toWei('0.1', 'ether'),
 					gas: '0x1',
 					data: '0x1',
-					//gasPrice: '0x38562',
 					maxFeePerGas: '0x19475bd7f8',
 					maxPriorityFeePerGas: '0x5eae5feec',
 					type: 2,
@@ -151,8 +151,6 @@ describe('web3.accounts', () => {
 				to: tempAccount,
 				value: web3.utils.toWei('0.1', 'ether'),
 				gas: '0x5218',
-				data: '0x1',
-				//gasPrice: '0x48523',
 				type: 2,
 				maxFeePerGas: '0x19475bd7f8',
 				maxPriorityFeePerGas: '0x5eae5feec',
@@ -164,7 +162,8 @@ describe('web3.accounts', () => {
 					from: tempAccount,
 					to: account.address,
 					value: web3.utils.toWei('0.5', 'ether'),
-					type: 2,
+					gas: '0x5218',
+					type: BigInt(2),
 				}),
 			).resolves.toBeDefined();
 
@@ -195,7 +194,6 @@ describe('web3.accounts', () => {
 				value: web3.utils.toWei('0.1', 'ether'),
 				gas: '0x1',
 				data: '0x1',
-				//gasPrice: '0x1',
 				type: 2,
 				maxFeePerGas: '0x19475bd7f8',
 				maxPriorityFeePerGas: '0x5eae5feec',
