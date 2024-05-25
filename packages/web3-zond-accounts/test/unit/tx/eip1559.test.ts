@@ -24,7 +24,7 @@ import testdata from '../../fixtures/json/eip1559.json';
 
 const common = new Common({
 	chain: 5,
-	hardfork: Hardfork.London,
+	hardfork: Hardfork.Shanghai,
 });
 // @ts-expect-error set private property
 common._chainParams.chainId = 4;

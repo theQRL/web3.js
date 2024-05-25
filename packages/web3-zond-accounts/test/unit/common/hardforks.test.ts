@@ -21,21 +21,7 @@ import gzondGenesisKiln from '../../fixtures/common/gzond-genesis-kiln.json';
 describe('[Common]: Hardfork logic', () => {
 	it('Hardfork access', () => {
 		const supportedHardforks = [
-			Hardfork.Chainstart,
-			Hardfork.Homestead,
-			Hardfork.Dao,
-			Hardfork.Chainstart,
-			Hardfork.SpuriousDragon,
-			Hardfork.Byzantium,
-			Hardfork.Constantinople,
-			Hardfork.Petersburg,
-			Hardfork.Istanbul,
-			Hardfork.Berlin,
-			Hardfork.London,
-			Hardfork.ArrowGlacier,
-			Hardfork.GrayGlacier,
 			Hardfork.Shanghai,
-			Hardfork.Merge,
 		];
 		let c;
 
@@ -48,6 +34,16 @@ describe('[Common]: Hardfork logic', () => {
 	it('getHardforkByBlockNumber() / setHardforkByBlockNumber()', () => {
 		let c = new Common({ chain: Chain.Mainnet });
 
+		expect(c.getHardforkByBlockNumber(0)).toEqual(Hardfork.Shanghai);
+		expect(c.getHardforkByBlockNumber(1149999)).toEqual(Hardfork.Shanghai);
+		expect(c.getHardforkByBlockNumber(999999999999)).toEqual(Hardfork.Shanghai);
+
+		expect(c.setHardforkByBlockNumber(0)).toEqual(Hardfork.Shanghai);
+		expect(c.setHardforkByBlockNumber(1149999)).toEqual(Hardfork.Shanghai);
+		expect(c.setHardforkByBlockNumber(999999999999)).toEqual(Hardfork.Shanghai);
+
+		// TODO(rgeraldes24)
+		/*
 		expect(c.getHardforkByBlockNumber(0)).toEqual(Hardfork.Chainstart);
 		expect(c.getHardforkByBlockNumber(1149999)).toEqual(Hardfork.Chainstart);
 		expect(c.getHardforkByBlockNumber(1150000)).toEqual(Hardfork.Homestead);
@@ -73,6 +69,7 @@ describe('[Common]: Hardfork logic', () => {
 
 		c = new Common({ chain: Chain.Sepolia });
 		expect(c.setHardforkByBlockNumber(1735371)).toBe('mergeForkIdTransition');
+		*/
 	});
 
 	it('should throw if no hardfork qualifies', () => {
@@ -130,20 +127,6 @@ describe('[Common]: Hardfork logic', () => {
 		expect(c.nextHardforkBlockOrTimestamp(Hardfork.Shanghai)).toBeNull();
 	});
 
-	it('isHardforkBlock()', () => {
-		let c = new Common({ chain: Chain.Sepolia });
-		// eslint-disable-next-line deprecation/deprecation
-		expect(c.isHardforkBlock(1450409)).toBe(true);
-		// eslint-disable-next-line deprecation/deprecation
-		expect(c.isHardforkBlock(1735372)).toBe(false);
-
-		c = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Byzantium });
-		// eslint-disable-next-line deprecation/deprecation
-		expect(c.isHardforkBlock(4370000)).toBe(true);
-		// eslint-disable-next-line deprecation/deprecation
-		expect(c.isHardforkBlock(2463001)).toBe(false);
-	});
-
 	it('nextHardforkBlockOrTimestamp()', () => {
 		let c = new Common({ chain: Chain.Sepolia, hardfork: Hardfork.MergeForkIdTransition });
 		expect(c.nextHardforkBlockOrTimestamp()!).toEqual(BigInt(1677557088));
@@ -155,20 +138,6 @@ describe('[Common]: Hardfork logic', () => {
 		expect(c.nextHardforkBlockOrTimestamp(Hardfork.London)).toEqual(BigInt(1735371));
 		c = new Common({ chain: Chain.Goerli, hardfork: Hardfork.Chainstart });
 		expect(c.nextHardforkBlockOrTimestamp()!).toEqual(BigInt(1561651));
-	});
-
-	it('isNextHardforkBlock()', () => {
-		const c = new Common({ chain: Chain.Goerli, hardfork: Hardfork.Istanbul });
-		// eslint-disable-next-line deprecation/deprecation
-		expect(c.isNextHardforkBlock(4460644)).toBe(true);
-		// eslint-disable-next-line deprecation/deprecation
-		expect(c.isNextHardforkBlock(5062605, 'berlin')).toBe(true);
-		// eslint-disable-next-line deprecation/deprecation
-		expect(c.isNextHardforkBlock(5062605, Hardfork.Berlin)).toBe(true);
-		// eslint-disable-next-line deprecation/deprecation
-		expect(c.isNextHardforkBlock(13773000, Hardfork.Byzantium)).toBe(false);
-		// eslint-disable-next-line deprecation/deprecation
-		expect(c.isNextHardforkBlock(13773001, Hardfork.London)).toBe(false);
 	});
 
 	it('hardforkIsActiveOnBlock() / activeOnBlock()', () => {
@@ -221,14 +190,6 @@ describe('[Common]: Hardfork logic', () => {
 			[
 				Chain.Mainnet,
 				hexToBytes('d4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3'),
-			],
-			[
-				Chain.Goerli,
-				hexToBytes('bf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a'),
-			],
-			[
-				Chain.Sepolia,
-				hexToBytes('25a5cc106eea7138acab33231d7160d69cb777ee0c2c553fcddf5138993e6dd9'),
 			],
 		];
 

@@ -97,7 +97,7 @@ export class ENS extends Web3Context<ZondExecutionAPI & Web3NetAPI> {
 	 * @returns - Returns `true` if node exists in this ENS registry. This will return `false` for records that are in the legacy ENS registry but have not yet been migrated to the new one.
 	 * @example
 	 * ```ts
-	 * const exists = await web3.zond.ens.recordExists('zond.znd');
+	 * const exists = await web3.zond.ens.recordExists('zond.ens');
 	 * ```
 	 */
 	public async recordExists(name: string): Promise<unknown> {
@@ -110,7 +110,7 @@ export class ENS extends Web3Context<ZondExecutionAPI & Web3NetAPI> {
 	 * @returns - Returns the caching TTL (time-to-live) of a name.
 	 * @example
 	 * ```ts
-	 * const owner = await web3.zond.ens.getTTL('zond.znd');
+	 * const owner = await web3.zond.ens.getTTL('zond.ens');
 	 * ```
 	 */
 	public async getTTL(name: string): Promise<unknown> {
@@ -123,7 +123,7 @@ export class ENS extends Web3Context<ZondExecutionAPI & Web3NetAPI> {
 	 * @returns - Returns the address of the owner of the name.
 	 * @example
 	 * ```ts
-	 * const owner = await web3.zond.ens.getOwner('zond.znd');
+	 * const owner = await web3.zond.ens.getOwner('zond.ens');
 	 * ```
 	 */
 	public async getOwner(name: string): Promise<unknown> {
@@ -136,7 +136,7 @@ export class ENS extends Web3Context<ZondExecutionAPI & Web3NetAPI> {
 	 * @param coinType - (Optional) The coin type, defaults to 60 (ETH)
 	 * @returns - The Zond address of the given name
 	 * ```ts
-	 * const address = await web3.zond.ens.getAddress('zond.znd');
+	 * const address = await web3.zond.ens.getAddress('zond.ens');
 	 * console.log(address);
 	 * > '0xfB6916095ca1df60bB79Ce92cE3Ea74c37c5d359'
 	 * ```
@@ -151,7 +151,7 @@ export class ENS extends Web3Context<ZondExecutionAPI & Web3NetAPI> {
 	 * @returns - The X and Y coordinates of the curve point for the public key
 	 * @example
 	 * ```ts
-	 * const key = await web3.zond.ens.getPubkey('zond.znd');
+	 * const key = await web3.zond.ens.getPubkey('zond.ens');
 	 * console.log(key);
 	 * > {
 	 * "0": "0x0000000000000000000000000000000000000000000000000000000000000000",
@@ -171,7 +171,7 @@ export class ENS extends Web3Context<ZondExecutionAPI & Web3NetAPI> {
 	 * @returns - The content hash object associated with an ENS node
 	 * @example
 	 * ```ts
-	 * const hash = await web3.zond.ens.getContenthash('zond.znd');
+	 * const hash = await web3.zond.ens.getContenthash('zond.ens');
 	 * console.log(hash);
 	 * > 'QmaEBknbGT4bTQiQoe2VNgBJbRfygQGktnaW5TbuKixjYL'
 	 * ```
@@ -226,7 +226,7 @@ export class ENS extends Web3Context<ZondExecutionAPI & Web3NetAPI> {
 	 * @returns - `true` if the related Resolver does support the given signature or interfaceId.
 	 * @example
 	 * ```ts
-	 * const supports = await web3.zond.ens.supportsInterface('zond.znd', 'addr(bytes32');
+	 * const supports = await web3.zond.ens.supportsInterface('zond.ens', 'addr(bytes32');
 	 * console.log(supports);
 	 * > true
 	 * ```

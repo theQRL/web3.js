@@ -112,19 +112,6 @@ export class LogsSubscription extends Web3Subscription<
 		},
 		options: { subscriptionManager: Web3SubscriptionManager; returnFormat?: DataFormat },
 	);
-	/**
-	 * @deprecated This constructor overloading should not be used
-	 */
-	public constructor(
-		args: {
-			address?: HexString;
-			// eslint-disable-next-line @typescript-eslint/ban-types
-			topics?: (Topic | Topic[] | null)[];
-			abi: AbiEventFragment & { signature: HexString };
-			jsonInterface: ContractAbiWithSignature;
-		},
-		options: { requestManager: Web3RequestManager; returnFormat?: DataFormat },
-	);
 	public constructor(
 		args: {
 			address?: HexString;

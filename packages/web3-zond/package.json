@@ -4,7 +4,7 @@
 	"publishConfig": {
 		"access": "public"
 	},
-	"description": "Web3 module to interact with the Ethereum blockchain and smart contracts.",
+	"description": "Web3 module to interact with the Zond blockchain and smart contracts.",
 	"main": "./lib/commonjs/index.js",
 	"module": "./lib/esm/index.js",
 	"exports": {

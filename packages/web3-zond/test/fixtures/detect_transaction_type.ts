@@ -39,7 +39,7 @@ export const transactionType0x0: FormatType<Transaction, typeof ZOND_DATA_FORMAT
 		value: '0x',
 		input: '0x',
 		chain: 'mainnet',
-		hardfork: 'london',
+		hardfork: 'shanghai',
 		chainId: '0x1',
 		networkId: '0x1',
 		gasLimit: '0x67B8BF',
@@ -54,7 +54,7 @@ export const transactionType0x0: FormatType<Transaction, typeof ZOND_DATA_FORMAT
 		nonce: '0x4',
 		chainId: '0x1',
 		gasLimit: '0x5208',
-		hardfork: 'berlin',
+		hardfork: 'shanghai',
 	},
 	{
 		from: '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0',
@@ -71,7 +71,7 @@ export const transactionType0x0: FormatType<Transaction, typeof ZOND_DATA_FORMAT
 				networkId: '0x42',
 				chainId: '0x42',
 			},
-			hardfork: 'berlin',
+			hardfork: 'shanghai',
 		},
 	},
 	{
@@ -89,7 +89,7 @@ export const transactionType0x0: FormatType<Transaction, typeof ZOND_DATA_FORMAT
 				networkId: '0x42',
 				chainId: '0x42',
 			},
-			hardfork: 'london',
+			hardfork: 'shanghai',
 		},
 	},
 ];
@@ -182,7 +182,7 @@ export const transactionType0x2: FormatType<Transaction, typeof ZOND_DATA_FORMAT
 				networkId: '0x42',
 				chainId: '0x42',
 			},
-			hardfork: 'london',
+			hardfork: 'shanghai',
 		},
 	},
 	{
@@ -194,7 +194,7 @@ export const transactionType0x2: FormatType<Transaction, typeof ZOND_DATA_FORMAT
 		nonce: '0x4',
 		chainId: '0x1',
 		gasLimit: '0x5208',
-		hardfork: 'london',
+		hardfork: 'shanghai',
 	},
 ];
 

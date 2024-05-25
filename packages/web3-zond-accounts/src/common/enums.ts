@@ -31,11 +31,11 @@ export enum ConsensusAlgorithm {
 }
 
 export enum CustomChain {
-	// TODO(rgeraldes24): remove
+	// TODO(rgeraldes24): remove/replace with a custom network
 	/**
 	 * Optimistic Ethereum - mainnet for Optimism roll-up
 	 *
 	 * - [Documentation](https://community.optimism.io/docs/developers/tutorials.html)
 	 */
-	// OptimisticEthereum = 'optimistic-ethereum',
+	OptimisticEthereum = 'optimistic-ethereum',
 }

@@ -37,22 +37,10 @@ const removePeer = async (web3: Web3, eNode: string) => {
 		params: [eNode],
 	});
 };
-const minerStart = async (web3: Web3, start: number) => {
-	return web3.requestManager.send({
-		method: 'miner_start',
-		params: [start],
-	});
-};
 const nodeInfo = async (web3: Web3) => {
 	return web3.requestManager.send({
 		method: 'admin_nodeInfo',
 		params: [],
-	});
-};
-const addAccount = async (web3: Web3) => {
-	return web3.requestManager.send({
-		method: 'personal_newAccount',
-		params: ['1234'],
 	});
 };
 describeIf((isIpc || isWs) && isSyncTest)('Sync nodes test', () => {
@@ -67,9 +55,11 @@ describeIf((isIpc || isWs) && isSyncTest)('Sync nodes test', () => {
 			: getSystemTestProviderUrl().replace('/tmp/ipc', '/tmp/ipc2');
 
 		web3Node1 = new Web3(providerPath1);
-		await addAccount(web3Node1);
+		// TODO(rgeraldes24): remove
+		// await addAccount(web3Node1);
 		web3Node2 = new Web3(providerPath2);
-		await addAccount(web3Node2);
+		// TODO(rgeraldes24): remove
+		// await addAccount(web3Node2);
 	});
 	afterAll(async () => {
 		await closeOpenConnection(web3Node1);
@@ -85,10 +75,12 @@ describeIf((isIpc || isWs) && isSyncTest)('Sync nodes test', () => {
 			const syncStartPromise = new Promise(resolve => {
 				subs.on('changed', resolve);
 			});
-			await minerStart(web3Node1, 0);
+			// TODO(rgeraldes24): remove
+			// await minerStart(web3Node1, 0);
 			const node1Info = await nodeInfo(web3Node1);
 			await addPeer(web3Node2, node1Info.enode);
-			await minerStart(web3Node1, 1);
+			// TODO(rgeraldes24): remove
+			// await minerStart(web3Node1, 1);
 
 			expect(await syncStartPromise).toBe(true);
 			await dataPromise;

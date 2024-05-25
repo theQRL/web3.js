@@ -2,7 +2,7 @@
   <img src="assets/logo/web3js.jpg" width="500" alt="web3.js" />
 </p>
 
-# web3.js - Eth Contract Package
+# web3.js - Zond Contract Package
 
 ![ES Version](https://img.shields.io/badge/ES-2020-yellow)
 ![Node Version](https://img.shields.io/badge/node-14.x-green)
@@ -11,7 +11,7 @@
 
 This is a sub-package of [web3.js][repo].
 
-`web3-eth-contract` contains the contract package used in `web3-eth`.
+`web3-zond-contract` contains the contract package used in `web3-zond`.
 
 ## Installation
 
@@ -20,13 +20,13 @@ You can install the package either using [NPM](https://www.npmjs.com/package/web
 ### Using NPM
 
 ```bash
-npm install web3-eth-contract
+npm install web3-zond-contract
 ```
 
 ### Using Yarn
 
 ```bash
-yarn add web3-eth-contract
+yarn add web3-zond-contract
 ```
 
 ## Getting Started
@@ -51,7 +51,7 @@ const abi = [...] as const;
 const contract = new Contract(abi);
 ```
 
--   We prefer that you use `web3.eth.Contract` API in normal usage.
+-   We prefer that you use `web3.zond.Contract` API in normal usage.
 -   The use of `as const` is necessary to have fully type-safe interface for the contract.
 -   As the ABIs are not extensive in size, we suggest declaring them `as const` in your TS project.
 -   This approach is more flexible and seamless compared to other approaches of off-line compiling ABIs to TS interfaces (such as [TypeChain](https://github.com/dethcrypto/TypeChain).

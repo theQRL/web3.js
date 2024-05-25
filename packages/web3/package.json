@@ -92,8 +92,7 @@
 		"@theqrl/web3-zond-accounts": "^0.2.1",
 		"@theqrl/web3-zond-contract": "^0.2.1",
 		"@theqrl/web3-zond-ens": "^0.2.1",
-		"@theqrl/web3-zond-iban": "^0.2.1",
-		"@theqrl/web3-zond-personal": "^0.2.1"
+		"@theqrl/web3-zond-iban": "^0.2.1"
 	},
 	"gitHead": "d4f3246946fec86d908a215b27568aa8faea88d7"
 }

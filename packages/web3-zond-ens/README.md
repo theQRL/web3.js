@@ -11,7 +11,7 @@
 
 This is a sub-package of [web3.js][repo].
 
-`web3-eth-ens` This package has ENS functions for interacting with Ethereum Name Service.
+`web3-zond-ens` This package has ENS functions for interacting with Ethereum Name Service.
 
 ## Installation
 
@@ -20,13 +20,13 @@ You can install the package either using [NPM](https://www.npmjs.com/package/web
 ### Using NPM
 
 ```bash
-npm install web3-eth-ens
+npm install web3-zond-ens
 ```
 
 ### Using Yarn
 
 ```bash
-yarn add web3-eth-ens
+yarn add web3-zond-ens
 ```
 
 ## Getting Started

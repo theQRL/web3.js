@@ -26,7 +26,6 @@ import { Web3Zond, RegisteredSubscription, registeredSubscriptions } from '@theq
 import Contract from '@theqrl/web3-zond-contract';
 import { ENS, registryAddresses } from '@theqrl/web3-zond-ens';
 import { Iban } from '@theqrl/web3-zond-iban';
-import { Personal } from '@theqrl/web3-zond-personal';
 import { Net } from '@theqrl/web3-net';
 import * as utils from '@theqrl/web3-utils';
 import { isNullish } from '@theqrl/web3-utils';
@@ -55,7 +54,6 @@ export class Web3<
 		Iban,
 		Net,
 		ENS,
-		Personal,
 	};
 
 	public utils: typeof utils;
@@ -164,7 +162,6 @@ export class Web3<
 			Iban,
 
 			net: self.use(Net),
-			personal: self.use(Personal),
 
 			// Contract helper and module
 			Contract: ContractBuilder,

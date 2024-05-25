@@ -84,14 +84,12 @@ start() {
 		--datadir=${TMP_FOLDER}/data \
 		--ipcpath $IPC_PATH \
 		--nodiscover \
-		--nousb \
 		--ws --ws.addr 0.0.0.0 --ws.port $WEB3_SYSTEM_TEST_PORT \
 		--http --http.addr 0.0.0.0 --http.port $WEB3_SYSTEM_TEST_PORT \
 		--allow-insecure-unlock \
-		--http.api personal,web3,zond,admin,debug,txpool,net \
-		--ws.api personal,web3,zond,admin,debug,miner,txpool,net \
-		--syncmode=full \
-		--rpc.enabledeprecatedpersonal >> ${TMP_FOLDER}/logs/gzond.log 2>&1 &
+		--http.api web3,zond,admin,debug,txpool,net \
+		--ws.api web3,zond,admin,debug,miner,txpool,net \
+		--syncmode=full >> ${TMP_FOLDER}/logs/gzond.log 2>&1 &
 	
 	echo "Waiting for gzond..."
 	npx wait-port -t 10000 "$WEB3_SYSTEM_TEST_PORT"

@@ -129,16 +129,7 @@ export const defaultTransactionTypeParser: TransactionTypeParser = transaction =
 	// Unknown hardfork
 	if (hardforkIndex === undefined) return undefined;
 
-	// givenHardfork is London or later, so EIP-2718 is supported
-	if (hardforkIndex >= Object.keys(HardforksOrdered).indexOf('london'))
-		return !isNullish(tx.gasPrice) ? '0x0' : '0x2';
-
-	// givenHardfork is Berlin, tx.accessList is undefined, assume type is 0x0
-	if (hardforkIndex === Object.keys(HardforksOrdered).indexOf('berlin')) return '0x0';
-
-	// For all pre-Berlin hardforks, return undefined since EIP-2718
-	// isn't supported
-	return undefined;
+	return !isNullish(tx.gasPrice) ? '0x0' : '0x2';
 };
 
 export const detectTransactionType = (
