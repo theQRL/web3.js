@@ -56,21 +56,7 @@ export const chainSchema = {
 export const hardforkSchema = {
 	type: 'string',
 	enum: [
-		'arrowGlacier',
-		'berlin',
-		'byzantium',
-		'chainstart',
-		'constantinople',
-		'dao',
-		'homestead',
-		'istanbul',
-		'london',
-		'merge',
-		'muirGlacier',
-		'petersburg',
 		'shanghai',
-		'spuriousDragon',
-		'tangerineWhistle',
 	],
 };
 

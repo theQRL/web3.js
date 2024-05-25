@@ -2,7 +2,7 @@
 	"name": "testnetPOS",
 	"chainId": 66666,
 	"networkId": 66666,
-	"defaultHardfork": "chainstart",
+	"defaultHardfork": "shanghai",
 	"consensus": {
 		"type": "pos",
 		"algorithm": "casper",
@@ -12,19 +12,12 @@
 	"url": "[TESTNET_URL]",
 	"genesis": {
 		"gasLimit": 1000000,
-		"difficulty": 1,
-		"nonce": "0xbb00000000000000",
 		"extraData": "0xcc000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
 	},
 	"hardforks": [
 		{
-			"name": "chainstart",
-			"block": 0,
-			"ttd": "0"
-		},
-		{
 			"name": "shanghai",
-			"block": 5
+			"block": 0
 		}
 	],
 	"bootstrapNodes": [

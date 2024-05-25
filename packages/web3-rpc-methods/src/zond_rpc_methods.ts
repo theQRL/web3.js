@@ -323,24 +323,6 @@ export async function compileSolidity(requestManager: Web3RequestManager, code: 
 	});
 }
 
-export async function compileLLL(requestManager: Web3RequestManager, code: string) {
-	validator.validate(['string'], [code]);
-
-	return requestManager.send({
-		method: 'zond_compileLLL',
-		params: [code],
-	});
-}
-
-export async function compileSerpent(requestManager: Web3RequestManager, code: string) {
-	validator.validate(['string'], [code]);
-
-	return requestManager.send({
-		method: 'zond_compileSerpent',
-		params: [code],
-	});
-}
-
 export async function newFilter(requestManager: Web3RequestManager, filter: Filter) {
 	validator.validate(['filter'], [filter]);
 

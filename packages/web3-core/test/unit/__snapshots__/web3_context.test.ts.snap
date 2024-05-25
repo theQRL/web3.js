@@ -10,7 +10,7 @@ Object {
     "defaultBlock": "latest",
     "defaultChain": "mainnet",
     "defaultCommon": undefined,
-    "defaultHardfork": "london",
+    "defaultHardfork": "shanghai",
     "defaultMaxPriorityFeePerGas": "0x9502f900",
     "defaultNetworkId": undefined,
     "defaultTransactionType": "0x0",

@@ -562,7 +562,7 @@ export const toWei = (number: Numbers, unit: EtherUnits): string => {
 };
 
 /**
- * Will convert an upper or lowercase Ethereum address to a checksum address.
+ * Will convert an upper or lowercase Zond address to a checksum address.
  * @param address - An address string
  * @returns	The checksum address
  * @example

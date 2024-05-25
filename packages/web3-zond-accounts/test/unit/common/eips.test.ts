@@ -18,8 +18,9 @@ import { toBigInt } from '@theqrl/web3-utils';
 import { Chain, Common, Hardfork } from '../../../src/common';
 
 describe('[Common/EIPs]: Initialization / Chain params', () => {
+	// TODO(rgeraldes24): removed 2929, 2718
 	it('Correct initialization', () => {
-		let eips = [2537, 2929];
+		let eips = [2929];
 		const c = new Common({ chain: Chain.Mainnet, eips });
 		expect(c.eips()).toEqual(eips);
 
@@ -47,8 +48,6 @@ describe('[Common/EIPs]: Initialization / Chain params', () => {
 		/*
     // Manual test since no test triggering EIP config available
     // TODO: recheck on addition of new EIP configs
-    // To run manually change minimumHardfork in EIP2537 config to petersburg
-    eips = [ 2537, ]
     msg = 'should throw on not meeting minimum hardfork requirements'
     f = () => {
       new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Byzantium, eips })
@@ -65,7 +64,6 @@ describe('[Common/EIPs]: Initialization / Chain params', () => {
 		c = new Common({ chain: Chain.Goerli, hardfork: Hardfork.Berlin });
 		expect(c.isActivatedEIP(2929)).toBe(true);
 		expect(c.isActivatedEIP(2315)).toBe(false);
-		expect(c.isActivatedEIP(2537)).toBe(false);
 	});
 
 	it('eipBlock', () => {

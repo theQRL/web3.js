@@ -20,20 +20,11 @@ export interface ChainName {
 	[chainId: string]: string;
 }
 
-export type CliqueConfig = {
-	period: number;
-	epoch: number;
-};
-
-export type EthashConfig = Record<string, unknown>;
-
 export type CasperConfig = Record<string, unknown>;
 
 export interface GenesisBlockConfig {
 	timestamp?: string;
 	gasLimit: number;
-	difficulty: number;
-	nonce: string;
 	extraData: string;
 	baseFeePerGas?: string;
 }
@@ -42,7 +33,6 @@ export interface HardforkConfig {
 	name: Hardfork | string;
 	// eslint-disable-next-line @typescript-eslint/ban-types
 	block: number | null; // null is used for hardforks that should not be applied -- since `undefined` isn't a valid value in JSON
-	ttd?: bigint | string;
 	timestamp?: number | string;
 	// eslint-disable-next-line @typescript-eslint/ban-types
 	forkHash?: string | null;
@@ -72,8 +62,6 @@ export interface ChainConfig {
 	consensus: {
 		type: ConsensusType | string;
 		algorithm: ConsensusAlgorithm | string;
-		clique?: CliqueConfig;
-		ethash?: EthashConfig;
 		casper?: CasperConfig;
 	};
 }
@@ -83,18 +71,14 @@ export interface ChainsConfig {
 
 interface BaseOpts {
 	/**
-	 * String identifier ('byzantium') for hardfork or {@link Hardfork} enum.
+	 * String identifier ('shanghai') for hardfork or {@link Hardfork} enum.
 	 *
-	 * Default: Hardfork.London
+	 * Default: Hardfork.Shanghai
 	 */
 	hardfork?: string | Hardfork;
 	/**
-	 * Selected EIPs which can be activated, please use an array for instantiation
-	 * (e.g. `eips: [ 2537, ]`)
-	 *
-	 * Currently supported:
-	 *
-	 * - [EIP-2537](https://eips.ethereum.org/EIPS/eip-2537) - BLS12-381 precompiles
+	 * Selected EIPs which can be activated, please use an array for instantiation.
+	 * 
 	 */
 	eips?: number[];
 }
@@ -137,7 +121,6 @@ export interface CustomCommonOpts extends BaseOpts {
 export interface GzondConfigOpts extends BaseOpts {
 	chain?: string;
 	genesisHash?: Uint8Array;
-	mergeForkIdPostMerge?: boolean;
 }
 
 /*

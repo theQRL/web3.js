@@ -17,6 +17,8 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 import { Numbers } from '@theqrl/web3-types';
 import { bytesToHex } from '@theqrl/web3-utils';
+import { cryptoSignVerify } from '@theqrl/dilithium5';
+import { Dilithium } from '@theqrl/wallet.js';
 import { MAX_INTEGER, MAX_UINT64, SEED_BYTES } from './constants.js';
 import {
 	Chain,
@@ -38,10 +40,6 @@ import type {
 import { Capability } from './types.js';
 import { Address } from './address.js';
 import { checkMaxInitCodeSize } from './utils.js';
-import { 
-	cryptoSignVerify 
-} from '@theqrl/dilithium5';
-import { Dilithium } from '@theqrl/wallet.js';
 
 interface TransactionCache {
 	hash: Uint8Array | undefined;
@@ -54,7 +52,7 @@ interface TransactionCache {
 /**
  * This base class will likely be subject to further
  * refactoring along the introduction of additional tx types
- * on the Ethereum network.
+ * on the Zond network.
  *
  * It is therefore not recommended to use directly.
  */
@@ -102,7 +100,7 @@ export abstract class BaseTransaction<TransactionObject> {
 	 *
 	 * @hidden
 	 */
-	protected DEFAULT_HARDFORK: string | Hardfork = Hardfork.Merge;
+	protected DEFAULT_HARDFORK: string | Hardfork = Hardfork.Shanghai;
 
 	public constructor(
 		txData: TxData | AccessListEIP2930TxData | FeeMarketEIP1559TxData,
@@ -137,7 +135,7 @@ export abstract class BaseTransaction<TransactionObject> {
 		const createContract = this.to === undefined || this.to === null;
 		const allowUnlimitedInitCodeSize = opts.allowUnlimitedInitCodeSize ?? false;
 		const common = opts.common ?? this._getCommon();
-		if (createContract && common.isActivatedEIP(3860) && !allowUnlimitedInitCodeSize) {
+		if (createContract && !allowUnlimitedInitCodeSize) {
 			checkMaxInitCodeSize(common, this.data.length);
 		}
 	}
@@ -201,7 +199,7 @@ export abstract class BaseTransaction<TransactionObject> {
 		const txFee = this.common.param('gasPrices', 'tx');
 		let fee = this.getDataFee();
 		if (txFee) fee += txFee;
-		if (this.common.gteHardfork('homestead') && this.toCreationAddress()) {
+		if (this.toCreationAddress()) {
 			const txCreationFee = this.common.param('gasPrices', 'txCreation');
 			if (txCreationFee) fee += txCreationFee;
 		}
@@ -222,7 +220,7 @@ export abstract class BaseTransaction<TransactionObject> {
 			this.data[i] === 0 ? (cost += txDataZero) : (cost += txDataNonZero);
 		}
 		// eslint-disable-next-line no-null/no-null
-		if ((this.to === undefined || this.to === null) && this.common.isActivatedEIP(3860)) {
+		if ((this.to === undefined || this.to === null)) {
 			const dataLength = BigInt(Math.ceil(this.data.length / 32));
 			const initCodeCost = this.common.param('gasPrices', 'initCodeWordCost') * dataLength;
 			cost += initCodeCost;
@@ -475,9 +473,10 @@ export abstract class BaseTransaction<TransactionObject> {
 			'to',
 			'value',
 			'data',
-			'v',
-			'r',
-			's',
+			// TODO(rgeraldes24)
+			// 'v',
+			// 'r',
+			// 's',
 			'type',
 			'baseFee',
 			'maxFeePerGas',

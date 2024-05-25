@@ -35,20 +35,6 @@ export const stripHexPrefix = (str: string): string => {
 
 	return isHexPrefixed(str) ? str.slice(2) : str;
 };
-/**
- * Transforms Gzond formatted nonce (i.e. hex string) to 8 byte 0x-prefixed string used internally
- * @param nonce string parsed from the Gzond genesis file
- * @returns nonce as a 0x-prefixed 8 byte string
- */
-function formatNonce(nonce: string): string {
-	if (!nonce || nonce === '0x0') {
-		return '0x0000000000000000';
-	}
-	if (isHexPrefixed(nonce)) {
-		return `0x${stripHexPrefix(nonce).padStart(16, '0')}`;
-	}
-	return `0x${nonce.padStart(16, '0')}`;
-}
 
 /**
  * Converts a `Number` into a hex `String`
@@ -65,17 +51,15 @@ const intToHex = function (i: number) {
 /**
  * Converts Gzond genesis parameters to an EthereumJS compatible `CommonOpts` object
  * @param json object representing the Gzond genesis file
- * @param optional mergeForkIdPostMerge which clarifies the placement of MergeForkIdTransition
  * hardfork, which by default is post merge as with the merged eth networks but could also come
  * before merge like in kiln genesis
  * @returns genesis parameters in a `CommonOpts` compliant object
  */
-function parseGzondParams(json: any, mergeForkIdPostMerge = true) {
+function parseGzondParams(json: any) {
 	// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 	const {
 		name,
 		config,
-		difficulty,
 		mixHash,
 		gasLimit,
 		coinbase,
@@ -83,14 +67,13 @@ function parseGzondParams(json: any, mergeForkIdPostMerge = true) {
 	}: {
 		name: string;
 		config: any;
-		difficulty: string;
-		mixHash: string;
+		mixHash: string; // TODO(rgeraldes24)
 		gasLimit: string;
 		coinbase: string;
 		baseFeePerGas: string;
 	} = json;
 	// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-	let { extraData, timestamp, nonce }: { extraData: string; timestamp: string; nonce: string } =
+	let { extraData, timestamp }: { extraData: string; timestamp: string } =
 		json;
 	const genesisTimestamp = Number(timestamp);
 	// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -104,10 +87,6 @@ function parseGzondParams(json: any, mergeForkIdPostMerge = true) {
 	if (!isHexPrefixed(timestamp)) {
 		// eslint-disable-next-line radix
 		timestamp = intToHex(parseInt(timestamp));
-	}
-	// gzond may not give us a nonce strictly formatted to an 8 byte hex string
-	if (nonce.length !== 18) {
-		nonce = formatNonce(nonce);
 	}
 
 	// EIP155 and EIP158 are both part of Spurious Dragon hardfork and must occur at the same time
@@ -126,10 +105,8 @@ function parseGzondParams(json: any, mergeForkIdPostMerge = true) {
 		genesis: {
 			timestamp,
 			// eslint-disable-next-line radix
-			gasLimit: parseInt(gasLimit), // gzond gasLimit and difficulty are hex strings while ours are `number`s
+			gasLimit: parseInt(gasLimit), // gzond gasLimit is an hex string while ours is a `number`
 			// eslint-disable-next-line radix
-			difficulty: parseInt(difficulty),
-			nonce,
 			extraData,
 			mixHash,
 			coinbase,
@@ -138,52 +115,17 @@ function parseGzondParams(json: any, mergeForkIdPostMerge = true) {
 		hardfork: undefined as string | undefined,
 		hardforks: [] as ConfigHardfork[],
 		bootstrapNodes: [],
-		consensus:
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-			config.clique !== undefined
-				? {
-						type: 'poa',
-						algorithm: 'clique',
-						clique: {
-							// The recent gzond genesis seems to be using blockperiodseconds
-							// and epochlength for clique specification
-							// see: https://hackmd.io/PqZgMpnkSWCWv5joJoFymQ
-							// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
-							period: config.clique.period ?? config.clique.blockperiodseconds,
-							// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access,  @typescript-eslint/no-unsafe-assignment
-							epoch: config.clique.epoch ?? config.clique.epochlength,
-						},
-				  }
-				: {
-						type: 'pow',
-						algorithm: 'ethash',
-						ethash: {},
-				  },
+		consensus: {
+			type: 'pos',
+			algorithm: 'casper',
+			casper: {},
+	  	}	
 	};
 
-	const forkMap: { [key: string]: { name: string; postMerge?: boolean; isTimestamp?: boolean } } =
+	const forkMap: { [key: string]: { name: string; isTimestamp?: boolean } } =
 		{
-			[Hardfork.Homestead]: { name: 'homesteadBlock' },
-			[Hardfork.Dao]: { name: 'daoForkBlock' },
-			[Hardfork.TangerineWhistle]: { name: 'eip150Block' },
-			[Hardfork.SpuriousDragon]: { name: 'eip155Block' },
-			[Hardfork.Byzantium]: { name: 'byzantiumBlock' },
-			[Hardfork.Constantinople]: { name: 'constantinopleBlock' },
-			[Hardfork.Petersburg]: { name: 'petersburgBlock' },
-			[Hardfork.Istanbul]: { name: 'istanbulBlock' },
-			[Hardfork.MuirGlacier]: { name: 'muirGlacierBlock' },
-			[Hardfork.Berlin]: { name: 'berlinBlock' },
-			[Hardfork.London]: { name: 'londonBlock' },
-			[Hardfork.MergeForkIdTransition]: {
-				name: 'mergeForkBlock',
-				postMerge: mergeForkIdPostMerge,
-			},
-			[Hardfork.Shanghai]: { name: 'shanghaiTime', postMerge: true, isTimestamp: true },
-			[Hardfork.ShardingForkDev]: {
-				name: 'shardingForkTime',
-				postMerge: true,
-				isTimestamp: true,
-			},
+			// TODO(rgeraldes24): review if we need it here (chainstart was not present)
+			// [Hardfork.Shanghai]: { name: 'shanghaiTime', isTimestamp: true }, 
 		};
 
 	// forkMapRev is the map from config field name to Hardfork
@@ -231,36 +173,10 @@ function parseGzondParams(json: any, mergeForkIdPostMerge = true) {
 		(a: ConfigHardfork, b: ConfigHardfork) =>
 			(a.timestamp ?? genesisTimestamp) - (b.timestamp ?? genesisTimestamp),
 	);
-	// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-	if (config.terminalTotalDifficulty !== undefined) {
-		// Following points need to be considered for placement of merge hf
-		// - Merge hardfork can't be placed at genesis
-		// - Place merge hf before any hardforks that require CL participation for e.g. withdrawals
-		// - Merge hardfork has to be placed just after genesis if any of the genesis hardforks make CL
-		//   necessary for e.g. withdrawals
-		const mergeConfig = {
-			name: Hardfork.Merge,
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
-			ttd: config.terminalTotalDifficulty,
-			// eslint-disable-next-line no-null/no-null
-			block: null,
-		};
-
-		// Merge hardfork has to be placed before first hardfork that is dependent on merge
-		const postMergeIndex = params.hardforks.findIndex(
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-			(hf: any) => forkMap[hf.name]?.postMerge === true,
-		);
-		if (postMergeIndex !== -1) {
-			params.hardforks.splice(postMergeIndex, 0, mergeConfig as unknown as ConfigHardfork);
-		} else {
-			params.hardforks.push(mergeConfig as unknown as ConfigHardfork);
-		}
-	}
 
 	const latestHardfork = params.hardforks.length > 0 ? params.hardforks.slice(-1)[0] : undefined;
 	params.hardfork = latestHardfork?.name;
-	params.hardforks.unshift({ name: Hardfork.Chainstart, block: 0 });
+	params.hardforks.unshift({ name: Hardfork.Shanghai, block: 0 });
 
 	return params;
 }
@@ -271,16 +187,16 @@ function parseGzondParams(json: any, mergeForkIdPostMerge = true) {
  * @param name optional chain name
  * @returns parsed params
  */
-export function parseGzondGenesis(json: any, name?: string, mergeForkIdPostMerge?: boolean) {
+export function parseGzondGenesis(json: any, name?: string) {
 	try {
-		if (['config', 'difficulty', 'gasLimit', 'alloc'].some(field => !(field in json))) {
+		if (['config', 'gasLimit', 'alloc'].some(field => !(field in json))) {
 			throw new Error('Invalid format, expected gzond genesis fields missing');
 		}
 		if (name !== undefined) {
 			// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, no-param-reassign
 			json.name = name;
 		}
-		return parseGzondParams(json, mergeForkIdPostMerge);
+		return parseGzondParams(json);
 	} catch (e: any) {
 		// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/restrict-template-expressions
 		throw new Error(`Error parsing parameters file: ${e.message}`);

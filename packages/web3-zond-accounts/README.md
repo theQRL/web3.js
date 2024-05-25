@@ -2,7 +2,7 @@
   <img src="assets/logo/web3js.jpg" width="500" alt="web3.js" />
 </p>
 
-# web3.js - Web3 Eth Accounts
+# web3.js - Web3 Zond Accounts
 
 ![ES Version](https://img.shields.io/badge/ES-2020-yellow)
 ![Node Version](https://img.shields.io/badge/node-14.x-green)
@@ -11,7 +11,7 @@
 
 This is a sub-package of [web3.js][repo].
 
-`web3-eth-accounts` contains functionality for managing Ethereum accounts and signing.
+`web3-zond-accounts` contains functionality for managing Zond accounts and signing.
 
 ## Installation
 
@@ -20,13 +20,13 @@ You can install the package either using [NPM](https://www.npmjs.com/package/web
 ### Using NPM
 
 ```bash
-npm install web3-eth-accounts
+npm install web3-zond-accounts
 ```
 
 ### Using Yarn
 
 ```bash
-yarn add web3-eth-accounts
+yarn add web3-zond-accounts
 ```
 
 ## Getting Started

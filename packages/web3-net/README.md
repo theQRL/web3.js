@@ -11,7 +11,7 @@
 
 This is a sub-package of [web3.js][repo].
 
-`web3-net` package allows to interact with an Ethereum node’s network properties.
+`web3-net` package allows to interact with a Zond node’s network properties.
 
 ## Installation
 

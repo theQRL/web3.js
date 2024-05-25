@@ -18,7 +18,7 @@ import { Chain, Common, Hardfork } from '../../../src/common';
 
 describe('[Common]: Parameter access for param(), paramByHardfork()', () => {
 	it('Basic usage', () => {
-		const c = new Common({ chain: Chain.Mainnet, eips: [2537] });
+		const c = new Common({ chain: Chain.Mainnet, eips: [] });
 		expect(c.paramByHardfork('gasPrices', 'ecAdd', 'byzantium')).toEqual(BigInt(500));
 
 		c.setHardfork(Hardfork.Byzantium);
@@ -87,16 +87,5 @@ describe('[Common]: Parameter access for param(), paramByHardfork()', () => {
 		}).toThrow('not defined');
 
 		expect(c.paramByEIP('gasPrices', 'Bls12381G1AddGas', 2537)).toEqual(BigInt(600));
-	});
-
-	it('returns the right block delay for EIP3554', () => {
-		for (const fork of [Hardfork.MuirGlacier, Hardfork.Berlin]) {
-			const c = new Common({ chain: Chain.Mainnet, hardfork: fork });
-			let delay = c.param('pow', 'difficultyBombDelay');
-			expect(delay).toEqual(BigInt(9000000));
-			c.setEIPs([3554]);
-			delay = c.param('pow', 'difficultyBombDelay');
-			expect(delay).toEqual(BigInt(9500000));
-		}
 	});
 });

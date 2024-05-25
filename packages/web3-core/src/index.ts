@@ -23,9 +23,5 @@ export * from './web3_context.js';
 export * from './web3_batch_request.js';
 export * from './utils.js';
 export * from './types.js';
-export * from './formatters.js';
 export * from './web3_promi_event.js';
 export * from './web3_event_emitter.js';
-
-// For backward usability export as namespace
-export * as formatters from './formatters.js';

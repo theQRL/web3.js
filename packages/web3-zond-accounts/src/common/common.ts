@@ -20,9 +20,7 @@ import type { Numbers } from '@theqrl/web3-types';
 import { bytesToHex, hexToBytes, uint8ArrayConcat } from '@theqrl/web3-utils';
 import { TypeOutput } from './types.js';
 import { intToUint8Array, toType, parseGzondGenesis } from './utils.js';
-import goerli from './chains/goerli.js';
 import mainnet from './chains/mainnet.js';
-import sepolia from './chains/sepolia.js';
 import { EIPs } from './eips/index.js';
 import type { ConsensusAlgorithm, ConsensusType } from './enums.js';
 import { Chain, CustomChain, Hardfork } from './enums.js';
@@ -34,10 +32,8 @@ import type {
 	ChainConfig,
 	ChainName,
 	ChainsConfig,
-	CliqueConfig,
 	CommonOpts,
 	CustomCommonOpts,
-	EthashConfig,
 	GenesisBlockConfig,
 	GzondConfigOpts,
 	HardforkConfig,
@@ -106,80 +102,7 @@ export class Common extends EventEmitter {
 				...opts,
 			});
 		}
-		if (chainParamsOrName === CustomChain.PolygonMainnet) {
-			return Common.custom(
-				{
-					name: CustomChain.PolygonMainnet,
-					chainId: 137,
-					networkId: 137,
-				},
-				opts,
-			);
-		}
-		if (chainParamsOrName === CustomChain.PolygonMumbai) {
-			return Common.custom(
-				{
-					name: CustomChain.PolygonMumbai,
-					chainId: 80001,
-					networkId: 80001,
-				},
-				opts,
-			);
-		}
-		if (chainParamsOrName === CustomChain.ArbitrumRinkebyTestnet) {
-			return Common.custom(
-				{
-					name: CustomChain.ArbitrumRinkebyTestnet,
-					chainId: 421611,
-					networkId: 421611,
-				},
-				opts,
-			);
-		}
-		if (chainParamsOrName === CustomChain.ArbitrumOne) {
-			return Common.custom(
-				{
-					name: CustomChain.ArbitrumOne,
-					chainId: 42161,
-					networkId: 42161,
-				},
-				opts,
-			);
-		}
-		if (chainParamsOrName === CustomChain.xDaiChain) {
-			return Common.custom(
-				{
-					name: CustomChain.xDaiChain,
-					chainId: 100,
-					networkId: 100,
-				},
-				opts,
-			);
-		}
-
-		if (chainParamsOrName === CustomChain.OptimisticKovan) {
-			return Common.custom(
-				{
-					name: CustomChain.OptimisticKovan,
-					chainId: 69,
-					networkId: 69,
-				},
-				// Optimism has not implemented the London hardfork yet (targeting Q1.22)
-				{ hardfork: Hardfork.Berlin, ...opts },
-			);
-		}
-
-		if (chainParamsOrName === CustomChain.OptimisticEthereum) {
-			return Common.custom(
-				{
-					name: CustomChain.OptimisticEthereum,
-					chainId: 10,
-					networkId: 10,
-				},
-				// Optimism has not implemented the London hardfork yet (targeting Q1.22)
-				{ hardfork: Hardfork.Berlin, ...opts },
-			);
-		}
+		
 		// eslint-disable-next-line @typescript-eslint/restrict-template-expressions
 		throw new Error(`Custom chain ${chainParamsOrName} not supported`);
 	}
@@ -187,14 +110,14 @@ export class Common extends EventEmitter {
 	/**
 	 * Static method to load and set common from a gzond genesis json
 	 * @param genesisJson json of gzond configuration
-	 * @param { chain, eips, genesisHash, hardfork, mergeForkIdPostMerge } to further configure the common instance
+	 * @param { chain, eips, genesisHash, hardfork } to further configure the common instance
 	 * @returns Common
 	 */
 	public static fromGzondGenesis(
 		genesisJson: any,
-		{ chain, eips, genesisHash, hardfork, mergeForkIdPostMerge }: GzondConfigOpts,
+		{ chain, eips, genesisHash, hardfork }: GzondConfigOpts,
 	): Common {
-		const genesisParams = parseGzondGenesis(genesisJson, chain, mergeForkIdPostMerge);
+		const genesisParams = parseGzondGenesis(genesisJson, chain);
 		const common = new Common({
 			chain: genesisParams.name ?? 'custom',
 			customChains: [genesisParams],
@@ -245,7 +168,7 @@ export class Common extends EventEmitter {
 		super();
 		this._customChains = opts.customChains ?? [];
 		this._chainParams = this.setChain(opts.chain);
-		this.DEFAULT_HARDFORK = this._chainParams.defaultHardfork ?? Hardfork.Merge;
+		this.DEFAULT_HARDFORK = this._chainParams.defaultHardfork ?? Hardfork.Shanghai;
 		// Assign hardfork changes in the sequence of the applied hardforks
 		this.HARDFORK_CHANGES = this.hardforks().map(hf => [
 			hf.name as HardforkSpecKeys,
@@ -314,46 +237,31 @@ export class Common extends EventEmitter {
 	}
 
 	/**
-	 * Returns the hardfork based on the block number or an optional
-	 * total difficulty (Merge HF) provided.
+	 * Returns the hardfork based on the block number.
 	 *
 	 * An optional TD takes precedence in case the corresponding HF block
 	 * is set to `null` or otherwise needs to match (if not an error
 	 * will be thrown).
 	 *
 	 * @param blockNumber
-	 * @param td : total difficulty of the parent block (for block hf) OR of the chain latest (for chain hf)
 	 * @param timestamp: timestamp in seconds at which block was/is to be minted
 	 * @returns The name of the HF
 	 */
 	public getHardforkByBlockNumber(
 		_blockNumber: Numbers,
-		_td?: Numbers,
 		_timestamp?: Numbers,
 	): string {
 		const blockNumber = toType(_blockNumber, TypeOutput.BigInt);
-		const td = toType(_td, TypeOutput.BigInt);
 		const timestamp = toType(_timestamp, TypeOutput.Number);
 
-		// Filter out hardforks with no block number, no ttd or no timestamp (i.e. unapplied hardforks)
+		// Filter out hardforks with no block number or no timestamp (i.e. unapplied hardforks)
 		const hfs = this.hardforks().filter(
 			hf =>
 				// eslint-disable-next-line no-null/no-null
 				hf.block !== null ||
-				// eslint-disable-next-line no-null/no-null
-				(hf.ttd !== null && hf.ttd !== undefined) ||
 				hf.timestamp !== undefined,
 		);
-		// eslint-disable-next-line no-null/no-null
-		const mergeIndex = hfs.findIndex(hf => hf.ttd !== null && hf.ttd !== undefined);
-		const doubleTTDHF = hfs
-			.slice(mergeIndex + 1)
-			// eslint-disable-next-line no-null/no-null
-			.findIndex(hf => hf.ttd !== null && hf.ttd !== undefined);
-		if (doubleTTDHF >= 0) {
-			throw Error(`More than one merge hardforks found with ttd specified`);
-		}
-
+		
 		// Find the first hardfork that has a block number greater than `blockNumber`
 		// (skips the merge hardfork since it cannot have a block number specified).
 		// If timestamp is not provided, it also skips timestamps hardforks to continue
@@ -374,40 +282,17 @@ export class Common extends EventEmitter {
 			throw Error('Must have at least one hardfork at block 0');
 		}
 
-		// If timestamp is not provided, we need to rollback to the last hf with block or ttd
+		// If timestamp is not provided, we need to rollback to the last hf with block
 		if (timestamp === undefined) {
 			const stepBack = hfs
 				.slice(0, hfIndex)
 				.reverse()
 				// eslint-disable-next-line no-null/no-null
-				.findIndex(hf => hf.block !== null || hf.ttd !== undefined);
+				.findIndex(hf => hf.block !== null);
 			hfIndex -= stepBack;
 		}
 		// Move hfIndex one back to arrive at candidate hardfork
 		hfIndex -= 1;
-
-		// If the timestamp was not provided, we could have skipped timestamp hardforks to look for number
-		// hardforks. so it will now be needed to rollback
-		// eslint-disable-next-line no-null/no-null
-		if (hfs[hfIndex].block === null && hfs[hfIndex].timestamp === undefined) {
-			// We're on the merge hardfork.  Let's check the TTD
-			// eslint-disable-next-line no-null/no-null
-			if (td === undefined || td === null || BigInt(hfs[hfIndex].ttd!) > td) {
-				// Merge ttd greater than current td so we're on hardfork before merge
-				hfIndex -= 1;
-			}
-			// eslint-disable-next-line no-null/no-null
-		} else if (mergeIndex >= 0 && td !== undefined && td !== null) {
-			if (hfIndex >= mergeIndex && BigInt(hfs[mergeIndex].ttd!) > td) {
-				throw Error(
-					'Maximum HF determined by total difficulty is lower than the block number HF',
-				);
-			} else if (hfIndex < mergeIndex && BigInt(hfs[mergeIndex].ttd!) <= td) {
-				throw Error(
-					'HF determined by block number is lower than the minimum total difficulty HF',
-				);
-			}
-		}
 
 		const hfStartIndex = hfIndex;
 		// Move the hfIndex to the end of the hardforks that might be scheduled on the same block/timestamp
@@ -431,7 +316,7 @@ export class Common extends EventEmitter {
 				);
 			if (minTimeStamp > timestamp) {
 				throw Error(
-					`Maximum HF determined by timestamp is lower than the block number/ttd HF`,
+					`Maximum HF determined by timestamp is lower than the block number HF`,
 				);
 			}
 
@@ -443,7 +328,7 @@ export class Common extends EventEmitter {
 					timestamp,
 				);
 			if (maxTimeStamp < timestamp) {
-				throw Error(`Maximum HF determined by block number/ttd is lower than timestamp HF`);
+				throw Error(`Maximum HF determined by block number is lower than timestamp HF`);
 			}
 		}
 		const hardfork = hfs[hfIndex];
@@ -451,24 +336,21 @@ export class Common extends EventEmitter {
 	}
 
 	/**
-	 * Sets a new hardfork based on the block number or an optional
-	 * total difficulty (Merge HF) provided.
+	 * Sets a new hardfork based on the block number provided.
 	 *
 	 * An optional TD takes precedence in case the corresponding HF block
 	 * is set to `null` or otherwise needs to match (if not an error
 	 * will be thrown).
 	 *
 	 * @param blockNumber
-	 * @param td
 	 * @param timestamp
 	 * @returns The name of the HF set
 	 */
 	public setHardforkByBlockNumber(
 		blockNumber: Numbers,
-		td?: Numbers,
 		timestamp?: Numbers,
 	): string {
-		const hardfork = this.getHardforkByBlockNumber(blockNumber, td, timestamp);
+		const hardfork = this.getHardforkByBlockNumber(blockNumber, timestamp);
 		this.setHardfork(hardfork);
 		return hardfork;
 	}
@@ -529,7 +411,7 @@ export class Common extends EventEmitter {
 	 * Otherwise the parameter if taken from the latest applied HF with
 	 * a change on the respective parameter.
 	 *
-	 * @param topic Parameter topic ('gasConfig', 'gasPrices', 'vm', 'pow')
+	 * @param topic Parameter topic ('gasConfig', 'gasPrices', 'vm', 'pos')
 	 * @param name Parameter name (e.g. 'minGasLimit' for 'gasConfig' topic)
 	 * @returns The value requested or `BigInt(0)` if not found
 	 */
@@ -546,7 +428,7 @@ export class Common extends EventEmitter {
 
 	/**
 	 * Returns the parameter corresponding to a hardfork
-	 * @param topic Parameter topic ('gasConfig', 'gasPrices', 'vm', 'pow')
+	 * @param topic Parameter topic ('gasConfig', 'gasPrices', 'vm', 'pos')
 	 * @param name Parameter name (e.g. 'minGasLimit' for 'gasConfig' topic)
 	 * @param hardfork Hardfork name
 	 * @returns The value requested or `BigInt(0)` if not found
@@ -585,7 +467,7 @@ export class Common extends EventEmitter {
 
 	/**
 	 * Returns a parameter corresponding to an EIP
-	 * @param topic Parameter topic ('gasConfig', 'gasPrices', 'vm', 'pow')
+	 * @param topic Parameter topic ('gasConfig', 'gasPrices', 'vm', 'pos')
 	 * @param name Parameter name (e.g. 'minGasLimit' for 'gasConfig' topic)
 	 * @param eip Number of the EIP
 	 * @returns The value requested or `undefined` if not found
@@ -611,22 +493,20 @@ export class Common extends EventEmitter {
 	}
 
 	/**
-	 * Returns a parameter for the hardfork active on block number or
-	 * optional provided total difficulty (Merge HF)
+	 * Returns a parameter for the hardfork active on block number provided.
+	 * 
 	 * @param topic Parameter topic
 	 * @param name Parameter name
 	 * @param blockNumber Block number
-	 * @param td Total difficulty
 	 *    * @returns The value requested or `BigInt(0)` if not found
 	 */
 	public paramByBlock(
 		topic: string,
 		name: string,
 		blockNumber: Numbers,
-		td?: Numbers,
 		timestamp?: Numbers,
 	): bigint {
-		const hardfork = this.getHardforkByBlockNumber(blockNumber, td, timestamp);
+		const hardfork = this.getHardforkByBlockNumber(blockNumber, timestamp);
 		return this.paramByHardfork(topic, name, hardfork);
 	}
 
@@ -775,23 +655,6 @@ export class Common extends EventEmitter {
 	}
 
 	/**
-	 * Returns the hardfork change total difficulty (Merge HF) for hardfork provided or set
-	 * @param hardfork Hardfork name, optional if HF set
-	 * @returns Total difficulty or null if no set
-	 */
-	// eslint-disable-next-line @typescript-eslint/ban-types
-	public hardforkTTD(_hardfork?: string | Hardfork): bigint | null {
-		const hardfork = _hardfork ?? this._hardfork;
-		const ttd = this._getHardfork(hardfork)?.ttd;
-		// eslint-disable-next-line no-null/no-null
-		if (ttd === undefined || ttd === null) {
-			// eslint-disable-next-line no-null/no-null
-			return null;
-		}
-		return BigInt(ttd);
-	}
-
-	/**
 	 * True if block number provided is the hardfork (given or set) change block
 	 * @param blockNumber Number of the block to check
 	 * @param hardfork Hardfork name, optional if HF set
@@ -815,11 +678,7 @@ export class Common extends EventEmitter {
 		const hardfork = _hardfork ?? this._hardfork;
 		const hfs = this.hardforks();
 		let hfIndex = hfs.findIndex(hf => hf.name === hardfork);
-		// If the current hardfork is merge, go one behind as merge hf is not part of these
-		// calcs even if the merge hf block is set
-		if (hardfork === Hardfork.Merge) {
-			hfIndex -= 1;
-		}
+
 		// Hardfork not found
 		if (hfIndex < 0) {
 			// eslint-disable-next-line no-null/no-null
@@ -843,7 +702,6 @@ export class Common extends EventEmitter {
 					: // eslint-disable-next-line no-null/no-null
 					  null;
 			return (
-				hf.name !== Hardfork.Merge &&
 				// eslint-disable-next-line no-null/no-null
 				hfTimeOrBlock !== null &&
 				hfTimeOrBlock !== undefined &&
@@ -876,18 +734,7 @@ export class Common extends EventEmitter {
 	public nextHardforkBlock(_hardfork?: string | Hardfork): bigint | null {
 		const hardfork = _hardfork ?? this._hardfork;
 		let hfBlock = this.hardforkBlock(hardfork);
-		// If this is a merge hardfork with block not set, then we fallback to previous hardfork
-		// to find the nextHardforkBlock
-		// eslint-disable-next-line no-null/no-null
-		if (hfBlock === null && hardfork === Hardfork.Merge) {
-			const hfs = this.hardforks();
-			// eslint-disable-next-line no-null/no-null
-			const mergeIndex = hfs.findIndex(hf => hf.ttd !== null && hf.ttd !== undefined);
-			if (mergeIndex < 0) {
-				throw Error(`Merge hardfork should have been found`);
-			}
-			hfBlock = this.hardforkBlock(hfs[mergeIndex - 1].name);
-		}
+
 		// eslint-disable-next-line no-null/no-null
 		if (hfBlock === null) {
 			// eslint-disable-next-line no-null/no-null
@@ -902,7 +749,7 @@ export class Common extends EventEmitter {
 			// We need to ignore the merge block in our next hardfork calc
 			const block = BigInt(
 				// eslint-disable-next-line no-null/no-null
-				hf.block === null || (hf.ttd !== undefined && hf.ttd !== null) ? 0 : hf.block,
+				hf.block === null ? 0 : hf.block,
 			);
 			// Typescript can't seem to follow that the hfBlock is not null at this point
 			// eslint-disable-next-line no-null/no-null
@@ -982,7 +829,7 @@ export class Common extends EventEmitter {
 			// eslint-disable-next-line no-null/no-null
 			data === null ||
 			// eslint-disable-next-line no-null/no-null
-			(data?.block === null && data?.timestamp === undefined && data?.ttd === undefined)
+			(data?.block === null && data?.timestamp === undefined)
 		) {
 			const msg = 'No fork hash calculation possible for future hardfork';
 			throw new Error(msg);
@@ -1019,8 +866,7 @@ export class Common extends EventEmitter {
 				// eslint-disable-next-line no-null/no-null
 				(hf.forkHash === null || hf.forkHash === undefined) &&
 				// eslint-disable-next-line no-null/no-null
-				((blockOrTime !== null && blockOrTime !== undefined) ||
-					typeof hf.ttd !== 'undefined')
+				(blockOrTime !== null && blockOrTime !== undefined)
 			) {
 				hf.forkHash = this.forkHash(hf.name, genesisHash);
 			}
@@ -1101,7 +947,7 @@ export class Common extends EventEmitter {
 
 	/**
 	 * Returns the consensus type of the network
-	 * Possible values: "pow"|"poa"|"pos"
+	 * Possible values: "pos"
 	 *
 	 * Note: This value can update along a Hardfork.
 	 */
@@ -1123,9 +969,7 @@ export class Common extends EventEmitter {
 	/**
 	 * Returns the concrete consensus implementation
 	 * algorithm or protocol for the network
-	 * e.g. "ethash" for "pow" consensus type,
-	 * "clique" for "poa" consensus type or
-	 * "casper" for "pos" consensus type.
+	 * e.g. "casper" for "pos" consensus type.
 	 *
 	 * Note: This value can update along a Hardfork.
 	 */
@@ -1151,13 +995,11 @@ export class Common extends EventEmitter {
 	 * Expected returns (parameters must be present in
 	 * the respective chain json files):
 	 *
-	 * ethash: empty object
-	 * clique: period, epoch
 	 * casper: empty object
 	 *
 	 * Note: This value can update along a Hardfork.
 	 */
-	public consensusConfig(): { [key: string]: CliqueConfig | EthashConfig | CasperConfig } {
+	public consensusConfig(): { [key: string]: CasperConfig } {
 		const hardfork = this.hardfork();
 
 		let value;
@@ -1194,7 +1036,7 @@ export class Common extends EventEmitter {
 		for (const [name, id] of Object.entries(Chain)) {
 			names[id] = name.toLowerCase();
 		}
-		const chains = { mainnet, goerli, sepolia } as ChainsConfig;
+		const chains = { mainnet } as ChainsConfig;
 		if (customChains) {
 			for (const chain of customChains) {
 				const { name } = chain;

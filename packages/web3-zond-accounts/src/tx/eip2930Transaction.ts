@@ -66,7 +66,7 @@ export class AccessListEIP2930Transaction extends BaseTransaction<AccessListEIP2
 	 *
 	 * @hidden
 	 */
-	protected DEFAULT_HARDFORK = 'berlin';
+	protected DEFAULT_HARDFORK = 'shanghai';
 
 	/**
 	 * Instantiate a transaction from a data dictionary.
@@ -156,10 +156,6 @@ export class AccessListEIP2930Transaction extends BaseTransaction<AccessListEIP2
 		this.common = this._getCommon(opts.common, chainId);
 		this.chainId = this.common.chainId();
 
-		// EIP-2718 check is done in Common
-		if (!this.common.isActivatedEIP(2930)) {
-			throw new Error('EIP-2930 not enabled on Common');
-		}
 		this.activeCapabilities = this.activeCapabilities.concat([2718, 2930]);
 
 		// Populate the access list fields

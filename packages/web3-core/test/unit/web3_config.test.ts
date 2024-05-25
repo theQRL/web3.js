@@ -27,7 +27,7 @@ const defaultConfig = {
 	defaultChain: 'mainnet',
 	defaultNetworkId: undefined,
 	defaultCommon: undefined,
-	defaultHardfork: 'london',
+	defaultHardfork: 'shanghai',
 	enableExperimentalFeatures: {
 		useSubscriptionWhenCheckingBlockTimeout: false,
 		useRpcCallSpecification: false,
