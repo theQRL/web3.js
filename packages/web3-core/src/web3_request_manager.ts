@@ -222,7 +222,7 @@ export class Web3RequestManager<
 				);
 		}
 
-		throw new ProviderError('Provider does not have a request or send method to use.');
+		throw new ProviderError('Provider does not have a request method to use.');
 	}
 
 	// eslint-disable-next-line class-methods-use-this

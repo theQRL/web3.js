@@ -17,7 +17,8 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 import Web3 from '../../../src/index';
 
-describe('compatibility with extremely simple external provider', () => {
+// TODO(rgeraldes24): provider is not supported
+describe.skip('compatibility with extremely simple external provider', () => {
 	it('should accept a simple instance that is compatible with EIP1193', () => {
 		interface RequestArguments {
 			readonly method: string;

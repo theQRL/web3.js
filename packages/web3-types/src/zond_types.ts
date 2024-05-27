@@ -394,6 +394,7 @@ export interface BlockBase<
 	readonly gasUsed: NumberType;
 	readonly timestamp: NumberType;
 	readonly extraData: extraDataType;
+	readonly prevRandao: ByteType;
 	readonly baseFeePerGas?: NumberType;
 	readonly size: NumberType;
 	readonly transactions: TransactionTypes;

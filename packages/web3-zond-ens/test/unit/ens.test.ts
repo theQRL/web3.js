@@ -141,10 +141,10 @@ describe('ens', () => {
 			expect(localEns.registryAddress).toBe(registryAddresses.main);
 		});
 		it('set params', async () => {
-			const localEns = new ENS(registryAddresses.goerli, 'http://127.0.0.1:8545');
+			const localEns = new ENS(registryAddresses.main, 'http://127.0.0.1:8545');
 			// @ts-expect-error check clientUrl field
 			expect(localEns.provider?.clientUrl).toBe('http://127.0.0.1:8545');
-			expect(localEns.registryAddress).toBe(registryAddresses.goerli);
+			expect(localEns.registryAddress).toBe(registryAddresses.main);
 		});
 	});
 
