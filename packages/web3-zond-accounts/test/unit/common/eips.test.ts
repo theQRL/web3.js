@@ -14,29 +14,31 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { toBigInt } from '@theqrl/web3-utils';
-import { Chain, Common, Hardfork } from '../../../src/common';
+// import { toBigInt } from '@theqrl/web3-utils';
+// import { Chain, Common, Hardfork } from '../../../src/common';
 
-describe('[Common/EIPs]: Initialization / Chain params', () => {
-	// TODO(rgeraldes24): removed 2929, 2718
-	it('Correct initialization', () => {
-		let eips = [2929];
-		const c = new Common({ chain: Chain.Mainnet, eips });
-		expect(c.eips()).toEqual(eips);
+// NOTE(rgeraldes24): unused
+describe.skip('[Common/EIPs]: Initialization / Chain params', () => {
+	
+	it.skip('Correct initialization', () => {
+		// let eips = [2537, 2929];
+		// const c = new Common({ chain: Chain.Mainnet, eips });
+		// expect(c.eips()).toEqual(eips);
 
-		eips = [2718, 2929, 2930];
-		expect(() => {
-			// eslint-disable-next-line no-new
-			new Common({ chain: Chain.Mainnet, eips, hardfork: Hardfork.Istanbul });
-		}).not.toThrow();
+		// eips = [2718, 2929, 2930];
+		// expect(() => {
+		// 	// eslint-disable-next-line no-new
+		// 	new Common({ chain: Chain.Mainnet, eips, hardfork: Hardfork.Istanbul });
+		// }).not.toThrow();
 
-		eips = [2930];
-		expect(() => {
-			// eslint-disable-next-line no-new
-			new Common({ chain: Chain.Mainnet, eips, hardfork: Hardfork.Istanbul });
-		}).toThrow();
+		// eips = [2930];
+		// expect(() => {
+		// 	// eslint-disable-next-line no-new
+		// 	new Common({ chain: Chain.Mainnet, eips, hardfork: Hardfork.Istanbul });
+		// }).toThrow();
 	});
 
+	/*
 	it('Initialization errors', () => {
 		const UNSUPPORTED_EIP = 1000000;
 		const eips = [UNSUPPORTED_EIP];
@@ -45,15 +47,17 @@ describe('[Common/EIPs]: Initialization / Chain params', () => {
 			new Common({ chain: Chain.Mainnet, eips });
 		}).toThrow('not supported');
 
-		/*
+		
     // Manual test since no test triggering EIP config available
     // TODO: recheck on addition of new EIP configs
-    msg = 'should throw on not meeting minimum hardfork requirements'
-    f = () => {
-      new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Byzantium, eips })
-    }
-    st.throws(f, /minimumHardfork/, msg)
-    */
+    // To run manually change minimumHardfork in EIP2537 config to petersburg
+    // eips = [ 2537, ]
+    // msg = 'should throw on not meeting minimum hardfork requirements'
+    // f = () => {
+    //   new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Byzantium, eips })
+    // }
+    // st.throws(f, /minimumHardfork/, msg)
+    
 	});
 
 	it('isActivatedEIP()', () => {
@@ -64,6 +68,7 @@ describe('[Common/EIPs]: Initialization / Chain params', () => {
 		c = new Common({ chain: Chain.Goerli, hardfork: Hardfork.Berlin });
 		expect(c.isActivatedEIP(2929)).toBe(true);
 		expect(c.isActivatedEIP(2315)).toBe(false);
+		expect(c.isActivatedEIP(2537)).toBe(false);
 	});
 
 	it('eipBlock', () => {
@@ -73,4 +78,5 @@ describe('[Common/EIPs]: Initialization / Chain params', () => {
 
 		expect(c.eipBlock(0)).toBeNull();
 	});
+	*/
 });

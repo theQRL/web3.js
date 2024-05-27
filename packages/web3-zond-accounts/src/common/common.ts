@@ -239,10 +239,6 @@ export class Common extends EventEmitter {
 	/**
 	 * Returns the hardfork based on the block number.
 	 *
-	 * An optional TD takes precedence in case the corresponding HF block
-	 * is set to `null` or otherwise needs to match (if not an error
-	 * will be thrown).
-	 *
 	 * @param blockNumber
 	 * @param timestamp: timestamp in seconds at which block was/is to be minted
 	 * @returns The name of the HF
@@ -337,10 +333,6 @@ export class Common extends EventEmitter {
 
 	/**
 	 * Sets a new hardfork based on the block number provided.
-	 *
-	 * An optional TD takes precedence in case the corresponding HF block
-	 * is set to `null` or otherwise needs to match (if not an error
-	 * will be thrown).
 	 *
 	 * @param blockNumber
 	 * @param timestamp

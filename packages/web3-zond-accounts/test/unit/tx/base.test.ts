@@ -40,11 +40,11 @@ const seedToPublic = function (seed: HexString): Uint8Array {
 	return d.getPK();
 };
 const common = new Common({
-	chain: 5,
+	chain: 1,
 	hardfork: Hardfork.Shanghai,
 });
 // @ts-expect-error set private property
-common._chainParams.chainId = 4;
+common._chainParams.chainId = 1;
 describe('[BaseTransaction]', () => {
 	// EIP-2930 is not enabled in Common by default (2021-03-06)
 	// eslint-disable-next-line @typescript-eslint/no-shadow

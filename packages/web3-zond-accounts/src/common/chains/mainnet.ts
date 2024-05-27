@@ -2,11 +2,11 @@ export default {
 	"name": "mainnet",
 	"chainId": 1,
 	"networkId": 1,
-	"defaultHardfork": "merge",
+	"defaultHardfork": "shanghai",
 	"consensus": {
-		"type": "pow",
-		"algorithm": "ethash",
-		"ethash": {}
+		"type": "pos",
+		"algorithm": "casper",
+		"casper": {}
 	},
 	"comment": "The Zond main chain",
 	"url": "https://ethstats.net/",

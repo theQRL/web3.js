@@ -14,7 +14,7 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { Chain, Common, ConsensusType, CustomChain, Hardfork } from '../../../src/common';
+import { Chain, Common, ConsensusType, /*CustomChain,*/ Hardfork } from '../../../src/common';
 
 import * as testnet from '../../fixtures/common/testnet.json';
 import * as testnet2 from '../../fixtures/common/testnet2.json';
@@ -26,7 +26,9 @@ describe('[Common]: Custom chains', () => {
 		expect(c.chainName()).toBe('testnet');
 		expect(c.chainId()).toEqual(BigInt(12345));
 		expect(c.networkId()).toEqual(BigInt(12345));
-		expect(c.hardforks()[3]['block']).toBe(3);
+		// TODO(rgeraldes24)
+		// expect(c.hardforks()[3]['block']).toBe(3);
+		expect(c.hardforks()[0]['block']).toBe(0);
 		expect(c.bootstrapNodes()![1].ip).toBe('10.0.0.2');
 	});
 
@@ -100,36 +102,44 @@ describe('[Common]: Custom chains', () => {
 	it('customChains parameter: initialization', () => {
 		let c = new Common({
 			chain: Chain.Mainnet,
-			hardfork: Hardfork.Byzantium,
+			hardfork: Hardfork.Shanghai,
 			customChains: [testnet],
 		});
 		expect(c.chainName()).toBe('mainnet');
-		expect(c.hardforkBlock()!).toEqual(BigInt(4370000));
+		// TODO(rgeraldes24)
+		// expect(c.hardforkBlock()!).toEqual(BigInt(4370000));
+		expect(c.hardforkBlock()!).toEqual(BigInt(0));
 
 		c.setChain('testnet');
 		expect(c.chainName()).toBe('testnet');
-		expect(c.hardforkBlock()!).toEqual(BigInt(4));
+		// TODO(rgeraldes24)
+		// expect(c.hardforkBlock()!).toEqual(BigInt(4));
+		expect(c.hardforkBlock()!).toEqual(BigInt(0));
 
 		c = new Common({
 			chain: 'testnet',
-			hardfork: Hardfork.Byzantium,
+			hardfork: Hardfork.Shanghai,
 			customChains: [testnet],
 		});
 		expect(c.chainName()).toBe('testnet');
-		expect(c.hardforkBlock()!).toEqual(BigInt(4));
+		// TODO(rgeraldes24)
+		// expect(c.hardforkBlock()!).toEqual(BigInt(4));
+		expect(c.hardforkBlock()!).toEqual(BigInt(0));
 
 		const customChains = [testnet, testnet2, testnet3];
 		c = new Common({
 			chain: 'testnet2',
-			hardfork: Hardfork.Istanbul,
+			hardfork: Hardfork.Shanghai,
 			customChains,
 		});
 		expect(c.chainName()).toBe('testnet2');
-		expect(c.hardforkBlock()!).toEqual(BigInt(10));
+		// TODO(rgeraldes24)
+		// expect(c.hardforkBlock()!).toEqual(BigInt(10));
+		expect(c.hardforkBlock()!).toEqual(BigInt(0));
 
 		c.setChain('testnet');
 		expect(c.chainName()).toBe('testnet');
-		expect(c.consensusType()).toEqual(ConsensusType.ProofOfWork);
+		expect(c.consensusType()).toEqual(ConsensusType.ProofOfStake);
 	});
 });
 

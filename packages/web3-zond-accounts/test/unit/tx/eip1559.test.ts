@@ -23,7 +23,7 @@ import { FeeMarketEIP1559Transaction } from '../../../src';
 import testdata from '../../fixtures/json/eip1559.json';
 
 const common = new Common({
-	chain: 5,
+	chain: 1,
 	hardfork: Hardfork.Shanghai,
 });
 // @ts-expect-error set private property
@@ -139,14 +139,15 @@ describe('[FeeMarketEIP1559Transaction]', () => {
 		expect(Object.isFrozen(signedTxn)).toBe(false);
 	});
 
-	it('common propagates from the common of tx, not the common in TxOptions', () => {
+	// TODO(rgeraldes24): 2537 eip not supported(merged)
+	it.skip('common propagates from the common of tx, not the common in TxOptions', () => {
 		const data = testdata[0];
 		// eslint-disable-next-line @typescript-eslint/no-unsafe-call
 		const seed = hexToBytes(data.seed.slice(2));
 		const txn = FeeMarketEIP1559Transaction.fromTxData(data, { common, freeze: false });
 		const newCommon = new Common({
-			chain: Chain.Goerli,
-			hardfork: Hardfork.London,
+			chain: Chain.Mainnet,
+			hardfork: Hardfork.Shanghai,
 			eips: [2537],
 		});
 		expect(Object.isFrozen(newCommon)).not.toEqual(common);

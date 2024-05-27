@@ -442,34 +442,6 @@ export default {
 			"v": 3,
 			"d": "Base fee of the RETURNDATACOPY opcode"
 		},
-		"netSstoreNoopGas": {
-			"v": null,
-			"d": "Removed along EIP-1283"
-		},
-		"netSstoreInitGas": {
-			"v": null,
-			"d": "Removed along EIP-1283"
-		},
-		"netSstoreCleanGas": {
-			"v": null,
-			"d": "Removed along EIP-1283"
-		},
-		"netSstoreDirtyGas": {
-			"v": null,
-			"d": "Removed along EIP-1283"
-		},
-		"netSstoreClearRefund": {
-			"v": null,
-			"d": "Removed along EIP-1283"
-		},
-		"netSstoreResetRefund": {
-			"v": null,
-			"d": "Removed along EIP-1283"
-		},
-		"netSstoreResetClearRefund": {
-			"v": null,
-			"d": "Removed along EIP-1283"
-		},
 		"shl": {
 			"v": 3,
 			"d": "Base fee of the SHL opcode"
