@@ -128,7 +128,7 @@ describe('contract defaults (extra)', () => {
 		const common = {
 			customChain: { name: 'testnet', networkId: '1337', chainId: '1337' },
 			baseChain,
-			hardfork: 'london' as Hardfork,
+			hardfork: 'shanghai' as Hardfork,
 		};
 
 		beforeEach(async () => {

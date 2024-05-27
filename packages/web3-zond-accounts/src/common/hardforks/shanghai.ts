@@ -588,7 +588,6 @@ export default {
 			"v": 49152,
 			"d": "Maximum length of initialization code when creating a contract"
 		}
-	},
-	"eips": []
+	}
 }
  ;

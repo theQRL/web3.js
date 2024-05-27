@@ -66,7 +66,6 @@
 		"test:e2e:mainnet:ws": "./scripts/test-runner.sh mainnet ws",
 		"test:e2e:testnet:http": "./scripts/test-runner.sh testnet http",
 		"test:e2e:testnet:ws": "./scripts/test-runner.sh testnet ws",
-		"generate:accounts": "node ./scripts/gen_accounts.js",
 		"pre-blackbox": "yarn config set registry http://localhost:4873 && git init && git config --global user.email \"ci@github.com\" && git config --global user.name \"CI\"",
 		"post-blackbox": "./scripts/verdaccio.sh stop",
 		"post-blackbox:gzond": "yarn gzond:stop && yarn post-blackbox",

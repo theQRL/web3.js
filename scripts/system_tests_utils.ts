@@ -235,7 +235,7 @@ export const refillAccount = async (from: string, to: string, value: string | nu
 	});
 };
 
-// let mainAcc: string;
+let mainAcc: string;
 export const createNewAccount = async (config?: {
 	refill?: boolean;
 	seed?: string;
@@ -244,17 +244,14 @@ export const createNewAccount = async (config?: {
 }): Promise<{ address: string; seed: string }> => {
 	const acc = config?.seed ? seedToAccount(config?.seed) : _createAccount();
 
-	// const clientUrl = DEFAULT_SYSTEM_PROVIDER;
+	const clientUrl = DEFAULT_SYSTEM_PROVIDER;
 
 	if (config?.refill) {
-		// TODO(rgeraldes24)
-		/*
-		const web3Personal = new Personal(clientUrl);
+		const web3Zond = new Web3Zond(clientUrl);
 		if (!mainAcc) {
-			[mainAcc] = await web3Personal.getAccounts();
+			[mainAcc] = await web3Zond.getAccounts();
 		}
 		await refillAccount(mainAcc, acc.address, '10000000000000000000');
-		*/
 	}
 
 	return { address: acc.address.toLowerCase(), seed: acc.seed! };

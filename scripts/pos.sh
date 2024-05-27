@@ -31,12 +31,12 @@ download(){
 
     if [ ! -e "$TMP_FOLDER/go-zond" ]
     then
-        git clone https://github.com/theQRL/go-zond ${TMP_FOLDER}/go-zond
+        git clone https://github.com/cyyber/go-zond ${TMP_FOLDER}/go-zond
     fi
 
 	if [ ! -e "$TMP_FOLDER/qrysm" ]
     then
-        git clone https://github.com/theQRL/qrysm ${TMP_FOLDER}/qrysm
+        git clone https://github.com/cyyber/qrysm ${TMP_FOLDER}/qrysm
     fi
 }
 
@@ -63,7 +63,6 @@ start() {
 	echo "Create network files..."
 	GENESIS_TIME=$(bash python scripts/update-time.py $TMP_FOLDER | tail -n 1)
 	${TMP_FOLDER}/bin/qrysmctl testnet generate-genesis \
-		--fork=capella \
 		--num-validators=64 \
 		--gzond-genesis-json-in=$TMP_FOLDER/execution/genesis.json \
 		--output-ssz=$TMP_FOLDER/consensus/genesis.ssz \
@@ -87,6 +86,9 @@ start() {
 		--ws --ws.addr 0.0.0.0 --ws.port $WEB3_SYSTEM_TEST_PORT \
 		--http --http.addr 0.0.0.0 --http.port $WEB3_SYSTEM_TEST_PORT \
 		--allow-insecure-unlock \
+		--keystore $TMP_FOLDER/execution/keystore \
+		--unlock "0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19" \
+		--password $TMP_FOLDER/execution/password.txt \
 		--http.api web3,zond,admin,debug,txpool,net \
 		--ws.api web3,zond,admin,debug,miner,txpool,net \
 		--syncmode=full >> ${TMP_FOLDER}/logs/gzond.log 2>&1 &
