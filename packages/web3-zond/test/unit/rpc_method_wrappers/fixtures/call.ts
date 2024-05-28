@@ -42,7 +42,6 @@ const transaction: TransactionCall = {
  * - Test title
  * - Input parameters:
  *     - blockNumber
- *     - uncleIndex
  *     - returnFormat
  * - mockRpcResponse
  */

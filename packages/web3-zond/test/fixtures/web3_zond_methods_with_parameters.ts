@@ -731,7 +731,7 @@ export const getTransactionFromBlockValidData: [
 		[undefined, '0x0', undefined],
 		[BlockTags.LATEST, '0x0', DEFAULT_RETURN_FORMAT],
 	],
-	// Defined block, uncleIndex = '0x0', and undefined returnType
+	// Defined block, and undefined returnType
 	[
 		['0xc3073501c72f0d9372a18015637c86a394c7d52b633ced791d64e88969cfa3e2', '0x0', undefined],
 		[
@@ -752,7 +752,7 @@ export const getTransactionFromBlockValidData: [
 		[BlockTags.PENDING, '0x0', undefined],
 		[BlockTags.PENDING, '0x0', DEFAULT_RETURN_FORMAT],
 	],
-	// Defined block, uncleIndex = '0x0', and undefined returnType
+	// Defined block and undefined returnType
 	[
 		[BlockTags.LATEST, '0x0', undefined],
 		[BlockTags.LATEST, '0x0', DEFAULT_RETURN_FORMAT],
@@ -773,7 +773,7 @@ export const getTransactionFromBlockValidData: [
 		[BlockTags.FINALIZED, '0x0', undefined],
 		[BlockTags.FINALIZED, '0x0', DEFAULT_RETURN_FORMAT],
 	],
-	// Defined block, uncleIndex = true, and returnType = DEFAULT_RETURN_FORMAT
+	// Defined block and returnType = DEFAULT_RETURN_FORMAT
 	[
 		[BlockTags.LATEST, '0x0', DEFAULT_RETURN_FORMAT],
 		[BlockTags.LATEST, '0x0', DEFAULT_RETURN_FORMAT],
@@ -786,7 +786,7 @@ export const getTransactionFromBlockValidData: [
 		[BlockTags.PENDING, '0x0', DEFAULT_RETURN_FORMAT],
 		[BlockTags.PENDING, '0x0', DEFAULT_RETURN_FORMAT],
 	],
-	// Defined block, uncleIndex = '0x0', and returnType = {...DEFAULT_RETURN_FORMAT, number: FMT_NUMBER.STR}
+	// Defined block and returnType = {...DEFAULT_RETURN_FORMAT, number: FMT_NUMBER.STR}
 	[
 		[BlockTags.LATEST, '0x0', { ...DEFAULT_RETURN_FORMAT, number: FMT_NUMBER.STR }],
 		[BlockTags.LATEST, '0x0', { ...DEFAULT_RETURN_FORMAT, number: FMT_NUMBER.STR }],
@@ -799,7 +799,7 @@ export const getTransactionFromBlockValidData: [
 		[BlockTags.PENDING, '0x0', { ...DEFAULT_RETURN_FORMAT, number: FMT_NUMBER.STR }],
 		[BlockTags.PENDING, '0x0', { ...DEFAULT_RETURN_FORMAT, number: FMT_NUMBER.STR }],
 	],
-	// Defined block, uncleIndex = '0x0', and returnType = {...DEFAULT_RETURN_FORMAT, number: FMT_NUMBER.NUMBER}
+	// Defined block and returnType = {...DEFAULT_RETURN_FORMAT, number: FMT_NUMBER.NUMBER}
 	[
 		[BlockTags.LATEST, '0x0', { ...DEFAULT_RETURN_FORMAT, number: FMT_NUMBER.NUMBER }],
 		[BlockTags.LATEST, '0x0', { ...DEFAULT_RETURN_FORMAT, number: FMT_NUMBER.NUMBER }],
@@ -812,7 +812,7 @@ export const getTransactionFromBlockValidData: [
 		[BlockTags.PENDING, '0x0', { ...DEFAULT_RETURN_FORMAT, number: FMT_NUMBER.NUMBER }],
 		[BlockTags.PENDING, '0x0', { ...DEFAULT_RETURN_FORMAT, number: FMT_NUMBER.NUMBER }],
 	],
-	// Defined block, uncleIndex = '0x0', and returnType = {...DEFAULT_RETURN_FORMAT, number: FMT_NUMBER.BIGINT}
+	// Defined block and returnType = {...DEFAULT_RETURN_FORMAT, number: FMT_NUMBER.BIGINT}
 	[
 		[BlockTags.LATEST, '0x0', { ...DEFAULT_RETURN_FORMAT, number: FMT_NUMBER.BIGINT }],
 		[BlockTags.LATEST, '0x0', { ...DEFAULT_RETURN_FORMAT, number: FMT_NUMBER.BIGINT }],
@@ -937,7 +937,7 @@ export const getTransactionCountValidData: [
 		['0x407d73d8a49eeb85d32cf465507dd71d507100c1', BlockTags.FINALIZED, undefined],
 		['0x407d73d8a49eeb85d32cf465507dd71d507100c1', BlockTags.FINALIZED, DEFAULT_RETURN_FORMAT],
 	],
-	// Defined block, uncleIndex = and undefined returnType
+	// Defined block, undefined returnType
 	[
 		['0x407d73d8a49eeb85d32cf465507dd71d507100c1', BlockTags.LATEST, undefined],
 		['0x407d73d8a49eeb85d32cf465507dd71d507100c1', BlockTags.LATEST, DEFAULT_RETURN_FORMAT],
@@ -950,7 +950,7 @@ export const getTransactionCountValidData: [
 		['0x407d73d8a49eeb85d32cf465507dd71d507100c1', BlockTags.PENDING, undefined],
 		['0x407d73d8a49eeb85d32cf465507dd71d507100c1', BlockTags.PENDING, DEFAULT_RETURN_FORMAT],
 	],
-	// Defined block, uncleIndex = true, and returnType = DEFAULT_RETURN_FORMAT
+	// Defined block and returnType = DEFAULT_RETURN_FORMAT
 	[
 		['0x407d73d8a49eeb85d32cf465507dd71d507100c1', BlockTags.LATEST, DEFAULT_RETURN_FORMAT],
 		['0x407d73d8a49eeb85d32cf465507dd71d507100c1', BlockTags.LATEST, DEFAULT_RETURN_FORMAT],
@@ -963,7 +963,7 @@ export const getTransactionCountValidData: [
 		['0x407d73d8a49eeb85d32cf465507dd71d507100c1', BlockTags.PENDING, DEFAULT_RETURN_FORMAT],
 		['0x407d73d8a49eeb85d32cf465507dd71d507100c1', BlockTags.PENDING, DEFAULT_RETURN_FORMAT],
 	],
-	// Defined block, uncleIndex = and returnType = {...DEFAULT_RETURN_FORMAT, number: FMT_NUMBER.STR}
+	// Defined block and returnType = {...DEFAULT_RETURN_FORMAT, number: FMT_NUMBER.STR}
 	[
 		[
 			'0x407d73d8a49eeb85d32cf465507dd71d507100c1',
@@ -1000,7 +1000,7 @@ export const getTransactionCountValidData: [
 			{ ...DEFAULT_RETURN_FORMAT, number: FMT_NUMBER.STR },
 		],
 	],
-	// Defined block, uncleIndex = and returnType = {...DEFAULT_RETURN_FORMAT, number: FMT_NUMBER.NUMBER}
+	// Defined block and returnType = {...DEFAULT_RETURN_FORMAT, number: FMT_NUMBER.NUMBER}
 	[
 		[
 			'0x407d73d8a49eeb85d32cf465507dd71d507100c1',
@@ -1037,7 +1037,7 @@ export const getTransactionCountValidData: [
 			{ ...DEFAULT_RETURN_FORMAT, number: FMT_NUMBER.NUMBER },
 		],
 	],
-	// Defined block, uncleIndex = and returnType = {...DEFAULT_RETURN_FORMAT, number: FMT_NUMBER.BIGINT}
+	// Defined block and returnType = {...DEFAULT_RETURN_FORMAT, number: FMT_NUMBER.BIGINT}
 	[
 		[
 			'0x407d73d8a49eeb85d32cf465507dd71d507100c1',

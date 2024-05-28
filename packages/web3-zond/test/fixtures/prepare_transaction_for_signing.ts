@@ -64,24 +64,6 @@ const common: Common = {
 	},
 	hardfork: 'shanghai',
 };
-// const commonBerlin: Common = {
-// 	baseChain: 'mainnet',
-// 	customChain: {
-// 		name: 'custom-network',
-// 		networkId: 1,
-// 		chainId: 1,
-// 	},
-// 	hardfork: 'berlin',
-// };
-const commonLondon: Common = {
-	baseChain: 'mainnet',
-	customChain: {
-		name: 'custom-network',
-		networkId: 1,
-		chainId: 1,
-	},
-	hardfork: 'shanghai',
-};
 
 // const accessList: AccessList = [
 // 	{
@@ -801,7 +783,7 @@ export const validTransactions: [
 			from: '0x205E894F59120816b4BA2E14469AA2f7bF63cBbA',
 			value: '1000000000',
 			input: '',
-			common: commonLondon,
+			common: common,
 		},
 		'0xd3caefd946f36f8cf29529b1109a097a13a72e70d75979ed374ada3e795a6f249c9ecc4d92f3ded7f083d02e3d3b3e01',
 		'0x205E894F59120816b4BA2E14469AA2f7bF63cBbA',
@@ -823,7 +805,7 @@ export const validTransactions: [
 			from: '0x205E894F59120816b4BA2E14469AA2f7bF63cBbA',
 			value: '1000000000',
 			input: '',
-			common: commonLondon,
+			common: common,
 		},
 		'0xd3caefd946f36f8cf29529b1109a097a13a72e70d75979ed374ada3e795a6f249c9ecc4d92f3ded7f083d02e3d3b3e01',
 		'0x205E894F59120816b4BA2E14469AA2f7bF63cBbA',
@@ -844,7 +826,7 @@ export const validTransactions: [
 			to: '0xF0109fC8DF283027b6285cc889F5aA624EaC1F55',
 			value: '1000000000',
 			input: '',
-			common: commonLondon,
+			common: common,
 		},
 		'0xd3caefd946f36f8cf29529b1109a097a13a72e70d75979ed374ada3e795a6f249c9ecc4d92f3ded7f083d02e3d3b3e01',
 		'0x205E894F59120816b4BA2E14469AA2f7bF63cBbA',

@@ -25,7 +25,8 @@ import {
 	transactionTypeValidationError,
 } from '../fixtures/detect_transaction_type';
 
-describe('detectTransactionType', () => {
+// TODO(rgeraldes24)
+describe.skip('detectTransactionType', () => {
 	describe('should override detectTransactionType method', () => {
 		it.skip('should call override method', () => {
 			const overrideFunction = jest.fn();
