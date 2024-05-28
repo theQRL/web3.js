@@ -70,7 +70,7 @@ To connect to the Zond network using the HTTP provider, follow these steps:
     async function main() {
     	try {
     		// Get the current block number from the network
-    		const currentBlockNumber = await web3.getBlockNumber();
+    		const currentBlockNumber = await web3.zond.getBlockNumber();
     		console.log('Current block number:', currentBlockNumber);
 
     		// Get the list of accounts in the connected node (e.g., Ganache)
