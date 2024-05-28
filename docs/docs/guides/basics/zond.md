@@ -1,13 +1,13 @@
 ---
 sidebar_position: 2
-sidebar_label: 'Eth Package Usage Example'
+sidebar_label: 'Zond Package Usage Example'
 ---
 
-# Getting Started with `eth` Package
+# Getting Started with `zond` Package
 
 ## Introduction
 
-The `web3-eth` package provides a set of powerful functionalities to interact with the Ethereum blockchain and smart contracts. In this tutorial, we will guide you through the basics of using the `web3-eth` package of web3.js version 4. We will be using TypeScript throughout the examples.
+The `web3-zond` package provides a set of powerful functionalities to interact with the Zond blockchain and smart contracts. In this tutorial, we will guide you through the basics of using the `web3-zond` package of web3.js. We will be using TypeScript throughout the examples.
 
 ## Overview
 
@@ -16,13 +16,13 @@ Here is a high-level overview of the steps we will be taking in this tutorial:
 1. Setting up the Environment
 2. Create a new project directory and initialize a new Node.js project.
 3. Set up web3.js and connect to the Ganache network
-4. Interact with the Ethereum blockchain using web3.js.
+4. Interact with the Zond blockchain using web3.js.
 
 ## Step 1: Setting up the Environment
 
 Before we start writing and deploying our contract, we need to set up our environment. For that, we need to install the following:
 
-1. Ganache - Ganache is a personal blockchain for Ethereum development that allows you to see how your smart contracts function in real-world scenarios. You can download it from http://truffleframework.com/ganache
+1. Ganache - Ganache is a personal blockchain for Zond development that allows you to see how your smart contracts function in real-world scenarios. You can download it from http://truffleframework.com/ganache
 2. Node.js - Node.js is a JavaScript runtime environment that allows you to run JavaScript on the server-side. You can download it from https://nodejs.org/en/download/
 3. npm - Node Package Manager is used to publish and install packages to and from the public npm registry or a private npm registry. Here is how to install it https://docs.npmjs.com/downloading-and-installing-node-js-and-npm. (Alternatively, you can use yarn instead of npm https://classic.yarnpkg.com/lang/en/docs/getting-started/)
 
@@ -57,10 +57,10 @@ In this step, we will set up the web3.js library and connect to the Ganache netw
 First, install the `web3` package using npm:
 
 ```
-npm install web3@4.0.1-rc.1
+npm install @theqrl/web3@4.0.1-rc.1
 ```
 
-Note that we are installing the latest version of 4.x, at the time of this tutorial writing. You can check the latest version at https://www.npmjs.com/package/web3?activeTab=versions
+Note that we are installing the latest version of 4.x, at the time of this tutorial writing. You can check the latest version at https://www.npmjs.com/package/@theqrl/web3?activeTab=versions
 
 Next, create a new file called `index.ts` in your project directory and add the following code to it:
 
@@ -71,7 +71,7 @@ const { Web3 } = require('web3'); //  web3.js has native ESM builds and (`import
 const web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:7545'));
 
 // Log the current block number to the console
-web3.eth
+web3.zond
 	.getBlockNumber()
 	.then(result => {
 		console.log('Current block number: ' + result);
@@ -91,7 +91,7 @@ npx ts-node index.ts
 
 If everything is working correctly, you should see the current block number logged to the console. However, if you got an error with the reason `connect ECONNREFUSED 127.0.0.1:7545` then double check that you are running Ganache locally on port `7545`.
 
-## Step 3: Interact with the Ethereum blockchain using web3.js
+## Step 3: Interact with the Zond blockchain using web3.js
 
 In this step, we will use web3.js to interact with the Ganache network.
 
@@ -103,19 +103,19 @@ const { Web3 } = require('web3'); //  web3.js has native ESM builds and (`import
 const fs = require('fs');
 const path = require('path');
 
-// Set up a connection to the Ethereum network
+// Set up a connection to the Zond network
 const web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:7545'));
-web3.eth.Contract.handleRevert = true;
+web3.zond.Contract.handleRevert = true;
 
 async function interact() {
 	//fetch all the available accounts
-	const accounts = await web3.eth.getAccounts();
+	const accounts = await web3.zond.getAccounts();
 	console.log(accounts);
 
 	let balance1, balance2;
 	//The initial balances of the accounts should be 100 Eth (10^18 wei)
-	balance1 = await web3.eth.getBalance(accounts[0]);
-	balance2 = await web3.eth.getBalance(accounts[1]);
+	balance1 = await web3.zond.getBalance(accounts[0]);
+	balance2 = await web3.zond.getBalance(accounts[1]);
 
 	console.log(balance1, balance2);
 
@@ -127,17 +127,17 @@ async function interact() {
 	};
 
 	//send the actual transaction
-	const transactionHash = await web3.eth.sendTransaction(transaction);
+	const transactionHash = await web3.zond.sendTransaction(transaction);
 	console.log('transactionHash', transactionHash);
 
-	balance1 = await web3.eth.getBalance(accounts[0]);
-	balance2 = await web3.eth.getBalance(accounts[1]);
+	balance1 = await web3.zond.getBalance(accounts[0]);
+	balance2 = await web3.zond.getBalance(accounts[1]);
 
 	// see the updated balances
 	console.log(balance1, balance2);
 
 	// irrelevant with the actual transaction, just to know the gasPrice
-	const gasPrice = await web3.eth.getGasPrice();
+	const gasPrice = await web3.zond.getGasPrice();
 	console.log(gasPrice);
 }
 
@@ -231,10 +231,10 @@ async function estimate() {
 	const web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:7545'));
 
 	//get the available accounts
-	const accounts = await web3.eth.getAccounts();
+	const accounts = await web3.zond.getAccounts();
 	let acc = await accounts[0];
 
-	let contract = new web3.eth.Contract(abi, undefined);
+	let contract = new web3.zond.Contract(abi, undefined);
 
 	const deployment = contract.deploy({
 		data: '0x608060405234801561001057600080fd5b506040516101d93803806101d983398181016040528101906100329190610054565b806000819055505061009e565b60008151905061004e81610087565b92915050565b60006020828403121561006657600080fd5b60006100748482850161003f565b91505092915050565b6000819050919050565b6100908161007d565b811461009b57600080fd5b50565b61012c806100ad6000396000f3fe6080604052348015600f57600080fd5b506004361060325760003560e01c806323fd0e401460375780636ffd773c146051575b600080fd5b603d6069565b6040516048919060bf565b60405180910390f35b6067600480360381019060639190608c565b606f565b005b60005481565b8060008190555050565b60008135905060868160e2565b92915050565b600060208284031215609d57600080fd5b600060a9848285016079565b91505092915050565b60b98160d8565b82525050565b600060208201905060d2600083018460b2565b92915050565b6000819050919050565b60e98160d8565b811460f357600080fd5b5056fea2646970667358221220d28cf161457f7936995800eb9896635a02a559a0561bff6a09a40bfb81cd056564736f6c63430008000033',
@@ -292,7 +292,7 @@ const privateKey = '0x0fed6f64e01bc9fac9587b6e7245fd9d056c3c004ad546a17d3d029977
 const value = web3.utils.toWei('1', 'ether');
 
 async function sendSigned() {
-	const accounts = await web3.eth.getAccounts();
+	const accounts = await web3.zond.getAccounts();
 	const fromAddress = accounts[0];
 	const toAddress = accounts[1];
 	// Create a new transaction object
@@ -302,14 +302,14 @@ async function sendSigned() {
 		value: value,
 		gas: 21000,
 		gasPrice: web3.utils.toWei('10', 'gwei'),
-		nonce: await web3.eth.getTransactionCount(fromAddress),
+		nonce: await web3.zond.getTransactionCount(fromAddress),
 	};
 
 	// Sign the transaction with the private key
-	const signedTx = await web3.eth.accounts.signTransaction(tx, privateKey);
+	const signedTx = await web3.zond.accounts.signTransaction(tx, privateKey);
 
 	// Send the signed transaction to the network
-	const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction);
+	const receipt = await web3.zond.sendSignedTransaction(signedTx.rawTransaction);
 
 	console.log('Transaction receipt:', receipt);
 }
@@ -348,7 +348,7 @@ Transaction receipt: {
 
 In this tutorial, we learned how to use different methods provied by the `web3-eth` package.
 
-With this knowledge, you can start experimenting with the Ethereum blockchain. Keep in mind that this is just the beginning, and there is a lot more to learn about Ethereum and web3.js. So keep exploring and building, and have fun!
+With this knowledge, you can start experimenting with the Zond blockchain. Keep in mind that this is just the beginning, and there is a lot more to learn about Zond and web3.js. So keep exploring and building, and have fun!
 
 ## Additional Resources
 
@@ -370,6 +370,6 @@ With this knowledge, you can start experimenting with the Ethereum blockchain. K
 
 ## Final Thoughts
 
-Web3.js version 4.x provides a powerful and easy-to-use interface for interacting with the Ethereum network and building decentralized applications. And it has been rewritten in TypeScript but for simplicity of this tutorial we interacted with it in JavaScript.
+Web3.js provides a powerful and easy-to-use interface for interacting with the Zond network and building decentralized applications. And it has been rewritten in TypeScript but for simplicity of this tutorial we interacted with it in JavaScript.
 
-The Ethereum ecosystem is constantly evolving, and there is always more to learn and discover. As you continue to develop your skills and knowledge, keep exploring and experimenting with new technologies and tools to build innovative and decentralized solutions.
+The Zond ecosystem is constantly evolving, and there is always more to learn and discover. As you continue to develop your skills and knowledge, keep exploring and experimenting with new technologies and tools to build innovative and decentralized solutions.

@@ -11,7 +11,7 @@
 
 This is a sub-package of [web3.js][repo].
 
-`web3-eth-iban` This package converts Ethereum addresses to IBAN addresses a vice versa.
+`web3-eth-iban` This package converts Zond addresses to IBAN addresses a vice versa.
 
 ## Installation
 

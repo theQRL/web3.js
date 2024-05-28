@@ -4,7 +4,7 @@
 	"publishConfig": {
 		"access": "public"
 	},
-	"description": "This package converts Ethereum addresses to IBAN addresses and vice versa.",
+	"description": "This package converts Zond addresses to IBAN addresses and vice versa.",
 	"main": "./lib/commonjs/index.js",
 	"module": "./lib/esm/index.js",
 	"exports": {

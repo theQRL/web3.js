@@ -46,7 +46,7 @@ export class CustomRpcMethodsPlugin extends Web3PluginBase { ... }
 
 ### Extending `Web3EthPluginBase`
 
-In addition to `Web3PluginBase`, you can choose to extend `Web3EthPluginBase` which will provide the [Ethereum JSON RPC API interface](/api/web3-types#EthExecutionAPI), which packages such as `Web3Zond` use, as a generic to your plugin's `requestManager`, giving it type support for the [Ethereum JSON RPC spec](https://ethereum.github.io/execution-apis/api-documentation/). This would be the recommended approach if your plugin makes Ethereum JSON RPC calls directly to a provider using web3's provided `requestManager`.
+In addition to `Web3PluginBase`, you can choose to extend `Web3EthPluginBase` which will provide the [Zond JSON RPC API interface](/api/web3-types#EthExecutionAPI), which packages such as `Web3Zond` use, as a generic to your plugin's `requestManager`, giving it type support for the [Zond JSON RPC spec](https://ethereum.github.io/execution-apis/api-documentation/). This would be the recommended approach if your plugin makes Zond JSON RPC calls directly to a provider using web3's provided `requestManager`.
 
 ```typescript
 import { Web3EthPluginBase } from 'web3';
@@ -89,7 +89,7 @@ await web3Context.customRpcMethods.someMethod();
 
 ### Using the Inherited `Web3Context`
 
-Below is an example of `CustomRpcMethodsPlugin` making use of `this.requestManager` which will have access to an Ethereum provider if one was configured by the user. In the event that no `provider` was set by the user, the below code will throw a [ProviderError](/api/web3-errors/class/ProviderError) if `customRpcMethod` was to be called:
+Below is an example of `CustomRpcMethodsPlugin` making use of `this.requestManager` which will have access to an Zond provider if one was configured by the user. In the event that no `provider` was set by the user, the below code will throw a [ProviderError](/api/web3-errors/class/ProviderError) if `customRpcMethod` was to be called:
 
 ```typescript
 import { Web3PluginBase } from 'web3';
@@ -106,7 +106,7 @@ export class CustomRpcMethodsPlugin extends Web3PluginBase {
 }
 ```
 
-Below depicts a plugin user's code that does not configure an Ethereum provider, resulting in a thrown [ProviderError](/api/web3-errors/class/ProviderError) when calling `customRpcMethod`:
+Below depicts a plugin user's code that does not configure an Zond provider, resulting in a thrown [ProviderError](/api/web3-errors/class/ProviderError) when calling `customRpcMethod`:
 
 ```typescript
 // registering_a_plugin.ts
@@ -155,7 +155,7 @@ export class CustomRpcMethodsPlugin extends Web3PluginBase<CustomRpcApi> {
 
 ### Overriding `Web3Context`'s `.link` Method
 
-There currently exists [an issue](https://github.com/web3/web3.js/issues/5492) with certain web3.js packages not correctly linking their `Web3Context` with the context of the class the user has registered the plugin with. As mentioned in the issue, this can result in a bug where a plugin instantiates an instance of `Contract` (from `web3-eth-contract`) and attempts to call a method on the `Contract` instance (which uses the `requestManager` to make a call to the Ethereum provider), resulting in a [ProviderError](/api/web3-errors/class/ProviderError) even though the plugin user has set a provider and it should be available to the plugin.
+There currently exists [an issue](https://github.com/web3/web3.js/issues/5492) with certain web3.js packages not correctly linking their `Web3Context` with the context of the class the user has registered the plugin with. As mentioned in the issue, this can result in a bug where a plugin instantiates an instance of `Contract` (from `web3-eth-contract`) and attempts to call a method on the `Contract` instance (which uses the `requestManager` to make a call to the Zond provider), resulting in a [ProviderError](/api/web3-errors/class/ProviderError) even though the plugin user has set a provider and it should be available to the plugin.
 
 A workaround for this issue is available, below is an example of it:
 

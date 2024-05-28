@@ -674,14 +674,14 @@ describe('Contract', () => {
 			contract.transactionPollingTimeout = transactionPollingTimeout;
 			expect(contract.transactionPollingTimeout).toStrictEqual(transactionPollingTimeout);
 
-			const transactionReceiptPollingInterval = 2000; // its new in 4.x
+			const transactionReceiptPollingInterval = 2000;
 			expect(contract.transactionReceiptPollingInterval).toBe(1000);
 			contract.transactionReceiptPollingInterval = transactionReceiptPollingInterval;
 			expect(contract.transactionReceiptPollingInterval).toStrictEqual(
 				transactionReceiptPollingInterval,
 			);
 
-			const transactionConfirmationPollingInterval = 2501; // its new in 4.x
+			const transactionConfirmationPollingInterval = 2501;
 			expect(contract.transactionConfirmationPollingInterval).toBe(1000);
 			contract.transactionConfirmationPollingInterval =
 				transactionConfirmationPollingInterval;
@@ -689,7 +689,7 @@ describe('Contract', () => {
 				transactionConfirmationPollingInterval,
 			);
 
-			const transactionSendTimeout = 730000; // its new in 4.x
+			const transactionSendTimeout = 730000;
 			expect(contract.transactionSendTimeout).toBe(750000);
 			contract.transactionSendTimeout = transactionSendTimeout;
 			expect(contract.transactionSendTimeout).toStrictEqual(transactionSendTimeout);

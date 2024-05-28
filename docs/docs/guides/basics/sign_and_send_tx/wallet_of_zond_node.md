@@ -5,7 +5,7 @@ sidebar_label: 'Node Wallet'
 
 # Using Node Wallet
 
-If Ethereum node has unlocked account in its wallet you can send transaction without need of signing locally in web3.js
+If Zond node has unlocked account in its wallet you can send transaction without need of signing locally in web3.js
 
 ## Transaction
 
@@ -16,7 +16,7 @@ const web3 = new Web3(/* PROVIDER*/);
 
 // Second step: sign and send the transaction
 try {
-	const receipt = await web3.eth.sendTransaction({
+	const receipt = await web3.zond.sendTransaction({
 		from: account.address,
 		to: '0xe4beef667408b99053dc147ed19592ada0d77f59',
 		value: '0x1',
@@ -43,7 +43,7 @@ const web3 = new Web3(/* PROVIDER*/);
 // Second step: sign and send the transaction
 try {
 	// deploy
-	const contract = new web3.eth.Contract(ContractAbi);
+	const contract = new web3.zond.Contract(ContractAbi);
 	const contractDeployed = await contract
 		.deploy({
 			input: ContractBytecode,
