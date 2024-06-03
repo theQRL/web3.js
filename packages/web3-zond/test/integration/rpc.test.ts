@@ -54,7 +54,6 @@ describe('rpc', () => {
 	let deployOptions: Record<string, unknown>;
 	let sendOptions: Record<string, unknown>;
 	let tempAcc: { address: string; seed: string };
-	//let tempAcc2: { address: string; seed: string };
 	beforeAll(async () => {
 		clientUrl = getSystemTestProvider();
 		web3Zond = new Web3Zond({
@@ -72,7 +71,6 @@ describe('rpc', () => {
 			arguments: [10, 'string init value'],
 		};
 		tempAcc = await createTempAccount();
-		//tempAcc2 = await createTempAccount();
 		sendOptions = { from: tempAcc.address, /*gas: '1000000'*/ };
 
 		contractDeployed = await contract.deploy(deployOptions).send(sendOptions);
@@ -97,13 +95,13 @@ describe('rpc', () => {
 		});
 
 		// TODO: in future release, set coinbase account in node and match actual address here
-		/*
 		it('getCoinbase', async () => {
-			const coinbase = await web3Zond.getCoinbase();
-			expect(coinbase.startsWith('0x')).toBe(true);
-			expect(coinbase).toHaveLength(42);
+			// NOTE(rgeraldes24): we are not defining the coinbase
+			// const coinbase = await web3Zond.getCoinbase();
+			await expect(web3Zond.getCoinbase()).rejects.toThrow('etherbase must be explicitly specified');
+			// expect(coinbase.startsWith('0x')).toBe(true);
+			// expect(coinbase).toHaveLength(42);
 		});
-		*/
 
 		it('getAccounts', async () => {
 			const account = await createTempAccount();
@@ -290,8 +288,7 @@ describe('rpc', () => {
 		});
 
 
-		// TODO(rgeraldes24)
-		it.skip('getPastLogs', async () => {
+		it('getPastLogs', async () => {
 			const listOfStrings = ['t1', 't2', 't3'];
 			const resTx = [];
 			for (const l of listOfStrings) {
@@ -303,7 +300,7 @@ describe('rpc', () => {
 			const res: Array<any> = await web3Zond.getPastLogs({
 				address: contractDeployed.options.address as string,
 				fromBlock: numberToHex(Math.min(...resTx.map(d => Number(d.blockNumber)))),
-				toBlock: numberToHex(1000),
+				toBlock: numberToHex(10000),
 			});
 			const results = res.map(
 				r =>

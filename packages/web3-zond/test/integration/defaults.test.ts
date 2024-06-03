@@ -231,7 +231,7 @@ describe('defaults', () => {
 			const transactionCount = await zond2.getTransactionCount(acc.address);
 			expect(storage === '0x' ? 0 : Number(hexToNumber(storage))).toBe(0);
 			expect(code).toBe('0x');
-			// TODO(rgeraldes24)
+			// TODO(rgeraldes24): use new account
 			// expect(balance).toBe(BigInt(0));
 			expect(transactionCount).toBe(BigInt(0));
 
@@ -251,7 +251,7 @@ describe('defaults', () => {
 				'latest',
 			);
 			expect(Number(hexToNumber(storageWithBlockNumber))).toBe(10);
-			// TODO(rgeraldes24)
+			// TODO(rgeraldes24): use new account
 			// expect(transactionCountWithBlockNumber).toBe(BigInt(1));
 			expect(Number(balanceWithBlockNumber)).toBeGreaterThan(0);
 			expect(codeWithBlockNumber.startsWith(BasicBytecode.slice(0, 10))).toBe(true);
@@ -708,12 +708,11 @@ describe('defaults', () => {
 			// default
 			expect(web3Zond.defaultHardfork).toBe('shanghai');
 
-			// TODO(rgeraldes24)
 			// after set
-			// web3Zond.setConfig({
-			// 	defaultHardfork: 'dao',
-			// });
-			// expect(web3Zond.defaultHardfork).toBe('dao');
+			web3Zond.setConfig({
+				defaultHardfork: 'dao',
+			});
+			expect(web3Zond.defaultHardfork).toBe('dao');
 
 			// set by create new instance
 			zond2 = new Web3Zond({
@@ -769,9 +768,7 @@ describe('defaults', () => {
 			expect(zond2.defaultCommon).toBe(common);
 		});
 		it('defaultTransactionType', () => {
-			// TODO(rgeraldes24)
 			// default
-			// expect(web3Zond.defaultTransactionType).toBe('0x0');
 			expect(web3Zond.defaultTransactionType).toBe('0x2');
 			// after set
 			web3Zond.setConfig({

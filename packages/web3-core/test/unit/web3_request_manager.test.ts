@@ -210,7 +210,7 @@ describe('Web3RequestManager', () => {
 		});
 	});
 
-	// TODO(rgeraldes24)
+	// TODO(rgeraldes24): Provider does not have a request method to use
 	/*
 	describe('send()', () => {
 		let request: any;

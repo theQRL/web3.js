@@ -15,8 +15,8 @@ import Web3 from 'web3';
 const web3 = new Web3(/* PROVIDER*/);
 
 // Second step: add an account to wallet
-const privateKeyString = '0x1f953dc9b6437fb94fcafa5dabe3faa0c34315b954dd66f41bf53273339c6d26';
-const account = web3.zond.accounts.wallet.add(privateKeyString).get(0);
+const seedString = '0x1f953dc9b6437fb94fcafa5dabe3faa0c34315b954dd66f41bf53273339c6d26';
+const account = web3.zond.accounts.wallet.add(seedString).get(0);
 
 // Make sure the account has enough zond on balance to send the transaction
 
@@ -49,8 +49,8 @@ import Web3 from 'web3';
 const web3 = new Web3(/* PROVIDER*/);
 
 // Second step: add an account to wallet
-const privateKeyString = '0x1f953dc9b6437fb94fcafa5dabe3faa0c34315b954dd66f41bf53273339c6d26';
-const account = web3.zond.accounts.wallet.add(privateKeyString).get(0);
+const seedString = '0x1f953dc9b6437fb94fcafa5dabe3faa0c34315b954dd66f41bf53273339c6d26';
+const account = web3.zond.accounts.wallet.add(seedString).get(0);
 
 // Make sure the account has enough zond on balance to send the transaction
 

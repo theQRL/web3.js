@@ -21,7 +21,7 @@ describe('[Common]: Parameter access for param(), paramByHardfork()', () => {
 		const c = new Common({ chain: Chain.Mainnet, eips: [] });
 		// TODO(rgeraldes24)
 		// expect(c.paramByHardfork('gasPrices', 'ecAdd', 'byzantium')).toEqual(BigInt(500));
-		expect(c.paramByHardfork('gasPrices', 'ecAdd', 'byzantium')).toEqual(BigInt(150));
+		expect(c.paramByHardfork('gasPrices', 'ecAdd', 'shanghai')).toEqual(BigInt(150));
 
 		// TODO(rgeraldes24)
 		// c.setHardfork(Hardfork.Byzantium);
@@ -43,18 +43,16 @@ describe('[Common]: Parameter access for param(), paramByHardfork()', () => {
 		}).toThrow('Topic gasPrizes not defined');
 
 		c.setHardfork(Hardfork.Shanghai);
-		// TODO(rgeraldes24)
-		// expect(c.param('gasPrices', 'ecAdd')).toEqual(BigInt(500));
 		expect(c.param('gasPrices', 'ecAdd')).toEqual(BigInt(150));
 	});
 
+	// NOTE(rgeraldes24): there are no param updates yet in our case
 	it('Parameter updates', () => {
-		// const c = new Common({ chain: Chain.Mainnet });
+		const c = new Common({ chain: Chain.Mainnet });
 
-		// TODO(rgeraldes24)
-		// expect(c.paramByHardfork('pow', 'minerReward', 'chainstart')).toEqual(
-		// 	BigInt(5000000000000000000),
-		// );
+		expect(c.paramByHardfork('gasPrices', 'ecAdd', 'shanghai')).toEqual(
+			BigInt(150),
+		);
 
 		// expect(c.paramByHardfork('pow', 'minerReward', 'byzantium')).toEqual(
 		// 	BigInt(3000000000000000000),

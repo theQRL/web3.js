@@ -42,7 +42,7 @@ describe('[Utils/Parse]', () => {
 		merge: '0x013fd1b5',
 	};
 
-	// TODO(rgeraldes24)
+	// TODO(rgeraldes24): rinkeby is not available
 	// it('should parse gzond params file', async () => {
 	// 	const params = parseGzondGenesis(testnet, 'rinkeby');
 	// 	expect(params.genesis.nonce).toBe('0x0000000000000042');
