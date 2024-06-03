@@ -213,7 +213,7 @@ Create a file named `deploy.js` and fill it with the following code:
 
 ```javascript
 // For simplicity we use `web3` package here. However, if you are concerned with the size,
-//	you may import individual packages like 'web3-eth', 'web3-eth-contract' and 'web3-providers-http'.
+//	you may import individual packages like 'web3-zond', 'web3-zond-contract' and 'web3-providers-http'.
 const { Web3 } = require('web3'); //  web3.js has native ESM builds and (`import Web3 from 'web3'`)
 const fs = require('fs');
 const path = require('path');

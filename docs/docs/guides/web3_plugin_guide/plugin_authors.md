@@ -155,7 +155,7 @@ export class CustomRpcMethodsPlugin extends Web3PluginBase<CustomRpcApi> {
 
 ### Overriding `Web3Context`'s `.link` Method
 
-There currently exists [an issue](https://github.com/web3/web3.js/issues/5492) with certain web3.js packages not correctly linking their `Web3Context` with the context of the class the user has registered the plugin with. As mentioned in the issue, this can result in a bug where a plugin instantiates an instance of `Contract` (from `web3-eth-contract`) and attempts to call a method on the `Contract` instance (which uses the `requestManager` to make a call to the Zond provider), resulting in a [ProviderError](/api/web3-errors/class/ProviderError) even though the plugin user has set a provider and it should be available to the plugin.
+There currently exists [an issue](https://github.com/web3/web3.js/issues/5492) with certain web3.js packages not correctly linking their `Web3Context` with the context of the class the user has registered the plugin with. As mentioned in the issue, this can result in a bug where a plugin instantiates an instance of `Contract` (from `web3-zond-contract`) and attempts to call a method on the `Contract` instance (which uses the `requestManager` to make a call to the Zond provider), resulting in a [ProviderError](/api/web3-errors/class/ProviderError) even though the plugin user has set a provider and it should be available to the plugin.
 
 A workaround for this issue is available, below is an example of it:
 
@@ -263,7 +263,7 @@ But, the user who does not call `.registerPlugin`, before accessing your plugin,
 
 :::
 
-2. The `registerPlugin` method exists on the `Web3Context` class, so any class that `extends Web3Context` has the ability to add your plugin's additional functionality to its interface. So, by augmenting `Web3Context` to include your plugin's interface, you're essentially providing a blanket augmentation that adds your plugin's interface to **all** Web3 modules that extend `Web3Context` (i.e. `web3`, `web3-eth`, `web3-eth-contract`, etc.).
+2. The `registerPlugin` method exists on the `Web3Context` class, so any class that `extends Web3Context` has the ability to add your plugin's additional functionality to its interface. So, by augmenting `Web3Context` to include your plugin's interface, you're essentially providing a blanket augmentation that adds your plugin's interface to **all** Web3 modules that extend `Web3Context` (i.e. `web3`, `web3-zond`, `web3-zond-contract`, etc.).
 
 3. The value of the `pluginNamespace`, that we used `customRpcMethods` for it in our sample code, **MUST** have the exact same name at 2 places: The first place is in the augmentation. And the second is the value of the public `pluginNamespace` inside your plugin class.
 

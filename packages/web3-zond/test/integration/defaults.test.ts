@@ -773,8 +773,8 @@ describe('defaults', () => {
 		it('defaultTransactionType', () => {
 			// TODO(rgeraldes24)
 			// default
-			expect(web3Zond.defaultTransactionType).toBe('0x0');
-			// expect(web3Zond.defaultTransactionType).toBe('0x2');
+			// expect(web3Zond.defaultTransactionType).toBe('0x0');
+			expect(web3Zond.defaultTransactionType).toBe('0x2');
 			// after set
 			web3Zond.setConfig({
 				defaultTransactionType: '0x3',

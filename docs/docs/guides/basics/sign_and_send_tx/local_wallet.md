@@ -38,8 +38,8 @@ try {
 
 List of references:
 
--   [zond.accounts.wallet.add](/api/web3-eth-accounts/class/Wallet#add)
--   [zond.sendTransaction](/api/web3-eth/class/Web3Zond#sendTransaction)
+-   [zond.accounts.wallet.add](/api/web3-zond-accounts/class/Wallet#add)
+-   [zond.sendTransaction](/api/web3-zond/class/Web3Zond#sendTransaction)
 
 ## Contract Transaction
 
@@ -87,7 +87,7 @@ try {
 
 List of references:
 
--   [eth.accounts.wallet.add](/api/web3-eth-accounts/class/Wallet#add)
--   [eth.Contract](/api/web3-eth-contract/class/Contract)
--   [contract.deploy](/api/web3-eth-contract/class/Contract#deploy)
--   [contract.methods](/api/web3-eth-contract/class/Contract#methods)
+-   [zond.accounts.wallet.add](/api/web3-zond-accounts/class/Wallet#add)
+-   [zond.Contract](/api/web3-zond-contract/class/Contract)
+-   [contract.deploy](/api/web3-zond-contract/class/Contract#deploy)
+-   [contract.methods](/api/web3-zond-contract/class/Contract#methods)

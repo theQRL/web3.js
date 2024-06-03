@@ -11,7 +11,7 @@ module.exports = {
 		[
 			'json',
 			{
-				file: 'web3-eth-iban-unit-coverage.json',
+				file: 'web3-zond-iban-unit-coverage.json',
 			},
 		],
 	],
