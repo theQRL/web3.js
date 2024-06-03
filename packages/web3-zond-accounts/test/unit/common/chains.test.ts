@@ -64,8 +64,8 @@ describe('[Common/Chains]: Initialization / Chain params', () => {
 	
 	it('Should provide correct access to chain parameters', () => {
 		let c = new Common({ chain: 'mainnet', hardfork: 'shanghai' });
-		// TODO(rgeraldes24)
 		// expect(c.hardforks()[3]['block']).toBe(2463000);
+		expect(c.hardforks()[0]['block']).toBe(0);
 		expect(c.consensusType()).toEqual(ConsensusType.ProofOfStake);
 		expect(c.consensusAlgorithm()).toEqual(ConsensusAlgorithm.Casper);
 		expect(c.consensusConfig()).toEqual({});

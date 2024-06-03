@@ -94,8 +94,7 @@ describe('contract', () => {
 						),
 					).toBe(toUpperCaseHex(tempAccount.address));
 				});
-				// TODO(rgeraldes24)
-				it.each([signAndSendContractMethodEIP1559/*, signAndSendContractMethodEIP2930*/])(
+				it.each([signAndSendContractMethodEIP1559, signAndSendContractMethodEIP2930])(
 					'should award item with local wallet %p',
 					async signAndSendContractMethod => {
 						const tempAccount = await createTempAccount();
@@ -118,8 +117,7 @@ describe('contract', () => {
 						).toBe(toUpperCaseHex(tempAccount.address));
 					},
 				);
-				// TODO(rgeraldes24)
-				it.each([signAndSendContractMethodEIP1559/*, signAndSendContractMethodEIP2930*/])(
+				it.each([signAndSendContractMethodEIP1559, signAndSendContractMethodEIP2930])(
 					'should transferFrom item with local wallet %p',
 					async signAndSendContractMethod => {
 						const tempAccount = await createTempAccount();
@@ -155,8 +153,7 @@ describe('contract', () => {
 						).toBe(toUpperCaseHex(tempAccountTo.address));
 					},
 				);
-				// TODO(rgeraldes24)
-				it.each([signAndSendContractMethodEIP1559/*, signAndSendContractMethodEIP2930*/])(
+				it.each([signAndSendContractMethodEIP1559, signAndSendContractMethodEIP2930])(
 					'should safeTransferFrom item with local wallet %p',
 					async signAndSendContractMethod => {
 						const tempAccount = await createTempAccount();
@@ -198,8 +195,7 @@ describe('contract', () => {
 						).toBe(toUpperCaseHex(tempAccountTo.address));
 					},
 				);
-				// TODO(rgeraldes24)
-				it.each([signAndSendContractMethodEIP1559/*, signAndSendContractMethodEIP2930*/])(
+				it.each([signAndSendContractMethodEIP1559, signAndSendContractMethodEIP2930])(
 					'should approve item with local wallet %p',
 					async signAndSendContractMethod => {
 						const tempAccount = await createTempAccount();

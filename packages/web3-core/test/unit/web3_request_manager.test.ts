@@ -210,7 +210,7 @@ describe('Web3RequestManager', () => {
 		});
 	});
 
-	// TODO(rgeraldes24): remove
+	// TODO(rgeraldes24)
 	/*
 	describe('send()', () => {
 		let request: any;

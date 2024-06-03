@@ -20,7 +20,7 @@ Further details about versioning can be found in the [semver 2.0.0 specification
 
 ## Release Process
 
-### Running E2E Tests TODO(rgeraldes24)
+### Running E2E Tests
 
 `E2E Network Tests` will be triggered to run via a Github workflow when a PR is open for a branch prefixed with `release/` and is being merged into `4.x` branch. These tests depend on a couple of ENVs to be set that are configurable in Github's Action Secrets when running these tests in CI. The following required secrets are:
 

@@ -139,7 +139,7 @@ describe('[FeeMarketEIP1559Transaction]', () => {
 		expect(Object.isFrozen(signedTxn)).toBe(false);
 	});
 
-	// TODO(rgeraldes24): 2537 eip not supported(merged)
+	// NOTE(rgeraldes24): test not valid atm: no eips available
 	it.skip('common propagates from the common of tx, not the common in TxOptions', () => {
 		const data = testdata[0];
 		// eslint-disable-next-line @typescript-eslint/no-unsafe-call

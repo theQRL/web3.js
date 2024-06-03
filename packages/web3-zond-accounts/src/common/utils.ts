@@ -89,15 +89,6 @@ function parseGzondParams(json: any) {
 		timestamp = intToHex(parseInt(timestamp));
 	}
 
-	// EIP155 and EIP158 are both part of Spurious Dragon hardfork and must occur at the same time
-	// but have different configuration parameters in gzond genesis parameters
-	// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-	if (config.eip155Block !== config.eip158Block) {
-		throw new Error(
-			'EIP155 block number must equal EIP 158 block number since both are part of SpuriousDragon hardfork and the client only supports activating the full hardfork',
-		);
-	}
-
 	const params = {
 		name,
 		chainId,
@@ -124,7 +115,6 @@ function parseGzondParams(json: any) {
 
 	const forkMap: { [key: string]: { name: string; isTimestamp?: boolean } } =
 		{
-			// TODO(rgeraldes24): review if we need it here (chainstart was not present)
 			// [Hardfork.Shanghai]: { name: 'shanghaiTime', isTimestamp: true }, 
 		};
 

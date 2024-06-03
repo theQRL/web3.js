@@ -558,7 +558,7 @@ describe('[AccessListEIP2930Transaction] -> Class Specific Tests', () => {
 		expect(Object.isFrozen(signedTxn)).toBe(false);
 	});
 
-	// TODO(rgeraldes): eip
+	// NOTE(rgeraldes24): test not valid atm: no eips available
 	it.skip('common propagates from the common of tx, not the common in TxOptions', () => {
 		const txn = AccessListEIP2930Transaction.fromTxData({}, { common, freeze: false });
 		const newCommon = new Common({

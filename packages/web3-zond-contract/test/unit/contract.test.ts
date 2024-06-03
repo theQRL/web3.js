@@ -631,8 +631,8 @@ describe('Contract', () => {
 			// Should error when defaultCommon has different chain than defaultChain
 			const defaultCommonDifferentChain = {
 				customChain: { name: 'testnet', networkId: '5678', chainId: '5634' },
-				baseChain: 'mainnet' as ValidChains,
-				hardfork: 'shanghai' as Hardfork,
+				baseChain: 'sepolia' as ValidChains,
+				hardfork: 'constantinople' as Hardfork,
 			};
 			expect(() => {
 				contract.defaultCommon = defaultCommonDifferentChain;

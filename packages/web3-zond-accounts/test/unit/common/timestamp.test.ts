@@ -30,40 +30,6 @@ describe.skip('[Common]: Timestamp Hardfork logic', () => {
 		expect(c.getHardforkByBlockNumber(1, 1668699576)).toEqual(Hardfork.Shanghai);
 	});
 
-	// TODO(rgeraldes24)
-	/*
-	it('schedule sharding on shanghai-time', () => {
-		const config = {
-			...timestampJson.config,
-			shardingForkTime: timestampJson.config.shanghaiTime,
-		};
-		const modifiedJson = { ...timestampJson, config };
-		const c = Common.fromGzondGenesis(modifiedJson, {
-			chain: 'modified',
-		});
-		expect(c.getHardforkByBlockNumber(1, 0)).toEqual(Hardfork.MergeForkIdTransition);
-		expect(c.nextHardforkBlockOrTimestamp(Hardfork.Shanghai)).toBeNull();
-	});
-	*/
-
-	// TODO(rgeraldes24): remove
-	/*
-	it('schedule sharding post shanghai-time', () => {
-		const config = {
-			...timestampJson.config,
-			shardingForkTime: timestampJson.config.shanghaiTime + 1000,
-		};
-		const modifiedJson = { ...timestampJson, config };
-		const c = Common.fromGzondGenesis(modifiedJson, {
-			chain: 'modified',
-		});
-		expect(c.getHardforkByBlockNumber(1, undefined, 0)).toEqual(Hardfork.MergeForkIdTransition);
-		// Should give the shanghai as sharding is schedule a bit post shanghai
-		expect(c.getHardforkByBlockNumber(1, undefined, 1668699476)).toEqual(Hardfork.Shanghai);
-		expect(c.getHardforkByBlockNumber(1, undefined, 1668699576)).toEqual(Hardfork.Shanghai);
-	});
-	*/
-
 	/*
 	it('forkHash', () => {
 		const mainnet = new Common({ chain: Chain.Mainnet });
