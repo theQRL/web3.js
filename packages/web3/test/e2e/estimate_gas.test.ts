@@ -21,11 +21,11 @@ import { getSystemE2ETestProvider, getE2ETestAccountAddress } from './e2e_utils'
 import { closeOpenConnection, getSystemTestBackend } from '../shared_fixtures/system_tests_utils';
 import { toAllVariants } from '../shared_fixtures/utils';
 import { mainnetBlockData } from './fixtures/mainnet';
-import { sepoliaBlockData } from './fixtures/sepolia';
 
 describe(`${getSystemTestBackend()} tests - estimateGas`, () => {
 	const provider = getSystemE2ETestProvider();
-	const blockData = getSystemTestBackend() === 'sepolia' ? sepoliaBlockData : mainnetBlockData;
+	// const blockData = getSystemTestBackend() === 'sepolia' ? sepoliaBlockData : mainnetBlockData;
+	const blockData = mainnetBlockData;
 	const simpleZondTransaction: Transaction = {
 		from: getE2ETestAccountAddress(),
 		to: '0x0000000000000000000000000000000000000000',

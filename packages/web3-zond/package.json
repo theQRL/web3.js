@@ -40,7 +40,6 @@
 		"test:coverage:unit": "jest --config=./test/unit/jest.config.js --coverage=true --coverage-reporters=text",
 		"test:ci": "jest --coverage=true --coverage-reporters=json --verbose",
 		"test:e2e:mainnet": "jest --config=./test/e2e/jest.config.js --forceExit",
-		"test:e2e:sepolia": "jest --config=./test/e2e/jest.config.js --forceExit",
 		"test:watch": "npm test -- --watch",
 		"test:unit": "jest --config=./test/unit/jest.config.js",
 		"test:integration": "jest --config=./test/integration/jest.config.js --runInBand --forceExit",

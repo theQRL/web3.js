@@ -42,7 +42,7 @@ describe('contract', () => {
 				arguments: ['My Greeting'],
 			};
 
-			sendOptions = { from: acc.address, /*gas: '1000000'*/ type: 2 };
+			sendOptions = { from: acc.address, /*gas: '1000000'*/ };
 		});
 
 		it('create access list for setter', async () => {
@@ -51,7 +51,7 @@ describe('contract', () => {
 
 			const receipt = await deployedContract.methods
 				.setGreeting('New Greeting')
-				.send({ gas: '1000000', type: 2 });
+				.send({ gas: '1000000' });
 			expect(receipt.from).toEqual(acc.address);
 
 			const accessList = await deployedContract.methods
@@ -79,7 +79,7 @@ describe('contract', () => {
 
 			const receipt = await deployedContract.methods
 				.setGreeting('New Greeting')
-				.send({ gas: '1000000', type: 2 });
+				.send({ gas: '1000000' });
 			expect(receipt.from).toEqual(acc.address);
 
 			const accessList = await deployedContract.methods.greet().createAccessList();

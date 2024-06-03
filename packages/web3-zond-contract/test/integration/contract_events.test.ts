@@ -46,7 +46,7 @@ describe('contract', () => {
 			arguments: [10, 'string init value'],
 		};
 
-		sendOptions = { from: acc.address, /*gas: '1000000'*/ type: 2 };
+		sendOptions = { from: acc.address, /*gas: '1000000'*/ };
 
 		contractDeployed = await contract.deploy(deployOptions).send(sendOptions);
 	});

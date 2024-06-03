@@ -321,7 +321,7 @@ describe('Web3 instance', () => {
 				arguments: ['My Greeting'],
 			};
 
-			sendOptions = { from: acc.address, gas: '1000000', type: 2 };
+			sendOptions = { from: acc.address, gas: '1000000' };
 		});
 
 		it('should update defaults on contract instance', () => {

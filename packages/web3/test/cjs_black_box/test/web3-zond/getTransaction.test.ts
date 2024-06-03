@@ -18,7 +18,6 @@ import {
 	closeOpenConnection,
 	getSystemTestProvider,
 	isWs,
-	itIf,
 	// eslint-disable-next-line import/no-relative-packages
 } from '../../../shared_fixtures/system_tests_utils';
 /* eslint-disable @typescript-eslint/no-unsafe-call */

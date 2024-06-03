@@ -24,7 +24,7 @@ import {
 	isWs,
 	createTempAccount,
 	signAndSendContractMethodEIP1559,
-	// signAndSendContractMethodEIP2930, // TODO(rgeraldes24)
+	signAndSendContractMethodEIP2930,
 	createNewAccount,
 	refillAccount,
 } from '../fixtures/system_test_utils';
@@ -48,7 +48,7 @@ describe('contract', () => {
 				data: ERC721TokenBytecode,
 				arguments: [],
 			};
-			sendOptions = { from: acc.address, /*gas: '10000000'*/ type: 2 };
+			sendOptions = { from: acc.address, /*gas: '10000000'*/ };
 		});
 
 		it('should deploy the contract', async () => {
@@ -66,7 +66,7 @@ describe('contract', () => {
 			});
 			beforeEach(async () => {
 				acc2 = await createTempAccount();
-				sendOptions = { from: acc.address, /*gas: '10000000'*/ type: 2 };
+				sendOptions = { from: acc.address, /*gas: '10000000'*/ };
 				contractDeployed = await contract.deploy(deployOptions).send(sendOptions);
 			});
 
@@ -228,8 +228,7 @@ describe('contract', () => {
 						);
 					},
 				);
-				// TODO(rgeraldes24)
-				it.each([signAndSendContractMethodEIP1559/*, signAndSendContractMethodEIP2930*/])(
+				it.each([signAndSendContractMethodEIP1559, signAndSendContractMethodEIP2930])(
 					'should set approve for all item with local wallet %p',
 					async signAndSendContractMethod => {
 						const tempAccount = await createTempAccount();

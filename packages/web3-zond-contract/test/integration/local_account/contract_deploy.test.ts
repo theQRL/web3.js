@@ -42,7 +42,6 @@ describe('contract', () => {
 			localAccount = await createLocalAccount(web3);
 			sendOptions = {
 				from: localAccount.address,
-				type: 2,
 				gas: '1000000',
 			};
 		});
@@ -112,7 +111,7 @@ describe('contract', () => {
 
 			const deployedContract = await contractWithParams
 				.deploy({ arguments: ['Hello World'] })
-				.send({type: 2});
+				.send();
 
 			expect(deployedContract.options.address).toBeDefined();
 		});

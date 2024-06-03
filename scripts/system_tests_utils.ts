@@ -231,7 +231,6 @@ export const refillAccount = async (from: string, to: string, value: string | nu
 		from,
 		to,
 		value,
-		type: BigInt(2),
 	});
 };
 
@@ -239,8 +238,6 @@ let mainAcc: string;
 export const createNewAccount = async (config?: {
 	refill?: boolean;
 	seed?: string;
-	password?: string;
-	doNotImport?: boolean;
 }): Promise<{ address: string; seed: string }> => {
 	const acc = config?.seed ? seedToAccount(config?.seed) : _createAccount();
 
@@ -278,7 +275,6 @@ export const createTempAccount = async (
 		return createNewAccount({
 			refill: config.refill ?? true,
 			seed: config.seed,
-			password: config.password,
 		});
 	}
 
@@ -290,7 +286,6 @@ export const createTempAccount = async (
 	await createNewAccount({
 		refill: false,
 		seed: acc.seed,
-		doNotImport: true,
 	});
 	currentIndex += 1;
 
@@ -448,7 +443,6 @@ export const sendFewSampleTxs = async (cnt = 1) => {
 				value: '0x1',
 				from: fromAcc.address,
 				gas: '300000',
-				type: BigInt(2),
 			}),
 		);
 	}

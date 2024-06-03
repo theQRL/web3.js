@@ -85,7 +85,7 @@ describe('rpc with block', () => {
 		// 	tempAcc.address,
 		// 	'100000000000000000000',
 		// );
-		sendOptions = { from: tempAcc.address, /*gas: '1000000'*/ type: 2 };
+		sendOptions = { from: tempAcc.address, /*gas: '1000000'*/ };
 
 		await contract.deploy(deployOptions).send(sendOptions);
 		const [receipt]: TransactionReceipt[] = await sendFewTxes({

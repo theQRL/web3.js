@@ -22,7 +22,7 @@ import testsData from '../fixtures/transactions.json';
 
 jest.mock('@theqrl/web3-providers-http');
 
-// TODO(rgeraldes24): provider does not have a request or send method to use
+// TODO(rgeraldes24): provider not supported
 describe.skip('signTransaction', () => {
 	let blockNum = 1;
 

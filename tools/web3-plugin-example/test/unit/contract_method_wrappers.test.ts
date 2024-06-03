@@ -80,7 +80,7 @@ describe('ContractMethodWrappersPlugin', () => {
 			});
 		});
 
-		// TODO(rgeraldes24)
+		// TODO(rgeraldes24): Invalid value given "Eip1559NotSupportedError". Error: Network doesn't support eip-1559
 		it.skip('should call `transferAndGetBalances` with expected RPC object', async () => {
 			const expectedGasPrice = '0x1ca14bd70';
 			const expectedTransactionHash =

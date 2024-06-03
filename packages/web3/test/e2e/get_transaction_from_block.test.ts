@@ -22,12 +22,13 @@ import Web3 from '../../src';
 import { getSystemE2ETestProvider } from './e2e_utils';
 import { closeOpenConnection, getSystemTestBackend } from '../shared_fixtures/system_tests_utils';
 import { toAllVariants } from '../shared_fixtures/utils';
-import { sepoliaBlockData, sepoliaTransactionFromBlock } from './fixtures/sepolia';
+// import { sepoliaBlockData, sepoliaTransactionFromBlock } from './fixtures/sepolia';
 import { mainnetBlockData, mainnetTransactionFromBlock } from './fixtures/mainnet';
 
 describe(`${getSystemTestBackend()} tests - getTransactionFromBlock`, () => {
 	const provider = getSystemE2ETestProvider();
-	const blockData = getSystemTestBackend() === 'sepolia' ? sepoliaBlockData : mainnetBlockData;
+	// const blockData = getSystemTestBackend() === 'sepolia' ? sepoliaBlockData : mainnetBlockData;
+	const blockData = mainnetBlockData;
 
 	let web3: Web3;
 
@@ -70,10 +71,11 @@ describe(`${getSystemTestBackend()} tests - getTransactionFromBlock`, () => {
 			// eslint-disable-next-line no-null/no-null
 			expect(result).toBeNull();
 		} else if (block === 'blockHash' || block === 'blockNumber') {
-			const expectedTransaction =
-				getSystemTestBackend() === 'sepolia'
-					? sepoliaTransactionFromBlock
-					: mainnetTransactionFromBlock;
+			// const expectedTransaction =
+			// 	getSystemTestBackend() === 'sepolia'
+			// 		? sepoliaTransactionFromBlock
+			// 		: mainnetTransactionFromBlock;
+			const expectedTransaction = mainnetTransactionFromBlock;
 			expect(result).toStrictEqual(expectedTransaction);
 		} else {
 			expect(result).toMatchObject<TransactionInfo>({

@@ -73,7 +73,7 @@ describe('rpc', () => {
 		};
 		tempAcc = await createTempAccount();
 		//tempAcc2 = await createTempAccount();
-		sendOptions = { from: tempAcc.address, /*gas: '1000000'*/ type: 2 };
+		sendOptions = { from: tempAcc.address, /*gas: '1000000'*/ };
 
 		contractDeployed = await contract.deploy(deployOptions).send(sendOptions);
 	});

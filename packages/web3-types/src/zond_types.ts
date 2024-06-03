@@ -161,7 +161,8 @@ export interface BlockHeaderOutput {
 	readonly timestamp: Numbers;
 	readonly extraData?: Bytes;
 	readonly baseFeePerGas?: Numbers;
-	readonly prevRandao?: HexString32Bytes; // TODO(rgeraldes24)
+	// TODO(rgeraldes24): confirm field naming
+	readonly prevRandao?: HexString32Bytes;
 }
 
 export interface ReceiptInput {

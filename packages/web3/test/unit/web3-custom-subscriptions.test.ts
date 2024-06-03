@@ -47,7 +47,7 @@ describe('Web3 Custom Subscriptions', () => {
 		});
 	});
 
-	// TODO(rgeraldes24)
+	// TODO(rgeraldes24): provider not supported
 	/*
 	it('should be able to define and subscribe to custom subscription', async () => {
 		const args = {

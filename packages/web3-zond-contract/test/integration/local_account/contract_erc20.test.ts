@@ -49,7 +49,6 @@ describe('contract', () => {
 			sendOptions = {
 				from: localAccount.address,
 				gas: '2000000',
-				type: 2,
 			};
 			contractDeployed = await contract.deploy(deployOptions).send(sendOptions);
 		});

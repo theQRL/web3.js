@@ -21,12 +21,14 @@ import { getSystemE2ETestProvider } from './e2e_utils';
 import { closeOpenConnection, getSystemTestBackend } from '../shared_fixtures/system_tests_utils';
 import { toAllVariants } from '../shared_fixtures/utils';
 import { mainnetBlockData, mainnetProof } from './fixtures/mainnet';
-import { sepoliaBlockData, sepoliaProof } from './fixtures/sepolia';
+// import { sepoliaBlockData, sepoliaProof } from './fixtures/sepolia';
 
 describe(`${getSystemTestBackend()} tests - getProof`, () => {
 	const provider = getSystemE2ETestProvider();
-	const blockData = getSystemTestBackend() === 'sepolia' ? sepoliaBlockData : mainnetBlockData;
-	const expectedProof = getSystemTestBackend() === 'sepolia' ? sepoliaProof : mainnetProof;
+	// const blockData = getSystemTestBackend() === 'sepolia' ? sepoliaBlockData : mainnetBlockData;
+	// const expectedProof = getSystemTestBackend() === 'sepolia' ? sepoliaProof : mainnetProof;
+	const blockData = mainnetBlockData;
+	const expectedProof = mainnetProof;
 
 	let web3: Web3;
 

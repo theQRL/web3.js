@@ -44,9 +44,7 @@ describeIf(getSystemTestBackend() === 'gzond')(
 
 			beforeAll(async () => {
 				account = await createNewAccount({
-					unlock: true,
 					refill: true,
-					doNotImport: false,
 				});
 
 				web3 = new Web3(getSystemTestProvider());
@@ -55,7 +53,7 @@ describeIf(getSystemTestBackend() === 'gzond')(
 						data: ERC20TokenBytecode,
 						arguments: ['420'],
 					})
-					.send({ from: account.address, gas: '10000000', type: 2 });
+					.send({ from: account.address, gas: '10000000' });
 			});
 
 			afterAll(async () => {
