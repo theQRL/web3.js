@@ -465,7 +465,7 @@ export abstract class BaseTransaction<TransactionObject> {
 		}
 	}
 
-	// TODO(rgeraldes24)
+	// TODO(rgeraldes24): check for public key/sig 
 	protected static _validateNotArray(values: { [key: string]: any }) {
 		const txDataKeys = [
 			'nonce',

@@ -183,6 +183,7 @@ describe('defaults', () => {
 			});
 			expect(zond2.handleRevert).toBe(true);
 		});
+		// TODO(rgeraldes24): use new account instead of temp account
 		it('defaultBlock', async () => {
 			const contractDeployed = await contract.deploy(deployOptions).send(sendOptions);
 			// default
@@ -231,7 +232,6 @@ describe('defaults', () => {
 			const transactionCount = await zond2.getTransactionCount(acc.address);
 			expect(storage === '0x' ? 0 : Number(hexToNumber(storage))).toBe(0);
 			expect(code).toBe('0x');
-			// TODO(rgeraldes24): use new account
 			// expect(balance).toBe(BigInt(0));
 			expect(transactionCount).toBe(BigInt(0));
 
@@ -251,7 +251,6 @@ describe('defaults', () => {
 				'latest',
 			);
 			expect(Number(hexToNumber(storageWithBlockNumber))).toBe(10);
-			// TODO(rgeraldes24): use new account
 			// expect(transactionCountWithBlockNumber).toBe(BigInt(1));
 			expect(Number(balanceWithBlockNumber)).toBeGreaterThan(0);
 			expect(codeWithBlockNumber.startsWith(BasicBytecode.slice(0, 10))).toBe(true);

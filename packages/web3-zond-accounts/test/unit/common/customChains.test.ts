@@ -26,7 +26,7 @@ describe('[Common]: Custom chains', () => {
 		expect(c.chainName()).toBe('testnet');
 		expect(c.chainId()).toEqual(BigInt(12345));
 		expect(c.networkId()).toEqual(BigInt(12345));
-		// TODO(rgeraldes24)
+		// NOTE(rgeraldes24): custom chains tbd
 		// expect(c.hardforks()[3]['block']).toBe(3);
 		expect(c.hardforks()[0]['block']).toBe(0);
 		expect(c.bootstrapNodes()![1].ip).toBe('10.0.0.2');
@@ -63,7 +63,7 @@ describe('[Common]: Custom chains', () => {
 		expect(customChainCommon.hardfork()).toBe('shanghai');
 	});
 
-	// TODO(rgeraldes24)
+	// NOTE(rgeraldes24): custom chains tbd
 	/*
 	it('custom() -> behavior', () => {
 		let common = Common.custom({ chainId: 123 });
@@ -106,13 +106,13 @@ describe('[Common]: Custom chains', () => {
 			customChains: [testnet],
 		});
 		expect(c.chainName()).toBe('mainnet');
-		// TODO(rgeraldes24)
+		// NOTE(rgeraldes24): custom chains tbd
 		// expect(c.hardforkBlock()!).toEqual(BigInt(4370000));
 		expect(c.hardforkBlock()!).toEqual(BigInt(0));
 
 		c.setChain('testnet');
 		expect(c.chainName()).toBe('testnet');
-		// TODO(rgeraldes24)
+		// NOTE(rgeraldes24): custom chains tbd
 		// expect(c.hardforkBlock()!).toEqual(BigInt(4));
 		expect(c.hardforkBlock()!).toEqual(BigInt(0));
 
@@ -122,7 +122,7 @@ describe('[Common]: Custom chains', () => {
 			customChains: [testnet],
 		});
 		expect(c.chainName()).toBe('testnet');
-		// TODO(rgeraldes24)
+		// NOTE(rgeraldes24): custom chains tbd
 		// expect(c.hardforkBlock()!).toEqual(BigInt(4));
 		expect(c.hardforkBlock()!).toEqual(BigInt(0));
 
@@ -133,7 +133,7 @@ describe('[Common]: Custom chains', () => {
 			customChains,
 		});
 		expect(c.chainName()).toBe('testnet2');
-		// TODO(rgeraldes24)
+		// NOTE(rgeraldes24): custom chains tbd
 		// expect(c.hardforkBlock()!).toEqual(BigInt(10));
 		expect(c.hardforkBlock()!).toEqual(BigInt(0));
 

@@ -15,11 +15,10 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 // import { hexToBytes } from '@theqrl/web3-utils';
-import { Chain, Common/*, ConsensusAlgorithm, ConsensusType*/, Hardfork } from '../../../src/common';
+import { Chain, Common, ConsensusAlgorithm, ConsensusType, Hardfork } from '../../../src/common';
 // import gzondGenesisKiln from '../../fixtures/common/gzond-genesis-kiln.json';
 
-// TODO(rgeraldes24)
-describe.skip('[Common]: Hardfork logic', () => {
+describe('[Common]: Hardfork logic', () => {
 	it('Hardfork access', () => {
 		const supportedHardforks = [
 			Hardfork.Shanghai,
@@ -31,8 +30,9 @@ describe.skip('[Common]: Hardfork logic', () => {
 			expect(c.hardfork()).toEqual(hardfork);
 		}
 	});
-	/*
 
+	// TODO(rgeraldes24)
+	/*
 	it('getHardforkByBlockNumber() / setHardforkByBlockNumber()', () => {
 		let c = new Common({ chain: Chain.Mainnet });
 
@@ -44,7 +44,6 @@ describe.skip('[Common]: Hardfork logic', () => {
 		expect(c.setHardforkByBlockNumber(1149999)).toEqual(Hardfork.Shanghai);
 		expect(c.setHardforkByBlockNumber(999999999999)).toEqual(Hardfork.Shanghai);
 
-		// TODO(rgeraldes24)
 		// expect(c.getHardforkByBlockNumber(0)).toEqual(Hardfork.Chainstart);
 		// expect(c.getHardforkByBlockNumber(1149999)).toEqual(Hardfork.Chainstart);
 		// expect(c.getHardforkByBlockNumber(1150000)).toEqual(Hardfork.Homestead);
@@ -244,23 +243,20 @@ describe.skip('[Common]: Hardfork logic', () => {
 		const c = new Common({ chain: Chain.Mainnet });
 
 		const res = c.hardforkForForkHash('0x3edd5b10')!;
-		expect(res.name).toEqual(Hardfork.SpuriousDragon);
+		expect(res.name).toEqual(Hardfork.Shanghai);
 
 		expect(c.hardforkForForkHash('0x12345')).toBeNull();
 	});
+	*/
 
 	it('HF consensus updates', () => {
-		let c = new Common({ chain: Chain.Goerli, hardfork: Hardfork.Byzantium });
-		expect(c.consensusType()).toEqual(ConsensusType.ProofOfAuthority);
-		expect(c.consensusAlgorithm()).toEqual(ConsensusAlgorithm.Clique);
-		expect(c.consensusConfig()['period']).toBe(15);
-
-		c = new Common({ chain: Chain.Goerli, hardfork: Hardfork.Merge });
+		const c = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Shanghai });
 		expect(c.consensusType()).toEqual(ConsensusType.ProofOfStake);
 		expect(c.consensusAlgorithm()).toEqual(ConsensusAlgorithm.Casper);
 		expect(c.consensusConfig()).toEqual({});
 	});
 
+	/*
 	it('Should correctly apply hardfork changes', () => {
 		// For sepolia MergeForkIdTransition happens AFTER merge
 		let c = new Common({ chain: Chain.Sepolia, hardfork: Hardfork.London });

@@ -67,7 +67,7 @@ function parseGzondParams(json: any) {
 	}: {
 		name: string;
 		config: any;
-		mixHash: string; // TODO(rgeraldes24)
+		mixHash: string;
 		gasLimit: string;
 		coinbase: string;
 		baseFeePerGas: string;
