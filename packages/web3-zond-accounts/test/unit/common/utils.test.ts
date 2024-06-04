@@ -28,21 +28,10 @@ import postMergeHardfork from '../../fixtures/common/post-merge-hardfork.json';
 
 describe('[Utils/Parse]', () => {
 	const kilnForkHashes: any = {
-		chainstart: '0xbcadf543',
-		homestead: '0xbcadf543',
-		tangerineWhistle: '0xbcadf543',
-		spuriousDragon: '0xbcadf543',
-		byzantium: '0xbcadf543',
-		constantinople: '0xbcadf543',
-		petersburg: '0xbcadf543',
-		istanbul: '0xbcadf543',
-		berlin: '0xbcadf543',
-		london: '0xbcadf543',
-		mergeForkIdTransition: '0x013fd1b5',
-		merge: '0x013fd1b5',
+		shanghai: '0xbcadf543',
 	};
 
-	// TODO(rgeraldes24): rinkeby is not available
+	// NOTE(rgeraldes24): rinkeby is not available
 	// it('should parse gzond params file', async () => {
 	// 	const params = parseGzondGenesis(testnet, 'rinkeby');
 	// 	expect(params.genesis.nonce).toBe('0x0000000000000042');
@@ -79,8 +68,7 @@ describe('[Utils/Parse]', () => {
 		expect(params.genesis.timestamp).toBe('0x10');
 	});
 
-	// TODO(rgeraldes24)
-	it.skip('should successfully parse kiln genesis and set forkhash', async () => {
+	it('should successfully parse kiln genesis and set forkhash', async () => {
 		const common = Common.fromGzondGenesis(gzondGenesisKiln, {
 			chain: 'customChain',
 			genesisHash: hexToBytes(
@@ -88,18 +76,7 @@ describe('[Utils/Parse]', () => {
 			),
 		});
 		expect(common.hardforks().map(hf => hf.name)).toEqual([
-			'chainstart',
-			'homestead',
-			'tangerineWhistle',
-			'spuriousDragon',
-			'byzantium',
-			'constantinople',
-			'petersburg',
-			'istanbul',
-			'berlin',
-			'london',
-			'mergeForkIdTransition',
-			'merge',
+			'shanghai',
 		]);
 		for (const hf of common.hardforks()) {
 			/* eslint-disable @typescript-eslint/no-use-before-define */
@@ -118,18 +95,6 @@ describe('[Utils/Parse]', () => {
 		// merge hardfork is now scheduled just after shanghai even if mergeForkIdTransition is not confirmed
 		// to be post merge
 		expect(common1.hardforks().map(hf => hf.name)).toEqual([
-			'chainstart',
-			'homestead',
-			'tangerineWhistle',
-			'spuriousDragon',
-			'byzantium',
-			'constantinople',
-			'petersburg',
-			'istanbul',
-			'berlin',
-			'london',
-			'merge',
-			'mergeForkIdTransition',
 			'shanghai',
 		]);
 

@@ -465,6 +465,7 @@ export abstract class BaseTransaction<TransactionObject> {
 		}
 	}
 
+	// TODO(rgeraldes24)
 	protected static _validateNotArray(values: { [key: string]: any }) {
 		const txDataKeys = [
 			'nonce',
@@ -473,10 +474,6 @@ export abstract class BaseTransaction<TransactionObject> {
 			'to',
 			'value',
 			'data',
-			// TODO(rgeraldes24)
-			// 'v',
-			// 'r',
-			// 's',
 			'type',
 			'baseFee',
 			'maxFeePerGas',

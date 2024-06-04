@@ -55,8 +55,7 @@ const validSlot = hexToBytes('01'.repeat(32));
 const chainId = BigInt(1);
 
 describe('[AccessListEIP2930Transaction / FeeMarketEIP1559Transaction] -> EIP-2930 Compatibility', () => {
-	// TODO(rgeraldes24)
-	it.skip('Initialization / Getter -> fromTxData()', () => {
+	it('Initialization / Getter -> fromTxData()', () => {
 		for (const txType of txTypes) {
 			let tx = txType.class.fromTxData({}, { common });
 			expect(tx).toBeTruthy();
@@ -71,6 +70,8 @@ describe('[AccessListEIP2930Transaction / FeeMarketEIP1559Transaction] -> EIP-29
 			});
 			expect(tx.common.chainId() === BigInt(99999)).toBeTruthy();
 
+			// NOTE(rgeraldes24): not valid: eip 2930 is available from the start
+			/*
 			const nonEIP2930Common = new Common({
 				chain: Chain.Mainnet,
 				hardfork: Hardfork.Shanghai,
@@ -78,6 +79,7 @@ describe('[AccessListEIP2930Transaction / FeeMarketEIP1559Transaction] -> EIP-29
 			expect(() => {
 				txType.class.fromTxData({}, { common: nonEIP2930Common });
 			}).toThrow();
+			*/
 
 			expect(() => {
 				txType.class.fromTxData(
@@ -359,8 +361,7 @@ describe('[AccessListEIP2930Transaction] -> Class Specific Tests', () => {
 		}).toThrow();
 	});
 
-	// TODO(rgeraldes24)
-	it.skip('should return right upfront cost', () => {
+	it('should return right upfront cost', () => {
 		let tx = AccessListEIP2930Transaction.fromTxData(
 			{
 				data: hexToBytes('010200'),
@@ -381,6 +382,7 @@ describe('[AccessListEIP2930Transaction] -> Class Specific Tests', () => {
 		const baseFee = Number(common.param('gasPrices', 'tx'));
 		const creationFee = Number(common.param('gasPrices', 'txCreation'));
 
+
 		expect(
 			tx.getBaseFee() ===
 				BigInt(
@@ -392,7 +394,9 @@ describe('[AccessListEIP2930Transaction] -> Class Specific Tests', () => {
 				),
 		).toBeTruthy();
 
-		// In this Tx, `to` is `undefined`, so we should charge homestead creation gas.
+
+		// In this Tx, `to` is `undefined`, so we should charge homestead creation gas 
+		// and init code cost(eip 3860)
 		tx = AccessListEIP2930Transaction.fromTxData(
 			{
 				data: hexToBytes('010200'),
@@ -401,6 +405,8 @@ describe('[AccessListEIP2930Transaction] -> Class Specific Tests', () => {
 			},
 			{ common },
 		);
+		const dataLength = Math.ceil(tx.data.length / 32);
+		const initCodeCost = Number(common.param('gasPrices', 'initCodeWordCost')) * dataLength;
 
 		expect(
 			tx.getBaseFee() ===
@@ -409,6 +415,7 @@ describe('[AccessListEIP2930Transaction] -> Class Specific Tests', () => {
 						txDataZero +
 						creationFee +
 						baseFee +
+						initCodeCost +
 						accessListAddressCost +
 						accessListStorageKeyCost,
 				),

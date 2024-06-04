@@ -49,6 +49,7 @@ export const sendFewTxes = async ({
 	const res: TransactionReceipt[] = [];
 	const toAddress = to ?? createAccount().address;
 	const web3 = new Web3(getSystemTestProvider());
+
 	for (let i = 0; i < times; i += 1) {
 		res.push(
 			// eslint-disable-next-line no-await-in-loop

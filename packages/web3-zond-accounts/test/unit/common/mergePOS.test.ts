@@ -54,11 +54,6 @@ describe('[Common]: Merge/POS specific logic', () => {
 		expect(c.getHardforkByBlockNumber(16, 5000)).toBe('shanghai');
 		expect(c.getHardforkByBlockNumber(16, 5001)).toBe('shanghai');
 		expect(c.getHardforkByBlockNumber(12, 4999)).toBe('shanghai');
-
-		// TODO(rgeraldes24)
-		// expect(() => {
-		// 	c.getHardforkByBlockNumber(14, 5000);
-		// }).toThrow('HF determined by block number is lower than the minimum total difficulty HF');
 	});
 
 	it('getHardforkByBlockNumber()', () => {
@@ -109,11 +104,6 @@ describe('[Common]: Merge/POS specific logic', () => {
 		expect(c.setHardforkByBlockNumber(16, 5000)).toBe('shanghai');
 		expect(c.setHardforkByBlockNumber(16, 5001)).toBe('shanghai');
 		expect(c.setHardforkByBlockNumber(12, 4999)).toBe('shanghai');
-
-		// TODO(rgeraldes24)
-		// expect(() => {
-		// 	c.setHardforkByBlockNumber(14, 5000);
-		// }).toThrow('HF determined by block number is lower than the minimum total difficulty HF');
 	});
 
 	it('setHardforkByBlockNumber()', () => {
@@ -139,13 +129,12 @@ describe('[Common]: Merge/POS specific logic', () => {
 		expect(c.getHardforkByBlockNumber(5, 0)).toBe('shanghai');
 	});
 	
-	// TODO(rgeraldes24)
-	it.skip('Should fail setting invalid hardfork', () => {
+	it('Should fail setting invalid hardfork', () => {
 		const customChains = [testnetPOS];
 		expect(() => {
 			// eslint-disable-next-line no-new
-			new Common({ chain: 'testnetPOS', hardfork: Hardfork.Shanghai, customChains });
-		}).toThrow(`Hardfork with name shanghai not supported`);
+			new Common({ chain: 'testnetPOS', hardfork: 'invalid', customChains });
+		}).toThrow(`Hardfork with name invalid not supported`);
 	});
 
 	it('should get the correct merge hardfork at genesis', async () => {
@@ -154,7 +143,7 @@ describe('[Common]: Merge/POS specific logic', () => {
 		expect(c.getHardforkByBlockNumber(0, BigInt(0))).toEqual(Hardfork.Shanghai);
 	});
 
-	// TODO(rgeraldes24)
+	// NOTE(rgeraldes24): not valid atm
 	/*
 	it('test post merge hardforks using Sepolia with block null', () => {
 		const c = new Common({ chain: Chain.Sepolia });

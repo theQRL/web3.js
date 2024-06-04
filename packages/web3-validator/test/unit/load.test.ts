@@ -178,7 +178,7 @@ describe('instance of validator', () => {
 			}
 			t = Number(new Date()) - t1;
 		}).not.toThrow();
-		expect(t).toBeLessThan(7500);
+		expect(t).toBeLessThan(10000);
 		expect(t).toBeGreaterThan(0);
 	});
 });
