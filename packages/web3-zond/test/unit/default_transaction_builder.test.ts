@@ -52,7 +52,7 @@ describe('defaultTransactionBuilder', () => {
 	const expectedMaxPriorityFeePerGas = '0x9502f900';
 	const expectedMaxFeePerGas = '0x27f4d46b08';
 	const expectedChainId = '0x1';
-	const defaultTransactionType = '0x0';
+	const defaultTransactionType = '0x2';
 	const transaction: Transaction = {
 		from: expectedFrom,
 		to: '0x3535353535353535353535353535353535353535',
@@ -473,8 +473,7 @@ describe('defaultTransactionBuilder', () => {
 			).rejects.toThrow(new UnsupportedTransactionTypeError(input.type));
 		});
 
-		// TODO(rgeraldes24)
-		it.skip('should use web3Context.defaultTransactionType to populate', async () => {
+		it('should use web3Context.defaultTransactionType to populate', async () => {
 			web3Context = new Web3Context<ZondExecutionAPI>({
 				provider: new HttpProvider('http://127.0.0.1'),
 				config: {

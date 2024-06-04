@@ -25,8 +25,7 @@ import {
 	transactionTypeValidationError,
 } from '../fixtures/detect_transaction_type';
 
-// TODO(rgeraldes24)
-describe.skip('detectTransactionType', () => {
+describe('detectTransactionType', () => {
 	describe('should override detectTransactionType method', () => {
 		it.skip('should call override method', () => {
 			const overrideFunction = jest.fn();
@@ -53,7 +52,8 @@ describe.skip('detectTransactionType', () => {
 		});
 	});
 
-	describe('should not be able to detect transaction type, returning undefined', () => {
+	// NOTE(rgeraldes24): this test is no longer valid since EIP-2718 is supported from start
+	describe.skip('should not be able to detect transaction type, returning undefined', () => {
 		it.each(transactionTypeUndefined)('%s', transaction => {
 			expect(detectTransactionType(transaction)).toBeUndefined();
 		});
