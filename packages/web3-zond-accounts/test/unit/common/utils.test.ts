@@ -34,7 +34,7 @@ describe('[Utils/Parse]', () => {
 		}).toThrow();
 	});
 
-	it.skip('should import pos network params correctly', async () => {
+	it('should import pos network params correctly', async () => {
 		let params = parseGzondGenesis(posExecGenesis, 'pos');
 		expect(params.genesis.baseFeePerGas).toBe('0x7');
 		expect(params.consensus).toEqual({
