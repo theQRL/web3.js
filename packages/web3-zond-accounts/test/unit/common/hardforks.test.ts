@@ -31,8 +31,7 @@ describe('[Common]: Hardfork logic', () => {
 		}
 	});
 
-	// TODO(rgeraldes24)
-	/*
+	
 	it('getHardforkByBlockNumber() / setHardforkByBlockNumber()', () => {
 		let c = new Common({ chain: Chain.Mainnet });
 
@@ -71,6 +70,8 @@ describe('[Common]: Hardfork logic', () => {
 		// expect(c.setHardforkByBlockNumber(1735371)).toBe('mergeForkIdTransition');
 	});
 
+	// TODO(rgeraldes24)
+	/*
 	it('should throw if no hardfork qualifies', () => {
 		const hardforks = [
 			{
