@@ -18,7 +18,6 @@ import { hexToBytes } from '@theqrl/web3-utils';
 import { Common } from '../../../src/common/common';
 import { Hardfork } from '../../../src/common';
 import { parseGzondGenesis } from '../../../src/common/utils';
-// import testnet from '../../fixtures/common/testnetValid.json';
 import invalidSpuriousDragon from '../../fixtures/common/invalid-spurious-dragon.json';
 import posExecGenesis from '../../fixtures/common/pos-exec-genesis.json';
 import noExtraData from '../../fixtures/common/no-extra-data.json';
@@ -28,12 +27,6 @@ describe('[Utils/Parse]', () => {
 	const kilnForkHashes: any = {
 		shanghai: '0xbcadf543',
 	};
-
-	// NOTE(rgeraldes24): rinkeby is not available
-	// it('should parse gzond params file', async () => {
-	// 	const params = parseGzondGenesis(testnet, 'rinkeby');
-	// 	expect(params.genesis.nonce).toBe('0x0000000000000042');
-	// });
 
 	it('should throw with invalid Spurious Dragon blocks', async () => {
 		expect(() => {
