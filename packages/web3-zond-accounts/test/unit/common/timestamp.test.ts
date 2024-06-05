@@ -15,19 +15,17 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 // import { hexToBytes } from '@theqrl/web3-utils';
-import { /*Chain,*/ Common, Hardfork } from '../../../src/common';
+// import { /*Chain,*/ Common, Hardfork } from '../../../src/common';
 
-import * as timestampJson from '../../fixtures/common/shanghai-time.json';
-
-// NOTE(rgeraldes24): unused
+// NOTE(rgeraldes24): unused for now
 describe.skip('[Common]: Timestamp Hardfork logic', () => {
 	it('shanghai-time', () => {
-		const c = Common.fromGzondGenesis(timestampJson, {
-			chain: 'withdrawals',
-		});
-		expect(c.getHardforkByBlockNumber(1, 0)).toEqual(Hardfork.Shanghai);
-		expect(c.getHardforkByBlockNumber(1, 1668699476)).toEqual(Hardfork.Shanghai);
-		expect(c.getHardforkByBlockNumber(1, 1668699576)).toEqual(Hardfork.Shanghai);
+		// const c = Common.fromGzondGenesis(timestampJson, {
+		// 	chain: 'withdrawals',
+		// });
+		// expect(c.getHardforkByBlockNumber(1, 0)).toEqual(Hardfork.Shanghai);
+		// expect(c.getHardforkByBlockNumber(1, 1668699476)).toEqual(Hardfork.Shanghai);
+		// expect(c.getHardforkByBlockNumber(1, 1668699576)).toEqual(Hardfork.Shanghai);
 	});
 
 	/*

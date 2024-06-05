@@ -38,7 +38,7 @@ const mockBlockData = {
 };
 
 // TODO(rgeraldes24): fix input data
-// const testMessage = 'Title: %s\ninputSignedTransaction: %s\nexpectedTransactionHash: %s\nexpectedTransactionReceipt: %s\n';
+const testMessage = 'Title: %s\ninputSignedTransaction: %s\nexpectedTransactionHash: %s\nexpectedTransactionReceipt: %s\n';
 describe.skip('watchTransactionByPolling', () => {
 	describe('should call getBlockByNumber', () => {
 		let web3Context: Web3Context<Web3ZondExecutionAPI>;
@@ -55,8 +55,7 @@ describe.skip('watchTransactionByPolling', () => {
 		});
 
 		it.each(testData)(
-			// `watchTransactionByPolling logic\n ${testMessage}`,
-			`watchTransactionByPolling logic\n`,
+			`watchTransactionByPolling logic\n ${testMessage}`,
 			async (_, inputTransaction) => {
 				const formattedTransactionReceipt = format(
 					transactionReceiptSchema,

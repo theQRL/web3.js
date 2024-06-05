@@ -17,15 +17,14 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 // import { toBigInt } from '@theqrl/web3-utils';
 import { /*Chain,*/ Common, Hardfork } from '../../../src/common';
 
-import * as testnetMerge from '../../fixtures/common/merge/testnetMerge.json';
-import * as testnetPOS from '../../fixtures/common/merge/testnetPOS.json';
-import postMerge from '../../fixtures/common/post-merge.json';
+import * as testnetPOS from '../../fixtures/common/pos.json';
+import posExecGenesis from '../../fixtures/common/pos-exec-genesis.json';
 
 describe('[Common]: Merge/POS specific logic', () => {
 	it('getHardforkByBlockNumber()', () => {
-		const customChains = [testnetMerge];
+		const customChains = [testnetPOS];
 		const c = new Common({
-			chain: 'testnetMerge',
+			chain: 'testnetPOS',
 			hardfork: Hardfork.Shanghai,
 			customChains,
 		});
@@ -39,12 +38,12 @@ describe('[Common]: Merge/POS specific logic', () => {
 	});
 
 	it('getHardforkByBlockNumber()', () => {
-		const testnetMergeWithBlockNumber = JSON.parse(JSON.stringify(testnetMerge));
+		const testnetMergeWithBlockNumber = JSON.parse(JSON.stringify(testnetPOS));
 		// Set Merge block to 15
 		// testnetMergeWithBlockNumber['hardforks'][8]['block'] = 16;
 		const customChains = [testnetMergeWithBlockNumber];
 		const c = new Common({
-			chain: 'testnetMerge',
+			chain: 'testnetPOS',
 			hardfork: Hardfork.Shanghai,
 			customChains,
 		});
@@ -57,14 +56,14 @@ describe('[Common]: Merge/POS specific logic', () => {
 	});
 
 	it('getHardforkByBlockNumber()', () => {
-		const testnetMergeWithBlockNumber = JSON.parse(JSON.stringify(testnetMerge));
+		const testnetMergeWithBlockNumber = JSON.parse(JSON.stringify(testnetPOS));
 		// Set Merge block to 15
 		// testnetMergeWithBlockNumber['hardforks'][8]['block'] = 16;
 		// Set Shanghai block to 18
 		// testnetMergeWithBlockNumber['hardforks'][9]['block'] = 18;
 		const customChains = [testnetMergeWithBlockNumber];
 		const c = new Common({
-			chain: 'testnetMerge',
+			chain: 'testnetPOS',
 			hardfork: Hardfork.Shanghai,
 			customChains,
 		});
@@ -73,9 +72,9 @@ describe('[Common]: Merge/POS specific logic', () => {
 	});
 
 	it('setHardforkByBlockNumber()', () => {
-		const customChains = [testnetMerge];
+		const customChains = [testnetPOS];
 		const c = new Common({
-			chain: 'testnetMerge',
+			chain: 'testnetPOS',
 			hardfork: Hardfork.Shanghai,
 			customChains,
 		});
@@ -89,12 +88,12 @@ describe('[Common]: Merge/POS specific logic', () => {
 	});
 
 	it('setHardforkByBlockNumber()', () => {
-		const testnetMergeWithBlockNumber = JSON.parse(JSON.stringify(testnetMerge));
+		const testnetMergeWithBlockNumber = JSON.parse(JSON.stringify(testnetPOS));
 		// Set Merge block to 15
 		// testnetMergeWithBlockNumber['hardforks'][8]['block'] = 16;
 		const customChains = [testnetMergeWithBlockNumber];
 		const c = new Common({
-			chain: 'testnetMerge',
+			chain: 'testnetPOS',
 			hardfork: Hardfork.Shanghai,
 			customChains,
 		});
@@ -107,14 +106,14 @@ describe('[Common]: Merge/POS specific logic', () => {
 	});
 
 	it('setHardforkByBlockNumber()', () => {
-		const testnetMergeWithBlockNumber = JSON.parse(JSON.stringify(testnetMerge));
+		const testnetMergeWithBlockNumber = JSON.parse(JSON.stringify(testnetPOS));
 		// Set Merge block to 15
 		// testnetMergeWithBlockNumber['hardforks'][8]['block'] = 16;
 		// Set Shanghai block to 18
 		// testnetMergeWithBlockNumber['hardforks'][9]['block'] = 18;
 		const customChains = [testnetMergeWithBlockNumber];
 		const c = new Common({
-			chain: 'testnetMerge',
+			chain: 'testnetPOS',
 			hardfork: Hardfork.Shanghai,
 			customChains,
 		});
@@ -138,7 +137,7 @@ describe('[Common]: Merge/POS specific logic', () => {
 	});
 
 	it('should get the correct merge hardfork at genesis', async () => {
-		const c = Common.fromGzondGenesis(postMerge, { chain: 'post-merge' });
+		const c = Common.fromGzondGenesis(posExecGenesis, { chain: 'pos' });
 		expect(c.getHardforkByBlockNumber(0)).toEqual(Hardfork.Shanghai);
 		expect(c.getHardforkByBlockNumber(0, BigInt(0))).toEqual(Hardfork.Shanghai);
 	});
