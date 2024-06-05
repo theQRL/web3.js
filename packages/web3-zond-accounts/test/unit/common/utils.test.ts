@@ -36,21 +36,19 @@ describe('[Utils/Parse]', () => {
 
 	it.skip('should import pos network params correctly', async () => {
 		let params = parseGzondGenesis(posExecGenesis, 'pos');
-		// expect(params.genesis.nonce).toBe('0x0000000000000000');
+		expect(params.genesis.baseFeePerGas).toBe('0x7');
 		expect(params.consensus).toEqual({
 			type: 'pos',
 			algorithm: 'casper',
 			casper: {},
 		});
-		// TODO(rgeraldes24)
-		// poa.nonce = '00';
+		posExecGenesis.baseFeePerGas = '0x8';
 		params = parseGzondGenesis(posExecGenesis, 'pos');
-		// expect(params.genesis.nonce).toBe('0x0000000000000000');
+		expect(params.genesis.baseFeePerGas).toBe('0x8');
 		expect(params.hardfork).toEqual(Hardfork.Shanghai);
 	});
 
-	// TODO(rgeraldes24)
-	it('should generate expected hash with london block zero and base fee per gas defined', async () => {
+	it('should generate expected hash with shanghai block zero and base fee per gas defined', async () => {
 		const params = parseGzondGenesis(posExecGenesis, 'pos');
 		expect(params.genesis.baseFeePerGas).toEqual(posExecGenesis.baseFeePerGas);
 	});
@@ -94,8 +92,7 @@ describe('[Utils/Parse]', () => {
 		expect(common1.hardfork()).toEqual(Hardfork.Shanghai);
 	});
 
-	// TODO(rgeraldes24): title
-	it('should successfully parse genesis with hardfork scheduled post merge', async () => {
+	it('should successfully parse genesis', async () => {
 		const common = Common.fromGzondGenesis(posExecGenesis, {
 			chain: 'customChain',
 		});
