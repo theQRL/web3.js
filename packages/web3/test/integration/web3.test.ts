@@ -45,7 +45,7 @@ describe('Web3 instance', () => {
 	let providerUrl: string;
 	let accounts: string[];
 	let web3: Web3;
-	let currentAttempt = 0;
+	// let currentAttempt = 0;
 
 	beforeAll(async () => {
 		provider = getSystemTestProvider();
@@ -58,25 +58,26 @@ describe('Web3 instance', () => {
 		await closeOpenConnection(web3);
 	});
 
-	beforeEach(() => {
-		currentAttempt = 0;
-	});
+	// beforeEach(() => {
+	// 	currentAttempt = 0;
+	// });
 
-	afterEach(async () => {
-		if (isWs) {
-			// make sure we try to close the connection after it is established
-			if (
-				web3?.provider &&
-				(web3.provider as unknown as Web3BaseProvider).getStatus() === 'connecting'
-			) {
-				await waitForOpenConnection(web3, currentAttempt);
-			}
+	// TODO(rgeraldes24): not working as expected; blocks test
+	// afterEach(async () => {
+	// 	if (isWs) {
+	// 		// make sure we try to close the connection after it is established
+	// 		if (
+	// 			web3?.provider &&
+	// 			(web3.provider as unknown as Web3BaseProvider).getStatus() === 'connecting'
+	// 		) {
+	// 			await waitForOpenConnection(web3, currentAttempt);
+	// 		}
 
-			if (web3?.provider) {
-				(web3.provider as unknown as Web3BaseProvider).disconnect(1000, '');
-			}
-		}
-	});
+	// 		if (web3?.provider) {
+	// 			(web3.provider as unknown as Web3BaseProvider).disconnect(1000, '');
+	// 		}
+	// 	}
+	// });
 
 	it('should be able to create web3 object without provider', () => {
 		expect(() => new Web3()).not.toThrow();
@@ -320,7 +321,7 @@ describe('Web3 instance', () => {
 				arguments: ['My Greeting'],
 			};
 
-			sendOptions = { from: acc.address, gas: '1000000', type: 2 };
+			sendOptions = { from: acc.address, gas: '1000000' };
 		});
 
 		it('should update defaults on contract instance', () => {

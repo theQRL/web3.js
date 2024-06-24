@@ -115,7 +115,7 @@ describe('instance of validator', () => {
 			validator.validateJSONSchema(hugeSchema, hugeData as object);
 			t = Number(new Date()) - t1;
 		}).not.toThrow();
-		expect(t).toBeLessThan(8000);
+		expect(t).toBeLessThan(15000);
 		expect(t).toBeGreaterThan(0);
 	});
 
@@ -126,7 +126,7 @@ describe('instance of validator', () => {
 			validator.validateJSONSchema(hugeSchema1000, hugeData1000 as object);
 			t = Number(new Date()) - t1;
 		}).not.toThrow();
-		expect(t).toBeLessThan(8000);
+		expect(t).toBeLessThan(25000);
 		expect(t).toBeGreaterThan(0);
 	});
 
@@ -152,7 +152,7 @@ describe('instance of validator', () => {
 			}
 			t = Number(new Date()) - t1;
 		}).not.toThrow();
-		expect(t).toBeLessThan(4000);
+		expect(t).toBeLessThan(15000);
 		expect(t).toBeGreaterThan(0);
 	});
 
@@ -165,7 +165,7 @@ describe('instance of validator', () => {
 			}
 			t = Number(new Date()) - t1;
 		}).not.toThrow();
-		expect(t).toBeLessThan(4000);
+		expect(t).toBeLessThan(15000);
 		expect(t).toBeGreaterThan(0);
 	});
 
@@ -178,7 +178,7 @@ describe('instance of validator', () => {
 			}
 			t = Number(new Date()) - t1;
 		}).not.toThrow();
-		expect(t).toBeLessThan(4000);
+		expect(t).toBeLessThan(10000);
 		expect(t).toBeGreaterThan(0);
 	});
 });

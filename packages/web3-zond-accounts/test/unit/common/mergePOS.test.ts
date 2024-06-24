@@ -14,131 +14,107 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { toBigInt } from '@theqrl/web3-utils';
-import { Chain, Common, Hardfork } from '../../../src/common';
+// import { toBigInt } from '@theqrl/web3-utils';
+import { /*Chain,*/ Common, Hardfork } from '../../../src/common';
 
-import * as testnetMerge from '../../fixtures/common/merge/testnetMerge.json';
-import * as testnetPOS from '../../fixtures/common/merge/testnetPOS.json';
-import postMerge from '../../fixtures/common/post-merge.json';
+import * as testnetPOS from '../../fixtures/common/pos.json';
+import posExecGenesis from '../../fixtures/common/pos-exec-genesis.json';
 
 describe('[Common]: Merge/POS specific logic', () => {
-	it('hardforkTTD()', () => {
-		const customChains = [testnetMerge];
-		const c = new Common({ chain: 'testnetMerge', hardfork: Hardfork.Istanbul, customChains });
-		expect(c.hardforkTTD(Hardfork.Merge)).toEqual(BigInt(5000));
-		expect(c.hardforkTTD('thisHardforkDoesNotExist')).toBeNull();
-	});
-
-	it('getHardforkByBlockNumber(), merge block null, with total difficulty', () => {
-		const customChains = [testnetMerge];
+	it('getHardforkByBlockNumber()', () => {
+		const customChains = [testnetPOS];
 		const c = new Common({
-			chain: 'testnetMerge',
-			hardfork: Hardfork.Istanbul,
+			chain: 'testnetPOS',
+			hardfork: Hardfork.Shanghai,
 			customChains,
 		});
 
-		expect(c.getHardforkByBlockNumber(0)).toBe('chainstart');
-		expect(c.getHardforkByBlockNumber(14)).toBe('london');
-		expect(c.getHardforkByBlockNumber(15, 5000)).toBe('merge');
-		expect(c.getHardforkByBlockNumber(15, 5001)).toBe('merge');
-		expect(c.getHardforkByBlockNumber(15, 4999)).toBe('london');
-		expect(c.getHardforkByBlockNumber(12, 4999)).toBe('berlin');
+		expect(c.getHardforkByBlockNumber(0)).toBe('shanghai');
+		expect(c.getHardforkByBlockNumber(14)).toBe('shanghai');
+		expect(c.getHardforkByBlockNumber(15, 5000)).toBe('shanghai');
+		expect(c.getHardforkByBlockNumber(15, 5001)).toBe('shanghai');
+		expect(c.getHardforkByBlockNumber(15, 4999)).toBe('shanghai');
+		expect(c.getHardforkByBlockNumber(12, 4999)).toBe('shanghai');
 	});
 
-	it('getHardforkByBlockNumber(), merge block set, with total difficulty', () => {
-		const testnetMergeWithBlockNumber = JSON.parse(JSON.stringify(testnetMerge));
+	it('getHardforkByBlockNumber()', () => {
+		const testnetMergeWithBlockNumber = JSON.parse(JSON.stringify(testnetPOS));
 		// Set Merge block to 15
-		testnetMergeWithBlockNumber['hardforks'][8]['block'] = 16;
+		// testnetMergeWithBlockNumber['hardforks'][8]['block'] = 16;
 		const customChains = [testnetMergeWithBlockNumber];
 		const c = new Common({
-			chain: 'testnetMerge',
-			hardfork: Hardfork.Istanbul,
+			chain: 'testnetPOS',
+			hardfork: Hardfork.Shanghai,
 			customChains,
 		});
 
-		expect(c.getHardforkByBlockNumber(0)).toBe('chainstart');
-		expect(c.getHardforkByBlockNumber(16)).toBe('merge');
-		expect(c.getHardforkByBlockNumber(16, 5000)).toBe('merge');
-		expect(c.getHardforkByBlockNumber(16, 5001)).toBe('merge');
-		expect(c.getHardforkByBlockNumber(12, 4999)).toBe('berlin');
-
-		expect(() => {
-			c.getHardforkByBlockNumber(16, 4999);
-		}).toThrow('Maximum HF determined by total difficulty is lower than the block number HF');
-
-		expect(() => {
-			c.getHardforkByBlockNumber(14, 5000);
-		}).toThrow('HF determined by block number is lower than the minimum total difficulty HF');
+		expect(c.getHardforkByBlockNumber(0)).toBe('shanghai');
+		expect(c.getHardforkByBlockNumber(16)).toBe('shanghai');
+		expect(c.getHardforkByBlockNumber(16, 5000)).toBe('shanghai');
+		expect(c.getHardforkByBlockNumber(16, 5001)).toBe('shanghai');
+		expect(c.getHardforkByBlockNumber(12, 4999)).toBe('shanghai');
 	});
 
-	it('getHardforkByBlockNumber(), merge block set + subsequent HF, with total difficulty', () => {
-		const testnetMergeWithBlockNumber = JSON.parse(JSON.stringify(testnetMerge));
+	it('getHardforkByBlockNumber()', () => {
+		const testnetMergeWithBlockNumber = JSON.parse(JSON.stringify(testnetPOS));
 		// Set Merge block to 15
-		testnetMergeWithBlockNumber['hardforks'][8]['block'] = 16;
+		// testnetMergeWithBlockNumber['hardforks'][8]['block'] = 16;
 		// Set Shanghai block to 18
-		testnetMergeWithBlockNumber['hardforks'][9]['block'] = 18;
+		// testnetMergeWithBlockNumber['hardforks'][9]['block'] = 18;
 		const customChains = [testnetMergeWithBlockNumber];
 		const c = new Common({
-			chain: 'testnetMerge',
-			hardfork: Hardfork.Istanbul,
+			chain: 'testnetPOS',
+			hardfork: Hardfork.Shanghai,
 			customChains,
 		});
 
 		expect(c.getHardforkByBlockNumber(18, 5001)).toBe('shanghai');
 	});
 
-	it('setHardforkByBlockNumber(), merge block null, with total difficulty', () => {
-		const customChains = [testnetMerge];
+	it('setHardforkByBlockNumber()', () => {
+		const customChains = [testnetPOS];
 		const c = new Common({
-			chain: 'testnetMerge',
-			hardfork: Hardfork.Istanbul,
+			chain: 'testnetPOS',
+			hardfork: Hardfork.Shanghai,
 			customChains,
 		});
 
-		expect(c.setHardforkByBlockNumber(0)).toBe('chainstart');
-		expect(c.setHardforkByBlockNumber(14)).toBe('london');
-		expect(c.setHardforkByBlockNumber(15, 5000)).toBe('merge');
-		expect(c.setHardforkByBlockNumber(15, 5001)).toBe('merge');
-		expect(c.setHardforkByBlockNumber(15, 4999)).toBe('london');
-		expect(c.setHardforkByBlockNumber(12, 4999)).toBe('berlin');
+		expect(c.setHardforkByBlockNumber(0)).toBe('shanghai');
+		expect(c.setHardforkByBlockNumber(14)).toBe('shanghai');
+		expect(c.setHardforkByBlockNumber(15, 5000)).toBe('shanghai');
+		expect(c.setHardforkByBlockNumber(15, 5001)).toBe('shanghai');
+		expect(c.setHardforkByBlockNumber(15, 4999)).toBe('shanghai');
+		expect(c.setHardforkByBlockNumber(12, 4999)).toBe('shanghai');
 	});
 
-	it('setHardforkByBlockNumber(), merge block set, with total difficulty', () => {
-		const testnetMergeWithBlockNumber = JSON.parse(JSON.stringify(testnetMerge));
+	it('setHardforkByBlockNumber()', () => {
+		const testnetMergeWithBlockNumber = JSON.parse(JSON.stringify(testnetPOS));
 		// Set Merge block to 15
-		testnetMergeWithBlockNumber['hardforks'][8]['block'] = 16;
+		// testnetMergeWithBlockNumber['hardforks'][8]['block'] = 16;
 		const customChains = [testnetMergeWithBlockNumber];
 		const c = new Common({
-			chain: 'testnetMerge',
-			hardfork: Hardfork.Istanbul,
+			chain: 'testnetPOS',
+			hardfork: Hardfork.Shanghai,
 			customChains,
 		});
 
-		expect(c.setHardforkByBlockNumber(0)).toBe('chainstart');
-		expect(c.setHardforkByBlockNumber(16)).toBe('merge');
-		expect(c.setHardforkByBlockNumber(16, 5000)).toBe('merge');
-		expect(c.setHardforkByBlockNumber(16, 5001)).toBe('merge');
-		expect(c.setHardforkByBlockNumber(12, 4999)).toBe('berlin');
-
-		expect(() => {
-			c.setHardforkByBlockNumber(16, 4999);
-		}).toThrow('Maximum HF determined by total difficulty is lower than the block number HF');
-
-		expect(() => {
-			c.setHardforkByBlockNumber(14, 5000);
-		}).toThrow('HF determined by block number is lower than the minimum total difficulty HF');
+		expect(c.setHardforkByBlockNumber(0)).toBe('shanghai');
+		expect(c.setHardforkByBlockNumber(16)).toBe('shanghai');
+		expect(c.setHardforkByBlockNumber(16, 5000)).toBe('shanghai');
+		expect(c.setHardforkByBlockNumber(16, 5001)).toBe('shanghai');
+		expect(c.setHardforkByBlockNumber(12, 4999)).toBe('shanghai');
 	});
 
-	it('setHardforkByBlockNumber(), merge block set + subsequent HF, with total difficulty', () => {
-		const testnetMergeWithBlockNumber = JSON.parse(JSON.stringify(testnetMerge));
+	it('setHardforkByBlockNumber()', () => {
+		const testnetMergeWithBlockNumber = JSON.parse(JSON.stringify(testnetPOS));
 		// Set Merge block to 15
-		testnetMergeWithBlockNumber['hardforks'][8]['block'] = 16;
+		// testnetMergeWithBlockNumber['hardforks'][8]['block'] = 16;
 		// Set Shanghai block to 18
-		testnetMergeWithBlockNumber['hardforks'][9]['block'] = 18;
+		// testnetMergeWithBlockNumber['hardforks'][9]['block'] = 18;
 		const customChains = [testnetMergeWithBlockNumber];
 		const c = new Common({
-			chain: 'testnetMerge',
-			hardfork: Hardfork.Istanbul,
+			chain: 'testnetPOS',
+			hardfork: Hardfork.Shanghai,
 			customChains,
 		});
 
@@ -147,27 +123,27 @@ describe('[Common]: Merge/POS specific logic', () => {
 
 	it('Pure POS testnet', () => {
 		const customChains = [testnetPOS];
-		const c = new Common({ chain: 'testnetPOS', hardfork: Hardfork.Chainstart, customChains });
-
-		expect(c.hardforkTTD(Hardfork.Chainstart)).toEqual(BigInt(0));
+		const c = new Common({ chain: 'testnetPOS', hardfork: Hardfork.Shanghai, customChains });
 
 		expect(c.getHardforkByBlockNumber(5, 0)).toBe('shanghai');
 	});
-
+	
 	it('Should fail setting invalid hardfork', () => {
 		const customChains = [testnetPOS];
 		expect(() => {
 			// eslint-disable-next-line no-new
-			new Common({ chain: 'testnetPOS', hardfork: Hardfork.Istanbul, customChains });
-		}).toThrow(`Hardfork with name istanbul not supported`);
+			new Common({ chain: 'testnetPOS', hardfork: 'invalid', customChains });
+		}).toThrow(`Hardfork with name invalid not supported`);
 	});
 
 	it('should get the correct merge hardfork at genesis', async () => {
-		const c = Common.fromGzondGenesis(postMerge, { chain: 'post-merge' });
-		expect(c.getHardforkByBlockNumber(0)).toEqual(Hardfork.London);
-		expect(c.getHardforkByBlockNumber(0, BigInt(0))).toEqual(Hardfork.Merge);
+		const c = Common.fromGzondGenesis(posExecGenesis, { chain: 'pos' });
+		expect(c.getHardforkByBlockNumber(0)).toEqual(Hardfork.Shanghai);
+		expect(c.getHardforkByBlockNumber(0, BigInt(0))).toEqual(Hardfork.Shanghai);
 	});
 
+	// NOTE(rgeraldes24): not valid atm
+	/*
 	it('test post merge hardforks using Sepolia with block null', () => {
 		const c = new Common({ chain: Chain.Sepolia });
 
@@ -243,14 +219,5 @@ describe('[Common]: Merge/POS specific logic', () => {
 		// restore value
 		mergeHf.block = prevMergeBlockVal;
 	});
-
-	it('should throw if encounters a double ttd hardfork specification', () => {
-		const c = new Common({ chain: Chain.Sepolia });
-		// Add the ttd to mergeForkIdTransition which occurs post merge in sepolia
-		c.hardforks().filter(hf => hf.name === 'mergeForkIdTransition')[0]!['ttd'] =
-			'17000000000000000';
-		expect(() => {
-			c.setHardforkByBlockNumber(1735371);
-		}).toThrow('More than one merge hardforks found with ttd specified');
-	});
+	*/
 });

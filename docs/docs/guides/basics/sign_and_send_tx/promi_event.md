@@ -5,10 +5,10 @@ sidebar_label: 'Web3PromiEvent'
 
 # PromiEvent
 
-You can use Web3PromiEvent when you send transaction via `web3.eth.sendTransaction`, `web3.eth.sendSignedTransaction`, `contractDeployed.methods['methodName'](...methodParams).send` functions
+You can use Web3PromiEvent when you send transaction via `web3.zond.sendTransaction`, `web3.zond.sendSignedTransaction`, `contractDeployed.methods['methodName'](...methodParams).send` functions
 
 ```ts
-web3.eth.sendTransaction({...})
+web3.zond.sendTransaction({...})
     .on('sending', (sending) => {
         // Sending example
         // 0x02f86d82053903849502f900849a9a0d16830186a0947ab80aeb6bb488b7f6c41c58e83ef248eb39c8828080c080a0b0fce643a6ca3077ee6b83590b1798d00edef99e2c65c1837daab88d46860887a07ca449a31b2430dbf21310b8c4491386762ade23e48c7cd0b70d315576374c7c

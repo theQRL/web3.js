@@ -46,9 +46,6 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
  *
  *  + `Net` - `Constructor`: The Net module for interacting with network properties.
  *
- *
- *  + `Personal` - `constructor`: The Personal module for interacting with the Zond accounts (web3.zond.personal).
- *
  * #### Example
  *
  * ```ts
@@ -56,7 +53,6 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
  * > {
  *   	Zond: Zond(provider),
  *   	Net: Net(provider),
- *   	Personal: Personal(provider),
  *   }
  * ```
  *
@@ -335,7 +331,6 @@ export { Web3Context, Web3PluginBase, Web3ZondPluginBase } from '@theqrl/web3-co
 export { Web3Zond } from '@theqrl/web3-zond';
 export { Contract } from '@theqrl/web3-zond-contract';
 export { Iban } from '@theqrl/web3-zond-iban';
-export { Personal } from '@theqrl/web3-zond-personal';
 export { Net } from '@theqrl/web3-net';
 export { HttpProvider } from '@theqrl/web3-providers-http';
 export { WebSocketProvider } from '@theqrl/web3-providers-ws';

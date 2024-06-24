@@ -7,7 +7,7 @@ sidebar_label: 'Deploying and Interacting with Smart Contracts'
 
 ## Introduction
 
-In this tutorial, we will walk through the process of deploying a smart contract to the Ethereum network, generating the ABI, and interacting with the smart contract using web3.js version 4.x. We will cover the basic concepts of Ethereum, Solidity, and web3.js and provide step-by-step instructions for deploying a simple smart contract to a test network using Ganache.
+In this tutorial, we will walk through the process of deploying a smart contract to the Zond network, generating the ABI, and interacting with the smart contract using web3.js. We will cover the basic concepts of Zond, Solidity, and web3.js and provide step-by-step instructions for deploying a simple smart contract to a test network using Ganache.
 
 ## Overview
 
@@ -25,7 +25,7 @@ Here is a high-level overview of the steps we will be taking in this tutorial:
 
 Before we start writing and deploying our contract, we need to set up our environment. For that, we need to install the following:
 
-1. Ganache - Ganache is a personal blockchain for Ethereum development that allows you to see how your smart contracts function in real-world scenarios. You can download it from http://truffleframework.com/ganache
+1. Ganache - Ganache is a personal blockchain for Zond development that allows you to see how your smart contracts function in real-world scenarios. You can download it from http://truffleframework.com/ganache
 2. Node.js - Node.js is a JavaScript runtime environment that allows you to run JavaScript on the server-side. You can download it from https://nodejs.org/en/download/
 3. npm - Node Package Manager is used to publish and install packages to and from the public npm registry or a private npm registry. Here is how to install it https://docs.npmjs.com/downloading-and-installing-node-js-and-npm. (Alternatively, you can use yarn instead of npm https://classic.yarnpkg.com/lang/en/docs/getting-started/)
 
@@ -171,10 +171,10 @@ In this step, we will set up the web3.js library and connect to the Ganache netw
 First, install the `web3` package using npm:
 
 ```
-npm install web3@4.0.1-rc.1
+npm install @theqrl/web3@4.0.1-rc.1
 ```
 
-Note that we are installing the latest version of 4.x, at the time of this tutorial writing. You can check the latest version at https://www.npmjs.com/package/web3?activeTab=versions
+Note that we are installing the latest version of 4.x, at the time of this tutorial writing. You can check the latest version at https://www.npmjs.com/package/@theqrl/web3?activeTab=versions
 
 Next, create a new file called `index.js` in your project directory and add the following code to it:
 
@@ -185,7 +185,7 @@ const { Web3 } = require('web3'); //  web3.js has native ESM builds and (`import
 const web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:7545'));
 
 // Log the current block number to the console
-web3.eth
+web3.zond
 	.getBlockNumber()
 	.then(result => {
 		console.log('Current block number: ' + result);
@@ -213,14 +213,14 @@ Create a file named `deploy.js` and fill it with the following code:
 
 ```javascript
 // For simplicity we use `web3` package here. However, if you are concerned with the size,
-//	you may import individual packages like 'web3-eth', 'web3-eth-contract' and 'web3-providers-http'.
+//	you may import individual packages like 'web3-zond', 'web3-zond-contract' and 'web3-providers-http'.
 const { Web3 } = require('web3'); //  web3.js has native ESM builds and (`import Web3 from 'web3'`)
 const fs = require('fs');
 const path = require('path');
 
-// Set up a connection to the Ethereum network
+// Set up a connection to the Zond network
 const web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:7545'));
-web3.eth.Contract.handleRevert = true;
+web3.zond.Contract.handleRevert = true;
 
 // Read the bytecode from the file system
 const bytecodePath = path.join(__dirname, 'MyContractBytecode.bin');
@@ -228,10 +228,10 @@ const bytecode = fs.readFileSync(bytecodePath, 'utf8');
 
 // Create a new contract object using the ABI and bytecode
 const abi = require('./MyContractAbi.json');
-const MyContract = new web3.eth.Contract(abi);
+const MyContract = new web3.zond.Contract(abi);
 
 async function deploy() {
-	const providersAccounts = await web3.eth.getAccounts();
+	const providersAccounts = await web3.zond.getAccounts();
 	const defaultAccount = providersAccounts[0];
 	console.log('deployer account:', defaultAccount);
 
@@ -293,9 +293,9 @@ const { Web3 } = require('web3'); //  web3.js has native ESM builds and (`import
 const fs = require('fs');
 const path = require('path');
 
-// Set up a connection to the Ethereum network
+// Set up a connection to the Zond network
 const web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:7545'));
-web3.eth.Contract.handleRevert = true;
+web3.zond.Contract.handleRevert = true;
 
 // Read the contract address from the file system
 const deployedAddressPath = path.join(__dirname, 'MyContractAddress.bin');
@@ -307,7 +307,7 @@ const bytecode = fs.readFileSync(bytecodePath, 'utf8');
 
 // Create a new contract object using the ABI and bytecode
 const abi = require('./MyContractAbi.json');
-const MyContract = new web3.eth.Contract(abi, deployedAddress);
+const MyContract = new web3.zond.Contract(abi, deployedAddress);
 
 async function interact() {
 	const providersAccounts = await web3.eth.getAccounts();
@@ -409,9 +409,9 @@ contract.methods.approve('0x00000000219ab540356cBB839Cbe05303d7705Fa', 1).call(
 
 ## Conclusion
 
-In this tutorial, we learned how to generate the ABI and the Bytecode of a smart contract, deploy it to the Ethereum network, and interact with it using web3.js version 4.x.
+In this tutorial, we learned how to generate the ABI and the Bytecode of a smart contract, deploy it to the Zond network, and interact with it using web3.js.
 
-With this knowledge, you can start experimenting with writing smart contract in order for building your decentralized applications (dApps) on the Ethereum network using web3.js. Keep in mind that this is just the beginning, and there is a lot more to learn about Ethereum and web3.js. So keep exploring and building, and have fun!
+With this knowledge, you can start experimenting with writing smart contract in order for building your decentralized applications (dApps) on the Zond network using web3.js. Keep in mind that this is just the beginning, and there is a lot more to learn about Zond and web3.js. So keep exploring and building, and have fun!
 
 ## Additional Resources
 
@@ -433,6 +433,6 @@ With this knowledge, you can start experimenting with writing smart contract in 
 
 ## Final Thoughts
 
-Web3.js version 4.x provides a powerful and easy-to-use interface for interacting with the Ethereum network and building decentralized applications. And it has been rewritten in TypeScript but for simplicity of this tutorial we interacted with it in JavaScript.
+Web3.js provides a powerful and easy-to-use interface for interacting with the Zond network and building decentralized applications. And it has been rewritten in TypeScript but for simplicity of this tutorial we interacted with it in JavaScript.
 
-The Ethereum ecosystem is constantly evolving, and there is always more to learn and discover. As you continue to develop your skills and knowledge, keep exploring and experimenting with new technologies and tools to build innovative and decentralized solutions.
+The Zond ecosystem is constantly evolving, and there is always more to learn and discover. As you continue to develop your skills and knowledge, keep exploring and experimenting with new technologies and tools to build innovative and decentralized solutions.

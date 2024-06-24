@@ -61,7 +61,7 @@ export class Registry {
 
 			return promise;
 		} catch (error) {
-			throw new Error(); // TODO: TransactionRevertInstructionError Needs to be added after web3-eth call method is implemented
+			throw new Error(); // TODO: TransactionRevertInstructionError Needs to be added after web3-zond call method is implemented
 		}
 	}
 
@@ -80,7 +80,7 @@ export class Registry {
 					throw new Error();
 				});
 		} catch (error) {
-			throw new Error(); // TODO: TransactionRevertInstructionError Needs to be added after web3-eth call method is implemented
+			throw new Error(); // TODO: TransactionRevertInstructionError Needs to be added after web3-zond call method is implemented
 		}
 	}
 

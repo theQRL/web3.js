@@ -48,7 +48,7 @@ describe('contract', () => {
 				data: ERC721TokenBytecode,
 				arguments: [],
 			};
-			sendOptions = { from: acc.address, /*gas: '10000000'*/ type: 2 };
+			sendOptions = { from: acc.address, /*gas: '10000000'*/ };
 		});
 
 		it('should deploy the contract', async () => {
@@ -66,7 +66,7 @@ describe('contract', () => {
 			});
 			beforeEach(async () => {
 				acc2 = await createTempAccount();
-				sendOptions = { from: acc.address, /*gas: '10000000'*/ type: 2 };
+				sendOptions = { from: acc.address, /*gas: '10000000'*/ };
 				contractDeployed = await contract.deploy(deployOptions).send(sendOptions);
 			});
 
@@ -94,7 +94,6 @@ describe('contract', () => {
 						),
 					).toBe(toUpperCaseHex(tempAccount.address));
 				});
-
 				it.each([signAndSendContractMethodEIP1559, signAndSendContractMethodEIP2930])(
 					'should award item with local wallet %p',
 					async signAndSendContractMethod => {
@@ -118,7 +117,6 @@ describe('contract', () => {
 						).toBe(toUpperCaseHex(tempAccount.address));
 					},
 				);
-
 				it.each([signAndSendContractMethodEIP1559, signAndSendContractMethodEIP2930])(
 					'should transferFrom item with local wallet %p',
 					async signAndSendContractMethod => {
@@ -155,7 +153,6 @@ describe('contract', () => {
 						).toBe(toUpperCaseHex(tempAccountTo.address));
 					},
 				);
-
 				it.each([signAndSendContractMethodEIP1559, signAndSendContractMethodEIP2930])(
 					'should safeTransferFrom item with local wallet %p',
 					async signAndSendContractMethod => {
@@ -198,7 +195,6 @@ describe('contract', () => {
 						).toBe(toUpperCaseHex(tempAccountTo.address));
 					},
 				);
-
 				it.each([signAndSendContractMethodEIP1559, signAndSendContractMethodEIP2930])(
 					'should approve item with local wallet %p',
 					async signAndSendContractMethod => {
@@ -228,7 +224,6 @@ describe('contract', () => {
 						);
 					},
 				);
-
 				it.each([signAndSendContractMethodEIP1559, signAndSendContractMethodEIP2930])(
 					'should set approve for all item with local wallet %p',
 					async signAndSendContractMethod => {

@@ -56,7 +56,7 @@ describe('contract defaults (extra)', () => {
 			arguments: ['My Greeting'],
 		};
 
-		sendOptions = { from: acc.address, /*gas: '1000000'*/ type: 2 };
+		sendOptions = { from: acc.address, /*gas: '1000000'*/ };
 	});
 
 	afterEach(async () => {
@@ -128,7 +128,7 @@ describe('contract defaults (extra)', () => {
 		const common = {
 			customChain: { name: 'testnet', networkId: '1337', chainId: '1337' },
 			baseChain,
-			hardfork: 'london' as Hardfork,
+			hardfork: 'shanghai' as Hardfork,
 		};
 
 		beforeEach(async () => {
@@ -142,7 +142,7 @@ describe('contract defaults (extra)', () => {
 				arguments: ['My Greeting'],
 			};
 
-			sendOptions = { from: acc.address, /*gas: '1000000'*/ type: 2 };
+			sendOptions = { from: acc.address, /*gas: '1000000'*/ };
 
 			contract = await contract.deploy(deployOptions).send(sendOptions);
 		});

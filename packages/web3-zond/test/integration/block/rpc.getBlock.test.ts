@@ -31,8 +31,8 @@ import {
 	closeOpenConnection,
 	getSystemTestBackend,
 	describeIf,
-	createNewAccount,
-	refillAccount,
+	// createNewAccount,
+	// refillAccount,
 } from '../../fixtures/system_test_utils';
 import { BasicAbi, BasicBytecode } from '../../shared_fixtures/build/Basic';
 import { toAllVariants } from '../../shared_fixtures/utils';
@@ -75,15 +75,17 @@ describe('rpc with block', () => {
 			data: BasicBytecode,
 			arguments: [10, 'string init value'],
 		};
-		tempAcc = await createNewAccount({ unlock: true });
-		await refillAccount(
-			(
-				await createTempAccount()
-			).address,
-			tempAcc.address,
-			'100000000000000000000',
-		);
-		sendOptions = { from: tempAcc.address, /*gas: '1000000'*/ type: 2 };
+
+		tempAcc = await createTempAccount();
+		// tempAcc = await createNewAccount();
+		// await refillAccount(
+		// 	(
+		// 		await createTempAccount()
+		// 	).address,
+		// 	tempAcc.address,
+		// 	'100000000000000000000',
+		// );
+		sendOptions = { from: tempAcc.address, /*gas: '1000000'*/ };
 
 		await contract.deploy(deployOptions).send(sendOptions);
 		const [receipt]: TransactionReceipt[] = await sendFewTxes({
@@ -126,9 +128,7 @@ describe('rpc with block', () => {
 				})),
 			};
 			if (blockData[block] === 'pending') {
-				b.nonce = '0x0';
 				b.miner = '0x0000000000000000000000000000000000000000';
-				b.totalDifficulty = '0x0';
 			}
 
 			expect(validator.validateJSONSchema(blockSchema, b)).toBeUndefined();

@@ -34,7 +34,7 @@ const address = hexToBytes('0x20982e08c8b5b4d007e4f6c4a637033ce90aa352');
 
 const common = new Common({
 	chain: Chain.Mainnet,
-	hardfork: Hardfork.London,
+	hardfork: Hardfork.Shanghai,
 });
 
 const txTypes = [
@@ -70,13 +70,16 @@ describe('[AccessListEIP2930Transaction / FeeMarketEIP1559Transaction] -> EIP-29
 			});
 			expect(tx.common.chainId() === BigInt(99999)).toBeTruthy();
 
+			// NOTE(rgeraldes24): not valid: eip 2930 is available from the start
+			/*
 			const nonEIP2930Common = new Common({
 				chain: Chain.Mainnet,
-				hardfork: Hardfork.Istanbul,
+				hardfork: Hardfork.Shanghai,
 			});
 			expect(() => {
 				txType.class.fromTxData({}, { common: nonEIP2930Common });
 			}).toThrow();
+			*/
 
 			expect(() => {
 				txType.class.fromTxData(
@@ -306,9 +309,9 @@ describe('[AccessListEIP2930Transaction / FeeMarketEIP1559Transaction] -> EIP-29
 			tx = txType.class.fromTxData({}, { common, freeze: false });
 			expect(tx.getDataFee()).toEqual(BigInt(0));
 
-			const mutableCommon = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.London });
+			const mutableCommon = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Shanghai });
 			tx = txType.class.fromTxData({}, { common: mutableCommon });
-			tx.common.setHardfork(Hardfork.Istanbul);
+			tx.common.setHardfork(Hardfork.Shanghai);
 			expect(tx.getDataFee()).toEqual(BigInt(0));
 		}
 	});
@@ -379,6 +382,7 @@ describe('[AccessListEIP2930Transaction] -> Class Specific Tests', () => {
 		const baseFee = Number(common.param('gasPrices', 'tx'));
 		const creationFee = Number(common.param('gasPrices', 'txCreation'));
 
+
 		expect(
 			tx.getBaseFee() ===
 				BigInt(
@@ -390,7 +394,9 @@ describe('[AccessListEIP2930Transaction] -> Class Specific Tests', () => {
 				),
 		).toBeTruthy();
 
-		// In this Tx, `to` is `undefined`, so we should charge homestead creation gas.
+
+		// In this Tx, `to` is `undefined`, so we should charge homestead creation gas 
+		// and init code cost(eip 3860)
 		tx = AccessListEIP2930Transaction.fromTxData(
 			{
 				data: hexToBytes('010200'),
@@ -399,6 +405,8 @@ describe('[AccessListEIP2930Transaction] -> Class Specific Tests', () => {
 			},
 			{ common },
 		);
+		const dataLength = Math.ceil(tx.data.length / 32);
+		const initCodeCost = Number(common.param('gasPrices', 'initCodeWordCost')) * dataLength;
 
 		expect(
 			tx.getBaseFee() ===
@@ -407,6 +415,7 @@ describe('[AccessListEIP2930Transaction] -> Class Specific Tests', () => {
 						txDataZero +
 						creationFee +
 						baseFee +
+						initCodeCost +
 						accessListAddressCost +
 						accessListStorageKeyCost,
 				),
@@ -556,11 +565,12 @@ describe('[AccessListEIP2930Transaction] -> Class Specific Tests', () => {
 		expect(Object.isFrozen(signedTxn)).toBe(false);
 	});
 
-	it('common propagates from the common of tx, not the common in TxOptions', () => {
+	// NOTE(rgeraldes24): test not valid atm: no eips available
+	it.skip('common propagates from the common of tx, not the common in TxOptions', () => {
 		const txn = AccessListEIP2930Transaction.fromTxData({}, { common, freeze: false });
 		const newCommon = new Common({
 			chain: Chain.Mainnet,
-			hardfork: Hardfork.London,
+			hardfork: Hardfork.Shanghai,
 			eips: [2537],
 		});
 		expect(newCommon).not.toEqual(common);

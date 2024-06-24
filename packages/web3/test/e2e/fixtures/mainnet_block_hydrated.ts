@@ -16,7 +16,6 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 export const mainnetBlockHydrated = {
 	baseFeePerGas: '0x474472184',
-	difficulty: '0x0',
 	extraData: '0xd883010b05846765746888676f312e32302e32856c696e7578',
 	gasLimit: '0x1c9c380',
 	gasUsed: '0x143f430',
@@ -24,16 +23,13 @@ export const mainnetBlockHydrated = {
 	logsBloom:
 		'0x4df74c536feb5b9b15f957639771c6a373e719164f8593a74f9bbea57eaafd57bc3713cc5f12770cff1397fa4347c99e0f7d1e2edb5aedd4bf21d5e21ea43963fd767ad75fefcb3dffefe37b5d3a0879e29b14a80deefa730dd29ccd9e7134833aa03fb27b97d98982427405ac0abedd425a3bd70b7d5ff34f5d2cda3e7fd29fcf23d71d0a4c370005d82dfe53be067656d2bce157469cf97ff5ab7ce330166f9ed87d5717a46a3b603affe5b13cedca2b5a46bdeab6abab0dd72c3f14e2fdda4e38bd6e5e0b3e5bc04edb366cef95faf8f96edba7fb645a770e3daeca8de47f54736b5881078d85882d16ada151ea84e6779b30cb7ca4d68f8dbf31f296fc87',
 	miner: '0x4675c7e5baafbffbca748158becba61ef3b0a263',
-	mixHash: '0x4ec3b909884d099f633243913328e65d659c646e349c14ced389280fefab41c3',
-	nonce: '0x0',
+	prevRandao: '0x4ec3b909884d099f633243913328e65d659c646e349c14ced389280fefab41c3',
 	number: '0x103dab0',
 	parentHash: '0x28ad78b5598691f1eb3aee2a17540496b539fb4f72ca5eaa461a331791cfc7cd',
 	receiptsRoot: '0x78017242efd230482ca0a6ca47a5c3bed5a275b6e3b09223ff8e2354f3136772',
-	sha3Uncles: '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347',
 	size: '0x493d0',
 	stateRoot: '0x637b62addfc277cb5ae4aac3c8b3bfc8e49ebe9369d07d9757c5f1f2ec937306',
 	timestamp: '0x64363eef',
-	totalDifficulty: '0xc70d815d562d3cfa955',
 	transactions: [
 		{
 			blockHash: '0x2850e4a813762b2de589fa5268eacb92572defaf9520608deb129699e504cab2',
@@ -4108,6 +4104,5 @@ export const mainnetBlockHydrated = {
 			value: '0x0',
 		},
 	],
-	transactionsRoot: '0x2b0f787500743395385ad4a4142693bffd51d508cae1fdd675d269842b9bc2b0',
-	uncles: [],
+	transactionsRoot: '0x2b0f787500743395385ad4a4142693bffd51d508cae1fdd675d269842b9bc2b0'
 };

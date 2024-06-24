@@ -40,15 +40,15 @@ const seedToPublic = function (seed: HexString): Uint8Array {
 	return d.getPK();
 };
 const common = new Common({
-	chain: 5,
-	hardfork: Hardfork.London,
+	chain: 1,
+	hardfork: Hardfork.Shanghai,
 });
 // @ts-expect-error set private property
-common._chainParams.chainId = 4;
+common._chainParams.chainId = 1;
 describe('[BaseTransaction]', () => {
 	// EIP-2930 is not enabled in Common by default (2021-03-06)
 	// eslint-disable-next-line @typescript-eslint/no-shadow
-	const common = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.London });
+	const common = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Shanghai });
 
 	// const legacyTxs: BaseTransaction<Transaction>[] = [];
 	// for (const tx of legacyFixtures.slice(0, 4)) {
@@ -111,18 +111,19 @@ describe('[BaseTransaction]', () => {
 	it('Initialization', () => {
 		for (const txType of txTypes) {
 			let tx = txType.class.fromTxData({}, { common });
-			expect(tx.common.hardfork()).toBe('london');
+			expect(tx.common.hardfork()).toBe('shanghai');
 			expect(Object.isFrozen(tx)).toBe(true);
 
 			const initCommon = new Common({
 				chain: Chain.Mainnet,
-				hardfork: Hardfork.London,
+				hardfork: Hardfork.Shanghai,
 			});
 			tx = txType.class.fromTxData({}, { common: initCommon });
-			expect(tx.common.hardfork()).toBe('london');
+			expect(tx.common.hardfork()).toBe('shanghai');
 
-			initCommon.setHardfork(Hardfork.Byzantium);
-			expect(tx.common.hardfork()).toBe('london');
+			// NOTE(rgeraldes24): not valid since we don't have multiple forks
+			// initCommon.setHardfork(Hardfork.Byzantium);
+			// expect(tx.common.hardfork()).toBe('byzantium');
 
 			tx = txType.class.fromTxData({}, { common, freeze: false });
 			expect(!Object.isFrozen(tx)).toBe(true);

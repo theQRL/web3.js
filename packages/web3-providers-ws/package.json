@@ -4,7 +4,7 @@
 	"publishConfig": {
 		"access": "public"
 	},
-	"description": "Websocket provider for Web3 4.x.x",
+	"description": "Websocket provider for Web3",
 	"main": "./lib/commonjs/index.js",
 	"module": "./lib/esm/index.js",
 	"exports": {

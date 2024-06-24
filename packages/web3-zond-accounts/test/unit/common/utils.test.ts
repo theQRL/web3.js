@@ -18,34 +18,15 @@ import { hexToBytes } from '@theqrl/web3-utils';
 import { Common } from '../../../src/common/common';
 import { Hardfork } from '../../../src/common';
 import { parseGzondGenesis } from '../../../src/common/utils';
-import testnet from '../../fixtures/common/testnetValid.json';
 import invalidSpuriousDragon from '../../fixtures/common/invalid-spurious-dragon.json';
-import poa from '../../fixtures/common/poa.json';
-import postMerge from '../../fixtures/common/post-merge.json';
+import posExecGenesis from '../../fixtures/common/pos-exec-genesis.json';
 import noExtraData from '../../fixtures/common/no-extra-data.json';
 import gzondGenesisKiln from '../../fixtures/common/gzond-genesis-kiln.json';
-import postMergeHardfork from '../../fixtures/common/post-merge-hardfork.json';
 
 describe('[Utils/Parse]', () => {
 	const kilnForkHashes: any = {
-		chainstart: '0xbcadf543',
-		homestead: '0xbcadf543',
-		tangerineWhistle: '0xbcadf543',
-		spuriousDragon: '0xbcadf543',
-		byzantium: '0xbcadf543',
-		constantinople: '0xbcadf543',
-		petersburg: '0xbcadf543',
-		istanbul: '0xbcadf543',
-		berlin: '0xbcadf543',
-		london: '0xbcadf543',
-		mergeForkIdTransition: '0x013fd1b5',
-		merge: '0x013fd1b5',
+		shanghai: '0xbcadf543',
 	};
-
-	it('should parse gzond params file', async () => {
-		const params = parseGzondGenesis(testnet, 'rinkeby');
-		expect(params.genesis.nonce).toBe('0x0000000000000042');
-	});
 
 	it('should throw with invalid Spurious Dragon blocks', async () => {
 		expect(() => {
@@ -53,23 +34,24 @@ describe('[Utils/Parse]', () => {
 		}).toThrow();
 	});
 
-	it('should import poa network params correctly', async () => {
-		let params = parseGzondGenesis(poa, 'poa');
-		expect(params.genesis.nonce).toBe('0x0000000000000000');
+	it('should import pos network params correctly', async () => {
+		let params = parseGzondGenesis(posExecGenesis, 'pos');
+		expect(params.genesis.baseFeePerGas).toBe('0x7');
 		expect(params.consensus).toEqual({
-			type: 'poa',
-			algorithm: 'clique',
-			clique: { period: 15, epoch: 30000 },
+			type: 'pos',
+			algorithm: 'casper',
+			casper: {},
 		});
-		poa.nonce = '00';
-		params = parseGzondGenesis(poa, 'poa');
-		expect(params.genesis.nonce).toBe('0x0000000000000000');
-		expect(params.hardfork).toEqual(Hardfork.London);
+		posExecGenesis.baseFeePerGas = '0x8';
+		params = parseGzondGenesis(posExecGenesis, 'pos');
+		expect(params.genesis.baseFeePerGas).toBe('0x8');
+		// TODO(rgeraldes24): params.hardfork returns undefined which is expected when there is not fork in the genesis config
+		// expect(params.hardfork).toEqual(Hardfork.Shanghai);
 	});
 
-	it('should generate expected hash with london block zero and base fee per gas defined', async () => {
-		const params = parseGzondGenesis(postMerge, 'post-merge');
-		expect(params.genesis.baseFeePerGas).toEqual(postMerge.baseFeePerGas);
+	it('should generate expected hash with shanghai block zero and base fee per gas defined', async () => {
+		const params = parseGzondGenesis(posExecGenesis, 'pos');
+		expect(params.genesis.baseFeePerGas).toEqual(posExecGenesis.baseFeePerGas);
 	});
 
 	it('should successfully parse genesis file with no extraData', async () => {
@@ -84,28 +66,16 @@ describe('[Utils/Parse]', () => {
 			genesisHash: hexToBytes(
 				'51c7fe41be669f69c45c33a56982cbde405313342d9e2b00d7c91a7b284dd4f8',
 			),
-			mergeForkIdPostMerge: false,
 		});
 		expect(common.hardforks().map(hf => hf.name)).toEqual([
-			'chainstart',
-			'homestead',
-			'tangerineWhistle',
-			'spuriousDragon',
-			'byzantium',
-			'constantinople',
-			'petersburg',
-			'istanbul',
-			'berlin',
-			'london',
-			'mergeForkIdTransition',
-			'merge',
+			'shanghai',
 		]);
 		for (const hf of common.hardforks()) {
 			/* eslint-disable @typescript-eslint/no-use-before-define */
 			expect(hf.forkHash).toEqual(kilnForkHashes[hf.name]);
 		}
 
-		expect(common.hardfork()).toEqual(Hardfork.Merge);
+		expect(common.hardfork()).toEqual(Hardfork.Shanghai);
 
 		// Ok lets schedule shanghai at block 0, this should force merge to be scheduled at just after
 		// genesis if even mergeForkIdTransition is not confirmed to be post merge
@@ -117,57 +87,28 @@ describe('[Utils/Parse]', () => {
 		// merge hardfork is now scheduled just after shanghai even if mergeForkIdTransition is not confirmed
 		// to be post merge
 		expect(common1.hardforks().map(hf => hf.name)).toEqual([
-			'chainstart',
-			'homestead',
-			'tangerineWhistle',
-			'spuriousDragon',
-			'byzantium',
-			'constantinople',
-			'petersburg',
-			'istanbul',
-			'berlin',
-			'london',
-			'merge',
-			'mergeForkIdTransition',
 			'shanghai',
 		]);
 
 		expect(common1.hardfork()).toEqual(Hardfork.Shanghai);
 	});
 
-	it('should successfully parse genesis with hardfork scheduled post merge', async () => {
-		const common = Common.fromGzondGenesis(postMergeHardfork, {
+	it('should successfully parse genesis', async () => {
+		const common = Common.fromGzondGenesis(posExecGenesis, {
 			chain: 'customChain',
 		});
 		expect(common.hardforks().map(hf => hf.name)).toEqual([
-			'chainstart',
-			'homestead',
-			'tangerineWhistle',
-			'spuriousDragon',
-			'byzantium',
-			'constantinople',
-			'petersburg',
-			'istanbul',
-			'muirGlacier',
-			'berlin',
-			'london',
-			'merge',
 			'shanghai',
 		]);
 
-		expect(common.getHardforkByBlockNumber(0)).toEqual(Hardfork.London);
-		expect(common.getHardforkByBlockNumber(1, BigInt(2))).toEqual(Hardfork.Merge);
+		expect(common.getHardforkByBlockNumber(0)).toEqual(Hardfork.Shanghai);
+		expect(common.getHardforkByBlockNumber(1, BigInt(2))).toEqual(Hardfork.Shanghai);
 		// shanghai is at timestamp 8
-		expect(common.getHardforkByBlockNumber(8)).toEqual(Hardfork.London);
-		expect(common.getHardforkByBlockNumber(8, BigInt(2))).toEqual(Hardfork.Merge);
-		expect(common.getHardforkByBlockNumber(8, undefined, 8)).toEqual(Hardfork.Shanghai);
+		expect(common.getHardforkByBlockNumber(8)).toEqual(Hardfork.Shanghai);
+		expect(common.getHardforkByBlockNumber(8, BigInt(2))).toEqual(Hardfork.Shanghai);
+		expect(common.getHardforkByBlockNumber(8,  8)).toEqual(Hardfork.Shanghai);
 		// should be post merge at shanghai
-		expect(common.getHardforkByBlockNumber(8, BigInt(2), 8)).toEqual(Hardfork.Shanghai);
-		// if not post merge, then should error
-		expect(() => {
-			common.getHardforkByBlockNumber(8, BigInt(1), 8);
-		}).toThrow();
-
+		expect(common.getHardforkByBlockNumber(8,  8)).toEqual(Hardfork.Shanghai);
 		expect(common.hardfork()).toEqual(Hardfork.Shanghai);
 	});
 });

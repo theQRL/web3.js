@@ -52,7 +52,8 @@ describe('detectTransactionType', () => {
 		});
 	});
 
-	describe('should not be able to detect transaction type, returning undefined', () => {
+	// NOTE(rgeraldes24): this test is no longer valid since EIP-2718 is supported from start
+	describe.skip('should not be able to detect transaction type, returning undefined', () => {
 		it.each(transactionTypeUndefined)('%s', transaction => {
 			expect(detectTransactionType(transaction)).toBeUndefined();
 		});

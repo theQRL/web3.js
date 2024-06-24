@@ -4,7 +4,7 @@
 	"publishConfig": {
 		"access": "public"
 	},
-	"description": "Package template for Web3 4.x.x",
+	"description": "Package template for Web3",
 	"main": "lib/index.js",
 	"repository": "https://github.com/ChainSafe/web3.js",
 	"author": "ChainSafe Systems",

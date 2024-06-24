@@ -52,7 +52,7 @@ describe('defaultTransactionBuilder', () => {
 	const expectedMaxPriorityFeePerGas = '0x9502f900';
 	const expectedMaxFeePerGas = '0x27f4d46b08';
 	const expectedChainId = '0x1';
-	const defaultTransactionType = '0x0';
+	const defaultTransactionType = '0x2';
 	const transaction: Transaction = {
 		from: expectedFrom,
 		to: '0x3535353535353535353535353535353535353535',
@@ -66,7 +66,7 @@ describe('defaultTransactionBuilder', () => {
 		data: '0x',
 		nonce: expectedNonce,
 		chain: 'mainnet',
-		hardfork: 'berlin',
+		hardfork: 'shanghai',
 		chainId: expectedChainId,
 		networkId: expectedNetworkId,
 		common: {
@@ -76,37 +76,28 @@ describe('defaultTransactionBuilder', () => {
 				chainId: expectedChainId,
 			},
 			baseChain: 'mainnet',
-			hardfork: 'berlin',
+			hardfork: 'shanghai',
 		},
 	};
 	const mockBlockData = {
 		parentHash: '0xe99e022112df268087ea7eafaf4790497fd21dbeeb6bd7a1721df161a6657a54',
-		sha3Uncles: '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347',
 		miner: '0xbb7b8287f3f0a933474a79eae42cbca977791171',
 		stateRoot: '0xddc8b0234c2e0cad087c8b389aa7ef01f7d79b2570bccb77ce48648aa61c904d',
 		transactionsRoot: '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421',
 		receiptsRoot: '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421',
 		logsBloom:
 			'0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
-		difficulty: '0x4ea3f27bc',
 		number: '0x1b4',
 		gasLimit: '0x1388',
 		gasUsed: '0x1c96e73',
 		timestamp: '0x55ba467c',
 		extraData: '0x476574682f4c5649562f76312e302e302f6c696e75782f676f312e342e32',
-		mixHash: '0x4fffe9ae21f1c9e15207b1f472d5bbdd68c9595d461666602f2be20daf5e7843',
-		nonce: '0x1c11920a4',
-		totalDifficulty: '0x78ed983323d',
+		prevRandao: '0x4fffe9ae21f1c9e15207b1f472d5bbdd68c9595d461666602f2be20daf5e7843',
 		size: '0x220',
 		transactions: [
 			'0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b',
 			'0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b',
 			'0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b',
-		],
-		uncles: [
-			'0xdc0818cf78f21a8e70579cb46a43643f78291264dda342ae31049421c82d21ae',
-			'0xdc0818cf78f21a8e70579cb46a43643f78291264dda342ae31049421c82d21ae',
-			'0xdc0818cf78f21a8e70579cb46a43643f78291264dda342ae31049421c82d21ae',
 		],
 		hash: '0xdc0818cf78f21a8e70579cb46a43643f78291264dda342ae31049421c82d21ae',
 		baseFeePerGas: expectedBaseFeePerGas,
@@ -341,6 +332,7 @@ describe('defaultTransactionBuilder', () => {
 	});
 
 	describe('should populate hardfork', () => {
+		/*
 		it('should populate with london', async () => {
 			const input = { ...transaction };
 			delete input.hardfork;
@@ -354,6 +346,21 @@ describe('defaultTransactionBuilder', () => {
 				fillGasPrice: true,
 			});
 			expect(result.hardfork).toBe('london');
+		});
+		*/
+		it('should populate with shanghai', async () => {
+			const input = { ...transaction };
+			delete input.hardfork;
+			delete input.common;
+			delete input.maxPriorityFeePerGas;
+			delete input.maxFeePerGas;
+
+			const result = await defaultTransactionBuilder({
+				transaction: input,
+				web3Context,
+				fillGasPrice: true,
+			});
+			expect(result.hardfork).toBe('shanghai');
 		});
 
 		it('should use web3Context.defaultHardfork to populate', async () => {
@@ -375,7 +382,7 @@ describe('defaultTransactionBuilder', () => {
 
 		it('should use web3Context.defaultCommon to populate', async () => {
 			const baseChain: ValidChains = 'mainnet';
-			const hardfork: Hardfork = 'berlin';
+			const hardfork: Hardfork = 'shanghai';
 			const customCommon = {
 				customChain: {
 					name: 'custom',
@@ -483,8 +490,8 @@ describe('defaultTransactionBuilder', () => {
 			delete input.accessList;
 			delete input.type;
 
-			input.hardfork = 'istanbul';
-			if (!isNullish(input.common)) input.common.hardfork = 'istanbul';
+			input.hardfork = 'shanghai';
+			if (!isNullish(input.common)) input.common.hardfork = 'shanghai';
 
 			const result = await defaultTransactionBuilder({
 				transaction: input,

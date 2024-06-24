@@ -52,7 +52,7 @@ describe('contract', () => {
 			contract = new Contract(GreeterAbi, undefined, {
 				provider: getSystemTestProvider(),
 			});
-			sendOptions = { from: acc.address, gas: '1000000', type: 2 };
+			sendOptions = { from: acc.address, gas: '1000000' };
 		});
 
 		afterAll(async () => {
@@ -76,7 +76,6 @@ describe('contract', () => {
 					expect(Number(res.status)).toBe(1);
 				},
 			);
-
 			it.each([signTxAndSendEIP1559, signTxAndSendEIP2930])(
 				'should deploy the contract with input%p',
 				async signTxAndSend => {
@@ -158,7 +157,7 @@ describe('contract', () => {
 				from: acc.address,
 				gas: '1000000',
 			});
-			const deployedContract = await contract.deploy({ arguments: ['Hello World'] }).send({type: 2});
+			const deployedContract = await contract.deploy({ arguments: ['Hello World'] }).send();
 
 			expect(deployedContract).toBeDefined();
 		});

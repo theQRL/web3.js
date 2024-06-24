@@ -51,7 +51,7 @@ describe('contract', () => {
 
 		it('should deploy the contract', async () => {
 			const acc = await createTempAccount();
-			const sendOptionsLocal = { from: acc.address, /*gas: '10000000'*/ type: 2 };
+			const sendOptionsLocal = { from: acc.address, /*gas: '10000000'*/ };
 			await expect(
 				contract.deploy(deployOptions).send(sendOptionsLocal),
 			).resolves.toBeDefined();
@@ -71,7 +71,7 @@ describe('contract', () => {
 				mainAcc = await createTempAccount();
 				pkAccount = await createNewAccount();
 				await refillAccount(mainAcc.address, pkAccount.address, '20000000000000000');
-				sendOptions = { from: mainAcc.address, /*gas: '10000000'*/ type: 2 };
+				sendOptions = { from: mainAcc.address, /*gas: '10000000'*/ };
 				contractDeployed = await contract.deploy(deployOptions).send(sendOptions);
 			});
 			describe('methods', () => {
@@ -117,7 +117,6 @@ describe('contract', () => {
 						).toBe(value);
 					},
 				);
-
 				it.each([signAndSendContractMethodEIP1559, signAndSendContractMethodEIP2930])(
 					'should approve and transferFrom tokens with local wallet %p',
 					async signAndSendContractMethod => {
@@ -162,7 +161,6 @@ describe('contract', () => {
 						).toBe(value - transferFromValue);
 					},
 				);
-
 				it.each([signAndSendContractMethodEIP1559, signAndSendContractMethodEIP2930])(
 					'should approve and transferFrom tokens with local wallet %p',
 					async signAndSendContractMethod => {

@@ -48,8 +48,6 @@ import {
 	Web3ZondExecutionAPI,
 } from '@theqrl/web3-types';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { Personal } from '@theqrl/web3-zond-personal';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import Web3 from '@theqrl/web3';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
@@ -233,38 +231,22 @@ export const refillAccount = async (from: string, to: string, value: string | nu
 		from,
 		to,
 		value,
-		type: BigInt(2),
 	});
 };
 
 let mainAcc: string;
 export const createNewAccount = async (config?: {
-	unlock?: boolean;
 	refill?: boolean;
 	seed?: string;
-	password?: string;
-	doNotImport?: boolean;
 }): Promise<{ address: string; seed: string }> => {
 	const acc = config?.seed ? seedToAccount(config?.seed) : _createAccount();
 
 	const clientUrl = DEFAULT_SYSTEM_PROVIDER;
 
-	if (config?.unlock) {
-		const web3Personal = new Personal(clientUrl);
-		if (!config?.doNotImport) {
-			await web3Personal.importRawKey(
-				getSystemTestBackend() === 'gzond' ? acc.seed.slice(2) : acc.seed,
-				config.password ?? '123456',
-			);
-		}
-
-		await web3Personal.unlockAccount(acc.address, config.password ?? '123456', 100000000);
-	}
-
 	if (config?.refill) {
-		const web3Personal = new Personal(clientUrl);
+		const web3Zond = new Web3Zond(clientUrl);
 		if (!mainAcc) {
-			[mainAcc] = await web3Personal.getAccounts();
+			[mainAcc] = await web3Zond.getAccounts();
 		}
 		await refillAccount(mainAcc, acc.address, '10000000000000000000');
 	}
@@ -280,23 +262,19 @@ if (tempAccountList.length === 0) {
 let currentIndex = Math.floor(Math.random() * (tempAccountList ? tempAccountList.length : 0));
 export const createTempAccount = async (
 	config: {
-		unlock?: boolean;
 		refill?: boolean;
 		seed?: string;
 		password?: string;
 	} = {},
 ): Promise<{ address: string; seed: string }> => {
 	if (
-		config.unlock === false ||
 		config.refill === false ||
 		config.seed ||
 		config.password
 	) {
 		return createNewAccount({
-			unlock: config.unlock ?? true,
 			refill: config.refill ?? true,
 			seed: config.seed,
-			password: config.password,
 		});
 	}
 
@@ -306,10 +284,8 @@ export const createTempAccount = async (
 
 	const acc = tempAccountList[currentIndex];
 	await createNewAccount({
-		unlock: true,
 		refill: false,
 		seed: acc.seed,
-		doNotImport: true,
 	});
 	currentIndex += 1;
 
@@ -467,7 +443,6 @@ export const sendFewSampleTxs = async (cnt = 1) => {
 				value: '0x1',
 				from: fromAcc.address,
 				gas: '300000',
-				type: BigInt(2),
 			}),
 		);
 	}

@@ -259,6 +259,4 @@ export type ZondExecutionAPI = {
 	// Non-supported by execution-apis specs
 	zond_getCompilers: () => string[];
 	zond_compileSolidity: (code: string) => CompileResultAPI;
-	zond_compileLLL: (code: string) => HexStringBytes;
-	zond_compileSerpent: (code: string) => HexStringBytes;
 };

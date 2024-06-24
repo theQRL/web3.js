@@ -14,28 +14,14 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { hexToBytes } from '@theqrl/web3-utils';
+// import { hexToBytes } from '@theqrl/web3-utils';
 import { Chain, Common, ConsensusAlgorithm, ConsensusType, Hardfork } from '../../../src/common';
-import gzondGenesisKiln from '../../fixtures/common/gzond-genesis-kiln.json';
+// import gzondGenesisKiln from '../../fixtures/common/gzond-genesis-kiln.json';
 
 describe('[Common]: Hardfork logic', () => {
 	it('Hardfork access', () => {
 		const supportedHardforks = [
-			Hardfork.Chainstart,
-			Hardfork.Homestead,
-			Hardfork.Dao,
-			Hardfork.Chainstart,
-			Hardfork.SpuriousDragon,
-			Hardfork.Byzantium,
-			Hardfork.Constantinople,
-			Hardfork.Petersburg,
-			Hardfork.Istanbul,
-			Hardfork.Berlin,
-			Hardfork.London,
-			Hardfork.ArrowGlacier,
-			Hardfork.GrayGlacier,
 			Hardfork.Shanghai,
-			Hardfork.Merge,
 		];
 		let c;
 
@@ -45,36 +31,47 @@ describe('[Common]: Hardfork logic', () => {
 		}
 	});
 
+	
 	it('getHardforkByBlockNumber() / setHardforkByBlockNumber()', () => {
 		let c = new Common({ chain: Chain.Mainnet });
 
-		expect(c.getHardforkByBlockNumber(0)).toEqual(Hardfork.Chainstart);
-		expect(c.getHardforkByBlockNumber(1149999)).toEqual(Hardfork.Chainstart);
-		expect(c.getHardforkByBlockNumber(1150000)).toEqual(Hardfork.Homestead);
-		expect(c.getHardforkByBlockNumber(1400000)).toEqual(Hardfork.Homestead);
-		expect(c.getHardforkByBlockNumber(9200000)).toEqual(Hardfork.MuirGlacier);
-		expect(c.getHardforkByBlockNumber(12244000)).toEqual(Hardfork.Berlin);
-		expect(c.getHardforkByBlockNumber(12965000)).toEqual(Hardfork.London);
-		expect(c.getHardforkByBlockNumber(13773000)).toEqual(Hardfork.ArrowGlacier);
-		expect(c.getHardforkByBlockNumber(15050000)).toEqual(Hardfork.GrayGlacier);
-		// merge is now specified at 15537394 in config
-		expect(c.getHardforkByBlockNumber(999999999999)).toEqual(Hardfork.Merge);
+		expect(c.getHardforkByBlockNumber(0)).toEqual(Hardfork.Shanghai);
+		expect(c.getHardforkByBlockNumber(1149999)).toEqual(Hardfork.Shanghai);
+		expect(c.getHardforkByBlockNumber(999999999999)).toEqual(Hardfork.Shanghai);
 
-		expect(c.setHardforkByBlockNumber(0)).toEqual(Hardfork.Chainstart);
-		expect(c.setHardforkByBlockNumber(1149999)).toEqual(Hardfork.Chainstart);
-		expect(c.setHardforkByBlockNumber(1150000)).toEqual(Hardfork.Homestead);
-		expect(c.setHardforkByBlockNumber(1400000)).toEqual(Hardfork.Homestead);
-		expect(c.setHardforkByBlockNumber(12244000)).toEqual(Hardfork.Berlin);
-		expect(c.setHardforkByBlockNumber(12965000)).toEqual(Hardfork.London);
-		expect(c.setHardforkByBlockNumber(13773000)).toEqual(Hardfork.ArrowGlacier);
-		expect(c.setHardforkByBlockNumber(15050000)).toEqual(Hardfork.GrayGlacier);
-		// merge is now specified at 15537394 in config
-		expect(c.setHardforkByBlockNumber(999999999999)).toEqual(Hardfork.Merge);
+		expect(c.setHardforkByBlockNumber(0)).toEqual(Hardfork.Shanghai);
+		expect(c.setHardforkByBlockNumber(1149999)).toEqual(Hardfork.Shanghai);
+		expect(c.setHardforkByBlockNumber(999999999999)).toEqual(Hardfork.Shanghai);
 
-		c = new Common({ chain: Chain.Sepolia });
-		expect(c.setHardforkByBlockNumber(1735371)).toBe('mergeForkIdTransition');
+		// expect(c.getHardforkByBlockNumber(0)).toEqual(Hardfork.Chainstart);
+		// expect(c.getHardforkByBlockNumber(1149999)).toEqual(Hardfork.Chainstart);
+		// expect(c.getHardforkByBlockNumber(1150000)).toEqual(Hardfork.Homestead);
+		// expect(c.getHardforkByBlockNumber(1400000)).toEqual(Hardfork.Homestead);
+		// expect(c.getHardforkByBlockNumber(9200000)).toEqual(Hardfork.MuirGlacier);
+		// expect(c.getHardforkByBlockNumber(12244000)).toEqual(Hardfork.Berlin);
+		// expect(c.getHardforkByBlockNumber(12965000)).toEqual(Hardfork.London);
+		// expect(c.getHardforkByBlockNumber(13773000)).toEqual(Hardfork.ArrowGlacier);
+		// expect(c.getHardforkByBlockNumber(15050000)).toEqual(Hardfork.GrayGlacier);
+		// // merge is now specified at 15537394 in config
+		// expect(c.getHardforkByBlockNumber(999999999999)).toEqual(Hardfork.Merge);
+
+		// expect(c.setHardforkByBlockNumber(0)).toEqual(Hardfork.Chainstart);
+		// expect(c.setHardforkByBlockNumber(1149999)).toEqual(Hardfork.Chainstart);
+		// expect(c.setHardforkByBlockNumber(1150000)).toEqual(Hardfork.Homestead);
+		// expect(c.setHardforkByBlockNumber(1400000)).toEqual(Hardfork.Homestead);
+		// expect(c.setHardforkByBlockNumber(12244000)).toEqual(Hardfork.Berlin);
+		// expect(c.setHardforkByBlockNumber(12965000)).toEqual(Hardfork.London);
+		// expect(c.setHardforkByBlockNumber(13773000)).toEqual(Hardfork.ArrowGlacier);
+		// expect(c.setHardforkByBlockNumber(15050000)).toEqual(Hardfork.GrayGlacier);
+		// // merge is now specified at 15537394 in config
+		// expect(c.setHardforkByBlockNumber(999999999999)).toEqual(Hardfork.Merge);
+
+		// c = new Common({ chain: Chain.Sepolia });
+		// expect(c.setHardforkByBlockNumber(1735371)).toBe('mergeForkIdTransition');
 	});
 
+	// TODO(rgeraldes24)
+	/*
 	it('should throw if no hardfork qualifies', () => {
 		const hardforks = [
 			{
@@ -130,20 +127,6 @@ describe('[Common]: Hardfork logic', () => {
 		expect(c.nextHardforkBlockOrTimestamp(Hardfork.Shanghai)).toBeNull();
 	});
 
-	it('isHardforkBlock()', () => {
-		let c = new Common({ chain: Chain.Sepolia });
-		// eslint-disable-next-line deprecation/deprecation
-		expect(c.isHardforkBlock(1450409)).toBe(true);
-		// eslint-disable-next-line deprecation/deprecation
-		expect(c.isHardforkBlock(1735372)).toBe(false);
-
-		c = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Byzantium });
-		// eslint-disable-next-line deprecation/deprecation
-		expect(c.isHardforkBlock(4370000)).toBe(true);
-		// eslint-disable-next-line deprecation/deprecation
-		expect(c.isHardforkBlock(2463001)).toBe(false);
-	});
-
 	it('nextHardforkBlockOrTimestamp()', () => {
 		let c = new Common({ chain: Chain.Sepolia, hardfork: Hardfork.MergeForkIdTransition });
 		expect(c.nextHardforkBlockOrTimestamp()!).toEqual(BigInt(1677557088));
@@ -155,20 +138,6 @@ describe('[Common]: Hardfork logic', () => {
 		expect(c.nextHardforkBlockOrTimestamp(Hardfork.London)).toEqual(BigInt(1735371));
 		c = new Common({ chain: Chain.Goerli, hardfork: Hardfork.Chainstart });
 		expect(c.nextHardforkBlockOrTimestamp()!).toEqual(BigInt(1561651));
-	});
-
-	it('isNextHardforkBlock()', () => {
-		const c = new Common({ chain: Chain.Goerli, hardfork: Hardfork.Istanbul });
-		// eslint-disable-next-line deprecation/deprecation
-		expect(c.isNextHardforkBlock(4460644)).toBe(true);
-		// eslint-disable-next-line deprecation/deprecation
-		expect(c.isNextHardforkBlock(5062605, 'berlin')).toBe(true);
-		// eslint-disable-next-line deprecation/deprecation
-		expect(c.isNextHardforkBlock(5062605, Hardfork.Berlin)).toBe(true);
-		// eslint-disable-next-line deprecation/deprecation
-		expect(c.isNextHardforkBlock(13773000, Hardfork.Byzantium)).toBe(false);
-		// eslint-disable-next-line deprecation/deprecation
-		expect(c.isNextHardforkBlock(13773001, Hardfork.London)).toBe(false);
 	});
 
 	it('hardforkIsActiveOnBlock() / activeOnBlock()', () => {
@@ -221,14 +190,6 @@ describe('[Common]: Hardfork logic', () => {
 			[
 				Chain.Mainnet,
 				hexToBytes('d4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3'),
-			],
-			[
-				Chain.Goerli,
-				hexToBytes('bf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a'),
-			],
-			[
-				Chain.Sepolia,
-				hexToBytes('25a5cc106eea7138acab33231d7160d69cb777ee0c2c553fcddf5138993e6dd9'),
 			],
 		];
 
@@ -283,23 +244,20 @@ describe('[Common]: Hardfork logic', () => {
 		const c = new Common({ chain: Chain.Mainnet });
 
 		const res = c.hardforkForForkHash('0x3edd5b10')!;
-		expect(res.name).toEqual(Hardfork.SpuriousDragon);
+		expect(res.name).toEqual(Hardfork.Shanghai);
 
 		expect(c.hardforkForForkHash('0x12345')).toBeNull();
 	});
+	*/
 
 	it('HF consensus updates', () => {
-		let c = new Common({ chain: Chain.Goerli, hardfork: Hardfork.Byzantium });
-		expect(c.consensusType()).toEqual(ConsensusType.ProofOfAuthority);
-		expect(c.consensusAlgorithm()).toEqual(ConsensusAlgorithm.Clique);
-		expect(c.consensusConfig()['period']).toBe(15);
-
-		c = new Common({ chain: Chain.Goerli, hardfork: Hardfork.Merge });
+		const c = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Shanghai });
 		expect(c.consensusType()).toEqual(ConsensusType.ProofOfStake);
 		expect(c.consensusAlgorithm()).toEqual(ConsensusAlgorithm.Casper);
 		expect(c.consensusConfig()).toEqual({});
 	});
 
+	/*
 	it('Should correctly apply hardfork changes', () => {
 		// For sepolia MergeForkIdTransition happens AFTER merge
 		let c = new Common({ chain: Chain.Sepolia, hardfork: Hardfork.London });
@@ -332,4 +290,5 @@ describe('[Common]: Hardfork logic', () => {
 		c.setHardfork(Hardfork.MergeForkIdTransition);
 		expect(c.consensusType()).toEqual(ConsensusType.ProofOfWork);
 	});
+	*/
 });

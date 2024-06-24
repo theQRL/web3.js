@@ -26,7 +26,7 @@ import {
 
 const common = new Common({
 	chain: Chain.Mainnet,
-	hardfork: Hardfork.London,
+	hardfork: Hardfork.Shanghai,
 });
 
 const seed = hexToBytes('d00fd401dc076020ab57f52becab30305bbfc5b3bd7334287c06cdb500c860c54e54b5bd2c5c137d601ef6e8a9e9fac8');
@@ -87,15 +87,18 @@ describe('[TransactionFactory]: Basic functions', () => {
 			if (!txType.eip2718) {
 				continue;
 			}
+			// NOTE(rgeraldes24): this part is not valid since we support tx types from the start
+			/*
 			const unsupportedCommon = new Common({
 				chain: Chain.Mainnet,
-				hardfork: Hardfork.Istanbul,
+				hardfork: Hardfork.Shanghai,
 			});
 			expect(() => {
 				TransactionFactory.fromSerializedData(txType.unsigned.serialize(), {
 					common: unsupportedCommon,
 				});
 			}).toThrow();
+			*/
 
 			expect(() => {
 				const serialized = txType.unsigned.serialize();
@@ -132,10 +135,11 @@ describe('[TransactionFactory]: Basic functions', () => {
 	});
 
 	it('fromTxData() -> error cases', () => {
-		const unsupportedCommon = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Istanbul });
-		expect(() => {
-			TransactionFactory.fromTxData({ type: 1 }, { common: unsupportedCommon });
-		}).toThrow();
+		// NOTE(rgeraldes24): this part is not valid since we support tx types from the start
+		// const unsupportedCommon = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Shanghai });
+		// expect(() => {
+		// 	TransactionFactory.fromTxData({ type: 1 }, { common: unsupportedCommon });
+		// }).toThrow();
 
 		expect(() => {
 			TransactionFactory.fromTxData({ type: 999 });

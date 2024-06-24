@@ -11,7 +11,7 @@ module.exports = {
 		[
 			'json',
 			{
-				file: 'web3-eth-contract-unit-coverage.json',
+				file: 'web3-zond-contract-unit-coverage.json',
 			},
 		],
 	],

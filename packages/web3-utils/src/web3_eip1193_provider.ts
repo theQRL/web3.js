@@ -28,7 +28,7 @@ import { EIP1193ProviderRpcError } from '@theqrl/web3-errors';
 import { toPayload } from './json_rpc.js';
 
 /**
- * This is an abstract class, which extends {@link Web3BaseProvider} class. This class is used to implement a provider that adheres to the EIP-1193 standard for Ethereum providers.
+ * This is an abstract class, which extends {@link Web3BaseProvider} class. This class is used to implement a provider that adheres to the EIP-1193 standard for Zond providers.
  */
 export abstract class Eip1193Provider<
 	API extends Web3APISpec = ZondExecutionAPI,

@@ -47,6 +47,8 @@ describe('Web3 Custom Subscriptions', () => {
 		});
 	});
 
+	// TODO(rgeraldes24): provider not supported
+	/*
 	it('should be able to define and subscribe to custom subscription', async () => {
 		const args = {
 			customArgs: 'hello custom',
@@ -81,6 +83,7 @@ describe('Web3 Custom Subscriptions', () => {
 		});
 		await expect(exec).resolves.toBe(true);
 	});
+	*/
 
 	it('should access subscriptionManager from derived class', async () => {
 		const sub = new CustomSubscription(

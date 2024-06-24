@@ -58,16 +58,13 @@ describe(`${getSystemTestBackend()} tests - subscription newHeads`, () => {
 							stateRoot: expect.any(String),
 							transactionsRoot: expect.any(String),
 							logsBloom: expect.any(String),
-							difficulty: expect.any(BigInt),
 							number: expect.any(BigInt),
 							gasLimit: expect.any(BigInt),
 							gasUsed: expect.any(BigInt),
 							timestamp: expect.any(BigInt),
 							extraData: expect.any(String),
-							nonce: expect.any(BigInt),
-							sha3Uncles: expect.any(String),
 							baseFeePerGas: expect.any(BigInt),
-							mixHash: expect.any(String),
+							prevRandao: expect.any(String),
 							withdrawalsRoot: expect.any(String),
 						});
 					} catch (error) {

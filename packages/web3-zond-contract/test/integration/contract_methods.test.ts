@@ -37,7 +37,7 @@ describe('contract', () => {
 			arguments: [10, 'string init value'],
 		};
 
-		sendOptions = { from: acc.address, gas: '1000000', type: 2 };
+		sendOptions = { from: acc.address, gas: '1000000' };
 
 		contractDeployed = await contract.deploy(deployOptions).send(sendOptions);
 	});
@@ -64,7 +64,7 @@ describe('contract', () => {
 				});
 				const deployedTempContract = await tempContract
 					.deploy({ arguments: [10, 'string init value'] })
-					.send({type: 2});
+					.send();
 				const res = await deployedTempContract.methods.getStringValue().call();
 				expect(res).toBe('string init value');
 			});
@@ -107,7 +107,7 @@ describe('contract', () => {
 			it('should returns a receipt (EIP-1559, maxFeePerGas and maxPriorityFeePerGas specified)', async () => {
 				const tempAcc = await createTempAccount();
 
-				const sendOptionsLocal = { from: tempAcc.address, /*gas: '1000000'*/ type: 2 };
+				const sendOptionsLocal = { from: tempAcc.address, /*gas: '1000000'*/ };
 
 				const contractLocal = await contract.deploy(deployOptions).send(sendOptionsLocal);
 				const receipt = await contractLocal.methods
@@ -140,8 +140,8 @@ describe('contract', () => {
 				});
 				const deployedTempContract = await tempContract
 					.deploy({ arguments: [10, 'string init value'] })
-					.send({type: 2});
-				await deployedTempContract.methods.setValues(10, 'TEST', true).send({type: 2});
+					.send();
+				await deployedTempContract.methods.setValues(10, 'TEST', true).send();
 
 				expect(await deployedTempContract.methods.getStringValue().call()).toBe('TEST');
 			});

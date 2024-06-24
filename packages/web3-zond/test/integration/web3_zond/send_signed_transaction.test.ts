@@ -371,10 +371,10 @@ describe('Web3Zond.sendSignedTransaction', () => {
 				to: '0x0000000000000000000000000000000000000000',
 				value: BigInt('999999999999999999999999999999999999999999999999999999999'),
 				nonce: await web3Zond.getTransactionCount(tempAcc.address),
-				type: BigInt(2),
 				gas: 27000,
+				maxFeePerGas: BigInt(108571383800),
+				maxPriorityFeePerGas: BigInt(25415778028),
 			};
-			transaction.gasPrice = await web3Zond.getGasPrice();
 			const signedTransaction = await web3Zond.signTransaction(transaction, {
 				number: FMT_NUMBER.BIGINT,
 				bytes: FMT_BYTES.UINT8ARRAY,

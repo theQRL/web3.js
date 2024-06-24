@@ -4,7 +4,7 @@
 	"publishConfig": {
 		"access": "public"
 	},
-	"description": "Example implementations of Web3.js' 4.x plugin system",
+	"description": "Example implementations of Web3.js' plugin system",
 	"repository": "https://github.com/ChainSafe/web3.js",
 	"engines": {
 		"node": ">=14",
@@ -13,7 +13,7 @@
 	"author": "ChainSafe Systems",
 	"license": "LGPL-3.0",
 	"keywords": [
-		"Ethereum",
+		"Zond",
 		"JavaScript",
 		"API"
 	],

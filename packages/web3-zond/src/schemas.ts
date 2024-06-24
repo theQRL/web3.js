@@ -50,27 +50,13 @@ export const accessListResultSchema = {
 
 export const chainSchema = {
 	type: 'string',
-	enum: ['goerli', 'kovan', 'mainnet', 'rinkeby', 'ropsten', 'sepolia'],
+	enum: ['mainnet'],
 };
 
 export const hardforkSchema = {
 	type: 'string',
 	enum: [
-		'arrowGlacier',
-		'berlin',
-		'byzantium',
-		'chainstart',
-		'constantinople',
-		'dao',
-		'homestead',
-		'istanbul',
-		'london',
-		'merge',
-		'muirGlacier',
-		'petersburg',
 		'shanghai',
-		'spuriousDragon',
-		'tangerineWhistle',
 	],
 };
 
@@ -236,9 +222,6 @@ export const blockSchema = {
 		parentHash: {
 			format: 'bytes32',
 		},
-		sha3Uncles: {
-			format: 'bytes32',
-		},
 		miner: {
 			format: 'bytes',
 		},
@@ -253,9 +236,6 @@ export const blockSchema = {
 		},
 		logsBloom: {
 			format: 'bytes256',
-		},
-		difficulty: {
-			format: 'uint',
 		},
 		number: {
 			format: 'uint',
@@ -272,14 +252,8 @@ export const blockSchema = {
 		extraData: {
 			format: 'bytes',
 		},
-		mixHash: {
+		prevRandao: {
 			format: 'bytes32',
-		},
-		nonce: {
-			format: 'uint',
-		},
-		totalDifficulty: {
-			format: 'uint',
 		},
 		baseFeePerGas: {
 			format: 'uint',
@@ -302,12 +276,6 @@ export const blockSchema = {
 					},
 				},
 			],
-		},
-		uncles: {
-			type: 'array',
-			items: {
-				format: 'bytes32',
-			},
 		},
 		hash: {
 			format: 'bytes32',
@@ -363,12 +331,6 @@ export const blockHeaderSchema = {
 		logsBloom: {
 			format: 'bytes256',
 		},
-		difficulty: {
-			format: 'uint',
-		},
-		totalDifficulty: {
-			format: 'uint',
-		},
 		number: {
 			format: 'uint',
 		},
@@ -384,12 +346,6 @@ export const blockHeaderSchema = {
 		extraData: {
 			format: 'bytes',
 		},
-		nonce: {
-			format: 'uint',
-		},
-		sha3Uncles: {
-			format: 'bytes32',
-		},
 		size: {
 			format: 'uint',
 		},
@@ -399,16 +355,10 @@ export const blockHeaderSchema = {
 		excessDataGas: {
 			format: 'uint',
 		},
-		mixHash: {
+		prevRandao: {
 			format: 'bytes32',
 		},
 		transactions: {
-			type: 'array',
-			items: {
-				format: 'bytes32',
-			},
-		},
-		uncles: {
 			type: 'array',
 			items: {
 				format: 'bytes32',

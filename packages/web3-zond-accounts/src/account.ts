@@ -42,6 +42,8 @@ import {
 } from '@theqrl/web3-utils';
 
 import { isHexStrict, isNullish } from '@theqrl/web3-validator';
+import { CryptoPublicKeyBytes } from '@theqrl/dilithium5';
+import { Dilithium, getDilithiumAddressFromPK } from '@theqrl/wallet.js'
 import { TransactionFactory } from './tx/transactionFactory.js';
 import type {
 	SignTransactionResult,
@@ -49,11 +51,6 @@ import type {
 	Web3Account,
 	SignResult,
 } from './types.js';
-import { 
-	
-	CryptoPublicKeyBytes, 
-} from '@theqrl/dilithium5';
-import { Dilithium, getDilithiumAddressFromPK } from '@theqrl/wallet.js'
 
 /**
  * Get the public key Uint8Array after the validation
@@ -81,7 +78,7 @@ export const parseAndValidatePublicKey = (data: Bytes, ignoreLength?: boolean): 
 
 /**
  *
- * Hashes the given message. The data will be UTF-8 HEX decoded and enveloped as follows: "\\x19Ethereum Signed Message:\\n" + message.length + message and hashed using keccak256.
+ * Hashes the given message. The data will be UTF-8 HEX decoded and enveloped as follows: "\\x19Zond Signed Message:\\n" + message.length + message and hashed using keccak256.
  *
  * @param message - A message to hash, if its HEX it will be UTF8 decoded.
  * @returns The hashed message
@@ -99,17 +96,17 @@ export const hashMessage = (message: string): string => {
 	const messageBytes = hexToBytes(messageHex);
 
 	const preamble = hexToBytes(
-		fromUtf8(`\x19Ethereum Signed Message:\n${messageBytes.byteLength}`),
+		fromUtf8(`\x19Zond Signed Message:\n${messageBytes.byteLength}`),
 	);
 
-	const ethMessage = uint8ArrayConcat(preamble, messageBytes);
+	const zondMessage = uint8ArrayConcat(preamble, messageBytes);
 
-	return sha3Raw(ethMessage); // using keccak in web3-utils.sha3Raw instead of SHA3 (NIST Standard) as both are different
+	return sha3Raw(zondMessage); // using keccak in web3-utils.sha3Raw instead of SHA3 (NIST Standard) as both are different
 };
 
 /**
  * Signs arbitrary data with the private key derived from the given seed.
- * **_NOTE:_** The value passed as the data parameter will be UTF-8 HEX decoded and wrapped as follows: "\\x19Ethereum Signed Message:\\n" + message.length + message
+ * **_NOTE:_** The value passed as the data parameter will be UTF-8 HEX decoded and wrapped as follows: "\\x19Zond Signed Message:\\n" + message.length + message
  *
  * @param data - The data to sign
  * @param seed - The 40 byte seed

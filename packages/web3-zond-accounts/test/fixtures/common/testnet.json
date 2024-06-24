@@ -2,39 +2,22 @@
 	"name": "testnet",
 	"chainId": 12345,
 	"networkId": 12345,
-	"defaultHardfork": "byzantium",
+	"defaultHardfork": "shanghai",
 	"consensus": {
-		"type": "pow",
-		"algorithm": "ethash"
+		"type": "pos",
+		"algorithm": "casper",
+		"casper": {}
 	},
 	"comment": "Private test network",
 	"url": "[TESTNET_URL]",
 	"genesis": {
 		"gasLimit": 1000000,
-		"difficulty": 1,
-		"nonce": "0xbb00000000000000",
 		"extraData": "0xcc000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
 	},
 	"hardforks": [
 		{
-			"name": "chainstart",
+			"name": "shanghai",
 			"block": 0
-		},
-		{
-			"name": "homestead",
-			"block": 1
-		},
-		{
-			"name": "tangerineWhistle",
-			"block": 2
-		},
-		{
-			"name": "spuriousDragon",
-			"block": 3
-		},
-		{
-			"name": "byzantium",
-			"block": 4
 		}
 	],
 	"bootstrapNodes": [

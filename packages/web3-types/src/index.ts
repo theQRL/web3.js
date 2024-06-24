@@ -19,7 +19,6 @@ export * from './error_types.js';
 export * from './apis/zond_execution_api.js';
 export * from './apis/web3_zond_execution_api.js';
 export * from './apis/web3_net_api.js';
-export * from './apis/zond_personal_api.js';
 export * from './data_format_types.js';
 export * from './zond_types.js';
 export * from './zond_abi_types.js';

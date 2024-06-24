@@ -4,7 +4,7 @@
 	"publishConfig": {
 		"access": "public"
 	},
-	"description": "Package for managing Ethereum accounts and signing",
+	"description": "Package for managing Zond accounts and signing",
 	"main": "./lib/commonjs/index.js",
 	"module": "./lib/esm/index.js",
 	"exports": {

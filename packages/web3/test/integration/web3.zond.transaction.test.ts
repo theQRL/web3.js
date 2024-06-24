@@ -22,7 +22,8 @@ import testsData from '../fixtures/transactions.json';
 
 jest.mock('@theqrl/web3-providers-http');
 
-describe('signTransaction', () => {
+// TODO(rgeraldes24): provider not supported
+describe.skip('signTransaction', () => {
 	let blockNum = 1;
 
 	it.each(testsData)(

@@ -67,18 +67,9 @@ export class Web3SubscriptionManager<
 		requestManager: Web3RequestManager<API>,
 		registeredSubscriptions: RegisteredSubs,
 	);
-	/**
-	 * @deprecated This constructor overloading should not be used
-	 */
-	public constructor(
-		requestManager: Web3RequestManager<API>,
-		registeredSubscriptions: RegisteredSubs,
-		tolerateUnlinkedSubscription: boolean,
-	);
 	public constructor(
 		public readonly requestManager: Web3RequestManager<API>,
 		public readonly registeredSubscriptions: RegisteredSubs,
-		private readonly tolerateUnlinkedSubscription: boolean = false,
 	) {
 		this.requestManager.on(Web3RequestManagerEvent.BEFORE_PROVIDER_CHANGE, async () => {
 			await this.unsubscribe();
@@ -221,7 +212,7 @@ export class Web3SubscriptionManager<
 			);
 		}
 
-		if (!this._subscriptions.has(id) && !this.tolerateUnlinkedSubscription) {
+		if (!this._subscriptions.has(id)) {
 			throw new SubscriptionError(`Subscription with id "${id.toString()}" does not exists`);
 		}
 

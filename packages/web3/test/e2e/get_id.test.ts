@@ -20,7 +20,8 @@ import { closeOpenConnection, getSystemTestBackend } from '../shared_fixtures/sy
 
 describe(`${getSystemTestBackend()} tests - getId`, () => {
 	const provider = getSystemE2ETestProvider();
-	const expectedChainId = getSystemTestBackend() === 'sepolia' ? BigInt(11155111) : BigInt(1);
+	// const expectedChainId = getSystemTestBackend() === 'sepolia' ? BigInt(11155111) : BigInt(1);
+	const expectedChainId = BigInt(1);
 
 	let web3: Web3;
 
