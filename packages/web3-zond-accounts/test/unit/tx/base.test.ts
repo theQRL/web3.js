@@ -17,19 +17,14 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import { bytesToUint8Array, hexToBytes, uint8ArrayEquals } from '@theqrl/web3-utils'
 import { Dilithium } from '@theqrl/wallet.js';
 import {
-	//AccessListEIP2930Transaction,
-	Capability,
 	FeeMarketEIP1559Transaction,
-	Transaction,
 } from '../../../src';
 import { Chain, Common, Hardfork, toUint8Array, uint8ArrayToBigInt } from '../../../src/common';
 import { MAX_INTEGER, MAX_UINT64 } from '../../../src/tx/constants';
 
 import type { BaseTransaction } from '../../../src/tx/baseTransaction';
 import eip1559Fixtures from '../../fixtures/json/eip1559txs.json';
-//import eip2930Fixtures from '../../fixtures/json/eip2930txs.json';
 
-//import legacyFixtures from '../../fixtures/json/txs.json';
 import { HexString } from '@theqrl/web3-types';
 
 
@@ -46,19 +41,8 @@ const common = new Common({
 // @ts-expect-error set private property
 common._chainParams.chainId = 1;
 describe('[BaseTransaction]', () => {
-	// EIP-2930 is not enabled in Common by default (2021-03-06)
 	// eslint-disable-next-line @typescript-eslint/no-shadow
 	const common = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Shanghai });
-
-	// const legacyTxs: BaseTransaction<Transaction>[] = [];
-	// for (const tx of legacyFixtures.slice(0, 4)) {
-	// 	legacyTxs.push(Transaction.fromTxData(tx.data, { common }));
-	// }
-
-	// const eip2930Txs: BaseTransaction<AccessListEIP2930Transaction>[] = [];
-	// for (const tx of eip2930Fixtures) {
-	// 	eip2930Txs.push(AccessListEIP2930Transaction.fromTxData(tx.data, { common }));
-	// }
 
 	const eip1559Txs: BaseTransaction<FeeMarketEIP1559Transaction>[] = [];
 	for (const tx of eip1559Fixtures) {
@@ -67,31 +51,6 @@ describe('[BaseTransaction]', () => {
 
 	const zero = new Uint8Array(0);
 	const txTypes = [
-		// {
-		// 	class: Transaction,
-		// 	name: 'Transaction',
-		// 	type: 0,
-		// 	values: Array(6).fill(zero),
-		// 	txs: legacyTxs,
-		// 	fixtures: legacyFixtures,
-		// 	activeCapabilities: [],
-		// 	notActiveCapabilities: [
-		// 		Capability.EIP1559FeeMarket,
-		// 		Capability.EIP2718TypedTransaction,
-		// 		Capability.EIP2930AccessLists,
-		// 		9999,
-		// 	],
-		// },
-		// {
-		// 	class: AccessListEIP2930Transaction,
-		// 	name: 'AccessListEIP2930Transaction',
-		// 	type: 1,
-		// 	values: [new Uint8Array([1])].concat(Array(7).fill(zero)),
-		// 	txs: eip2930Txs,
-		// 	fixtures: eip2930Fixtures,
-		// 	activeCapabilities: [Capability.EIP2718TypedTransaction, Capability.EIP2930AccessLists],
-		// 	notActiveCapabilities: [Capability.EIP1559FeeMarket, 9999],
-		// },
 		{
 			class: FeeMarketEIP1559Transaction,
 			name: 'FeeMarketEIP1559Transaction',
@@ -99,12 +58,6 @@ describe('[BaseTransaction]', () => {
 			values: [new Uint8Array([1])].concat(Array(8).fill(zero)),
 			txs: eip1559Txs,
 			fixtures: eip1559Fixtures,
-			activeCapabilities: [
-				Capability.EIP1559FeeMarket,
-				Capability.EIP2718TypedTransaction,
-				Capability.EIP2930AccessLists,
-			],
-			notActiveCapabilities: [9999],
 		},
 	];
 
@@ -150,21 +103,6 @@ describe('[BaseTransaction]', () => {
 	});
 
 	it('fromValuesArray()', () => {
-		// let rlpData: any = legacyTxs[0].raw();
-		// rlpData[0] = toUint8Array('0x00');
-		// expect(() => {
-		// 	Transaction.fromValuesArray(rlpData);
-		// }).toThrow('nonce cannot have leading zeroes');
-		// rlpData[0] = toUint8Array('0x');
-		// // rlpData[6] = toUint8Array('0x00');
-		// // expect(() => {
-		// // 	Transaction.fromValuesArray(rlpData);
-		// // }).toThrow('v cannot have leading zeroes');
-		// rlpData = eip2930Txs[0].raw();
-		// rlpData[3] = toUint8Array('0x0');
-		// expect(() => {
-		// 	AccessListEIP2930Transaction.fromValuesArray(rlpData);
-		// }).toThrow('gasLimit cannot have leading zeroes');
 		let rlpData: any = eip1559Txs[0].raw();
 		rlpData[2] = toUint8Array('0x0');
 		expect(() => {
@@ -177,19 +115,6 @@ describe('[BaseTransaction]', () => {
 			for (const tx of txType.txs) {
 				expect(txType.class.fromSerializedTx(tx.serialize(), { common })).toBeTruthy();
 				expect(txType.class.fromSerializedTx(tx.serialize(), { common })).toBeTruthy();
-			}
-		}
-	});
-
-	it('supports()', () => {
-		for (const txType of txTypes) {
-			for (const tx of txType.txs) {
-				for (const activeCapability of txType.activeCapabilities) {
-					expect(tx.supports(activeCapability)).toBe(true);
-				}
-				for (const notActiveCapability of txType.notActiveCapabilities) {
-					expect(tx.supports(notActiveCapability)).toBe(false);
-				}
 			}
 		}
 	});
@@ -302,10 +227,11 @@ describe('[BaseTransaction]', () => {
 
 	it('initialization with defaults', () => {
 		const uInt8ArrayZero = toUint8Array('0x');
-		const tx = Transaction.fromTxData({
+		const tx = FeeMarketEIP1559Transaction.fromTxData({
 			nonce: '',
 			gasLimit: '',
-			gasPrice: '',
+			maxFeePerGas: '',
+			maxPriorityFeePerGas: '',
 			to: '',
 			value: '',
 			data: '',
@@ -317,7 +243,8 @@ describe('[BaseTransaction]', () => {
 		expect(tx.to).toBeUndefined();
 		expect(tx.value).toBe(uint8ArrayToBigInt(uInt8ArrayZero));
 		expect(tx.data).toEqual(uInt8ArrayZero);
-		expect(tx.gasPrice).toBe(uint8ArrayToBigInt(uInt8ArrayZero));
+		expect(tx.maxFeePerGas).toBe(uint8ArrayToBigInt(uInt8ArrayZero));
+		expect(tx.maxPriorityFeePerGas).toBe(uint8ArrayToBigInt(uInt8ArrayZero));
 		expect(tx.gasLimit).toBe(uint8ArrayToBigInt(uInt8ArrayZero));
 		expect(tx.nonce).toBe(uint8ArrayToBigInt(uInt8ArrayZero));
 	});

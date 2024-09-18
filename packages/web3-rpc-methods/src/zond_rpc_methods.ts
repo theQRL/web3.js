@@ -44,16 +44,16 @@ export async function getSyncing(requestManager: Web3RequestManager) {
 	});
 }
 
-export async function getCoinbase(requestManager: Web3RequestManager) {
+export async function getGasPrice(requestManager: Web3RequestManager) {
 	return requestManager.send({
-		method: 'zond_coinbase',
+		method: 'zond_gasPrice',
 		params: [],
 	});
 }
 
-export async function getGasPrice(requestManager: Web3RequestManager) {
+export async function getMaxPriorityFeePerGas(requestManager: Web3RequestManager) {
 	return requestManager.send({
-		method: 'zond_gasPrice',
+		method: 'zond_maxPriorityFeePerGas',
 		params: [],
 	});
 }

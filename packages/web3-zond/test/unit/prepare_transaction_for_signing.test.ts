@@ -20,9 +20,7 @@ import { Web3Context } from '@theqrl/web3-core';
 import HttpProvider from '@theqrl/web3-providers-http';
 import { isNullish } from '@theqrl/web3-validator';
 import {
-	AccessListEIP2930Transaction,
 	FeeMarketEIP1559Transaction,
-	Transaction,
 } from '@theqrl/web3-zond-accounts';
 import { zondRpcMethods } from '@theqrl/web3-rpc-methods';
 
@@ -30,8 +28,8 @@ import { bytesToHex, hexToBytes } from '@theqrl/web3-utils';
 import { prepareTransactionForSigning } from '../../src/utils/prepare_transaction_for_signing';
 import { validTransactions } from '../fixtures/prepare_transaction_for_signing';
 
-// TODO(rgeraldes24): fix input data
-describe.skip('prepareTransactionForSigning', () => {
+
+describe('prepareTransactionForSigning', () => {
 	const web3Context = new Web3Context<ZondExecutionAPI>({
 		provider: new HttpProvider('http://127.0.0.1'),
 		config: { defaultNetworkId: '0x1' },
@@ -68,9 +66,7 @@ describe.skip('prepareTransactionForSigning', () => {
 
 				// should produce an web3-utils/tx instance
 				expect(
-					ethereumjsTx instanceof Transaction ||
-						ethereumjsTx instanceof AccessListEIP2930Transaction ||
-						ethereumjsTx instanceof FeeMarketEIP1559Transaction,
+					ethereumjsTx instanceof FeeMarketEIP1559Transaction,
 				).toBeTruthy();
 				expect(ethereumjsTx.sign).toBeDefined();
 

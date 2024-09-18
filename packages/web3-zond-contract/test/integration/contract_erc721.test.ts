@@ -24,7 +24,6 @@ import {
 	isWs,
 	createTempAccount,
 	signAndSendContractMethodEIP1559,
-	signAndSendContractMethodEIP2930,
 	createNewAccount,
 	refillAccount,
 } from '../fixtures/system_test_utils';
@@ -94,7 +93,7 @@ describe('contract', () => {
 						),
 					).toBe(toUpperCaseHex(tempAccount.address));
 				});
-				it.each([signAndSendContractMethodEIP1559, signAndSendContractMethodEIP2930])(
+				it.each([signAndSendContractMethodEIP1559])(
 					'should award item with local wallet %p',
 					async signAndSendContractMethod => {
 						const tempAccount = await createTempAccount();
@@ -117,7 +116,7 @@ describe('contract', () => {
 						).toBe(toUpperCaseHex(tempAccount.address));
 					},
 				);
-				it.each([signAndSendContractMethodEIP1559, signAndSendContractMethodEIP2930])(
+				it.each([signAndSendContractMethodEIP1559])(
 					'should transferFrom item with local wallet %p',
 					async signAndSendContractMethod => {
 						const tempAccount = await createTempAccount();
@@ -153,7 +152,7 @@ describe('contract', () => {
 						).toBe(toUpperCaseHex(tempAccountTo.address));
 					},
 				);
-				it.each([signAndSendContractMethodEIP1559, signAndSendContractMethodEIP2930])(
+				it.each([signAndSendContractMethodEIP1559])(
 					'should safeTransferFrom item with local wallet %p',
 					async signAndSendContractMethod => {
 						const tempAccount = await createTempAccount();
@@ -195,7 +194,7 @@ describe('contract', () => {
 						).toBe(toUpperCaseHex(tempAccountTo.address));
 					},
 				);
-				it.each([signAndSendContractMethodEIP1559, signAndSendContractMethodEIP2930])(
+				it.each([signAndSendContractMethodEIP1559])(
 					'should approve item with local wallet %p',
 					async signAndSendContractMethod => {
 						const tempAccount = await createTempAccount();
@@ -224,7 +223,7 @@ describe('contract', () => {
 						);
 					},
 				);
-				it.each([signAndSendContractMethodEIP1559, signAndSendContractMethodEIP2930])(
+				it.each([signAndSendContractMethodEIP1559])(
 					'should set approve for all item with local wallet %p',
 					async signAndSendContractMethod => {
 						const tempAccount = await createTempAccount();

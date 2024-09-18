@@ -46,7 +46,7 @@ describe('contract', () => {
 			};
 		});
 
-		it.each([/*'0x1',*/ '0x2'])('should emit the "sending" event', async txType => {
+		it.each(['0x2'])('should emit the "sending" event', async txType => {
 			const handler = jest.fn();
 			const acc = await createLocalAccount(web3);
 			const promiEvent = contract
@@ -64,7 +64,7 @@ describe('contract', () => {
 			expect(handler).toHaveBeenCalled();
 		});
 
-		it.each([/*'0x1',*/ '0x2'])('should deploy contract %p', async txType => {
+		it.each(['0x2'])('should deploy contract %p', async txType => {
 			const acc = await createLocalAccount(web3);
 			const deployedContract = await contract.deploy(deployOptions).send({
 				...sendOptions,
@@ -86,7 +86,7 @@ describe('contract', () => {
 			).rejects.toThrow('Signer Error Signer Error  gasLimit is too low');
 		});
 
-		it.each([/*'0x1',*/ '0x2'])(
+		it.each(['0x2'])(
 			'should return estimated gas of contract method %p',
 			async txType => {
 				const contractDeployed = await contract.deploy(deployOptions).send(sendOptions);

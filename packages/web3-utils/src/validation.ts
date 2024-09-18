@@ -18,16 +18,9 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import { InvalidBlockError } from '@theqrl/web3-errors';
 import {
 	isBlockTag,
-	isHexStrict as isHexStrictValidator,
 	isNullish as isNullishValidator,
 } from '@theqrl/web3-validator';
 import { BlockNumberOrTag, BlockTags } from '@theqrl/web3-types';
-
-// NOTE(rgeraldes24): used in tests
-/**
- * @deprecated Will be removed in next release. Please use `web3-validator` package instead.
- */
-export const isHexStrict = isHexStrictValidator;
 
 /**
  * Compares between block A and block B

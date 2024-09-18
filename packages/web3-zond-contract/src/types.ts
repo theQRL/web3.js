@@ -81,10 +81,6 @@ export interface ContractOptions {
 	 */
 	readonly gas?: Uint;
 	/**
-	 * The gas price in wei to use for transactions.
-	 */
-	readonly gasPrice?: Uint;
-	/**
 	 * The address transactions should be made from.
 	 */
 	readonly from?: Address;

@@ -31,9 +31,8 @@ describe('getRevertReason', () => {
 			from: '0x4fec0a51024b13030d26e70904b066c6d41157a5',
 			to: '0x36361143b7e2c676f8ccd67743a89d26437f0529',
 			data: '0x819f48fe',
-			gasPrice: '0x15ab8f14',
-			maxPriorityFeePerGas: undefined,
-			maxFeePerGas: undefined,
+			maxPriorityFeePerGas: '0x0',
+			maxFeePerGas: '0x15ab8f14',
 		};
 
 		await GetRevertReason.getRevertReason(web3Context, transaction);
@@ -55,9 +54,8 @@ describe('getRevertReason', () => {
 			from: '0x4fec0a51024b13030d26e70904b066c6d41157a5',
 			to: '0x36361143b7e2c676f8ccd67743a89d26437f0529',
 			data: '0x819f48fe',
-			gasPrice: '0x15ab8f14',
-			maxPriorityFeePerGas: undefined,
-			maxFeePerGas: undefined,
+			maxPriorityFeePerGas: '0x0',
+			maxFeePerGas: '0x15ab8f14',
 		};
 
 		const result = await GetRevertReason.getRevertReason(web3Context, transaction);
@@ -84,9 +82,8 @@ describe('getRevertReason', () => {
 			from: '0x4fec0a51024b13030d26e70904b066c6d41157a5',
 			to: '0x36361143b7e2c676f8ccd67743a89d26437f0529',
 			data: '0x819f48fe',
-			gasPrice: '0x15ab8f14',
-			maxPriorityFeePerGas: undefined,
-			maxFeePerGas: undefined,
+			maxPriorityFeePerGas: '0x0',
+			maxFeePerGas: '0x15ab8f14',
 		};
 
 		await GetRevertReason.getRevertReason(web3Context, transaction);
@@ -113,9 +110,8 @@ describe('getRevertReason', () => {
 			from: '0x4fec0a51024b13030d26e70904b066c6d41157a5',
 			to: '0x36361143b7e2c676f8ccd67743a89d26437f0529',
 			data: '0x819f48fe',
-			gasPrice: '0x15ab8f14',
-			maxPriorityFeePerGas: undefined,
-			maxFeePerGas: undefined,
+			maxPriorityFeePerGas: '0x0',
+			maxFeePerGas: '0x15ab8f14',
 		};
 
 		await GetRevertReason.getRevertReason(web3Context, transaction, SimpleRevertAbi);

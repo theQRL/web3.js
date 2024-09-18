@@ -81,7 +81,6 @@ describe('web3.accounts', () => {
 
 				const txWithGas = {
 					...tx,
-					//gasPrice: '0x271000',
 				};
 				// Sign the tx from that account
 				const signedTx = await account.signTransaction(txWithGas);

@@ -79,6 +79,7 @@ export interface Web3ZondInterface extends Zond {
 		recoverTransaction: typeof recoverTransaction;
 		hashMessage: typeof hashMessage;
 		sign: typeof sign;
+		// TODO(youtrack/theqrl/web3.js/3)
 		//encrypt: typeof encrypt;
 		// decrypt: (
 		// 	keystore: string,

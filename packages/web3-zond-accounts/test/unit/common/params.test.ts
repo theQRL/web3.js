@@ -21,7 +21,7 @@ describe('[Common]: Parameter access for param(), paramByHardfork()', () => {
 		const c = new Common({ chain: Chain.Mainnet, eips: [] });
 		expect(c.paramByHardfork('gasPrices', 'ecAdd', 'shanghai')).toEqual(BigInt(150));
 
-		// NOTE(rgeraldes24): there are no param updates yet in our case
+		// NOTE(rgeraldes24): there are no param updates yet
 		// c.setHardfork(Hardfork.Byzantium);
 		// expect(c.param('gasPrices', 'ecAdd')).toEqual(BigInt(500));
 		// c.setHardfork(Hardfork.Istanbul);
@@ -44,7 +44,7 @@ describe('[Common]: Parameter access for param(), paramByHardfork()', () => {
 		expect(c.param('gasPrices', 'ecAdd')).toEqual(BigInt(150));
 	});
 
-	// NOTE(rgeraldes24): there are no param updates yet in our case
+	// NOTE(rgeraldes24): there are no param updates yet
 	it('Parameter updates', () => {
 		const c = new Common({ chain: Chain.Mainnet });
 
@@ -65,7 +65,7 @@ describe('[Common]: Parameter access for param(), paramByHardfork()', () => {
 		// expect(c.paramByHardfork('gasPrices', 'netSstoreNoopGas', 'petersburg')).toEqual(BigInt(0));
 	});
 
-	// NOTE(rgeraldes24): there are no param updates yet in our case
+	// NOTE(rgeraldes24): there are no param updates yet
 	it('Access by block number, paramByBlock()', () => {
 		const c = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Shanghai });
 		expect(c.paramByBlock('gasPrices', 'ecAdd', 4370000)).toEqual(BigInt(150));

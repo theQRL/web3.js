@@ -326,24 +326,6 @@ export const signTxAndSendEIP1559 = async (
 	return web3.zond.sendTransaction(txObj, undefined, { checkRevertBeforeSending: false });
 };
 
-export const signTxAndSendEIP2930 = async (
-	provider: unknown,
-	tx: Transaction,
-	seed: string,
-) => {
-	const web3 = new Web3(provider as Web3BaseProvider);
-	const acc = web3.zond.accounts.seedToAccount(seed);
-	web3.zond.wallet?.add(seed);
-	const txObj = {
-		...tx,
-		type: '0x1',
-		gas: tx.gas ?? '1000000',
-		from: acc.address,
-	};
-
-	return web3.zond.sendTransaction(txObj, undefined, { checkRevertBeforeSending: false });
-};
-
 export const signAndSendContractMethodEIP1559 = async (
 	provider: unknown,
 	address: string,
@@ -351,21 +333,6 @@ export const signAndSendContractMethodEIP1559 = async (
 	seed: string,
 ) =>
 	signTxAndSendEIP1559(
-		provider,
-		{
-			to: address,
-			data: method.encodeABI(),
-		},
-		seed,
-	);
-
-export const signAndSendContractMethodEIP2930 = async (
-	provider: unknown,
-	address: string,
-	method: NonPayableMethodObject,
-	seed: string,
-) =>
-	signTxAndSendEIP2930(
 		provider,
 		{
 			to: address,
@@ -449,3 +416,10 @@ export const sendFewSampleTxs = async (cnt = 1) => {
 	await closeOpenConnection(web3);
 	return res;
 };
+
+export const objectBigintToString = (obj: object): object =>
+	// eslint-disable-next-line @typescript-eslint/no-unsafe-return
+	JSON.parse(
+		// eslint-disable-next-line @typescript-eslint/no-unsafe-return
+		JSON.stringify(obj, (_, value) => (typeof value === 'bigint' ? value.toString() : value)),
+	);

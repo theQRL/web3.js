@@ -142,6 +142,7 @@ describe('accounts', () => {
 		// });
 	});
 
+	// TODO(youtrack/theqrl/web3.js/3)
 	// describe('encrypt', () => {
 	// 	describe('valid cases', () => {
 	// 		it.each(validEncryptData)('%s', async (input, output) => {

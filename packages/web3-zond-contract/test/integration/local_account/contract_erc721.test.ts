@@ -57,7 +57,7 @@ describe('contract', () => {
 			expect(contractDeployed.options.address).toBeDefined();
 		});
 
-		it.each([/*'0x1',*/ '0x2'])('should award item %p', async type => {
+		it.each(['0x2'])('should award item %p', async type => {
 			const tempAccount = web3.zond.accounts.create();
 			await contractDeployed.methods
 				.awardItem(tempAccount.address, 'http://my-nft-uri')
@@ -73,7 +73,7 @@ describe('contract', () => {
 			).toBe(toUpperCaseHex(tempAccount.address));
 		});
 
-		it.each([/*'0x1',*/ '0x2'])('should transferFrom item %p', async type => {
+		it.each(['0x2'])('should transferFrom item %p', async type => {
 			const tempAccount = await createLocalAccount(web3);
 			const toAccount = await createLocalAccount(web3);
 			await contractDeployed.methods
@@ -97,7 +97,7 @@ describe('contract', () => {
 			).toBe(toUpperCaseHex(toAccount.address));
 		});
 
-		it.each([/*'0x1',*/ '0x2'])('should approve and then transferFrom item %p', async type => {
+		it.each(['0x2'])('should approve and then transferFrom item %p', async type => {
 			const tempAccount = await createLocalAccount(web3);
 			const toAccount = await createLocalAccount(web3);
 			await contractDeployed.methods
@@ -130,7 +130,7 @@ describe('contract', () => {
 			).toBe(toUpperCaseHex(toAccount.address));
 		});
 
-		it.each([/*'0x1',*/ '0x2'])(
+		it.each(['0x2'])(
 			'should set approve for all item with local wallet %p',
 			async type => {
 				const tempAccount = await createLocalAccount(web3);

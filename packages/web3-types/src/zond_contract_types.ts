@@ -26,10 +26,8 @@ export interface ContractInitOptions {
 	 */
 	readonly gas?: Uint;
 	readonly gasLimit?: Uint;
-	/**
-	 * The gas price in wei to use for transactions.
-	 */
-	readonly gasPrice?: Uint;
+	readonly maxPriorityFeePerGas?: string;
+	readonly maxFeePerGas?: string;
 	/**
 	 * The address transactions should be made from
 	 */
@@ -65,10 +63,6 @@ export interface NonPayableCallOptions {
 	gas?: string;
 	maxPriorityFeePerGas?: HexString;
 	maxFeePerGas?: HexString;
-	/**
-	 * The gas price in wei to use for this call `transaction`.
-	 */
-	gasPrice?: string;
 	type?: string | number;
 	data?: HexString;
 	input?: HexString;

@@ -37,10 +37,13 @@ import {
 	DataFormat,
 	DEFAULT_RETURN_FORMAT,
 	Eip712TypedData,
+	FeeData,
+	FMT_BYTES,
+	FMT_NUMBER,
 } from '@theqrl/web3-types';
 import { isSupportedProvider, Web3Context, Web3ContextInitOptions } from '@theqrl/web3-core';
 import { TransactionNotFound } from '@theqrl/web3-errors';
-import { toChecksumAddress, isNullish } from '@theqrl/web3-utils';
+import { toChecksumAddress, isNullish, zondUnitMap } from '@theqrl/web3-utils';
 import { zondRpcMethods } from '@theqrl/web3-rpc-methods';
 
 import * as rpcMethodsWrappers from './rpc_method_wrappers.js';
@@ -130,19 +133,6 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 		return zondRpcMethods.getSyncing(this.requestManager);
 	}
 
-	// TODO consider adding returnFormat parameter (to format address as bytes)
-	/**
-	 * @returns Returns the coinbase address to which mining rewards will go.
-	 *
-	 * ```ts
-	 * web3.zond.getCoinbase().then(console.log);
-	 * > "0x11f4d0A3c12e86B4b5F39B213F7E19D048276DAe"
-	 * ```
-	 */
-	public async getCoinbase() {
-		return zondRpcMethods.getCoinbase(this.requestManager);
-	}
-
 	/**
 	 * @param returnFormat ({@link DataFormat} defaults to {@link DEFAULT_RETURN_FORMAT}) Specifies how the return data should be formatted.
 	 * @returns The gas price determined by the last few blocks median gas price.
@@ -159,6 +149,85 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 		returnFormat: ReturnFormat = DEFAULT_RETURN_FORMAT as ReturnFormat,
 	) {
 		return rpcMethodsWrappers.getGasPrice(this, returnFormat);
+	}
+
+	/**
+	 * @param returnFormat ({@link DataFormat} defaults to {@link DEFAULT_RETURN_FORMAT}) Specifies how the return data should be formatted.
+	 * @returns the current maxPriorityFeePerGas per gas in wei.
+	 *
+	 * ```ts
+	 * web3.zond.getMaxPriorityFeePerGas().then(console.log);
+	 * > 20000000000n
+	 *
+	 * web3.zond.getMaxPriorityFeePerGas({ number: FMT_NUMBER.HEX , bytes: FMT_BYTES.HEX }).then(console.log);
+	 * > "0x4a817c800"
+	 * ```
+	 */
+	public async getMaxPriorityFeePerGas<ReturnFormat extends DataFormat = typeof DEFAULT_RETURN_FORMAT>(
+		returnFormat: ReturnFormat = DEFAULT_RETURN_FORMAT as ReturnFormat,
+	) {
+		return rpcMethodsWrappers.getMaxPriorityFeePerGas(this, returnFormat);
+	}
+
+	/**
+	 * Calculates the current Fee Data.
+	 * `maxFeePerGas` and `maxPriorityFeePerGas` will be calculated.
+	 *
+	 * @param baseFeePerGasFactor The factor to multiply the baseFeePerGas with, if the node supports EIP-1559.
+	 * @param alternativeMaxPriorityFeePerGas The alternative maxPriorityFeePerGas to use, if the node supports EIP-1559, but does not support the method `eth_maxPriorityFeePerGas`.
+	 * @returns The current fee data.
+	 *
+	 * ```ts
+	 * web3.zond.calculateFeeData().then(console.log);
+	 * > {
+	 *     maxFeePerGas: 20000000000n,
+	 *     maxPriorityFeePerGas: 20000000000n,
+	 * 	   baseFeePerGas: 20000000000n
+	 * }
+	 *
+	 * web3.zond.calculateFeeData(zondUnitMap.Gwei, 2n).then(console.log);
+	 * > {
+	 *     maxFeePerGas: 40000000000n,
+	 *     maxPriorityFeePerGas: 20000000000n,
+	 * 	   baseFeePerGas: 20000000000n
+	 * }
+	 * ```
+	 */
+	public async calculateFeeData(
+		baseFeePerGasFactor = BigInt(2),
+		alternativeMaxPriorityFeePerGas = zondUnitMap.Gwei,
+	): Promise<FeeData> {
+		const block = await this.getBlock<{ number: FMT_NUMBER.BIGINT; bytes: FMT_BYTES.HEX }>(
+			undefined,
+			false,
+		);
+
+		const baseFeePerGas: bigint | undefined = block?.baseFeePerGas ?? undefined; // use undefined if it was null
+
+		let maxPriorityFeePerGas: bigint | undefined;
+		try {
+			maxPriorityFeePerGas = await this.getMaxPriorityFeePerGas<{
+				number: FMT_NUMBER.BIGINT;
+				bytes: FMT_BYTES.HEX;
+			}>();
+		} catch (error) {
+			// do nothing
+		}
+
+		let maxFeePerGas: bigint | undefined;
+		// if the `block.baseFeePerGas` is available, then EIP-1559 is supported
+		// and we can calculate the `maxFeePerGas` from the `block.baseFeePerGas`
+		if (baseFeePerGas) {
+			// tip the miner with alternativeMaxPriorityFeePerGas, if no value available from getMaxPriorityFeePerGas
+			maxPriorityFeePerGas = maxPriorityFeePerGas ?? alternativeMaxPriorityFeePerGas;
+			// basically maxFeePerGas = (baseFeePerGas +- 12.5%) + maxPriorityFeePerGas
+			// and we multiply the `baseFeePerGas` by `baseFeePerGasFactor`, to allow
+			// trying to include the transaction in the next few blocks even if the
+			// baseFeePerGas is increasing fast
+			maxFeePerGas = baseFeePerGas * baseFeePerGasFactor + maxPriorityFeePerGas;
+		}
+
+		return { maxFeePerGas, maxPriorityFeePerGas, baseFeePerGas };
 	}
 
 	/**
@@ -388,7 +457,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * web3.zond.getTransaction('0x73aea70e969941f23f9d24103e91aa1f55c7964eb13daf1c9360c308a72686dc').then(console.log);
 	 * {
 	 *    hash: '0x73aea70e969941f23f9d24103e91aa1f55c7964eb13daf1c9360c308a72686dc',
-	 *    type: 0n,
+	 *    type: 2n,
 	 *    nonce: 0n,
 	 *    blockHash: '0x43202bd16b6bd54bea1b310736bd78bdbe93a64ad940f7586739d9eb25ad8d00',
 	 *    blockNumber: 1n,
@@ -397,11 +466,11 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *    to: '0x6f1df96865d09d21e8f3f9a7fba3b17a11c7c53c',
 	 *    value: 1n,
 	 *    gas: 90000n,
-	 *    gasPrice: 2000000000n,
+	 *    maxFeePerGas: 2000000000n,
+	 *    maxPriorityFeePerGas: 0n,
 	 *    input: '0x',
-	 *    v: 2709n,
-	 *    r: '0x8b336c290f6d7b2af3ccb2c02203a8356cc7d5b150ab19cce549d55636a3a78c',
-	 *    s: '0x5a83c6f816befc5cd4b0c997a347224a8aa002e5799c4b082a3ec726d0e9531d'
+	 *    publicKey: '0x8b336c290f6d7b2af3ccb2c02203a8356cc7d5b150ab19cce549d55636a3a78c',
+	 *    signature: '0x5a83c6f816befc5cd4b0c997a347224a8aa002e5799c4b082a3ec726d0e9531d'
 	 *  }
 	 *
 	 * web3.zond.getTransaction(
@@ -410,7 +479,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * ).then(console.log);
 	 * {
 	 *    hash: '0x73aea70e969941f23f9d24103e91aa1f55c7964eb13daf1c9360c308a72686dc',
-	 *    type: 0,
+	 *    type: 2,
 	 *    nonce: 0,
 	 *    blockHash: '0x43202bd16b6bd54bea1b310736bd78bdbe93a64ad940f7586739d9eb25ad8d00',
 	 *    blockNumber: 1,
@@ -419,11 +488,11 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *    to: '0x6f1df96865d09d21e8f3f9a7fba3b17a11c7c53c',
 	 *    value: 1,
 	 *    gas: 90000,
-	 *    gasPrice: 2000000000,
+	 *    maxFeePerGas: 2000000000,
+	 *    maxPriorityFeePerGas: 0,
 	 *    input: '0x',
-	 *    v: 2709,
-	 *    r: '0x8b336c290f6d7b2af3ccb2c02203a8356cc7d5b150ab19cce549d55636a3a78c',
-	 *    s: '0x5a83c6f816befc5cd4b0c997a347224a8aa002e5799c4b082a3ec726d0e9531d'
+	 *    publicKey: '0x8b336c290f6d7b2af3ccb2c02203a8356cc7d5b150ab19cce549d55636a3a78c',
+	 *    signature: '0x5a83c6f816befc5cd4b0c997a347224a8aa002e5799c4b082a3ec726d0e9531d'
 	 *  }
 	 * ```
 	 */
@@ -451,7 +520,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * > [
 	 *      {
 	 *          hash: '0x73aea70e969941f23f9d24103e91aa1f55c7964eb13daf1c9360c308a72686dc',
-	 *          type: 0n,
+	 *          type: 2n,
 	 *          nonce: 0n,
 	 *          blockHash: '0x0000000000000000000000000000000000000000000000000000000000000000',
 	 *          blockNumber: null,
@@ -460,15 +529,15 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *          to: '0x6f1df96865d09d21e8f3f9a7fba3b17a11c7c53c',
 	 *          value: 1n,
 	 *          gas: 90000n,
-	 *          gasPrice: 2000000000n,
+	 *          maxFeePerGas: 2000000000n,
+	 *          maxPriorityFeePerGas: 0n,
 	 *          input: '0x',
-	 *          v: 2709n,
-	 *          r: '0x8b336c290f6d7b2af3ccb2c02203a8356cc7d5b150ab19cce549d55636a3a78c',
-	 *          s: '0x5a83c6f816befc5cd4b0c997a347224a8aa002e5799c4b082a3ec726d0e9531d'
+	 *          publicKey: '0x8b336c290f6d7b2af3ccb2c02203a8356cc7d5b150ab19cce549d55636a3a78c',
+	 *          signature: '0x5a83c6f816befc5cd4b0c997a347224a8aa002e5799c4b082a3ec726d0e9531d'
 	 *      },
 	 *      {
 	 *          hash: '0xdf7756865c2056ce34c4eabe4eff42ad251a9f920a1c620c00b4ea0988731d3f',
-	 *          type: 0n,
+	 *          type: 2n,
 	 *          nonce: 1n,
 	 *          blockHash: '0x0000000000000000000000000000000000000000000000000000000000000000',
 	 *          blockNumber: null,
@@ -477,11 +546,11 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *          to: '0x6f1df96865d09d21e8f3f9a7fba3b17a11c7c53c',
 	 *          value: 1n,
 	 *          gas: 90000n,
-	 *          gasPrice: 2000000000n,
+	 *          maxFeePerGas: 2000000000n,
+	 *          maxPriorityFeePerGas: 0n,
 	 *          input: '0x',
-	 *          v: 2710n,
-	 *          r: '0x55ac19fade21db035a1b7ea0a8d49e265e05dbb926e75f273f836ad67ce5c96a',
-	 *          s: '0x6550036a7c3fd426d5c3d35d96a7075cd673957620b7889846a980d2d017ec08'
+	 *          publicKey: '0x55ac19fade21db035a1b7ea0a8d49e265e05dbb926e75f273f836ad67ce5c96a',
+	 *          signature: '0x6550036a7c3fd426d5c3d35d96a7075cd673957620b7889846a980d2d017ec08'
 	 *      }
 	 *   ]
 	 *
@@ -489,7 +558,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * > [
 	 *      {
 	 *          hash: '0x73aea70e969941f23f9d24103e91aa1f55c7964eb13daf1c9360c308a72686dc',
-	 *          type: 0,
+	 *          type: 2,
 	 *          nonce: 0,
 	 *          blockHash: '0x0000000000000000000000000000000000000000000000000000000000000000',
 	 *          blockNumber: null,
@@ -498,15 +567,15 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *          to: '0x6f1df96865d09d21e8f3f9a7fba3b17a11c7c53c',
 	 *          value: 1,
 	 *          gas: 90000,
-	 *          gasPrice: 2000000000,
+	 *          maxFeePerGas: 2000000000,
+	 *          maxPriorityFeePerGas: 0,
 	 *          input: '0x',
-	 *          v: 2709,
-	 *          r: '0x8b336c290f6d7b2af3ccb2c02203a8356cc7d5b150ab19cce549d55636a3a78c',
-	 *          s: '0x5a83c6f816befc5cd4b0c997a347224a8aa002e5799c4b082a3ec726d0e9531d'
+	 *          publicKey: '0x8b336c290f6d7b2af3ccb2c02203a8356cc7d5b150ab19cce549d55636a3a78c',
+	 *          signature: '0x5a83c6f816befc5cd4b0c997a347224a8aa002e5799c4b082a3ec726d0e9531d'
 	 *      },
 	 *      {
 	 *          hash: '0xdf7756865c2056ce34c4eabe4eff42ad251a9f920a1c620c00b4ea0988731d3f',
-	 *          type: 0,
+	 *          type: 2,
 	 *          nonce: 1,
 	 *          blockHash: '0x0000000000000000000000000000000000000000000000000000000000000000',
 	 *          blockNumber: null,
@@ -515,11 +584,11 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *          to: '0x6f1df96865d09d21e8f3f9a7fba3b17a11c7c53c',
 	 *          value: 1,
 	 *          gas: 90000,
-	 *          gasPrice: 2000000000,
+	 *          maxFeePerGas: 2000000000,
+	 *			maxPriorityFeePerGas: 0,
 	 *          input: '0x',
-	 *          v: 2710,
-	 *          r: '0x55ac19fade21db035a1b7ea0a8d49e265e05dbb926e75f273f836ad67ce5c96a',
-	 *          s: '0x6550036a7c3fd426d5c3d35d96a7075cd673957620b7889846a980d2d017ec08'
+	 *          publicKey: '0x55ac19fade21db035a1b7ea0a8d49e265e05dbb926e75f273f836ad67ce5c96a',
+	 *          signature: '0x6550036a7c3fd426d5c3d35d96a7075cd673957620b7889846a980d2d017ec08'
 	 *      }
 	 *   ]
 	 * ```
@@ -540,7 +609,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * web3.zond.getTransactionFromBlock('0x43202bd16b6bd54bea1b310736bd78bdbe93a64ad940f7586739d9eb25ad8d00', 0).then(console.log);
 	 * {
 	 *    hash: '0x73aea70e969941f23f9d24103e91aa1f55c7964eb13daf1c9360c308a72686dc',
-	 *    type: 0n,
+	 *    type: 2n,
 	 *    nonce: 0n,
 	 *    blockHash: '0x43202bd16b6bd54bea1b310736bd78bdbe93a64ad940f7586739d9eb25ad8d00',
 	 *    blockNumber: 1n,
@@ -549,11 +618,11 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *    to: '0x6f1df96865d09d21e8f3f9a7fba3b17a11c7c53c',
 	 *    value: 1n,
 	 *    gas: 90000n,
-	 *    gasPrice: 2000000000n,
+	 *    maxFeePerGas: 2000000000n,
+	 *    maxPriorityFeePerGas: 0n,
 	 *    input: '0x',
-	 *    v: 2709n,
-	 *    r: '0x8b336c290f6d7b2af3ccb2c02203a8356cc7d5b150ab19cce549d55636a3a78c',
-	 *    s: '0x5a83c6f816befc5cd4b0c997a347224a8aa002e5799c4b082a3ec726d0e9531d'
+	 *    publicKey: '0x8b336c290f6d7b2af3ccb2c02203a8356cc7d5b150ab19cce549d55636a3a78c',
+	 *    signature: '0x5a83c6f816befc5cd4b0c997a347224a8aa002e5799c4b082a3ec726d0e9531d'
 	 *  }
 	 *
 	 * web3.zond.getTransactionFromBlock(
@@ -563,7 +632,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * ).then(console.log);
 	 * {
 	 *    hash: '0x73aea70e969941f23f9d24103e91aa1f55c7964eb13daf1c9360c308a72686dc',
-	 *    type: 0,
+	 *    type: 2,
 	 *    nonce: 0,
 	 *    blockHash: '0x43202bd16b6bd54bea1b310736bd78bdbe93a64ad940f7586739d9eb25ad8d00',
 	 *    blockNumber: 1,
@@ -572,11 +641,11 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *    to: '0x6f1df96865d09d21e8f3f9a7fba3b17a11c7c53c',
 	 *    value: 1,
 	 *    gas: 90000,
-	 *    gasPrice: 2000000000,
+	 *    maxFeePerGas: 2000000000,
+	 *    maxPriorityFeePerGas: 0,
 	 *    input: '0x',
-	 *    v: 2709,
-	 *    r: '0x8b336c290f6d7b2af3ccb2c02203a8356cc7d5b150ab19cce549d55636a3a78c',
-	 *    s: '0x5a83c6f816befc5cd4b0c997a347224a8aa002e5799c4b082a3ec726d0e9531d'
+	 *    publicKey: '0x8b336c290f6d7b2af3ccb2c02203a8356cc7d5b150ab19cce549d55636a3a78c',
+	 *    signature: '0x5a83c6f816befc5cd4b0c997a347224a8aa002e5799c4b082a3ec726d0e9531d'
 	 *  }
 	 * ```
 	 */
@@ -615,7 +684,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *      logsBloom: '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
 	 *      status: 1n,
 	 *      effectiveGasPrice: 2000000000n,
-	 *      type: 0n
+	 *      type: 2n
 	 *  }
 	 *
 	 * web3.zond.getTransactionReceipt(
@@ -635,7 +704,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *      logsBloom: '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
 	 *      status: 1,
 	 *      effectiveGasPrice: 2000000000,
-	 *      type: 0n
+	 *      type: 2n
 	 *  }
 	 * ```
 	 */
@@ -717,9 +786,8 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *    from: '0x6E599DA0bfF7A6598AC1224E4985430Bf16458a4',
 	 *    to: '0x6f1DF96865D09d21e8f3f9a7fbA3b17A11c7C53C',
 	 *    value: '0x1',
-	 *    gasPrice: '0x77359400',
-	 *    maxPriorityFeePerGas: undefined,
-	 *    maxFeePerGas: undefined
+	 *    maxFeePerGas: '0x77359400',
+	 *    maxPriorityFeePerGas: '0x0'
 	 * }
 	 * ```
 	 * - `sent`
@@ -729,9 +797,8 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *    from: '0x6E599DA0bfF7A6598AC1224E4985430Bf16458a4',
 	 *    to: '0x6f1DF96865D09d21e8f3f9a7fbA3b17A11c7C53C',
 	 *    value: '0x1',
-	 *    gasPrice: '0x77359400',
-	 *    maxPriorityFeePerGas: undefined,
-	 *    maxFeePerGas: undefined
+	 *    maxFeePerGas: '0x77359400',
+	 *    maxPriorityFeePerGas: '0x0'
 	 * }
 	 * ```
 	 * - `transactionHash`
@@ -755,7 +822,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *      logsBloom: '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
 	 *      status: 1n,
 	 *      effectiveGasPrice: 2000000000n,
-	 *      type: 0n
+	 *      type: 2n
 	 * }
 	 * ```
 	 * - `confirmation`
@@ -776,7 +843,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *         logsBloom: '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
 	 *         status: 1n,
 	 *         effectiveGasPrice: 2000000000n,
-	 *         type: 0n
+	 *         type: 2n
 	 *     },
 	 *     latestBlockHash: '0xb57fbe6f145cefd86a305a9a024a4351d15d4d39607d7af53d69a319bc3b5548'
 	 * }
@@ -850,7 +917,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *      to: '0xe899f0130fd099c0b896b2ce4e5e15a25b23139a',
 	 *      transactionHash: '0xed8c241ea44d57f4605dc22c63500de46254d6c7844fd65fa438b128c80cf700',
 	 *      transactionIndex: 0n,
-	 *      type: 0n
+	 *      type: 2n
 	 * }
 	 * ```
 	 * - `confirmation`
@@ -871,7 +938,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *          to: '0xe899f0130fd099c0b896b2ce4e5e15a25b23139a',
 	 *          transactionHash: '0xed8c241ea44d57f4605dc22c63500de46254d6c7844fd65fa438b128c80cf700',
 	 *          transactionIndex: 0n,
-	 *          type: 0n
+	 *          type: 2n
 	 *     },
 	 *     latestBlockHash: '0xff2b1687995d81066361bc6affe4455746120a7d4bb75fc938211a2692a50081'
 	 * }
@@ -936,23 +1003,24 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *      to: '0xe899f0130FD099c0b896B2cE4E5E15A25b23139a',
 	 *      value: '0x1',
 	 *      gas: '21000',
-	 *      gasPrice: await web3Zond.getGasPrice(),
+	 *      maxFeePerGas: '1000000001',
+	 *      maxPriorityFeePerGas: '0',
 	 *      nonce: '0x1',
-	 *      type: '0x0'
+	 *      type: '0x2'
 	 * }
 	 *
 	 * web3.zond.signTransaction(transaction).then(console.log);
 	 * > {
 	 *   raw: '0xf86501843b9aca0182520894e899f0130fd099c0b896b2ce4e5e15a25b23139a0180820a96a0adb3468dbb4dce89fe1785ea9182e85fb56b399b378f82b93af7a8a12a4f9679a027d37d736e9bcf00121f78b2d10e4404fa5c45856d62b746574345f5cd278097',
 	 *   tx: {
-	 *      type: 0n,
+	 *      type: 2n,
 	 *      nonce: 1n,
-	 *      gasPrice: 1000000001n,
+	 *      maxFeePerGas: 1000000001n,
+	 *      maxPriorityFeePerGas: 0n,
 	 *      gas: 21000n,
 	 *      value: 1n,
-	 *      v: 2710n,
-	 *      r: '0xadb3468dbb4dce89fe1785ea9182e85fb56b399b378f82b93af7a8a12a4f9679',
-	 *      s: '0x27d37d736e9bcf00121f78b2d10e4404fa5c45856d62b746574345f5cd278097',
+	 *      publicKey: '0xadb3468dbb4dce89fe1785ea9182e85fb56b399b378f82b93af7a8a12a4f9679',
+	 *      signature: '0x27d37d736e9bcf00121f78b2d10e4404fa5c45856d62b746574345f5cd278097',
 	 *      to: '0xe899f0130fd099c0b896b2ce4e5e15a25b23139a',
 	 *      data: '0x'
 	 *   }
@@ -962,14 +1030,14 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * > {
 	 *   raw: '0xf86501843b9aca0182520894e899f0130fd099c0b896b2ce4e5e15a25b23139a0180820a96a0adb3468dbb4dce89fe1785ea9182e85fb56b399b378f82b93af7a8a12a4f9679a027d37d736e9bcf00121f78b2d10e4404fa5c45856d62b746574345f5cd278097',
 	 *   tx: {
-	 *      type: 0,
+	 *      type: 2,
 	 *      nonce: 1,
-	 *      gasPrice: 1000000001,
+	 *      maxFeePerGas: 1000000001,
+	 * 	    maxPriorityFeePerGas: 0,
 	 *      gas: 21000,
 	 *      value: 1,
-	 *      v: 2710,
-	 *      r: '0xadb3468dbb4dce89fe1785ea9182e85fb56b399b378f82b93af7a8a12a4f9679',
-	 *      s: '0x27d37d736e9bcf00121f78b2d10e4404fa5c45856d62b746574345f5cd278097',
+	 *      publicKey: '0xadb3468dbb4dce89fe1785ea9182e85fb56b399b378f82b93af7a8a12a4f9679',
+	 *      signature: '0x27d37d736e9bcf00121f78b2d10e4404fa5c45856d62b746574345f5cd278097',
 	 *      to: '0xe899f0130fd099c0b896b2ce4e5e15a25b23139a',
 	 *      data: '0x'
 	 *   }
@@ -1018,7 +1086,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *       to: '0xe899f0130FD099c0b896B2cE4E5E15A25b23139a',
 	 *       value: '0x1',
 	 *       nonce: '0x1',
-	 *       type: '0x0'
+	 *       type: '0x2'
 	 * }
 	 *
 	 * web3.zond.estimateGas(transaction).then(console.log);
@@ -1225,7 +1293,6 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * @param returnFormat ({@link DataFormat} defaults to {@link DEFAULT_RETURN_FORMAT}) - Specifies how the return data from the call should be formatted.
 	 * @returns `baseFeePerGas` and transaction effective `priorityFeePerGas` history for the requested block range if available.
 	 * The range between `headBlock - 4` and `headBlock` is guaranteed to be available while retrieving data from the `pending` block and older history are optional to support.
-	 * For pre-EIP-1559 blocks the `gasPrice`s are returned as `rewards` and zeroes are returned for the `baseFeePerGas`.
 	 *
 	 * ```ts
 	 * web3.zond.getFeeHistory(4, 'pending', [0, 25, 75, 100]).then(console.log);
@@ -1304,7 +1371,8 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * web3.zond.createAccessList({
 	 * from: '0xDe95305a63302C3aa4d3A9B42654659AeA72b694',
 	 * data: '0x9a67c8b100000000000000000000000000000000000000000000000000000000000004d0',
-	 * gasPrice: '0x3b9aca00',
+	 * maxFeePerGas: '0x3b9aca00',
+	 * maxPriorityFeePerGas: '0x0',
 	 * gas: '0x3d0900',
 	 * to: '0x940b25304947ae863568B3804434EC77E2160b87'
 	 * })
@@ -1336,7 +1404,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *
 	 * @param address The address that corresponds with the private key used to sign the typed data.
 	 * @param typedData The EIP-712 typed data object.
-	 * @param useLegacy A boolean flag determining whether the RPC call uses the legacy method `eth_signTypedData` or the newer method `eth_signTypedData_v4`
+	 * @param useLegacy A boolean flag determining whether the RPC call uses the legacy method `zond_signTypedData` or the newer method `zond_signTypedData_v4`
 	 * @param returnFormat ({@link DataFormat} defaults to {@link DEFAULT_RETURN_FORMAT}) - Specifies how the signed typed data should be formatted.
 	 * @returns The signed typed data.
 	 */

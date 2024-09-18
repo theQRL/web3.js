@@ -30,7 +30,8 @@ const transaction: TransactionForAccessList = {
 	to: '0x940b25304947ae863568B3804434EC77E2160b87',
 	value: '0x0',
 	gas: '0x5208',
-	gasPrice: '0x4a817c800',
+	maxFeePerGas: '0x4a817c800',
+	maxPriorityFeePerGas: '0x0',
 	data: '0x9a67c8b100000000000000000000000000000000000000000000000000000000000004d0',
 };
 

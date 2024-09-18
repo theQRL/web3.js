@@ -170,7 +170,7 @@ exports[`errors InvalidPropertiesForTransactionTypeError should have valid json 
 Object {
   "code": 439,
   "innerError": undefined,
-  "message": "The following properties are invalid for the transaction type 0x0: property",
+  "message": "The following properties are invalid for the transaction type 0x2: property",
   "name": "InvalidPropertiesForTransactionTypeError",
 }
 `;

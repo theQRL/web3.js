@@ -18,12 +18,12 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import * as httpProvider from '@theqrl/web3-providers-http';
 import { Web3Account } from '@theqrl/web3-zond-accounts';
 import Web3, { DEFAULT_RETURN_FORMAT, Transaction } from '../../src';
+// TODO(youtrack/theqrl/web3.js/8)
 import testsData from '../fixtures/transactions.json';
 
 jest.mock('@theqrl/web3-providers-http');
 
-// TODO(rgeraldes24): provider not supported
-describe.skip('signTransaction', () => {
+describe('signTransaction', () => {
 	let blockNum = 1;
 
 	it.each(testsData)(
@@ -39,14 +39,6 @@ describe.skip('signTransaction', () => {
 				...txObj.transaction,
 				from: account.address,
 			};
-
-			// either make it legacy or type 0x2 tx, instead of keeping both gasPrice and (maxPriorityFeePerGas maxFeePerGas)
-			// if (txObj.transaction?.maxPriorityFeePerGas) {
-			// 	delete normalTx['gasPrice'];
-			// } else {
-			// 	delete normalTx['maxPriorityFeePerGas'];
-			// 	delete normalTx['maxFeePerGas'];
-			// }
 
 			jest.spyOn(httpProvider.HttpProvider.prototype, 'request').mockImplementation(
 				async (payload: any) => {

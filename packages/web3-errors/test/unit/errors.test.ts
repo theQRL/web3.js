@@ -204,7 +204,7 @@ describe('errors', () => {
 							params: {},
 						},
 					],
-					'0x0',
+					'0x2',
 				).toJSON(),
 			).toMatchSnapshot();
 		});

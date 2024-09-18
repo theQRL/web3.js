@@ -25,7 +25,6 @@ import {
 	//isWs,
 	createTempAccount,
 	createNewAccount,
-	signTxAndSendEIP2930,
 	signTxAndSendEIP1559,
 	//sendFewSampleTxs,
 	closeOpenConnection,
@@ -59,7 +58,7 @@ describe('contract', () => {
 			await closeOpenConnection(web3Zond);
 		});
 		describe('local account', () => {
-			it.each([signTxAndSendEIP1559, signTxAndSendEIP2930])(
+			it.each([signTxAndSendEIP1559])(
 				'should deploy the contract %p',
 				async signTxAndSend => {
 					pkAccount = await createNewAccount({ refill: true });
@@ -76,7 +75,7 @@ describe('contract', () => {
 					expect(Number(res.status)).toBe(1);
 				},
 			);
-			it.each([signTxAndSendEIP1559, signTxAndSendEIP2930])(
+			it.each([signTxAndSendEIP1559])(
 				'should deploy the contract with input%p',
 				async signTxAndSend => {
 					pkAccount = await createNewAccount({ refill: true });

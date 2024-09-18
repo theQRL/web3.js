@@ -65,7 +65,6 @@ export interface TransactionInput {
 	readonly input?: string;
 	readonly gas: HexString;
 	readonly gasLimit?: string;
-	readonly gasPrice?: string;
 	readonly maxPriorityFeePerGas?: string;
 	readonly maxFeePerGas?: string;
 	readonly nonce: string;
@@ -87,10 +86,9 @@ export type TransactionOutput = {
 	readonly value: Numbers;
 	readonly blockNumber?: Numbers;
 	readonly transactionIndex?: Numbers;
-} & (
-	| { maxPriorityFeePerGas: Numbers; maxFeePerGas: Numbers; gasPrice?: never }
-	| { maxPriorityFeePerGas?: never; maxFeePerGas?: never; gasPrice: Numbers }
-);
+	maxPriorityFeePerGas: Numbers;
+	maxFeePerGas: Numbers;
+}
 
 export interface LogsInput {
 	readonly blockHash?: HexString;
@@ -292,7 +290,6 @@ interface TransactionBase {
 	accessList?: AccessList;
 	common?: Common;
 	gas?: Numbers;
-	gasPrice?: Numbers;
 	type?: Numbers;
 	maxFeePerGas?: Numbers;
 	maxPriorityFeePerGas?: Numbers;
@@ -343,12 +340,11 @@ export interface TransactionInfo extends Transaction {
 	readonly transactionIndex?: Numbers;
 }
 
-export interface PopulatedUnsignedBaseTransaction {
+export interface PopulatedUnsignedEip1559Transaction {
 	from: Address;
 	to?: Address;
 	value: Numbers;
 	gas?: Numbers;
-	gasPrice: Numbers;
 	type: Numbers;
 	input?: Bytes;
 	data?: Bytes;
@@ -359,21 +355,13 @@ export interface PopulatedUnsignedBaseTransaction {
 	chainId: Numbers;
 	common: Common;
 	gasLimit: Numbers;
-}
-
-export interface PopulatedUnsignedEip2930Transaction extends PopulatedUnsignedBaseTransaction {
 	accessList: AccessList;
-}
-
-export interface PopulatedUnsignedEip1559Transaction extends PopulatedUnsignedEip2930Transaction {
-	gasPrice: never;
 	maxFeePerGas: Numbers;
 	maxPriorityFeePerGas: Numbers;
 }
+
 export type PopulatedUnsignedTransaction =
-	| PopulatedUnsignedBaseTransaction
-	| PopulatedUnsignedEip2930Transaction
-	| PopulatedUnsignedEip1559Transaction;
+	PopulatedUnsignedEip1559Transaction;
 
 export interface BlockBase<
 	ByteType,
@@ -395,7 +383,7 @@ export interface BlockBase<
 	readonly timestamp: NumberType;
 	readonly extraData: extraDataType;
 	readonly prevRandao: ByteType;
-	readonly baseFeePerGas?: NumberType;
+	readonly baseFeePerGas: NumberType;
 	readonly size: NumberType;
 	readonly transactions: TransactionTypes;
 	readonly hash?: ByteType;
@@ -446,4 +434,38 @@ export interface Eip712TypedData {
 	readonly primaryType: string;
 	readonly domain: Record<string, string | number>;
 	readonly message: Record<string, unknown>;
+}
+
+/**
+ * To contain the gas Fee Data to be used with EIP-1559 transactions.
+ * EIP-1559 was applied to Ethereum after London hardfork.
+ *  
+ * Typically you will only need `maxFeePerGas` and `maxPriorityFeePerGas` for a transaction following EIP-1559.
+ * However, if you want to get informed about the fees of last block, you can use `baseFeePerGas` too.
+ * 
+ * 
+ * 	@see https://eips.ethereum.org/EIPS/eip-1559
+ * 
+ */
+export interface FeeData {
+	/**
+	 * The baseFeePerGas returned from the last available block.
+	 * 
+	 * However, the user will only pay (the future baseFeePerGas + the maxPriorityFeePerGas). 
+	 * And this value is just for getting informed about the fees of last block.
+	 */
+	readonly baseFeePerGas?: Numbers;
+
+	/**
+	 * The maximum fee that the user would be willing to pay per-gas.
+	 * 
+	 * However, the user will only pay (the future baseFeePerGas + the maxPriorityFeePerGas).
+	 * And the `maxFeePerGas` could be used to prevent paying more than it, if `baseFeePerGas` went too high.
+	 */
+	readonly maxFeePerGas?: Numbers;
+
+	/**
+	 * The validator's tip for including a transaction in a block.
+	 */
+	readonly maxPriorityFeePerGas?: Numbers;
 }

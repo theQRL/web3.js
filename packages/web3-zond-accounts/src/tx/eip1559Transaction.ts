@@ -87,7 +87,7 @@ export class FeeMarketEIP1559Transaction extends BaseTransaction<FeeMarketEIP155
 	 * Instantiate a transaction from the serialized tx.
 	 *
 	 * Format: `0x02 || rlp([chainId, nonce, maxPriorityFeePerGas, maxFeePerGas, gasLimit, to, value, data,
-	 * accessList, signatureYParity, signatureR, signatureS])`
+	 * accessList, signature, publicKey])`
 	 */
 	public static fromSerializedTx(serialized: Uint8Array, opts: TxOptions = {}) {
 		if (!uint8ArrayEquals(serialized.subarray(0, 1), TRANSACTION_TYPE_UINT8ARRAY)) {
@@ -115,7 +115,7 @@ export class FeeMarketEIP1559Transaction extends BaseTransaction<FeeMarketEIP155
 	public static fromValuesArray(values: FeeMarketEIP1559ValuesArray, opts: TxOptions = {}) {
 		if (values.length !== 9 && values.length !== 11) {
 			throw new Error(
-				'Invalid EIP-1559 transaction. Only expecting 9 values (for unsigned tx) or 12 values (for signed tx).',
+				'Invalid EIP-1559 transaction. Only expecting 9 values (for unsigned tx) or 11 values (for signed tx).',
 			);
 		}
 
@@ -140,8 +140,6 @@ export class FeeMarketEIP1559Transaction extends BaseTransaction<FeeMarketEIP155
 			maxFeePerGas,
 			gasLimit,
 			value,
-			publicKey,
-			signature,
 		});
 
 		return new FeeMarketEIP1559Transaction(
@@ -175,8 +173,6 @@ export class FeeMarketEIP1559Transaction extends BaseTransaction<FeeMarketEIP155
 
 		this.common = this._getCommon(opts.common, chainId);
 		this.chainId = this.common.chainId();
-
-		this.activeCapabilities = this.activeCapabilities.concat([1559, 2718, 2930]);
 
 		// Populate the access list fields
 		const accessListData = getAccessListData(accessList ?? []);
@@ -285,7 +281,7 @@ export class FeeMarketEIP1559Transaction extends BaseTransaction<FeeMarketEIP155
 	 * Returns the serialized encoding of the EIP-1559 transaction.
 	 *
 	 * Format: `0x02 || rlp([chainId, nonce, maxPriorityFeePerGas, maxFeePerGas, gasLimit, to, value, data,
-	 * accessList, signatureYParity, signatureR, signatureS])`
+	 * accessList, signature, publickey])`
 	 *
 	 * Note that in contrast to the legacy tx serialization format this is not
 	 * valid RLP any more due to the raw tx type preceding and concatenated to

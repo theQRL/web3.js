@@ -19,7 +19,7 @@ import { Web3Subscription } from '@theqrl/web3-core';
 export class NewHeadsSubscription extends Web3Subscription<
 	{ data: string },
 	{ param1: string },
-	{ eth_subscribe: (newHeads: string) => void }
+	{ zond_subscribe: (newHeads: string) => void }
 > {
 	// eslint-disable-next-line class-methods-use-this
 	protected _buildSubscriptionParams() {

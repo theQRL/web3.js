@@ -26,7 +26,6 @@ import {
 	createNewAccount,
 	refillAccount,
 	signAndSendContractMethodEIP1559,
-	signAndSendContractMethodEIP2930,
 } from '../fixtures/system_test_utils';
 import { processAsync, toUpperCaseHex } from '../shared_fixtures/utils';
 
@@ -100,7 +99,7 @@ describe('contract', () => {
 						value,
 					);
 				});
-				it.each([signAndSendContractMethodEIP1559, signAndSendContractMethodEIP2930])(
+				it.each([signAndSendContractMethodEIP1559])(
 					'should transfer tokens with local wallet %p',
 					async signAndSendContractMethod => {
 						const value = BigInt(10);
@@ -117,7 +116,7 @@ describe('contract', () => {
 						).toBe(value);
 					},
 				);
-				it.each([signAndSendContractMethodEIP1559, signAndSendContractMethodEIP2930])(
+				it.each([signAndSendContractMethodEIP1559])(
 					'should approve and transferFrom tokens with local wallet %p',
 					async signAndSendContractMethod => {
 						const value = BigInt(10);
@@ -161,7 +160,7 @@ describe('contract', () => {
 						).toBe(value - transferFromValue);
 					},
 				);
-				it.each([signAndSendContractMethodEIP1559, signAndSendContractMethodEIP2930])(
+				it.each([signAndSendContractMethodEIP1559])(
 					'should approve and transferFrom tokens with local wallet %p',
 					async signAndSendContractMethod => {
 						const value = BigInt(10);

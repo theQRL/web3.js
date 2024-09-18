@@ -114,7 +114,7 @@ describe('Contract', () => {
 			expect(contract).toBeInstanceOf(Contract);
 		});
 
-		// TODO(rgeraldes24): comparison fails for ws
+		// TODO(youtrack/theqrl/web3.js/7)
 		itIf(isHttp)('should set the provider, from options, upon instantiation', () => {
 			const provider = getSystemTestProvider();
 			const contract = new Contract([], '', {
@@ -127,7 +127,7 @@ describe('Contract', () => {
 			});
 		});
 
-		// TODO(rgeraldes24): comparison fails for ws
+		// TODO(youtrack/theqrl/web3.js/7)
 		itIf(isHttp)('should set the provider, from context, upon instantiation', () => {
 			const provider = getSystemTestProvider();
 			const contract = new Contract(
@@ -227,7 +227,8 @@ describe('Contract', () => {
 				.mockImplementation((_objInstance, tx) => {
 					expect(tx.to).toBeUndefined();
 					expect(tx.gas).toStrictEqual(sendOptions.gas);
-					expect(tx.gasPrice).toBeUndefined();
+					expect(tx.maxFeePerGas).toBeUndefined();
+					expect(tx.maxPriorityFeePerGas).toBeUndefined();
 					expect(tx.from).toStrictEqual(sendOptions.from);
 					expect(tx.input).toStrictEqual(input); // padded data
 
@@ -260,7 +261,8 @@ describe('Contract', () => {
 				.mockImplementation((_objInstance, tx) => {
 					expect(tx.to).toBeUndefined();
 					expect(tx.gas).toStrictEqual(sendOptions.gas);
-					expect(tx.gasPrice).toBeUndefined();
+					expect(tx.maxFeePerGas).toBeUndefined();
+					expect(tx.maxPriorityFeePerGas).toBeUndefined();
 					expect(tx.from).toStrictEqual(sendOptions.from);
 					expect(tx.data).toStrictEqual(data); // padded data
 

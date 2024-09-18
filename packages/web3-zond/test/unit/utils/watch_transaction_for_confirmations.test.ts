@@ -114,8 +114,7 @@ describe('watchTransactionForConfirmations', () => {
 
 		afterEach(() => jest.resetAllMocks());
 
-		// TODO(rgeraldes24): fix input data
-		it.skip.each(testData)(
+		it.each(testData)(
 			`watchTransactionForConfirmations logic\n ${testMessage}`,
 			async (_, inputTransaction) => {
 				const formattedTransactionReceipt = format(
@@ -165,7 +164,7 @@ describe('watchTransactionForConfirmations', () => {
 		);
 	});
 
-	describe('should call watchTransactionByPooling when the provider does not support subscription', () => {
+	describe('should call watchTransactionByPoolling when the provider does not support subscription', () => {
 		let web3Context: Web3Context<Web3ZondExecutionAPI>;
 
 		beforeAll(() => {
@@ -180,8 +179,7 @@ describe('watchTransactionForConfirmations', () => {
 
 		afterEach(() => jest.resetAllMocks());
 
-		// TODO(rgeraldes24): fix input data
-		it.skip.each(testData)(
+		it.each(testData)(
 			`watchTransactionForConfirmations logic\n ${testMessage}`,
 			async (_, inputTransaction) => {
 				const formattedTransactionReceipt = format(

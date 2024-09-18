@@ -110,14 +110,6 @@ export const getProtocolVersion = async (web3Context: Web3Context<ZondExecutionA
 export const isSyncing = async (web3Context: Web3Context<ZondExecutionAPI>) =>
 	zondRpcMethods.getSyncing(web3Context.requestManager);
 
-// TODO consider adding returnFormat parameter (to format address as bytes)
-/**
- * View additional documentations here: {@link Web3Zond.getCoinbase}
- * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
- */
-export const getCoinbase = async (web3Context: Web3Context<ZondExecutionAPI>) =>
-	zondRpcMethods.getCoinbase(web3Context.requestManager);
-
 /**
  * View additional documentations here: {@link Web3Zond.getGasPrice}
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
@@ -131,6 +123,14 @@ export async function getGasPrice<ReturnFormat extends DataFormat>(
 	return format({ format: 'uint' }, response as Numbers, returnFormat);
 }
 
+export async function getMaxPriorityFeePerGas<ReturnFormat extends DataFormat>(
+	web3Context: Web3Context<ZondExecutionAPI>,
+	returnFormat: ReturnFormat,
+) {
+	const response = await zondRpcMethods.getMaxPriorityFeePerGas(web3Context.requestManager);
+
+	return format({ format: 'uint' }, response as Numbers, returnFormat);
+}
 /**
  * View additional documentations here: {@link Web3Zond.getBlockNumber}
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
@@ -429,13 +429,12 @@ export function sendTransaction<
 
 					if (
 						!options?.ignoreGasPricing &&
-						isNullish(transactionFormatted.gasPrice) &&
 						(isNullish(transaction.maxPriorityFeePerGas) ||
 							isNullish(transaction.maxFeePerGas))
 					) {
 						transactionFormatted = {
 							...transactionFormatted,
-							// TODO gasPrice, maxPriorityFeePerGas, maxFeePerGas
+							// TODO maxPriorityFeePerGas, maxFeePerGas
 							// should not be included if undefined, but currently are
 							...(await getTransactionGasPricing(
 								transactionFormatted,
@@ -638,8 +637,8 @@ export function sendSignedTransaction<
 					const unSerializedTransactionWithFrom = {
 						...unSerializedTransaction.toJSON(),
 						// Some providers will default `from` to address(0) causing the error
-						// reported from `eth_call` to not be the reason the user's tx failed
-						// e.g. `eth_call` will return an Out of Gas error for a failed
+						// reported from `zond_call` to not be the reason the user's tx failed
+						// e.g. `zond_call` will return an Out of Gas error for a failed
 						// smart contract execution contract, because the sender, address(0),
 						// has no balance to pay for the gas of the transaction execution
 						from: unSerializedTransaction.getSenderAddress().toString(),
@@ -805,7 +804,7 @@ export async function sign<ReturnFormat extends DataFormat>(
 	if (typeof addressOrIndex === 'number') {
 		throw new SignatureError(
 			message,
-			'RPC method "eth_sign" does not support index signatures',
+			'RPC method "zond_sign" does not support index signatures',
 		);
 	}
 

@@ -53,9 +53,8 @@ describe('getTransactionError', () => {
 						to: '0x0000000000000000000000000000000000000000',
 						value: '0x1',
 						gas: '0x1',
-						gasPrice: '0x15b61074',
-						maxPriorityFeePerGas: undefined,
-						maxFeePerGas: undefined,
+						maxPriorityFeePerGas: '0x15b61074',
+						maxFeePerGas: '0x0',
 					},
 				],
 			},
@@ -73,9 +72,8 @@ describe('getTransactionError', () => {
 			from: '0x4fec0a51024b13030d26e70904b066c6d41157a5',
 			to: '0x36361143b7e2c676f8ccd67743a89d26437f0529',
 			data: '0x819f48fe',
-			gasPrice: '0x15ab8f14',
-			maxPriorityFeePerGas: undefined,
-			maxFeePerGas: undefined,
+			maxPriorityFeePerGas: '0x0',
+			maxFeePerGas: '0x15ab8f14',
 		};
 
 		web3Context.handleRevert = true;
@@ -92,9 +90,8 @@ describe('getTransactionError', () => {
 			from: '0x4fec0a51024b13030d26e70904b066c6d41157a5',
 			to: '0x36361143b7e2c676f8ccd67743a89d26437f0529',
 			data: '0x819f48fe',
-			gasPrice: '0x15ab8f14',
-			maxPriorityFeePerGas: undefined,
-			maxFeePerGas: undefined,
+			maxPriorityFeePerGas: '0x0',
+			maxFeePerGas: '0x15ab8f14',
 		};
 
 		web3Context.handleRevert = true;
@@ -108,9 +105,8 @@ describe('getTransactionError', () => {
 				from: '0x4fec0a51024b13030d26e70904b066c6d41157a5',
 				to: '0x36361143b7e2c676f8ccd67743a89d26437f0529',
 				data: '0x819f48fe',
-				gasPrice: '0x15ab8f14',
-				maxPriorityFeePerGas: undefined,
-				maxFeePerGas: undefined,
+				maxPriorityFeePerGas: '0x0',
+				maxFeePerGas: '0x15ab8f14',
 			};
 
 			expect(await getTransactionError(web3Context, transaction)).toMatchObject(
@@ -123,9 +119,8 @@ describe('getTransactionError', () => {
 				from: '0x4fec0a51024b13030d26e70904b066c6d41157a5',
 				to: '0x36361143b7e2c676f8ccd67743a89d26437f0529',
 				data: '0x819f48fe',
-				gasPrice: '0x15ab8f14',
-				maxPriorityFeePerGas: undefined,
-				maxFeePerGas: undefined,
+				maxPriorityFeePerGas: '0x0',
+				maxFeePerGas: '0x15ab8f14',
 			};
 			const receipt = {
 				transactionHash:
@@ -143,7 +138,7 @@ describe('getTransactionError', () => {
 					'0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
 				root: '',
 				status: BigInt(0),
-				type: BigInt(0),
+				type: BigInt(2),
 			};
 
 			expect(await getTransactionError(web3Context, transaction, receipt)).toMatchObject(
@@ -170,9 +165,8 @@ describe('getTransactionError', () => {
 							to: '0x0000000000000000000000000000000000000000',
 							value: '0x1',
 							gas: '0x1',
-							gasPrice: '0x15b61074',
-							maxPriorityFeePerGas: undefined,
-							maxFeePerGas: undefined,
+							maxPriorityFeePerGas: '0x0',
+							maxFeePerGas: '0x15b61074',
 						},
 					],
 				},
@@ -188,9 +182,8 @@ describe('getTransactionError', () => {
 				from: '0x4fec0a51024b13030d26e70904b066c6d41157a5',
 				to: '0x36361143b7e2c676f8ccd67743a89d26437f0529',
 				data: '0x819f48fe',
-				gasPrice: '0x15ab8f14',
-				maxPriorityFeePerGas: undefined,
-				maxFeePerGas: undefined,
+				maxPriorityFeePerGas: '0x0',
+				maxFeePerGas: '0x15ab8f14',
 			};
 			const receipt = {
 				transactionHash:
@@ -208,7 +201,7 @@ describe('getTransactionError', () => {
 					'0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
 				root: '',
 				status: BigInt(0),
-				type: BigInt(0),
+				type: BigInt(2),
 			};
 			const receivedError = new InvalidResponseError(
 				{
@@ -226,9 +219,8 @@ describe('getTransactionError', () => {
 							to: '0x0000000000000000000000000000000000000000',
 							value: '0x1',
 							gas: '0x1',
-							gasPrice: '0x15b61074',
-							maxPriorityFeePerGas: undefined,
-							maxFeePerGas: undefined,
+							maxPriorityFeePerGas: '0x0',
+							maxFeePerGas: '0x15ab8f14',
 						},
 					],
 				},
@@ -252,9 +244,8 @@ describe('getTransactionError', () => {
 				from: '0x4fec0a51024b13030d26e70904b066c6d41157a5',
 				to: '0x36361143b7e2c676f8ccd67743a89d26437f0529',
 				data: '0x819f48fe',
-				gasPrice: '0x15ab8f14',
-				maxPriorityFeePerGas: undefined,
-				maxFeePerGas: undefined,
+				maxPriorityFeePerGas: '0x0',
+				maxFeePerGas: '0x15ab8f14',
 			};
 
 			web3Context.handleRevert = true;
@@ -287,9 +278,8 @@ describe('getTransactionError', () => {
 				from: '0x4fec0a51024b13030d26e70904b066c6d41157a5',
 				to: '0x36361143b7e2c676f8ccd67743a89d26437f0529',
 				data: '0x819f48fe',
-				gasPrice: '0x15ab8f14',
-				maxPriorityFeePerGas: undefined,
-				maxFeePerGas: undefined,
+				maxPriorityFeePerGas: '0x0',
+				maxFeePerGas: '0x15ab8f14',
 			};
 			const receipt = {
 				transactionHash:
@@ -307,7 +297,7 @@ describe('getTransactionError', () => {
 					'0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
 				root: '',
 				status: BigInt(0),
-				type: BigInt(0),
+				type: BigInt(2),
 			};
 
 			web3Context.handleRevert = true;
@@ -348,9 +338,8 @@ describe('getTransactionError', () => {
 				from: '0x4fec0a51024b13030d26e70904b066c6d41157a5',
 				to: '0x36361143b7e2c676f8ccd67743a89d26437f0529',
 				data: '0x819f48fe',
-				gasPrice: '0x15ab8f14',
-				maxPriorityFeePerGas: undefined,
-				maxFeePerGas: undefined,
+				maxPriorityFeePerGas: '0x0',
+				maxFeePerGas: '0x15ab8f14',
 			};
 
 			web3Context.handleRevert = true;
@@ -395,9 +384,8 @@ describe('getTransactionError', () => {
 				from: '0x4fec0a51024b13030d26e70904b066c6d41157a5',
 				to: '0x36361143b7e2c676f8ccd67743a89d26437f0529',
 				data: '0x819f48fe',
-				gasPrice: '0x15ab8f14',
-				maxPriorityFeePerGas: undefined,
-				maxFeePerGas: undefined,
+				maxPriorityFeePerGas: '0x0',
+				maxFeePerGas: '0x15ab8f14',
 			};
 			const receipt = {
 				transactionHash:
@@ -415,7 +403,7 @@ describe('getTransactionError', () => {
 					'0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
 				root: '',
 				status: BigInt(0),
-				type: BigInt(0),
+				type: BigInt(2),
 			};
 
 			web3Context.handleRevert = true;

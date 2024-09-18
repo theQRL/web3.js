@@ -56,75 +56,6 @@ describe('Web3Zond.sendSignedTransaction', () => {
 	});
 
 	describe('Transaction Types', () => {
-		/*
-		it('should send a signed simple value transfer - type 0x0', async () => {
-			const temp = await createTempAccount();
-			const accountNonce = await web3Zond.getTransactionCount(
-				temp.address,
-				undefined,
-				HEX_NUMBER_DATA_FORMAT,
-			);
-			const transaction: InternalTransaction = {
-				nonce: accountNonce,
-				from: temp.address,
-				to: '0x0000000000000000000000000000000000000000',
-				value: '0x1',
-				type: '0x0',
-				gas: '0x5208',
-			};
-			const gasPricing = await getTransactionGasPricing(
-				transaction,
-				web3Zond,
-				DEFAULT_RETURN_FORMAT,
-			);
-			const signedTransaction = await web3Zond.signTransaction({
-				...transaction,
-				...gasPricing,
-			});
-			const response = await web3Zond.sendSignedTransaction(signedTransaction.raw);
-			expect(response.status).toBe(BigInt(1));
-
-			const minedTransactionData = await web3Zond.getTransaction(response.transactionHash);
-			expect(minedTransactionData).toMatchObject(
-				format(transactionSchema, transaction, DEFAULT_RETURN_FORMAT),
-			);
-		});
-
-		it('should send a signed simple value transfer - type 0x1', async () => {
-			const temp = await createTempAccount();
-			const accountNonce = await web3Zond.getTransactionCount(
-				temp.address,
-				undefined,
-				HEX_NUMBER_DATA_FORMAT,
-			);
-			const transaction: InternalTransaction = {
-				nonce: accountNonce,
-				from: temp.address,
-				to: '0x0000000000000000000000000000000000000000',
-				value: '0x1',
-				type: '0x1',
-				gas: '0x5208',
-				accessList: [],
-			};
-			const gasPricing = await getTransactionGasPricing(
-				transaction,
-				web3Zond,
-				DEFAULT_RETURN_FORMAT,
-			);
-			const signedTransaction = await web3Zond.signTransaction({
-				...transaction,
-				...gasPricing,
-			});
-			const response = await web3Zond.sendSignedTransaction(signedTransaction.raw);
-			expect(response.status).toBe(BigInt(1));
-
-			const minedTransactionData = await web3Zond.getTransaction(response.transactionHash);
-			expect(minedTransactionData).toMatchObject(
-				format(transactionSchema, transaction, DEFAULT_RETURN_FORMAT),
-			);
-		});
-		*/
-
 		it('should send a signed simple value transfer - type 0x2', async () => {
 			const temp = await createTempAccount();
 			const accountNonce = await web3Zond.getTransactionCount(
@@ -334,8 +265,8 @@ describe('Web3Zond.sendSignedTransaction', () => {
 				to: '0x0000000000000000000000000000000000000000',
 				value: BigInt(1),
 				gas: 1,
-				gasPrice: 1,
-				//type: BigInt(2),
+				maxFeePerGas: 1,
+				type: BigInt(2),
 				nonce: await web3Zond.getTransactionCount(tempAcc.address),
 			};
 			const signedTransaction = await web3Zond.signTransaction(transaction, {

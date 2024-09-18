@@ -77,7 +77,7 @@ web3.zond.sendTransaction({...})
         //             request: {
         //             jsonrpc: '2.0',
         //             id: 'ea1f8fb4-fe86-4492-9d89-c6e31bf1c036',
-        //             method: 'eth_sendRawTransaction',
+        //             method: 'zond_sendRawTransaction',
         //             params: [
         //             '0x02f86e82053903849502f900849a9a0d168405f7c1f0947ab80aeb6bb488b7f6c41c58e83ef248eb39c8828080c001a0ddd93f5ce9a6a0de130dc660e65d2cdf8784148b8c91b83635b8458e96a767a3a028c48b048bf041e530ded63a0d2198855043f782ef0aa47391a2afa9c50a5ff1'
         //             ]

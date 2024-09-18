@@ -30,7 +30,7 @@ import {
 } from '@theqrl/web3-errors';
 import { CipherOptions, KeyStore } from '@theqrl/web3-types';
 import { hexToBytes } from '@theqrl/web3-utils';
-import { AccessListEIP2930TxData, FeeMarketEIP1559TxData, TxData } from '../../src/tx/types';
+import { FeeMarketEIP1559TxData } from '../../src/tx/types';
 import { sign, signTransaction/*, encrypt */} from '../../src/account';
 
 export const validPublicKeyToAddressData: [string, string][] = [
@@ -71,6 +71,7 @@ export const validSeedtoAccountData: [any, any][] = [
 			seed: '0x034da61fe50c659a3285549dc395571e2bf6891c462c041e3c6b9061fc73eb3687d03f940e5e65d582019ef10ce1327f',
 			sign,
 			signTransaction,
+			// TODO(youtrack/theqrl/web3.js/3)
 			//encrypt,
 		},
 	],
@@ -155,21 +156,7 @@ export const signatureRecoverData: [string, any][] = [
 	*/
 ];
 
-export const transactionsTestData: [TxData | AccessListEIP2930TxData | FeeMarketEIP1559TxData][] = [
-	/*
-	[
-		// 'TxLegacy'
-		{
-			to: '0x118C2E5F57FD62C2B5b46a5ae9216F4FF4011a07',
-			value: '0x186A0',
-			gasLimit: '0x520812',
-			gasPrice: '0x09184e72a000',
-			data: '',
-			chainId: 1,
-			nonce: 0,
-		},
-	],
-	*/
+export const transactionsTestData: [FeeMarketEIP1559TxData][] = [
 	[
 		// 'Tx1559'
 		{
@@ -184,29 +171,6 @@ export const transactionsTestData: [TxData | AccessListEIP2930TxData | FeeMarket
 			nonce: 0,
 		},
 	],
-	/*
-	[
-		// 'Tx2930'
-		{
-			chainId: 1,
-			nonce: 0,
-			gasPrice: '0x09184e72a000',
-			gasLimit: '0x2710321',
-			to: '0xF0109fC8DF283027b6285cc889F5aA624EaC1F55',
-			value: '0x186A0',
-			data: '',
-			accessList: [
-				{
-					address: '0x0000000000000000000000000000000000000101',
-					storageKeys: [
-						'0x0000000000000000000000000000000000000000000000000000000000000000',
-						'0x00000000000000000000000000000000000000000000000000000000000060a7',
-					],
-				},
-			],
-		},
-	],
-	*/
 ];
 
 export const invalidSeedtoAccountData: [

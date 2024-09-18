@@ -41,7 +41,7 @@ const expo10 = (expo: number) => base ** BigInt(expo);
 
 // Ref: https://ethdocs.org/en/latest/ether.html
 /** @internal */
-export const ethUnitMap = {
+export const zondUnitMap = {
 	noether: BigInt('0'),
 	wei: BigInt(1),
 	kwei: expo10(3),
@@ -71,7 +71,7 @@ export const ethUnitMap = {
 	tether: expo10(30),
 };
 
-export type EtherUnits = keyof typeof ethUnitMap;
+export type EtherUnits = keyof typeof zondUnitMap;
 /**
  * Convert a value from bytes to Uint8Array
  * @param data - Data to be converted
@@ -464,7 +464,7 @@ export const toBigInt = (value: unknown): bigint => {
  * ```
  */
 export const fromWei = (number: Numbers, unit: EtherUnits): string => {
-	const denomination = ethUnitMap[unit];
+	const denomination = zondUnitMap[unit];
 
 	if (!denomination) {
 		throw new InvalidUnitError(unit);
@@ -524,7 +524,7 @@ export const fromWei = (number: Numbers, unit: EtherUnits): string => {
 export const toWei = (number: Numbers, unit: EtherUnits): string => {
 	validator.validate(['number'], [number]);
 
-	const denomination = ethUnitMap[unit];
+	const denomination = zondUnitMap[unit];
 
 	if (!denomination) {
 		throw new InvalidUnitError(unit);

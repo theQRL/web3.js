@@ -23,45 +23,14 @@ import { InvalidPropertiesForTransactionTypeError } from '@theqrl/web3-errors';
 
 import { InternalTransaction } from '../types.js';
 
-// undefined is treated as null for JSON schema validator
-const transactionType0x0Schema = {
-	type: 'object',
-	properties: {
-		accessList: {
-			type: 'null',
-		},
-		maxFeePerGas: {
-			type: 'null',
-		},
-		maxPriorityFeePerGas: {
-			type: 'null',
-		},
-	},
-};
-const transactionType0x1Schema = {
-	type: 'object',
-	properties: {
-		maxFeePerGas: {
-			type: 'null',
-		},
-		maxPriorityFeePerGas: {
-			type: 'null',
-		},
-	},
-};
 const transactionType0x2Schema = {
 	type: 'object',
-	properties: {
-		gasPrice: {
-			type: 'null',
-		},
-	},
 };
 
 const validateTxTypeAndHandleErrors = (
 	txSchema: object,
 	tx: Transaction,
-	txType: '0x0' | '0x1' | '0x2',
+	txType: '0x2',
 ) => {
 	try {
 		validator.validateJSONSchema(txSchema, tx);
@@ -81,12 +50,6 @@ export const defaultTransactionTypeParser: TransactionTypeParser = transaction =
 	if (!isNullish(tx.type)) {
 		let txSchema;
 		switch (tx.type) {
-			case '0x0':
-				txSchema = transactionType0x0Schema;
-				break;
-			case '0x1':
-				txSchema = transactionType0x1Schema;
-				break;
 			case '0x2':
 				txSchema = transactionType0x2Schema;
 				break;
@@ -105,20 +68,6 @@ export const defaultTransactionTypeParser: TransactionTypeParser = transaction =
 		return '0x2';
 	}
 
-	if (!isNullish(tx.accessList)) {
-		validateTxTypeAndHandleErrors(transactionType0x1Schema, tx, '0x1');
-		return '0x1';
-	}
-
-	// We don't return 0x0 here, because if gasPrice is not
-	// undefined, we still don't know if the network
-	// supports EIP-2718 (https://eips.ethereum.org/EIPS/eip-2718)
-	// and whether we should return undefined for legacy txs,
-	// or type 0x0 for legacy txs post EIP-2718
-	if (!isNullish(tx.gasPrice)) {
-		validateTxTypeAndHandleErrors(transactionType0x0Schema, tx, '0x0');
-	}
-
 	const givenHardfork = tx.hardfork ?? tx.common?.hardfork;
 	// If we don't have a hardfork, then we can't be sure we're post
 	// EIP-2718 where transaction types are available
@@ -129,7 +78,7 @@ export const defaultTransactionTypeParser: TransactionTypeParser = transaction =
 	// Unknown hardfork
 	if (hardforkIndex === undefined) return undefined;
 
-	return !isNullish(tx.gasPrice) ? '0x0' : '0x2';
+	return '0x2';
 };
 
 export const detectTransactionType = (
@@ -141,4 +90,4 @@ export const detectTransactionType = (
 	);
 
 export const detectRawTransactionType = (transaction: Uint8Array) =>
-	transaction[0] > 0x7f ? '0x0' : toHex(transaction[0]);
+	toHex(transaction[0]);

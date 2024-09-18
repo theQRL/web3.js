@@ -53,7 +53,6 @@ describe('Web3Zond.signTransaction', () => {
 			tx: {
 				type: BigInt(2),
 				nonce: BigInt(nonce),
-				//gasPrice: BigInt(1000000001),
 				maxFeePerGas: BigInt(108571383800),
 				maxPriorityFeePerGas: BigInt(25415778028),
 				gas: BigInt(21000),
@@ -90,7 +89,6 @@ describe('Web3Zond.signTransaction', () => {
 			tx: {
 				type: BigInt(2),
 				nonce: BigInt(nonce),
-				//gasPrice: BigInt(1000000001),
 				gas: BigInt(475320),
 				input: greeterContractDeploymentData,
 				data: greeterContractDeploymentData,

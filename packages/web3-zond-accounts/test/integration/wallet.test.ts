@@ -213,6 +213,7 @@ describe('Wallet', () => {
 		});
 	});
 
+	// TODO(youtrack/theqrl/web3.js/3)
 	// describe('encrypt', () => {
 	// 	it('should encrypt all accounts and return array', async () => {
 	// 		const account1 = accountProvider.create();

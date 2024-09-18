@@ -259,6 +259,7 @@ export class Wallet<
 		return this;
 	}
 
+	// TODO(youtrack/theqrl/web3.js/3)
 	/**
 	 * Encrypts all wallet accounts to an array of encrypted keystore v3 objects.
 	 *
@@ -286,6 +287,7 @@ export class Wallet<
 	// 	return Promise.all(this.map(async (account: T) => account.encrypt(password, options)));
 	// }
 
+	// TODO(youtrack/theqrl/web3.js/3)
 	/**
 	 * Decrypts keystore v3 objects.
 	 *

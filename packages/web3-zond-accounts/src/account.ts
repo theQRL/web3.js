@@ -234,6 +234,7 @@ export const publicKeyToAddress = (publicKey: Bytes): string => {
 };
 
 
+// TODO(youtrack/theqrl/web3.js/3)
 /**
  * encrypt a private key with a password, returns a V3 JSON Keystore
  *
@@ -470,6 +471,7 @@ export const seedToAccount = (seed: Bytes, ignoreLength?: boolean): Web3Account 
 	};
 };
 
+// TODO(youtrack/theqrl/web3.js/3)
 // /**
 //  *
 //  * Generates and returns a Web3Account object that includes the private and public key

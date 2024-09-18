@@ -62,7 +62,7 @@ describe('Web3 instance', () => {
 	// 	currentAttempt = 0;
 	// });
 
-	// TODO(rgeraldes24): not working as expected; blocks test
+	// TODO(youtrack/theqrl/web3.js/6)
 	// afterEach(async () => {
 	// 	if (isWs) {
 	// 		// make sure we try to close the connection after it is established

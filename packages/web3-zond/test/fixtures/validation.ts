@@ -20,8 +20,6 @@ import {
 	AccessListEntry,
 	BaseTransactionAPI,
 	Transaction1559UnsignedAPI,
-	Transaction2930UnsignedAPI,
-	TransactionLegacyUnsignedAPI,
 	TransactionCall,
 	TransactionWithSenderAPI,
 } from '@theqrl/web3-types';
@@ -30,7 +28,7 @@ import { InvalidTransactionCall, InvalidTransactionWithSender } from '@theqrl/we
 export const isBaseTransactionValidData: [BaseTransactionAPI, true][] = [
 	[
 		{
-			type: '0x0',
+			type: '0x2',
 			nonce: '0x0',
 			gas: '0x5208',
 			value: '0x1',
@@ -42,7 +40,7 @@ export const isBaseTransactionValidData: [BaseTransactionAPI, true][] = [
 	[
 		{
 			to: '0x6E599DA0bfF7A6598AC1224E4985430Bf16458a4',
-			type: '0x1',
+			type: '0x2',
 			nonce: '0x1',
 			gas: '0x5208',
 			value: '0x1',
@@ -98,33 +96,12 @@ export const isTransaction1559UnsignedValidData = (): [Transaction1559UnsignedAP
 		];
 	});
 
-export const isTransactionLegacyUnsignedValidData = (): [TransactionLegacyUnsignedAPI, true][] =>
-	isBaseTransactionValidData.map(transaction => {
-		return [
-			{
-				...transaction[0],
-				gasPrice: '0x1',
-			},
-			true,
-		];
-	});
 
-export const isTransaction2930UnsignedValidData = (): [Transaction2930UnsignedAPI, true][] =>
-	isTransactionLegacyUnsignedValidData().map(transaction => {
-		return [
-			{
-				...transaction[0],
-				accessList: [],
-			},
-			true,
-		];
-	});
+
 
 export const isTransactionWithSenderValidData = (): [TransactionWithSenderAPI, true][] => {
 	const transactions = [
 		...isTransaction1559UnsignedValidData(),
-		...isTransactionLegacyUnsignedValidData(),
-		...isTransaction2930UnsignedValidData(),
 	];
 	return transactions.map(transaction => {
 		return [
@@ -143,8 +120,6 @@ export const validateTransactionWithSenderInvalidData = (): [
 ][] => {
 	const transactions = [
 		...isTransaction1559UnsignedValidData(),
-		...isTransactionLegacyUnsignedValidData(),
-		...isTransaction2930UnsignedValidData(),
 	];
 	return transactions.map(transaction => {
 		return [transaction[0], new InvalidTransactionWithSender(transaction[0])];
@@ -167,7 +142,7 @@ export const isTransactionCallValidData: [TransactionCall, true][] = [
 			from: '0x6E599DA0bfF7A6598AC1224E4985430Bf16458a4',
 			to: '0x6E599DA0bfF7A6598AC1224E4985430Bf16458a4',
 			gas: '0x5208',
-			gasPrice: '0x5208',
+			maxFeePerGas: '0x5208',
 			value: '0x1',
 			data: '0x0',
 		},

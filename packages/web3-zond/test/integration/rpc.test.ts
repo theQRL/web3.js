@@ -94,15 +94,6 @@ describe('rpc', () => {
 			expect(isSyncing).toBe(false);
 		});
 
-		// TODO: in future release, set coinbase account in node and match actual address here
-		it('getCoinbase', async () => {
-			// NOTE(rgeraldes24): we are not defining the coinbase
-			// const coinbase = await web3Zond.getCoinbase();
-			await expect(web3Zond.getCoinbase()).rejects.toThrow('etherbase must be explicitly specified');
-			// expect(coinbase.startsWith('0x')).toBe(true);
-			// expect(coinbase).toHaveLength(42);
-		});
-
 		it('getAccounts', async () => {
 			const account = await createTempAccount();
 			const accList = await web3Zond.getAccounts();
@@ -127,7 +118,7 @@ describe('rpc', () => {
 			expect(typeof res).toBe(mapFormatToType[format as string]);
 			expect(parseInt(String(res), 16)).toBeGreaterThan(0);
 		});
-
+		
 		it.each(Object.values(FMT_NUMBER))('getBalance', async format => {
 			const value = '0xa';
 			const newAccount = await createNewAccount();

@@ -14,25 +14,23 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { Bytes } from '@theqrl/web3-types';
+// import { Bytes } from '@theqrl/web3-types';
 import { hexToBytes } from '@theqrl/web3-utils';
-import { Chain, Common, Hardfork, toUint8Array } from '../../../src/common';
-import { Address } from '../../../src/tx/address';
+// import { Chain, Common, Hardfork, toUint8Array } from '../../../src/common';
+// import { Address } from '../../../src/tx/address';
 
 import {
-	AccessListEIP2930Transaction,
 	FeeMarketEIP1559Transaction,
-	Transaction,
 	TransactionFactory,
 } from '../../../src';
 
 import type {
-	AccessListEIP2930ValuesArray,
 	FeeMarketEIP1559ValuesArray,
-	TxValuesArray,
 } from '../../../src';
-import type { BigIntLike, PrefixedHexString } from '../../../src/common/types';
+// import type { BigIntLike, PrefixedHexString } from '../../../src/common/types';
 
+// NOTE(rgeraldes24): test 'Transaction Input Values' not valid atm
+/*
 type AddressLike = Address | Uint8Array | PrefixedHexString;
 // @returns: Array with subtypes of the AddressLike type for a given address
 function generateAddressLikeValues(address: string): AddressLike[] {
@@ -55,6 +53,7 @@ interface GenerateCombinationsArgs {
 	results?: { [x: string]: any }[];
 	current?: { [x: string]: any };
 }
+
 
 function generateCombinations({
 	options,
@@ -116,17 +115,13 @@ const baseTxValues = {
 	gasLimit: generateBigIntLikeValues(100000),
 	nonce: generateBigIntLikeValues(0),
 	to: generateAddressLikeValues('0x0000000000000000000000000000000000000000'),
-	r: generateBigIntLikeValues(100),
-	s: generateBigIntLikeValues(100),
+	publicKey: generateBigIntLikeValues(100),
+	signature: generateBigIntLikeValues(100),
 	value: generateBigIntLikeValues(10),
 };
 
-const legacyTxValues = {
-	gasPrice: generateBigIntLikeValues(100),
-};
-
 const accessListEip2930TxValues = {
-	chainId: generateBigIntLikeValues(4),
+	chainId: generateBigIntLikeValues(1),
 };
 
 const eip1559TxValues = {
@@ -134,20 +129,9 @@ const eip1559TxValues = {
 	maxPriorityFeePerGas: generateBigIntLikeValues(50),
 };
 
-describe('[Transaction Input Values]', () => {
-	it('Legacy Transaction Values', () => {
-		const common = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Shanghai });
-		const options = { ...baseTxValues, ...legacyTxValues, type: '0' };
-		const legacyTxData = generateCombinations({
-			options,
-		});
-		const randomSample = getRandomSubarray(legacyTxData, 100);
-		for (const txData of randomSample) {
-			const tx = Transaction.fromTxData(txData, { common });
-			expect(() => tx.hash()).toThrow();
-		}
-	});
 
+
+describe('[Transaction Input Values]', () => {
 	it('EIP-1559 Transaction Values', () => {
 		const common = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Shanghai });
 		const options = {
@@ -167,9 +151,10 @@ describe('[Transaction Input Values]', () => {
 		}
 	});
 });
+*/
 
 test('[Invalid Array Input values]', () => {
-	const txTypes = [/*0x0, 0x1,*/ 0x2];
+	const txTypes = [0x2];
 	for (const signed of [false, true]) {
 		for (const txType of txTypes) {
 			let tx = TransactionFactory.fromTxData({ type: txType });
@@ -182,20 +167,6 @@ test('[Invalid Array Input values]', () => {
 				rawValues[x] = <any>[1, 2, 3];
 				// eslint-disable-next-line default-case
 				switch (txType) {
-					case 0:
-						// eslint-disable-next-line jest/no-conditional-expect
-						expect(() =>
-							Transaction.fromValuesArray(rawValues as TxValuesArray),
-						).toThrow();
-						break;
-					case 1:
-						// eslint-disable-next-line jest/no-conditional-expect
-						expect(() =>
-							AccessListEIP2930Transaction.fromValuesArray(
-								rawValues as AccessListEIP2930ValuesArray,
-							),
-						).toThrow();
-						break;
 					case 2:
 						// eslint-disable-next-line jest/no-conditional-expect
 						expect(() =>
@@ -211,7 +182,7 @@ test('[Invalid Array Input values]', () => {
 });
 
 test('[Invalid Access Lists]', () => {
-	const txTypes = [/*0x1,*/ 0x2];
+	const txTypes = [0x2];
 	const invalidAccessLists = [
 		[[]], // does not have an address and does not have slots
 		[[[], []]], // the address is an array
@@ -258,22 +229,12 @@ test('[Invalid Access Lists]', () => {
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-call
 				const rawValues = tx!.raw();
 
-				if (txType === 1 && rawValues[7].length === 0) {
-					rawValues[7] = invalidAccessListItem;
-				} else if (txType === 2 && rawValues[8].length === 0) {
+				if (txType === 2 && rawValues[8].length === 0) {
 					rawValues[8] = invalidAccessListItem;
 				}
 
 				// eslint-disable-next-line default-case
 				switch (txType) {
-					case 1:
-						// eslint-disable-next-line jest/no-conditional-expect
-						expect(() =>
-							AccessListEIP2930Transaction.fromValuesArray(
-								rawValues as AccessListEIP2930ValuesArray,
-							),
-						).toThrow();
-						break;
 					case 2:
 						// eslint-disable-next-line jest/no-conditional-expect
 						expect(() =>

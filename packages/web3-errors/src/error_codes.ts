@@ -63,12 +63,9 @@ export const ERR_TX_MISSING_CHAIN_INFO = 414;
 export const ERR_TX_MISSING_GAS = 415;
 export const ERR_TX_INVALID_LEGACY_GAS = 416;
 export const ERR_TX_INVALID_FEE_MARKET_GAS = 417;
-export const ERR_TX_INVALID_FEE_MARKET_GAS_PRICE = 418;
-export const ERR_TX_INVALID_LEGACY_FEE_MARKET = 419;
 export const ERR_TX_INVALID_OBJECT = 420;
 export const ERR_TX_INVALID_NONCE_OR_CHAIN_ID = 421;
 export const ERR_TX_UNABLE_TO_POPULATE_NONCE = 422;
-export const ERR_TX_UNSUPPORTED_EIP_1559 = 423;
 export const ERR_TX_UNSUPPORTED_TYPE = 424;
 export const ERR_TX_DATA_AND_INPUT = 425;
 export const ERR_TX_POLLING_TIMEOUT = 426;
@@ -82,7 +79,6 @@ export const ERR_TX_SEND_TIMEOUT = 431;
 export const ERR_TX_BLOCK_TIMEOUT = 432;
 
 export const ERR_TX_SIGNING = 433;
-export const ERR_TX_GAS_MISMATCH = 434;
 
 export const ERR_TX_CHAIN_MISMATCH = 435;
 export const ERR_TX_HARDFORK_MISMATCH = 436;
@@ -91,7 +87,6 @@ export const ERR_TX_REVERT_TRANSACTION_CUSTOM_ERROR = 438;
 export const ERR_TX_INVALID_PROPERTIES_FOR_TYPE = 439;
 
 export const ERR_TX_MISSING_GAS_INNER_ERROR = 440;
-export const ERR_TX_GAS_MISMATCH_INNER_ERROR = 441;
 // Connection error codes
 export const ERR_CONN = 500;
 export const ERR_CONN_INVALID = 501;

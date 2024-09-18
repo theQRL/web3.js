@@ -32,7 +32,7 @@ import { Web3RequestManager } from '@theqrl/web3-core';
 
 import { zondRpcMethods } from '../../../src/index';
 
-describe('getCoinbase', () => {
+describe('getMaxPriorityFeePerGas', () => {
 	let requestManagerSendSpy: jest.Mock;
 	let requestManager: Web3RequestManager;
 
@@ -42,10 +42,10 @@ describe('getCoinbase', () => {
 		requestManager.send = requestManagerSendSpy;
 	});
 
-	it('should call requestManager.send with getCoinbase method', async () => {
-		await zondRpcMethods.getCoinbase(requestManager);
+	it('should call requestManager.send with getMaxPriorityFeePerGas method', async () => {
+		await zondRpcMethods.getMaxPriorityFeePerGas(requestManager);
 		expect(requestManagerSendSpy).toHaveBeenCalledWith({
-			method: 'zond_coinbase',
+			method: 'zond_maxPriorityFeePerGas',
 			params: [],
 		});
 	});

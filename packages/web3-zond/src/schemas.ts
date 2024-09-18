@@ -90,9 +90,6 @@ export const transactionSchema = {
 		gas: {
 			format: 'uint',
 		},
-		gasPrice: {
-			format: 'uint',
-		},
 		effectiveGasPrice: {
 			format: 'uint',
 		},
@@ -175,9 +172,6 @@ export const transactionInfoSchema = {
 			format: 'uint',
 		},
 		gas: {
-			format: 'uint',
-		},
-		gasPrice: {
 			format: 'uint',
 		},
 		effectiveGasPrice: {

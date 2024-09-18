@@ -31,7 +31,7 @@ try {
 
 List of references:
 
--   [eth.sendTransaction](/api/web3-zond/class/Web3Zond#sendTransaction)
+-   [zond.sendTransaction](/api/web3-zond/class/Web3Zond#sendTransaction)
 
 ## Contract Transaction
 

@@ -57,7 +57,7 @@ describe('contract', () => {
 			expect(contractDeployed.options.address).toBeDefined();
 		});
 
-		it.each([/*'0x1',*/ '0x2'])('should transfer tokens %p', async type => {
+		it.each(['0x2'])('should transfer tokens %p', async type => {
 			const acc = web3.zond.accounts.create();
 			const value = BigInt(10);
 
@@ -69,7 +69,7 @@ describe('contract', () => {
 			expect(await contractDeployed.methods.balanceOf(acc.address).call()).toBe(value);
 		});
 
-		it.each([/*'0x1',*/ '0x2'])('should approve and transferFrom tokens %p', async type => {
+		it.each(['0x2'])('should approve and transferFrom tokens %p', async type => {
 			const value = BigInt(10);
 			const transferFromValue = BigInt(4);
 			const tempAccount = await createLocalAccount(web3);
@@ -95,7 +95,7 @@ describe('contract', () => {
 			).toBe(value - transferFromValue);
 		});
 
-		it.each([/*'0x1',*/ '0x2'])('should increase allowance %p', async type => {
+		it.each(['0x2'])('should increase allowance %p', async type => {
 			const value = BigInt(10);
 			const extraAmount = BigInt(4);
 			const tempAccount = await createLocalAccount(web3);

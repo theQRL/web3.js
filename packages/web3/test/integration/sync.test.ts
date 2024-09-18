@@ -43,7 +43,7 @@ const nodeInfo = async (web3: Web3) => {
 		params: [],
 	});
 };
-// TODO(rgeraldes24): test is no longer valid: beacon sync; rework the test 
+// TODO(youtrack/theqrl/web3.js/5)
 describe.skip('Sync nodes test', () => {
 // describeIf((isIpc || isWs) && isSyncTest)('Sync nodes test', () => {
 	let web3Node1: Web3;

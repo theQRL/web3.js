@@ -31,14 +31,11 @@ import {
 	ERR_TX_CONTRACT_NOT_STORED,
 	ERR_TX_CHAIN_ID_MISMATCH,
 	ERR_TX_DATA_AND_INPUT,
-	ERR_TX_GAS_MISMATCH,
 	ERR_TX_CHAIN_MISMATCH,
 	ERR_TX_HARDFORK_MISMATCH,
 	ERR_TX_INVALID_CALL,
 	ERR_TX_INVALID_CHAIN_INFO,
 	ERR_TX_INVALID_FEE_MARKET_GAS,
-	ERR_TX_INVALID_FEE_MARKET_GAS_PRICE,
-	ERR_TX_INVALID_LEGACY_FEE_MARKET,
 	ERR_TX_INVALID_LEGACY_GAS,
 	ERR_TX_INVALID_NONCE_OR_CHAIN_ID,
 	ERR_TX_INVALID_OBJECT,
@@ -61,12 +58,10 @@ import {
 	ERR_TX_SEND_TIMEOUT,
 	ERR_TX_SIGNING,
 	ERR_TX_UNABLE_TO_POPULATE_NONCE,
-	ERR_TX_UNSUPPORTED_EIP_1559,
 	ERR_TX_UNSUPPORTED_TYPE,
 	ERR_TX_REVERT_TRANSACTION_CUSTOM_ERROR,
 	ERR_TX_INVALID_PROPERTIES_FOR_TYPE,
 	ERR_TX_MISSING_GAS_INNER_ERROR,
-	ERR_TX_GAS_MISMATCH_INNER_ERROR,
 } from '../error_codes.js';
 import { InvalidValueError, BaseWeb3Error } from '../web3_error_base.js';
 
@@ -319,7 +314,7 @@ export class MissingGasInnerError extends BaseWeb3Error {
 
 	public constructor() {
 		super(
-			'Missing properties in transaction, either define "gas" and "gasPrice" for type 0 transactions or "gas", "maxPriorityFeePerGas" and "maxFeePerGas" for type 2 transactions',
+			'Missing properties in transaction: define "gas", "maxPriorityFeePerGas" and "maxFeePerGas" for type 2 transactions',
 		);
 	}
 }
@@ -329,14 +324,12 @@ export class MissingGasError extends InvalidValueError {
 
 	public constructor(value: {
 		gas: Numbers | undefined;
-		gasPrice: Numbers | undefined;
 		maxPriorityFeePerGas: Numbers | undefined;
 		maxFeePerGas: Numbers | undefined;
 	}) {
 		super(
-			`gas: ${value.gas ?? 'undefined'}, gasPrice: ${
-				value.gasPrice ?? 'undefined'
-			}, maxPriorityFeePerGas: ${value.maxPriorityFeePerGas ?? 'undefined'}, maxFeePerGas: ${
+			`gas: ${value.gas ?? 'undefined'}, maxPriorityFeePerGas: ${
+				value.maxPriorityFeePerGas ?? 'undefined'}, maxFeePerGas: ${
 				value.maxFeePerGas ?? 'undefined'
 			}`,
 			'"gas" is missing',
@@ -345,44 +338,13 @@ export class MissingGasError extends InvalidValueError {
 	}
 }
 
-export class TransactionGasMismatchInnerError extends BaseWeb3Error {
-	public code = ERR_TX_GAS_MISMATCH_INNER_ERROR;
-
-	public constructor() {
-		super(
-			'Missing properties in transaction, either define "gas" and "gasPrice" for type 0 transactions or "gas", "maxPriorityFeePerGas" and "maxFeePerGas" for type 2 transactions, not both',
-		);
-	}
-}
-
-export class TransactionGasMismatchError extends InvalidValueError {
-	public code = ERR_TX_GAS_MISMATCH;
-
-	public constructor(value: {
-		gas: Numbers | undefined;
-		gasPrice: Numbers | undefined;
-		maxPriorityFeePerGas: Numbers | undefined;
-		maxFeePerGas: Numbers | undefined;
-	}) {
-		super(
-			`gas: ${value.gas ?? 'undefined'}, gasPrice: ${
-				value.gasPrice ?? 'undefined'
-			}, maxPriorityFeePerGas: ${value.maxPriorityFeePerGas ?? 'undefined'}, maxFeePerGas: ${
-				value.maxFeePerGas ?? 'undefined'
-			}`,
-			'transaction must specify legacy or fee market gas properties, not both',
-		);
-		this.innerError = new TransactionGasMismatchInnerError();
-	}
-}
-
-export class InvalidGasOrGasPrice extends InvalidValueError {
+export class InvalidGas extends InvalidValueError {
 	public code = ERR_TX_INVALID_LEGACY_GAS;
 
-	public constructor(value: { gas: Numbers | undefined; gasPrice: Numbers | undefined }) {
+	public constructor(value: { gas: Numbers | undefined }) {
 		super(
-			`gas: ${value.gas ?? 'undefined'}, gasPrice: ${value.gasPrice ?? 'undefined'}`,
-			'Gas or gasPrice is lower than 0',
+			`gas: ${value.gas ?? 'undefined'}`,
+			'Gas is lower than 0',
 		);
 	}
 }
@@ -399,30 +361,6 @@ export class InvalidMaxPriorityFeePerGasOrMaxFeePerGas extends InvalidValueError
 				value.maxFeePerGas ?? 'undefined'
 			}`,
 			'maxPriorityFeePerGas or maxFeePerGas is lower than 0',
-		);
-	}
-}
-
-export class Eip1559GasPriceError extends InvalidValueError {
-	public code = ERR_TX_INVALID_FEE_MARKET_GAS_PRICE;
-
-	public constructor(value: unknown) {
-		super(value, "eip-1559 transactions don't support gasPrice");
-	}
-}
-
-export class UnsupportedFeeMarketError extends InvalidValueError {
-	public code = ERR_TX_INVALID_LEGACY_FEE_MARKET;
-
-	public constructor(value: {
-		maxPriorityFeePerGas: Numbers | undefined;
-		maxFeePerGas: Numbers | undefined;
-	}) {
-		super(
-			`maxPriorityFeePerGas: ${value.maxPriorityFeePerGas ?? 'undefined'}, maxFeePerGas: ${
-				value.maxFeePerGas ?? 'undefined'
-			}`,
-			"pre-eip-1559 transaction don't support maxFeePerGas/maxPriorityFeePerGas",
 		);
 	}
 }
@@ -451,14 +389,6 @@ export class UnableToPopulateNonceError extends InvalidValueError {
 
 	public constructor() {
 		super('UnableToPopulateNonceError', 'unable to populate nonce, no from address available');
-	}
-}
-
-export class Eip1559NotSupportedError extends InvalidValueError {
-	public code = ERR_TX_UNSUPPORTED_EIP_1559;
-
-	public constructor() {
-		super('Eip1559NotSupportedError', "Network doesn't support eip-1559");
 	}
 }
 
@@ -576,7 +506,7 @@ export class InvalidPropertiesForTransactionTypeError extends BaseWeb3Error {
 
 	public constructor(
 		validationError: Web3ValidationErrorObject[],
-		txType: '0x0' | '0x1' | '0x2',
+		txType: '0x2',
 	) {
 		const invalidPropertyNames: string[] = [];
 		validationError.forEach(error => invalidPropertyNames.push(error.keyword));

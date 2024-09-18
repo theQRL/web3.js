@@ -17,7 +17,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 // import { toBigInt } from '@theqrl/web3-utils';
 // import { Chain, Common, Hardfork } from '../../../src/common';
 
-// NOTE(rgeraldes24): unused
+// NOTE(rgeraldes24): unused for now
 describe.skip('[Common/EIPs]: Initialization / Chain params', () => {
 	
 	it.skip('Correct initialization', () => {
