@@ -106,10 +106,6 @@ export default {
 			"v": 25000,
 			"d": "Paid for CALL when the destination address didn't exist prior"
 		},
-		"selfdestructRefund": {
-			"v": 0,
-			"d": "Refunded following a selfdestruct operation"
-		},
 		"memory": {
 			"v": 3,
 			"d": "Times the address of the (highest referenced byte in memory + 1). NOTE: referencing happens on read, write and in instructions such as RETURN and CALL"
@@ -142,8 +138,8 @@ export default {
 			"v": 3,
 			"d": "Multiplied by the number of 32-byte words that are copied (round up) for any *COPY operation and added"
 		},
-		"ecRecover": {
-			"v": 3000,
+		"depositroot": {
+			"v": 19992,
 			"d": ""
 		},
 		"sha256": {
@@ -152,14 +148,6 @@ export default {
 		},
 		"sha256Word": {
 			"v": 12,
-			"d": ""
-		},
-		"ripemd160": {
-			"v": 600,
-			"d": ""
-		},
-		"ripemd160Word": {
-			"v": 120,
 			"d": ""
 		},
 		"identity": {
@@ -326,9 +314,9 @@ export default {
 			"v": 2,
 			"d": "Base fee of the NUMBER opcode"
 		},
-		"difficulty": {
+		"prevrandao": {
 			"v": 2,
-			"d": "Base fee of the DIFFICULTY opcode"
+			"d": "Base fee of the PREVRANDAO opcode"
 		},
 		"gaslimit": {
 			"v": 2,
@@ -386,10 +374,6 @@ export default {
 			"v": 3,
 			"d": "Base fee of the SWAP opcode"
 		},
-		"callcode": {
-			"v": 0,
-			"d": "Base fee of the CALLCODE opcode"
-		},
 		"return": {
 			"v": 0,
 			"d": "Base fee of the RETURN opcode"
@@ -397,10 +381,6 @@ export default {
 		"invalid": {
 			"v": 0,
 			"d": "Base fee of the INVALID opcode"
-		},
-		"selfdestruct": {
-			"v": 5000,
-			"d": "Base fee of the SELFDESTRUCT opcode"
 		},
 		"delegatecall": {
 			"v": 0,
@@ -461,10 +441,6 @@ export default {
 		"create2": {
 			"v": 32000,
 			"d": "Base fee of the CREATE2 opcode"
-		},
-		"blake2Round": {
-			"v": 1,
-			"d": "Gas cost per round for the Blake2 F precompile"
 		},
 		"sstoreSentryGasEIP2200": {
 			"v": 2300,
