@@ -25,7 +25,7 @@ const account = web3.zond.accounts.wallet.add(seedString).get(0);
 try {
 	const receipt = await web3.zond.sendTransaction({
 		from: account?.address,
-		to: '0xe4beef667408b99053dc147ed19592ada0d77f59',
+		to: 'Ze4beef667408b99053dc147ed19592ada0d77f59',
 		value: '0x1',
 		gas: '300000',
 		// other transaction's params
@@ -73,7 +73,7 @@ try {
 
 	// call method
 	await contractDeployed.methods
-		.transfer('0xe2597eb05cf9a87eb1309e86750c903ec38e527e', '0x1')
+		.transfer('Ze2597eb05cf9a87eb1309e86750c903ec38e527e', '0x1')
 		.send({
 			from: account?.address,
 			gas: '1000000',

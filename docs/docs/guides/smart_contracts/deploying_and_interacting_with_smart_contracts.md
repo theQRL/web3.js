@@ -278,9 +278,9 @@ node deploy.js
 If everything is working correctly, you should see something like the following:
 
 ```
-Deployer account: 0xdd5F9948B88608a1458e3a6703b0B2055AC3fF1b
+Deployer account: Zdd5F9948B88608a1458e3a6703b0B2055AC3fF1b
 Estimated gas: 142748n
-Contract deployed at address: 0x16447837D4A572d0a8b419201bdcD91E6e428Df1
+Contract deployed at address: Z16447837D4A572d0a8b419201bdcD91E6e428Df1
 ```
 
 ## Step 7: Interact with the smart contract using web3.js
@@ -388,22 +388,22 @@ const res = await contract.methods.greet().call();
 
 const contract = new Contract(
 	erc721Abi,
-	'0x1230B93ffd14F2F022039675fA3fc3A46eE4C701',
+	'Z1230B93ffd14F2F022039675fA3fc3A46eE4C701',
 	{ gas: '123', dataInputFill: "data" }, // methods will now be populating `data` field
 );
 
 // `data` will now be populated instead of `input`
-contract.methods.approve('0x00000000219ab540356cBB839Cbe05303d7705Fa', 1).call(),
+contract.methods.approve('Z00000000219ab540356cBB839Cbe05303d7705Fa', 1).call(),
 
 // Another way to do this is to set `data` when calling methods
 
 const contract = new Contract(
 	erc721Abi,
-	'0x1230B93ffd14F2F022039675fA3fc3A46eE4C701',
+	'Z1230B93ffd14F2F022039675fA3fc3A46eE4C701',
 );
 
-contract.methods.approve('0x00000000219ab540356cBB839Cbe05303d7705Fa', 1).call(
-	{data: contract.methods.approve('0x00000000219ab540356cBB839Cbe05303d7705Fa', 1).encodeABI()}
+contract.methods.approve('Z00000000219ab540356cBB839Cbe05303d7705Fa', 1).call(
+	{data: contract.methods.approve('Z00000000219ab540356cBB839Cbe05303d7705Fa', 1).encodeABI()}
 )
 
 

@@ -79,7 +79,7 @@ describe(`${getSystemTestBackend()} tests - getBlock`, () => {
 			});
 
 		if (blockData[block] === 'pending') {
-			result.miner = '0x0000000000000000000000000000000000000000';
+			result.miner = 'Z0000000000000000000000000000000000000000';
 		}
 
 		if (block === 'blockHash' || block === 'blockNumber') {

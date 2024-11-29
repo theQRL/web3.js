@@ -25,7 +25,7 @@ import { BasicAbi } from '../shared_fixtures/Basic';
 import { GreeterAbi, GreeterBytecode } from '../shared_fixtures/build/Greeter';
 import { validEncodeParametersData } from '../shared_fixtures/data';
 import {
-	closeOpenConnection,
+	// closeOpenConnection,
 	createTempAccount,
 	describeIf,
 	getSystemTestProvider,
@@ -54,15 +54,15 @@ describe('Web3 instance', () => {
 		const acc2 = await createTempAccount();
 		accounts = [acc1.address, acc2.address];
 	});
-	afterAll(async () => {
-		await closeOpenConnection(web3);
-	});
+	// TODO(youtrack/theqrl/web3.js/6)
+	// afterAll(async () => {
+	// 	await closeOpenConnection(web3);
+	// });
 
 	// beforeEach(() => {
 	// 	currentAttempt = 0;
 	// });
 
-	// TODO(youtrack/theqrl/web3.js/6)
 	// afterEach(async () => {
 	// 	if (isWs) {
 	// 		// make sure we try to close the connection after it is established

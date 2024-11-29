@@ -295,12 +295,12 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
  * let request1: JsonRpcOptionalRequest = {
  * 	id: 10,
  * 	method: 'zond_getBalance',
- * 	params: ["0xdc6bad79dab7ea733098f66f6c6f9dd008da3258", 'latest'],
+ * 	params: ["Zdc6bad79dab7ea733098f66f6c6f9dd008da3258", 'latest'],
  * };
  * let request2: JsonRpcOptionalRequest = {
  * 	id: 11,
  * 	method: 'zond_getBalance',
- * 	params: ["0x962f9a9c2a6c092474d24def35eccb3d9363265e", 'latest'],
+ * 	params: ["Z962f9a9c2a6c092474d24def35eccb3d9363265e", 'latest'],
  * };
  *
  * const batch = new web3.BatchRequest();

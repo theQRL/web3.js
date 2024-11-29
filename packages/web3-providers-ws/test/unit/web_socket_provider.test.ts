@@ -39,7 +39,7 @@ describe('WebSocketProvider', () => {
 			jsonrpc: '2.0',
 			id: 42,
 			method: 'zond_getBalance',
-			params: ['0x407d73d8a49eeb85d32cf465507dd71d507100c1', 'latest'],
+			params: ['Z407d73d8a49eeb85d32cf465507dd71d507100c1', 'latest'],
 		};
 		jsonRpcResponse = { ...jsonRpcPayload, result: JSON.stringify(jsonRpcPayload) };
 	});

@@ -126,8 +126,8 @@ describe('defaults', () => {
 				value: '0x1',
 				type: BigInt(2),
 			});
-			expect(tx.from).toBe(tempAcc.address.toLowerCase());
-			expect(txSend.from).toBe(tempAcc.address.toLowerCase());
+			expect(tx.from).toBe(`Z${tempAcc.address.slice(1).toLowerCase()}`);
+			expect(txSend.from).toBe(`Z${tempAcc.address.slice(1).toLowerCase()}`);
 
 			const tx2 = await contractMsgFrom.methods.setTestString('test3').send({
 				from: tempAcc2.address,
@@ -137,8 +137,8 @@ describe('defaults', () => {
 				value: '0x1',
 				from: tempAcc2.address,
 			});
-			expect(tx2.from).toBe(tempAcc2.address.toLowerCase());
-			expect(tx2Send.from).toBe(tempAcc2.address.toLowerCase());
+			expect(tx2.from).toBe(`Z${tempAcc2.address.slice(1).toLowerCase()}`);
+			expect(tx2Send.from).toBe(`Z${tempAcc2.address.slice(1).toLowerCase()}`);
 
 			const fromDefault = await contractMsgFrom.methods?.from().call();
 			const fromPass = await contractMsgFrom.methods?.from().call({ from: tempAcc.address });
@@ -650,8 +650,8 @@ describe('defaults', () => {
 			expect(zond2.defaultNetworkId).toBe(4);
 			const res = await defaultTransactionBuilder({
 				transaction: {
-					from: '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0',
-					to: '0x3535353535353535353535353535353535353535',
+					from: 'ZEB014f8c8B418Db6b45774c326A0E64C78914dC0',
+					to: 'Z3535353535353535353535353535353535353535',
 					value: '0x174876e800',
 					gas: '0x5208',
 				},
@@ -662,8 +662,8 @@ describe('defaults', () => {
 			// pass network id
 			const resWithPassNetworkId = await defaultTransactionBuilder({
 				transaction: {
-					from: '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0',
-					to: '0x3535353535353535353535353535353535353535',
+					from: 'ZEB014f8c8B418Db6b45774c326A0E64C78914dC0',
+					to: 'Z3535353535353535353535353535353535353535',
 					value: '0x174876e800',
 					gas: '0x5208',
 					networkId: 5,
@@ -693,8 +693,8 @@ describe('defaults', () => {
 			expect(zond2.defaultChain).toBe('rinkeby');
 			const res = await defaultTransactionBuilder({
 				transaction: {
-					from: '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0',
-					to: '0x3535353535353535353535353535353535353535',
+					from: 'ZEB014f8c8B418Db6b45774c326A0E64C78914dC0',
+					to: 'Z3535353535353535353535353535353535353535',
 					value: '0x174876e800',
 					gas: '0x5208',
 				},
@@ -723,8 +723,8 @@ describe('defaults', () => {
 
 			const res = await prepareTransactionForSigning(
 				{
-					from: '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0',
-					to: '0x3535353535353535353535353535353535353535',
+					from: 'ZEB014f8c8B418Db6b45774c326A0E64C78914dC0',
+					to: 'Z3535353535353535353535353535353535353535',
 					value: '0x174876e800',
 					gas: '0x5208',
 					maxFeePerGas: '0x4a817c800',
@@ -785,8 +785,8 @@ describe('defaults', () => {
 
 			const res = getTransactionType(
 				{
-					from: '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0',
-					to: '0x3535353535353535353535353535353535353535',
+					from: 'ZEB014f8c8B418Db6b45774c326A0E64C78914dC0',
+					to: 'Z3535353535353535353535353535353535353535',
 					value: '0x174876e800',
 					gas: '0x5208',
 					data: '0x0',
@@ -805,8 +805,8 @@ describe('defaults', () => {
 			// tx.common?.hardfork === 'london'
 			const maxFeePerGasOverride = getTransactionType(
 				{
-					from: '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0',
-					to: '0x3535353535353535353535353535353535353535',
+					from: 'ZEB014f8c8B418Db6b45774c326A0E64C78914dC0',
+					to: 'Z3535353535353535353535353535353535353535',
 					value: '0x174876e800',
 					gas: '0x5208',
 					data: '0x0',
@@ -820,8 +820,8 @@ describe('defaults', () => {
 			expect(maxFeePerGasOverride).toBe('0x2');
 			const maxPriorityFeePerGasOverride = getTransactionType(
 				{
-					from: '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0',
-					to: '0x3535353535353535353535353535353535353535',
+					from: 'ZEB014f8c8B418Db6b45774c326A0E64C78914dC0',
+					to: 'Z3535353535353535353535353535353535353535',
 					value: '0x174876e800',
 					gas: '0x5208',
 					data: '0x0',
@@ -835,8 +835,8 @@ describe('defaults', () => {
 			expect(maxPriorityFeePerGasOverride).toBe('0x2');
 			const hardforkOverride = getTransactionType(
 				{
-					from: '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0',
-					to: '0x3535353535353535353535353535353535353535',
+					from: 'ZEB014f8c8B418Db6b45774c326A0E64C78914dC0',
+					to: 'Z3535353535353535353535353535353535353535',
 					value: '0x174876e800',
 					gas: '0x5208',
 					data: '0x0',
@@ -850,8 +850,8 @@ describe('defaults', () => {
 			expect(hardforkOverride).toBe('0x2');
 			const commonOverride = getTransactionType(
 				{
-					from: '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0',
-					to: '0x3535353535353535353535353535353535353535',
+					from: 'ZEB014f8c8B418Db6b45774c326A0E64C78914dC0',
+					to: 'Z3535353535353535353535353535353535353535',
 					value: '0x174876e800',
 					gas: '0x5208',
 					data: '0x0',
@@ -872,8 +872,8 @@ describe('defaults', () => {
 
 			const accessListOverride = getTransactionType(
 				{
-					from: '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0',
-					to: '0x3535353535353535353535353535353535353535',
+					from: 'ZEB014f8c8B418Db6b45774c326A0E64C78914dC0',
+					to: 'Z3535353535353535353535353535353535353535',
 					value: '0x174876e800',
 					gas: '0x5208',
 					data: '0x0',
@@ -884,7 +884,7 @@ describe('defaults', () => {
 					maxFeePerGas: '0x4a817c800',
 					accessList: [
 						{
-							address: '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0',
+							address: 'ZEB014f8c8B418Db6b45774c326A0E64C78914dC0',
 							storageKeys: ['0x3535353535353535353535353535353535353535'],
 						},
 					],
@@ -895,8 +895,8 @@ describe('defaults', () => {
 
 			const hardforkBerlinOverride = getTransactionType(
 				{
-					from: '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0',
-					to: '0x3535353535353535353535353535353535353535',
+					from: 'ZEB014f8c8B418Db6b45774c326A0E64C78914dC0',
+					to: 'Z3535353535353535353535353535353535353535',
 					value: '0x174876e800',
 					gas: '0x5208',
 					data: '0x0',
@@ -911,8 +911,8 @@ describe('defaults', () => {
 
 			const commonBerlinOverride = getTransactionType(
 				{
-					from: '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0',
-					to: '0x3535353535353535353535353535353535353535',
+					from: 'ZEB014f8c8B418Db6b45774c326A0E64C78914dC0',
+					to: 'Z3535353535353535353535353535353535353535',
 					value: '0x174876e800',
 					gas: '0x5208',
 					data: '0x0',
@@ -948,8 +948,8 @@ describe('defaults', () => {
 
 			const res = await getTransactionGasPricing(
 				{
-					from: '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0',
-					to: '0x3535353535353535353535353535353535353535',
+					from: 'ZEB014f8c8B418Db6b45774c326A0E64C78914dC0',
+					to: 'Z3535353535353535353535353535353535353535',
 					value: '0x174876e800',
 					type: '0x2',
 					gas: '0x5208',
@@ -966,8 +966,8 @@ describe('defaults', () => {
 			// override test
 			const resOverride = await getTransactionGasPricing(
 				{
-					from: '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0',
-					to: '0x3535353535353535353535353535353535353535',
+					from: 'ZEB014f8c8B418Db6b45774c326A0E64C78914dC0',
+					to: 'Z3535353535353535353535353535353535353535',
 					value: '0x174876e800',
 					type: '0x2',
 					gas: '0x5208',
@@ -1006,8 +1006,8 @@ describe('defaults', () => {
 
 			await transactionBuilder({
 				transaction: {
-					from: '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0',
-					to: '0x3535353535353535353535353535353535353535',
+					from: 'ZEB014f8c8B418Db6b45774c326A0E64C78914dC0',
+					to: 'Z3535353535353535353535353535353535353535',
 					value: '0x174876e800',
 					gas: '0x5208',
 					maxFeePerGas: '0x4a817c800',
@@ -1040,8 +1040,8 @@ describe('defaults', () => {
 			expect(zond2.transactionTypeParser).toBe(newParserMock);
 			detectTransactionType(
 				{
-					from: '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0',
-					to: '0x3535353535353535353535353535353535353535',
+					from: 'ZEB014f8c8B418Db6b45774c326A0E64C78914dC0',
+					to: 'Z3535353535353535353535353535353535353535',
 					value: '0x174876e800',
 					gas: '0x5208',
 					maxFeePerGas: '0x4a817c800',

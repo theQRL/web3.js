@@ -32,16 +32,16 @@ describe('ContractMethodWrappersPlugin', () => {
 		web3.registerPlugin(
 			new ContractMethodWrappersPlugin(
 				ERC20TokenAbi,
-				'0xdAC17F958D2ee523a2206206994597C13D831ec7',
+				'ZdAC17F958D2ee523a2206206994597C13D831ec7',
 			),
 		);
 		expect(web3.contractMethodWrappersPlugin).toBeDefined();
 	});
 
 	describe('methods', () => {
-		const contractAddress = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
-		const sender = '0x8da5e39ec14b57fb9bcd9aa2b4500e909119795d';
-		const recipient = '0x4f641def1e7845caab95ac717c80416082430d0d';
+		const contractAddress = 'ZdAC17F958D2ee523a2206206994597C13D831ec7';
+		const sender = 'Z8da5e39ec14b57fb9bcd9aa2b4500e909119795d';
+		const recipient = 'Z4f641def1e7845caab95ac717c80416082430d0d';
 		const amount = BigInt(42);
 		const expectedSenderBalance =
 			'0x0000000000000000000000000000000000000000000000000000000000000280';
@@ -73,7 +73,7 @@ describe('ContractMethodWrappersPlugin', () => {
 				params: [
 					expect.objectContaining({
 						input: '0x70a082310000000000000000000000008da5e39ec14b57fb9bcd9aa2b4500e909119795d',
-						to: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
+						to: 'ZdAC17F958D2ee523a2206206994597C13D831ec7',
 					}),
 					'latest',
 				],

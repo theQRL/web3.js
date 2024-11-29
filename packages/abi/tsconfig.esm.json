@@ -1,0 +1,17 @@
+{
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"outDir": "./lib/esm",
+		"strictNullChecks": false,
+		"target": "es2022",
+		"lib": [
+			"es2020",
+			"es5"
+		],
+		"noUnusedParameters": false,
+		// "moduleResolution": "node16",
+		"importHelpers": true,
+		"noEmitOnError": true
+	},
+	"include": ["src/**/*", "index.d.ts"]
+}

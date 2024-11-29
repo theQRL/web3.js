@@ -14,7 +14,7 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { bytesToHex, uint8ArrayEquals } from '@theqrl/web3-utils';
+import { bytesToHex, hexToAddress, uint8ArrayEquals } from '@theqrl/web3-utils';
 import { assertIsUint8Array, zeros } from '../common/utils.js';
 import { getDilithiumAddressFromPK } from '@theqrl/wallet.js'
 import { CryptoPublicKeyBytes } from '@theqrl/dilithium5';
@@ -54,7 +54,7 @@ export class Address {
 	 * Returns hex encoding of address.
 	 */
 	public toString(): string {
-		return bytesToHex(this.buf);
+		return hexToAddress(bytesToHex(this.buf));
 	}
 
 	/**

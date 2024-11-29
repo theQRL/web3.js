@@ -16,7 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { AbiError } from '@theqrl/web3-errors';
-import { AbiCoder, ParamType } from '@ethersproject/abi';
+import { AbiCoder, ParamType } from '@theqrl/abi';
 import { isNullish, leftPad, rightPad, toHex } from '@theqrl/web3-utils';
 import {
 	AbiInput,

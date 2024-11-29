@@ -14,7 +14,7 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { Bytes, HexString, Numbers } from './primitives_types.js';
+import { Bytes, HexString, ZPrefixedHexString, Numbers } from './primitives_types.js';
 
 export type ValueTypes = 'address' | 'bool' | 'string' | 'int256' | 'uint256' | 'bytes' | 'bigint';
 // Hex encoded 32 bytes
@@ -33,8 +33,8 @@ export type HexString256Bytes = HexString;
 export type Uint = HexString;
 // Hex encoded unsigned integer 32 bytes
 export type Uint256 = HexString;
-// Hex encoded address
-export type Address = HexString;
+// Z-prefixed hex encoded address
+export type Address = ZPrefixedHexString;
 
 // https://github.com/ethereum/execution-apis/blob/main/src/schemas/filter.json#L59
 export type Topic = HexString32Bytes;
@@ -52,15 +52,15 @@ export type BlockTag = `${BlockTags}`;
 export type BlockNumberOrTag = Numbers | BlockTag;
 
 export interface Proof {
-	readonly address: HexString;
+	readonly address: ZPrefixedHexString;
 	readonly nonce: string;
 	readonly balance: string;
 }
 
 export interface TransactionInput {
 	readonly [key: string]: unknown;
-	readonly to?: HexString; // If its a contract creation tx then no address wil be specified.
-	readonly from?: HexString;
+	readonly to?: ZPrefixedHexString; // If its a contract creation tx then no address wil be specified.
+	readonly from?: ZPrefixedHexString;
 	readonly data?: string;
 	readonly input?: string;
 	readonly gas: HexString;
@@ -77,8 +77,8 @@ export interface TransactionInput {
 
 export type TransactionOutput = {
 	readonly [key: string]: unknown;
-	readonly to?: HexString; // If its a contract creation tx then no address wil be specified.
-	readonly from?: HexString;
+	readonly to?: ZPrefixedHexString; // If its a contract creation tx then no address wil be specified.
+	readonly from?: ZPrefixedHexString;
 	readonly input: string;
 	readonly gas?: Numbers;
 	readonly gasLimit?: string;
@@ -97,7 +97,7 @@ export interface LogsInput {
 	readonly id?: string;
 	readonly blockNumber?: HexString;
 	readonly transactionIndex?: HexString;
-	readonly address: HexString;
+	readonly address: ZPrefixedHexString;
 	readonly topics: HexString[];
 	readonly data: HexString;
 }
@@ -121,7 +121,7 @@ export interface BlockInput {
 	readonly timestamp: HexString;
 	readonly number?: HexString;
 	readonly transactions?: TransactionInput[];
-	readonly miner?: HexString;
+	readonly miner?: ZPrefixedHexString;
 	readonly baseFeePerGas?: HexString;
 }
 
@@ -132,7 +132,7 @@ export interface BlockOutput {
 	readonly timestamp: bigint | number;
 	readonly number?: bigint | number;
 	readonly transactions?: TransactionOutput[];
-	readonly miner?: HexString;
+	readonly miner?: ZPrefixedHexString;
 	readonly baseFeePerGas?: bigint | number;
 	readonly parentHash?: HexString32Bytes;
 }
@@ -148,7 +148,7 @@ export interface BlockHeaderOutput {
 	readonly hash?: HexString32Bytes;
 	readonly parentHash?: HexString32Bytes;
 	readonly receiptsRoot?: HexString32Bytes;
-	readonly miner?: HexString;
+	readonly miner?: ZPrefixedHexString;
 	readonly stateRoot?: HexString32Bytes;
 	readonly transactionsRoot?: HexString32Bytes;
 	readonly withdrawalsRoot?: HexString32Bytes;
@@ -169,7 +169,7 @@ export interface ReceiptInput {
 	readonly cumulativeGasUsed: HexString;
 	readonly gasUsed: HexString;
 	readonly logs?: LogsInput[];
-	readonly contractAddress?: HexString;
+	readonly contractAddress?: ZPrefixedHexString;
 	readonly status?: string;
 	readonly effectiveGasPrice?: HexString;
 }
@@ -180,7 +180,7 @@ export interface ReceiptOutput {
 	readonly cumulativeGasUsed: bigint | number;
 	readonly gasUsed: bigint | number;
 	readonly logs?: LogsOutput[];
-	readonly contractAddress?: HexString;
+	readonly contractAddress?: ZPrefixedHexString;
 	readonly status: boolean;
 	readonly effectiveGasPrice?: bigint | number;
 }
@@ -365,14 +365,14 @@ export type PopulatedUnsignedTransaction =
 
 export interface BlockBase<
 	ByteType,
-	HexStringType,
+	ZPrefixedHexStringType,
 	NumberType,
 	extraDataType,
 	TransactionTypes,
 	logsBloomType,
 > {
 	readonly parentHash: ByteType;
-	readonly miner: HexStringType;
+	readonly miner: ZPrefixedHexStringType;
 	readonly stateRoot: ByteType;
 	readonly transactionsRoot: ByteType;
 	readonly receiptsRoot: ByteType;

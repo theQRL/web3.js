@@ -1,0 +1,28 @@
+{
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"outDir": "./lib/commonjs",
+		"esModuleInterop": true,
+		"declaration": true,
+		"declarationMap": true,
+		"module": "commonjs",
+		"strictNullChecks": false,
+		"resolveJsonModule": false,
+		"target": "es2022",
+		"lib": [
+			"es2020",
+			"es5"
+		],
+		"noUnusedParameters": false,
+		// "moduleResolution": "node16",
+		"importHelpers": true,
+		"noEmitOnError": true,
+		"allowSyntheticDefaultImports": false,
+		"preserveSymlinks": true,
+    	"preserveWatchOutput": true,
+		"noImplicitThis": true,
+		"noImplicitAny": true,
+		"pretty": false
+	},
+	"include": ["src/**/*", "index.d.ts"]
+}

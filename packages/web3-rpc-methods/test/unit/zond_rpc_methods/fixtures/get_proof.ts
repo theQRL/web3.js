@@ -16,7 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import { Address, HexString32Bytes, Uint } from '@theqrl/web3-types';
 
-const address = '0x407d73d8a49eeb85d32cf465507dd71d507100c1';
+const address = 'Z407d73d8a49eeb85d32cf465507dd71d507100c1';
 
 /**
  * Array consists of:
@@ -29,7 +29,7 @@ const address = '0x407d73d8a49eeb85d32cf465507dd71d507100c1';
 type TestData = [string, [Address, HexString32Bytes[], Uint]];
 export const testData: TestData[] = [
 	[
-		'address = "0x407d73d8a49eeb85d32cf465507dd71d507100c1", storageKeys = ["0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b"], blockNumber = "0x88"',
+		'address = "Z407d73d8a49eeb85d32cf465507dd71d507100c1", storageKeys = ["0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b"], blockNumber = "0x88"',
 		[address, ['0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b'], '0x88'],
 	],
 ];

@@ -29,7 +29,7 @@ describe('web3-validator', () => {
 				validator.validate(schema, [[7, 5], 3]);
 			});
 			it('nested tuples deep', () => {
-				const address = '0x7ab80aeb6bb488b7f6c41c58e83ef248eb39c882';
+				const address = 'Z7ab80aeb6bb488b7f6c41c58e83ef248eb39c882';
 
 				const schema = [
 					[

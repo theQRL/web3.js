@@ -41,7 +41,7 @@ jest.mock('@theqrl/web3-net', () => ({
 }));
 
 describe('defaultTransactionBuilder', () => {
-	const expectedFrom = '0x206E7Ec6854337F059BF6b637ac7cECd2F3D1933';
+	const expectedFrom = 'Z206E7Ec6854337F059BF6b637ac7cECd2F3D1933';
 	const expectedNonce = '0x42';
 	const expectedGas = BigInt(21000);
 	const expectedGasLimit = expectedGas;
@@ -53,7 +53,7 @@ describe('defaultTransactionBuilder', () => {
 	const defaultTransactionType = '0x2';
 	const transaction: Transaction = {
 		from: expectedFrom,
-		to: '0x3535353535353535353535353535353535353535',
+		to: 'Z3535353535353535353535353535353535353535',
 		value: '0x174876e800',
 		gas: expectedGas,
 		gasLimit: expectedGasLimit,
@@ -78,7 +78,7 @@ describe('defaultTransactionBuilder', () => {
 	};
 	const mockBlockData = {
 		parentHash: '0xe99e022112df268087ea7eafaf4790497fd21dbeeb6bd7a1721df161a6657a54',
-		miner: '0xbb7b8287f3f0a933474a79eae42cbca977791171',
+		miner: 'Zbb7b8287f3f0a933474a79eae42cbca977791171',
 		stateRoot: '0xddc8b0234c2e0cad087c8b389aa7ef01f7d79b2570bccb77ce48648aa61c904d',
 		transactionsRoot: '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421',
 		receiptsRoot: '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421',

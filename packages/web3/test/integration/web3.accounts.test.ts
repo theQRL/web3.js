@@ -26,6 +26,7 @@ import {
 import Web3, { SupportedProviders } from '../../src/index';
 
 const hexRegx = /0[xX][0-9a-fA-F]+/;
+const addressRegx = /Z[0-9a-fA-F]{40}/;
 
 describe('web3.accounts', () => {
 	let clientUrl: string | SupportedProviders;
@@ -51,7 +52,7 @@ describe('web3.accounts', () => {
 
 			expect(account).toEqual(
 				expect.objectContaining({
-					address: expect.stringMatching(hexRegx),
+					address: expect.stringMatching(addressRegx),
 					seed: expect.stringMatching(hexRegx),
 				}),
 			);

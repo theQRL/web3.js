@@ -19,8 +19,8 @@ import { TransactionWithSenderAPI, BlockTags, BlockNumberOrTag } from '@theqrl/w
 export const mockRpcResponse = '0x5208';
 
 const transaction: Partial<TransactionWithSenderAPI> = {
-	from: '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0',
-	to: '0x3535353535353535353535353535353535353535',
+	from: 'ZEB014f8c8B418Db6b45774c326A0E64C78914dC0',
+	to: 'Z3535353535353535353535353535353535353535',
 	value: '0x174876e800',
 	gas: '0x5208',
 	type: '0x2',

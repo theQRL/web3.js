@@ -195,7 +195,7 @@ describe('[FeeMarketEIP1559Transaction]', () => {
 			maxPriorityFeePerGas: '0x1284d',
 			maxFeePerGas: '0x1d97c',
 			gasLimit: '0x8ae0',
-			to: '0x000000000000000000000000000000000000aaaa',
+			to: 'Z000000000000000000000000000000000000aaaa',
 			value: '0x2933bc9',
 			data: '0x',
 			accessList: [],

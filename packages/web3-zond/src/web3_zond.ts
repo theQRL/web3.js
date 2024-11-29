@@ -235,7 +235,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *
 	 * ```ts
 	 * web3.zond.getAccounts().then(console.log);
-	 * > ["0x11f4d0A3c12e86B4b5F39B213F7E19D048276DAe", "0xDCc6960376d6C6dEa93647383FfB245CfCed97Cf"]
+	 * > ["Z11f4d0A3c12e86B4b5F39B213F7E19D048276DAe", "ZDCc6960376d6C6dEa93647383FfB245CfCed97Cf"]
 	 * ```
 	 */
 	public async getAccounts() {
@@ -270,10 +270,10 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * @returns The current balance for the given address in `wei`.
 	 *
 	 * ```ts
-	 * web3.zond.getBalance("0x407d73d8a49eeb85d32cf465507dd71d507100c1").then(console.log);
+	 * web3.zond.getBalance("Z407d73d8a49eeb85d32cf465507dd71d507100c1").then(console.log);
 	 * > 1000000000000n
 	 *
-	 * web3.zond.getBalance("0x407d73d8a49eeb85d32cf465507dd71d507100c1").then(console.log);
+	 * web3.zond.getBalance("Z407d73d8a49eeb85d32cf465507dd71d507100c1").then(console.log);
 	 * > "0xe8d4a51000"
 	 * ```
 	 */
@@ -340,7 +340,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * > "0x600160008035811a818181146012578301005b601b6001356025565b8060005260206000f25b600060078202905091905056"
 	 *
 	 * web3.zond.getCode(
-	 *      "0x407d73d8a49eeb85d32cf465507dd71d507100c1",
+	 *      "Z407d73d8a49eeb85d32cf465507dd71d507100c1",
 	 *      undefined,
 	 *      { number: FMT_NUMBER.HEX , bytes: FMT_BYTES.UINT8ARRAY }
 	 * ).then(console.log);
@@ -374,7 +374,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * > {
 	 *    hash: '0x7dbfdc6a7a67a670cb9b0c3f81ca60c007762f1e4e598cb027a470678ff26d0d',
 	 *    parentHash: '0x0000000000000000000000000000000000000000000000000000000000000000',
-	 *    miner: '0x0000000000000000000000000000000000000000',
+	 *    miner: 'Z0000000000000000000000000000000000000000',
 	 *    stateRoot: '0x5ed9882897d363c4632a6e67fba6203df61bd994813dcf048da59be442a9c6c4',
 	 *    transactionsRoot: '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421',
 	 *    receiptsRoot: '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421',
@@ -398,7 +398,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * > {
 	 *    hash: '0x7dbfdc6a7a67a670cb9b0c3f81ca60c007762f1e4e598cb027a470678ff26d0d',
 	 *    parentHash: '0x0000000000000000000000000000000000000000000000000000000000000000',
-	 *    miner: '0x0000000000000000000000000000000000000000',
+	 *    miner: 'Z0000000000000000000000000000000000000000',
 	 *    stateRoot: '0x5ed9882897d363c4632a6e67fba6203df61bd994813dcf048da59be442a9c6c4',
 	 *    transactionsRoot: '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421',
 	 *    receiptsRoot: '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421',
@@ -429,11 +429,11 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * @returns The number of transactions in the provided block.
 	 *
 	 * ```ts
-	 * web3.zond.getBlockTransactionCount("0x407d73d8a49eeb85d32cf465507dd71d507100c1").then(console.log);
+	 * web3.zond.getBlockTransactionCount("Z407d73d8a49eeb85d32cf465507dd71d507100c1").then(console.log);
 	 * > 1n
 	 *
 	 * web3.zond.getBlockTransactionCount(
-	 *     "0x407d73d8a49eeb85d32cf465507dd71d507100c1",
+	 *     "Z407d73d8a49eeb85d32cf465507dd71d507100c1",
 	 *     { number: FMT_NUMBER.NUMBER , bytes: FMT_BYTES.HEX }
 	 * ).then(console.log);
 	 * > 1
@@ -462,8 +462,8 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *    blockHash: '0x43202bd16b6bd54bea1b310736bd78bdbe93a64ad940f7586739d9eb25ad8d00',
 	 *    blockNumber: 1n,
 	 *    transactionIndex: 0n,
-	 *    from: '0x6e599da0bff7a6598ac1224e4985430bf16458a4',
-	 *    to: '0x6f1df96865d09d21e8f3f9a7fba3b17a11c7c53c',
+	 *    from: 'Z6e599da0bff7a6598ac1224e4985430bf16458a4',
+	 *    to: 'Z6f1df96865d09d21e8f3f9a7fba3b17a11c7c53c',
 	 *    value: 1n,
 	 *    gas: 90000n,
 	 *    maxFeePerGas: 2000000000n,
@@ -484,8 +484,8 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *    blockHash: '0x43202bd16b6bd54bea1b310736bd78bdbe93a64ad940f7586739d9eb25ad8d00',
 	 *    blockNumber: 1,
 	 *    transactionIndex: 0,
-	 *    from: '0x6e599da0bff7a6598ac1224e4985430bf16458a4',
-	 *    to: '0x6f1df96865d09d21e8f3f9a7fba3b17a11c7c53c',
+	 *    from: 'Z6e599da0bff7a6598ac1224e4985430bf16458a4',
+	 *    to: 'Z6f1df96865d09d21e8f3f9a7fba3b17a11c7c53c',
 	 *    value: 1,
 	 *    gas: 90000,
 	 *    maxFeePerGas: 2000000000,
@@ -525,8 +525,8 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *          blockHash: '0x0000000000000000000000000000000000000000000000000000000000000000',
 	 *          blockNumber: null,
 	 *          transactionIndex: 0n,
-	 *          from: '0x6e599da0bff7a6598ac1224e4985430bf16458a4',
-	 *          to: '0x6f1df96865d09d21e8f3f9a7fba3b17a11c7c53c',
+	 *          from: 'Z6e599da0bff7a6598ac1224e4985430bf16458a4',
+	 *          to: 'Z6f1df96865d09d21e8f3f9a7fba3b17a11c7c53c',
 	 *          value: 1n,
 	 *          gas: 90000n,
 	 *          maxFeePerGas: 2000000000n,
@@ -542,8 +542,8 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *          blockHash: '0x0000000000000000000000000000000000000000000000000000000000000000',
 	 *          blockNumber: null,
 	 *          transactionIndex: 0n,
-	 *          from: '0x6e599da0bff7a6598ac1224e4985430bf16458a4',
-	 *          to: '0x6f1df96865d09d21e8f3f9a7fba3b17a11c7c53c',
+	 *          from: 'Z6e599da0bff7a6598ac1224e4985430bf16458a4',
+	 *          to: 'Z6f1df96865d09d21e8f3f9a7fba3b17a11c7c53c',
 	 *          value: 1n,
 	 *          gas: 90000n,
 	 *          maxFeePerGas: 2000000000n,
@@ -563,8 +563,8 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *          blockHash: '0x0000000000000000000000000000000000000000000000000000000000000000',
 	 *          blockNumber: null,
 	 *          transactionIndex: 0,
-	 *          from: '0x6e599da0bff7a6598ac1224e4985430bf16458a4',
-	 *          to: '0x6f1df96865d09d21e8f3f9a7fba3b17a11c7c53c',
+	 *          from: 'Z6e599da0bff7a6598ac1224e4985430bf16458a4',
+	 *          to: 'Z6f1df96865d09d21e8f3f9a7fba3b17a11c7c53c',
 	 *          value: 1,
 	 *          gas: 90000,
 	 *          maxFeePerGas: 2000000000,
@@ -580,8 +580,8 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *          blockHash: '0x0000000000000000000000000000000000000000000000000000000000000000',
 	 *          blockNumber: null,
 	 *          transactionIndex: 0,
-	 *          from: '0x6e599da0bff7a6598ac1224e4985430bf16458a4',
-	 *          to: '0x6f1df96865d09d21e8f3f9a7fba3b17a11c7c53c',
+	 *          from: 'Z6e599da0bff7a6598ac1224e4985430bf16458a4',
+	 *          to: 'Z6f1df96865d09d21e8f3f9a7fba3b17a11c7c53c',
 	 *          value: 1,
 	 *          gas: 90000,
 	 *          maxFeePerGas: 2000000000,
@@ -614,8 +614,8 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *    blockHash: '0x43202bd16b6bd54bea1b310736bd78bdbe93a64ad940f7586739d9eb25ad8d00',
 	 *    blockNumber: 1n,
 	 *    transactionIndex: 0n,
-	 *    from: '0x6e599da0bff7a6598ac1224e4985430bf16458a4',
-	 *    to: '0x6f1df96865d09d21e8f3f9a7fba3b17a11c7c53c',
+	 *    from: 'Z6e599da0bff7a6598ac1224e4985430bf16458a4',
+	 *    to: 'Z6f1df96865d09d21e8f3f9a7fba3b17a11c7c53c',
 	 *    value: 1n,
 	 *    gas: 90000n,
 	 *    maxFeePerGas: 2000000000n,
@@ -637,8 +637,8 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *    blockHash: '0x43202bd16b6bd54bea1b310736bd78bdbe93a64ad940f7586739d9eb25ad8d00',
 	 *    blockNumber: 1,
 	 *    transactionIndex: 0,
-	 *    from: '0x6e599da0bff7a6598ac1224e4985430bf16458a4',
-	 *    to: '0x6f1df96865d09d21e8f3f9a7fba3b17a11c7c53c',
+	 *    from: 'Z6e599da0bff7a6598ac1224e4985430bf16458a4',
+	 *    to: 'Z6f1df96865d09d21e8f3f9a7fba3b17a11c7c53c',
 	 *    value: 1,
 	 *    gas: 90000,
 	 *    maxFeePerGas: 2000000000,
@@ -676,8 +676,8 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *      transactionIndex: 0n,
 	 *      blockNumber: 2n,
 	 *      blockHash: '0xeb1565a08b23429552dafa92e32409f42eb43944f7611963c63ce40e7243941a',
-	 *      from: '0x6e599da0bff7a6598ac1224e4985430bf16458a4',
-	 *      to: '0x6f1df96865d09d21e8f3f9a7fba3b17a11c7c53c',
+	 *      from: 'Z6e599da0bff7a6598ac1224e4985430bf16458a4',
+	 *      to: 'Z6f1df96865d09d21e8f3f9a7fba3b17a11c7c53c',
 	 *      cumulativeGasUsed: 21000n,
 	 *      gasUsed: 21000n,
 	 *      logs: [],
@@ -696,8 +696,8 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *      transactionIndex: 0,
 	 *      blockNumber: 2,
 	 *      blockHash: '0xeb1565a08b23429552dafa92e32409f42eb43944f7611963c63ce40e7243941a',
-	 *      from: '0x6e599da0bff7a6598ac1224e4985430bf16458a4',
-	 *      to: '0x6f1df96865d09d21e8f3f9a7fba3b17a11c7c53c',
+	 *      from: 'Z6e599da0bff7a6598ac1224e4985430bf16458a4',
+	 *      to: 'Z6f1df96865d09d21e8f3f9a7fba3b17a11c7c53c',
 	 *      cumulativeGasUsed: 21000,
 	 *      gasUsed: 21000,
 	 *      logs: [],
@@ -729,11 +729,11 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * @returns The number of transactions sent from the provided address.
 	 *
 	 * ```ts
-	 * web3.zond.getTransactionCount("0x407d73d8a49eeb85d32cf465507dd71d507100c1").then(console.log);
+	 * web3.zond.getTransactionCount("Z407d73d8a49eeb85d32cf465507dd71d507100c1").then(console.log);
 	 * > 1n
 	 *
 	 * web3.zond.getTransactionCount(
-	 *     "0x407d73d8a49eeb85d32cf465507dd71d507100c1",
+	 *     "Z407d73d8a49eeb85d32cf465507dd71d507100c1",
 	 *     undefined,
 	 *     { number: FMT_NUMBER.NUMBER , bytes: FMT_BYTES.HEX }
 	 * ).then(console.log);
@@ -757,8 +757,8 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * @returns If `await`ed or `.then`d (i.e. the promise resolves), the transaction hash is returned.
 	 * ```ts
 	 * const transaction = {
-	 *   from: '0x6E599DA0bfF7A6598AC1224E4985430Bf16458a4',
-	 *   to: '0x6f1DF96865D09d21e8f3f9a7fbA3b17A11c7C53C',
+	 *   from: 'Z6E599DA0bfF7A6598AC1224E4985430Bf16458a4',
+	 *   to: 'Z6f1DF96865D09d21e8f3f9a7fbA3b17A11c7C53C',
 	 *   value: '0x1'
 	 * }
 	 *
@@ -783,8 +783,8 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * ```ts
 	 * web3.zond.sendTransaction(transaction).on('sending', transactionToBeSent => console.log(transactionToBeSent));
 	 * > {
-	 *    from: '0x6E599DA0bfF7A6598AC1224E4985430Bf16458a4',
-	 *    to: '0x6f1DF96865D09d21e8f3f9a7fbA3b17A11c7C53C',
+	 *    from: 'Z6E599DA0bfF7A6598AC1224E4985430Bf16458a4',
+	 *    to: 'Z6f1DF96865D09d21e8f3f9a7fbA3b17A11c7C53C',
 	 *    value: '0x1',
 	 *    maxFeePerGas: '0x77359400',
 	 *    maxPriorityFeePerGas: '0x0'
@@ -794,8 +794,8 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * ```ts
 	 * web3.zond.sendTransaction(transaction).on('sent', sentTransaction => console.log(sentTransaction));
 	 * > {
-	 *    from: '0x6E599DA0bfF7A6598AC1224E4985430Bf16458a4',
-	 *    to: '0x6f1DF96865D09d21e8f3f9a7fbA3b17A11c7C53C',
+	 *    from: 'Z6E599DA0bfF7A6598AC1224E4985430Bf16458a4',
+	 *    to: 'Z6f1DF96865D09d21e8f3f9a7fbA3b17A11c7C53C',
 	 *    value: '0x1',
 	 *    maxFeePerGas: '0x77359400',
 	 *    maxPriorityFeePerGas: '0x0'
@@ -814,8 +814,8 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *      transactionIndex: 0n,
 	 *      blockNumber: 2n,
 	 *      blockHash: '0xeb1565a08b23429552dafa92e32409f42eb43944f7611963c63ce40e7243941a',
-	 *      from: '0x6e599da0bff7a6598ac1224e4985430bf16458a4',
-	 *      to: '0x6f1df96865d09d21e8f3f9a7fba3b17a11c7c53c',
+	 *      from: 'Z6e599da0bff7a6598ac1224e4985430bf16458a4',
+	 *      to: 'Z6f1df96865d09d21e8f3f9a7fba3b17a11c7c53c',
 	 *      cumulativeGasUsed: 21000n,
 	 *      gasUsed: 21000n,
 	 *      logs: [],
@@ -835,8 +835,8 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *         transactionIndex: 0n,
 	 *         blockNumber: 5n,
 	 *         blockHash: '0xb57fbe6f145cefd86a305a9a024a4351d15d4d39607d7af53d69a319bc3b5548',
-	 *         from: '0x6e599da0bff7a6598ac1224e4985430bf16458a4',
-	 *         to: '0x6f1df96865d09d21e8f3f9a7fba3b17a11c7c53c',
+	 *         from: 'Z6e599da0bff7a6598ac1224e4985430bf16458a4',
+	 *         to: 'Z6f1df96865d09d21e8f3f9a7fba3b17a11c7c53c',
 	 *         cumulativeGasUsed: 21000n,
 	 *         gasUsed: 21000n,
 	 *         logs: [],
@@ -909,12 +909,12 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *      blockNumber: 1n,
 	 *      cumulativeGasUsed: 21000n,
 	 *      effectiveGasPrice: 1000000001n,
-	 *      from: '0xe899f0130fd099c0b896b2ce4e5e15a25b23139a',
+	 *      from: 'Ze899f0130fd099c0b896b2ce4e5e15a25b23139a',
 	 *      gasUsed: 21000n,
 	 *      logs: [],
 	 *      logsBloom: '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
 	 *      status: 1n,
-	 *      to: '0xe899f0130fd099c0b896b2ce4e5e15a25b23139a',
+	 *      to: 'Ze899f0130fd099c0b896b2ce4e5e15a25b23139a',
 	 *      transactionHash: '0xed8c241ea44d57f4605dc22c63500de46254d6c7844fd65fa438b128c80cf700',
 	 *      transactionIndex: 0n,
 	 *      type: 2n
@@ -930,12 +930,12 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *          blockNumber: 1n,
 	 *          cumulativeGasUsed: 21000n,
 	 *          effectiveGasPrice: 1000000001n,
-	 *          from: '0xe899f0130fd099c0b896b2ce4e5e15a25b23139a',
+	 *          from: 'Ze899f0130fd099c0b896b2ce4e5e15a25b23139a',
 	 *          gasUsed: 21000n,
 	 *          logs: [],
 	 *          logsBloom: '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
 	 *          status: 1n,
-	 *          to: '0xe899f0130fd099c0b896b2ce4e5e15a25b23139a',
+	 *          to: 'Ze899f0130fd099c0b896b2ce4e5e15a25b23139a',
 	 *          transactionHash: '0xed8c241ea44d57f4605dc22c63500de46254d6c7844fd65fa438b128c80cf700',
 	 *          transactionIndex: 0n,
 	 *          type: 2n
@@ -965,11 +965,11 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *
 	 * ```ts
 	 * // Using an unlocked account managed by connected RPC client
-	 * web3.zond.sign("0x48656c6c6f20776f726c64", "0x11f4d0A3c12e86B4b5F39B213F7E19D048276DAe").then(console.log);
+	 * web3.zond.sign("0x48656c6c6f20776f726c64", "Z11f4d0A3c12e86B4b5F39B213F7E19D048276DAe").then(console.log);
 	 * > "0x30755ed65396facf86c53e6217c52b4daebe72aa4941d89635409de4c9c7f9466d4e9aaec7977f05e923889b33c0d0dd27d7226b6e6f56ce737465c5cfd04be400"
 	 *
 	 * // Using an unlocked account managed by connected RPC client
-	 * web3.zond.sign("0x48656c6c6f20776f726c64", "0x11f4d0A3c12e86B4b5F39B213F7E19D048276DAe", { number: FMT_NUMBER.NUMBER , bytes: FMT_BYTES.UINT8ARRAY }).then(console.log);
+	 * web3.zond.sign("0x48656c6c6f20776f726c64", "Z11f4d0A3c12e86B4b5F39B213F7E19D048276DAe", { number: FMT_NUMBER.NUMBER , bytes: FMT_BYTES.UINT8ARRAY }).then(console.log);
 	 * > Uint8Array(65) [
 	 *    48, 117,  94, 214,  83, 150, 250, 207, 134, 197,  62,
 	 *    98,  23, 197,  43,  77, 174, 190, 114, 170,  73,  65,
@@ -999,8 +999,8 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *
 	 * ```ts
 	 * const transaction = {
-	 *      from: '0xe899f0130FD099c0b896B2cE4E5E15A25b23139a',
-	 *      to: '0xe899f0130FD099c0b896B2cE4E5E15A25b23139a',
+	 *      from: 'Ze899f0130FD099c0b896B2cE4E5E15A25b23139a',
+	 *      to: 'Ze899f0130FD099c0b896B2cE4E5E15A25b23139a',
 	 *      value: '0x1',
 	 *      gas: '21000',
 	 *      maxFeePerGas: '1000000001',
@@ -1021,7 +1021,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *      value: 1n,
 	 *      publicKey: '0xadb3468dbb4dce89fe1785ea9182e85fb56b399b378f82b93af7a8a12a4f9679',
 	 *      signature: '0x27d37d736e9bcf00121f78b2d10e4404fa5c45856d62b746574345f5cd278097',
-	 *      to: '0xe899f0130fd099c0b896b2ce4e5e15a25b23139a',
+	 *      to: 'Ze899f0130fd099c0b896b2ce4e5e15a25b23139a',
 	 *      data: '0x'
 	 *   }
 	 * }
@@ -1038,7 +1038,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *      value: 1,
 	 *      publicKey: '0xadb3468dbb4dce89fe1785ea9182e85fb56b399b378f82b93af7a8a12a4f9679',
 	 *      signature: '0x27d37d736e9bcf00121f78b2d10e4404fa5c45856d62b746574345f5cd278097',
-	 *      to: '0xe899f0130fd099c0b896b2ce4e5e15a25b23139a',
+	 *      to: 'Ze899f0130fd099c0b896b2ce4e5e15a25b23139a',
 	 *      data: '0x'
 	 *   }
 	 * }
@@ -1057,7 +1057,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * Executes a message call within the EVM without creating a transaction.
 	 * It does not publish anything to the blockchain and does not consume any gas.
 	 *
-	 * @param transaction - A transaction object where all properties are optional except `to`, however it's recommended to include the `from` property or it may default to `0x0000000000000000000000000000000000000000` depending on your node or provider.
+	 * @param transaction - A transaction object where all properties are optional except `to`, however it's recommended to include the `from` property or it may default to `Z0000000000000000000000000000000000000000` depending on your node or provider.
 	 * @param blockNumber ({@link BlockNumberOrTag} defaults to {@link Web3Zond.defaultBlock}) - Specifies what block to use as the current state of the blockchain while processing the transaction.
 	 * @param returnFormat ({@link DataFormat} defaults to {@link DEFAULT_RETURN_FORMAT}) - Specifies how the return data from the call should be formatted.
 	 * @returns The returned data of the call, e.g. a smart contract function's return value.
@@ -1082,8 +1082,8 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *
 	 * ```ts
 	 * const transaction = {
-	 *       from: '0xe899f0130FD099c0b896B2cE4E5E15A25b23139a',
-	 *       to: '0xe899f0130FD099c0b896B2cE4E5E15A25b23139a',
+	 *       from: 'Ze899f0130FD099c0b896B2cE4E5E15A25b23139a',
+	 *       to: 'Ze899f0130FD099c0b896B2cE4E5E15A25b23139a',
 	 *       value: '0x1',
 	 *       nonce: '0x1',
 	 *       type: '0x2'
@@ -1113,7 +1113,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *
 	 * ```ts
 	 * web3.zond.getPastLogs({
-	 *      address: "0x11f4d0A3c12e86B4b5F39B213F7E19D048276DAe",
+	 *      address: "Z11f4d0A3c12e86B4b5F39B213F7E19D048276DAe",
 	 *      topics: ["0x033456732123ffff2342342dd12342434324234234fd234fd23fd4f23d4234"]
 	 *  }).then(console.log);
 	 * > [{
@@ -1124,13 +1124,13 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *       transactionHash: '0x7f9fade1c0d57a7af66ab4ead79fade1c0d57a7af66ab4ead7c2c2eb7b11a91385',
 	 *       blockHash: '0xfd43ade1c09fade1c0d57a7af66ab4ead7c2c2eb7b11a91ffdd57a7af66ab4ead7',
 	 *       blockNumber: 1234n,
-	 *       address: '0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe'
+	 *       address: 'Zde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe'
 	 *   },
 	 *   {...}]
 	 *
 	 * web3.zond.getPastLogs(
 	 *     {
-	 *       address: "0x11f4d0A3c12e86B4b5F39B213F7E19D048276DAe",
+	 *       address: "Z11f4d0A3c12e86B4b5F39B213F7E19D048276DAe",
 	 *       topics: ["0x033456732123ffff2342342dd12342434324234234fd234fd23fd4f23d4234"]
 	 *     },
 	 *     { number: FMT_NUMBER.NUMBER , bytes: FMT_BYTES.HEX }
@@ -1143,7 +1143,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *       transactionHash: '0x7f9fade1c0d57a7af66ab4ead79fade1c0d57a7af66ab4ead7c2c2eb7b11a91385',
 	 *       blockHash: '0xfd43ade1c09fade1c0d57a7af66ab4ead7c2c2eb7b11a91ffdd57a7af66ab4ead7',
 	 *       blockNumber: 1234,
-	 *       address: '0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe'
+	 *       address: 'Zde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe'
 	 *   },
 	 *   {...}]
 	 * ```
@@ -1155,7 +1155,6 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 		return rpcMethodsWrappers.getLogs(this, filter, returnFormat);
 	}
 
-	// TODO - Format addresses
 	/**
 	 * This method will request/enable the accounts from the current environment and for supporting [EIP 1102](https://eips.ethereum.org/EIPS/eip-1102)
 	 * This method will only work if you’re using the injected provider from a application like Metamask, Status or TrustWallet.
@@ -1166,7 +1165,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *
 	 * ```ts
 	 * web3.zond.requestAccounts().then(console.log);
-	 * > ['0aae0B295369a9FD31d5F28D9Ec85E40f4cb692BAf', '0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe']
+	 * > ['Zae0B295369a9FD31d5F28D9Ec85E40f4cb692BAf', 'Zde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe']
 	 * ```
 	 */
 	public async requestAccounts() {
@@ -1212,12 +1211,12 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 *
 	 * ```ts
 	 * web3.zond.getProof(
-	 *     "0x1234567890123456789012345678901234567890",
+	 *     "Z1234567890123456789012345678901234567890",
 	 *     ["0x0000000000000000000000000000000000000000000000000000000000000000","0x0000000000000000000000000000000000000000000000000000000000000001"],
 	 *     "latest"
 	 * ).then(console.log);
 	 * > {
-	 *     "address": "0x1234567890123456789012345678901234567890",
+	 *     "address": "Z1234567890123456789012345678901234567890",
 	 *     "accountProof": [
 	 *         "0xf90211a090dcaf88c40c7bbc95a912cbdde67c175767b31173df9ee4b0d733bfdd511c43a0babe369f6b12092f49181ae04ca173fb68d1a5456f18d20fa32cba73954052bda0473ecf8a7e36a829e75039a3b055e51b8332cbf03324ab4af2066bbd6fbf0021a0bbda34753d7aa6c38e603f360244e8f59611921d9e1f128372fec0d586d4f9e0a04e44caecff45c9891f74f6a2156735886eedf6f1a733628ebc802ec79d844648a0a5f3f2f7542148c973977c8a1e154c4300fec92f755f7846f1b734d3ab1d90e7a0e823850f50bf72baae9d1733a36a444ab65d0a6faaba404f0583ce0ca4dad92da0f7a00cbe7d4b30b11faea3ae61b7f1f2b315b61d9f6bd68bfe587ad0eeceb721a07117ef9fc932f1a88e908eaead8565c19b5645dc9e5b1b6e841c5edbdfd71681a069eb2de283f32c11f859d7bcf93da23990d3e662935ed4d6b39ce3673ec84472a0203d26456312bbc4da5cd293b75b840fc5045e493d6f904d180823ec22bfed8ea09287b5c21f2254af4e64fca76acc5cd87399c7f1ede818db4326c98ce2dc2208a06fc2d754e304c48ce6a517753c62b1a9c1d5925b89707486d7fc08919e0a94eca07b1c54f15e299bd58bdfef9741538c7828b5d7d11a489f9c20d052b3471df475a051f9dd3739a927c89e357580a4c97b40234aa01ed3d5e0390dc982a7975880a0a089d613f26159af43616fd9455bb461f4869bfede26f2130835ed067a8b967bfb80",
 	 *         "0xf90211a0395d87a95873cd98c21cf1df9421af03f7247880a2554e20738eec2c7507a494a0bcf6546339a1e7e14eb8fb572a968d217d2a0d1f3bc4257b22ef5333e9e4433ca012ae12498af8b2752c99efce07f3feef8ec910493be749acd63822c3558e6671a0dbf51303afdc36fc0c2d68a9bb05dab4f4917e7531e4a37ab0a153472d1b86e2a0ae90b50f067d9a2244e3d975233c0a0558c39ee152969f6678790abf773a9621a01d65cd682cc1be7c5e38d8da5c942e0a73eeaef10f387340a40a106699d494c3a06163b53d956c55544390c13634ea9aa75309f4fd866f312586942daf0f60fb37a058a52c1e858b1382a8893eb9c1f111f266eb9e21e6137aff0dddea243a567000a037b4b100761e02de63ea5f1fcfcf43e81a372dafb4419d126342136d329b7a7ba032472415864b08f808ba4374092003c8d7c40a9f7f9fe9cc8291f62538e1cc14a074e238ff5ec96b810364515551344100138916594d6af966170ff326a092fab0a0d31ac4eef14a79845200a496662e92186ca8b55e29ed0f9f59dbc6b521b116fea090607784fe738458b63c1942bba7c0321ae77e18df4961b2bc66727ea996464ea078f757653c1b63f72aff3dcc3f2a2e4c8cb4a9d36d1117c742833c84e20de994a0f78407de07f4b4cb4f899dfb95eedeb4049aeb5fc1635d65cf2f2f4dfd25d1d7a0862037513ba9d45354dd3e36264aceb2b862ac79d2050f14c95657e43a51b85c80",
@@ -1243,13 +1242,13 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * }
 	 *
 	 * web3.zond.getProof(
-	 *     "0x1234567890123456789012345678901234567890",
+	 *     "Z1234567890123456789012345678901234567890",
 	 *     ["0x0000000000000000000000000000000000000000000000000000000000000000","0x0000000000000000000000000000000000000000000000000000000000000001"],
 	 *     undefined,
 	 *     { number: FMT_NUMBER.NUMBER , bytes: FMT_BYTES.HEX }
 	 * ).then(console.log);
 	 * > {
-	 *     "address": "0x1234567890123456789012345678901234567890",
+	 *     "address": "Z1234567890123456789012345678901234567890",
 	 *     "accountProof": [
 	 *         "0xf90211a090dcaf88c40c7bbc95a912cbdde67c175767b31173df9ee4b0d733bfdd511c43a0babe369f6b12092f49181ae04ca173fb68d1a5456f18d20fa32cba73954052bda0473ecf8a7e36a829e75039a3b055e51b8332cbf03324ab4af2066bbd6fbf0021a0bbda34753d7aa6c38e603f360244e8f59611921d9e1f128372fec0d586d4f9e0a04e44caecff45c9891f74f6a2156735886eedf6f1a733628ebc802ec79d844648a0a5f3f2f7542148c973977c8a1e154c4300fec92f755f7846f1b734d3ab1d90e7a0e823850f50bf72baae9d1733a36a444ab65d0a6faaba404f0583ce0ca4dad92da0f7a00cbe7d4b30b11faea3ae61b7f1f2b315b61d9f6bd68bfe587ad0eeceb721a07117ef9fc932f1a88e908eaead8565c19b5645dc9e5b1b6e841c5edbdfd71681a069eb2de283f32c11f859d7bcf93da23990d3e662935ed4d6b39ce3673ec84472a0203d26456312bbc4da5cd293b75b840fc5045e493d6f904d180823ec22bfed8ea09287b5c21f2254af4e64fca76acc5cd87399c7f1ede818db4326c98ce2dc2208a06fc2d754e304c48ce6a517753c62b1a9c1d5925b89707486d7fc08919e0a94eca07b1c54f15e299bd58bdfef9741538c7828b5d7d11a489f9c20d052b3471df475a051f9dd3739a927c89e357580a4c97b40234aa01ed3d5e0390dc982a7975880a0a089d613f26159af43616fd9455bb461f4869bfede26f2130835ed067a8b967bfb80",
 	 *         "0xf90211a0395d87a95873cd98c21cf1df9421af03f7247880a2554e20738eec2c7507a494a0bcf6546339a1e7e14eb8fb572a968d217d2a0d1f3bc4257b22ef5333e9e4433ca012ae12498af8b2752c99efce07f3feef8ec910493be749acd63822c3558e6671a0dbf51303afdc36fc0c2d68a9bb05dab4f4917e7531e4a37ab0a153472d1b86e2a0ae90b50f067d9a2244e3d975233c0a0558c39ee152969f6678790abf773a9621a01d65cd682cc1be7c5e38d8da5c942e0a73eeaef10f387340a40a106699d494c3a06163b53d956c55544390c13634ea9aa75309f4fd866f312586942daf0f60fb37a058a52c1e858b1382a8893eb9c1f111f266eb9e21e6137aff0dddea243a567000a037b4b100761e02de63ea5f1fcfcf43e81a372dafb4419d126342136d329b7a7ba032472415864b08f808ba4374092003c8d7c40a9f7f9fe9cc8291f62538e1cc14a074e238ff5ec96b810364515551344100138916594d6af966170ff326a092fab0a0d31ac4eef14a79845200a496662e92186ca8b55e29ed0f9f59dbc6b521b116fea090607784fe738458b63c1942bba7c0321ae77e18df4961b2bc66727ea996464ea078f757653c1b63f72aff3dcc3f2a2e4c8cb4a9d36d1117c742833c84e20de994a0f78407de07f4b4cb4f899dfb95eedeb4049aeb5fc1635d65cf2f2f4dfd25d1d7a0862037513ba9d45354dd3e36264aceb2b862ac79d2050f14c95657e43a51b85c80",
@@ -1369,19 +1368,19 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * @example
 	 * ```ts
 	 * web3.zond.createAccessList({
-	 * from: '0xDe95305a63302C3aa4d3A9B42654659AeA72b694',
+	 * from: 'ZDe95305a63302C3aa4d3A9B42654659AeA72b694',
 	 * data: '0x9a67c8b100000000000000000000000000000000000000000000000000000000000004d0',
 	 * maxFeePerGas: '0x3b9aca00',
 	 * maxPriorityFeePerGas: '0x0',
 	 * gas: '0x3d0900',
-	 * to: '0x940b25304947ae863568B3804434EC77E2160b87'
+	 * to: 'Z940b25304947ae863568B3804434EC77E2160b87'
 	 * })
 	 * .then(console.log);
 	 *
 	 * > {
 	 *  "accessList": [
 	 *     {
-	 *       "address": "0x15859bdf5aff2080a9968f6a410361e9598df62f",
+	 *       "address": "Z15859bdf5aff2080a9968f6a410361e9598df62f",
 	 *       "storageKeys": [
 	 *         "0x0000000000000000000000000000000000000000000000000000000000000000"
 	 *       ]
@@ -1440,7 +1439,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	 * ```ts
 	 * // Subscribe to `logs`
 	 * const logSubscription = web3.zond.subscribe('logs', {
-	 *     address: '0x1234567890123456789012345678901234567890',
+	 *     address: 'Z1234567890123456789012345678901234567890',
 	 *     topics: ['0x033456732123ffff2342342dd12342434324234234fd234fd23fd4f23d4234']
 	 * });
 	 * logSubscription.on('data', (data: any) => console.log(data));

@@ -18,10 +18,10 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import { IbanOptions } from '../../src/types';
 
 export const validIbanToAddressData: [string, string][] = [
-	['XE65GB6LDNXYOFTX0NSV3FUWKOWIXAMJK36', '0x8ba1f109551bD432803012645Ac136ddd64DBA72'],
-	['XE7338O073KYGTWWZN0F2WZ0R8PX5ZPPZS', '0x00c5496aEe77C1bA1f0854206A26DdA82a81D6D8'],
-	['XE76LL5FJYLSMDVW5J02HWU6R5ZVPHURYM9', '0xb8CE9ab6943e0eCED004cDe8e3bBed6568B2Fa01'],
-	['XE76LL5FJYLSMDVW5J02HWU6R5ZVPHURYM9', '0xb8CE9ab6943e0eCED004cDe8e3bBed6568B2Fa01'],
+	['XE65GB6LDNXYOFTX0NSV3FUWKOWIXAMJK36', 'Z8ba1f109551bD432803012645Ac136ddd64DBA72'],
+	['XE7338O073KYGTWWZN0F2WZ0R8PX5ZPPZS', 'Z00c5496aEe77C1bA1f0854206A26DdA82a81D6D8'],
+	['XE76LL5FJYLSMDVW5J02HWU6R5ZVPHURYM9', 'Zb8CE9ab6943e0eCED004cDe8e3bBed6568B2Fa01'],
+	['XE76LL5FJYLSMDVW5J02HWU6R5ZVPHURYM9', 'Zb8CE9ab6943e0eCED004cDe8e3bBed6568B2Fa01'],
 ];
 
 export const invalidIbanToAddressData: [string, Error][] = [
@@ -32,9 +32,9 @@ export const invalidIbanToAddressData: [string, Error][] = [
 ];
 
 export const invalidAddressData: [string][] = [
-	['0x1'],
-	['0xE247a45c287191d435A8a5D72A7C8dc030451E9F'], // Invalid checksum
-	['-0x407d73d8a49eeb85d32cf465507dd71d507100c1'],
+	['Z1'],
+	['ZE247a45c287191d435A8a5D72A7C8dc030451E9F'], // Invalid checksum
+	['-Z407d73d8a49eeb85d32cf465507dd71d507100c1'],
 ];
 
 export const validFromBbanData: [string, string][] = [['ETHXREGGAVOFYORK', 'XE81ETHXREGGAVOFYORK']];

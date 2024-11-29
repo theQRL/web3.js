@@ -14,7 +14,7 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { bytesToHex, hexToBytes, uint8ArrayEquals, uint8ArrayConcat } from '@theqrl/web3-utils';
+import { bytesToHex, hexToBytes, uint8ArrayEquals, uint8ArrayConcat, addressToBytes } from '@theqrl/web3-utils';
 import {
 	FeeMarketEIP1559Transaction,
 } from '../../../src';
@@ -23,7 +23,7 @@ import { Chain, Common, Hardfork/*, uint8ArrayToBigInt*/ } from '../../../src/co
 import type { AccessList } from '../../../src';
 
 const seed = hexToBytes('0xec3077d539c7b333e596b9e6c0b5f5952d26469ab9a60d1fd54c329ef9959593850a2daf60369e434a7c55939f99e149');
-const address = hexToBytes('0x20982e08c8b5b4d007e4f6c4a637033ce90aa352');
+const address = addressToBytes('Z20982e08c8b5b4d007e4f6c4a637033ce90aa352');
 
 const common = new Common({
 	chain: Chain.Mainnet,

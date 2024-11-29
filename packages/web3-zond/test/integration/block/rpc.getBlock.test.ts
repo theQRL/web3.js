@@ -128,7 +128,7 @@ describe('rpc with block', () => {
 				})),
 			};
 			if (blockData[block] === 'pending') {
-				b.miner = '0x0000000000000000000000000000000000000000';
+				b.miner = 'Z0000000000000000000000000000000000000000';
 			}
 
 			expect(validator.validateJSONSchema(blockSchema, b)).toBeUndefined();

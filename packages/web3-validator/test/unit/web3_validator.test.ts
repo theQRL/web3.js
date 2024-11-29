@@ -97,7 +97,7 @@ describe('web3-validator', () => {
 				expect(
 					validator.validate(
 						[{ name: '', type: 'address' }],
-						['0x2df0879f1ee2b2b1f2448c64c089c29e3ad7ccc5'],
+						['Z2df0879f1ee2b2b1f2448c64c089c29e3ad7ccc5'],
 					),
 				).toBeUndefined();
 			});

@@ -59,7 +59,7 @@ describeIf(isSocket)('unsubscribe', () => {
 			await web3Zond.subscribe('newPendingTransactions');
 			await web3Zond.subscribe('syncing');
 			await web3Zond.subscribe('logs', {
-				address: '0x8320fe7702b96808f7bbc0d4a888ed1468216cfd',
+				address: 'Z8320fe7702b96808f7bbc0d4a888ed1468216cfd',
 				topics: ['0xd78a0cb8bb633d06981248b816e7bd33c2a35a6089241d099fa519e361cab902'],
 			});
 			expect(web3Zond?.subscriptionManager?.subscriptions.size).toBe(4);

@@ -18,6 +18,7 @@ import { ContractExecutionError } from '@theqrl/web3-errors';
 import { Contract } from '../../src';
 import { BasicAbi, BasicBytecode } from '../shared_fixtures/build/Basic';
 import { getSystemTestProvider, createTempAccount } from '../fixtures/system_test_utils';
+import { isNullish } from '@theqrl/web3-utils';
 
 describe('contract', () => {
 	let contract: Contract<typeof BasicAbi>;
@@ -159,7 +160,7 @@ describe('contract', () => {
 						logsBloom:
 							'0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
 						status: BigInt(0),
-						to: contractDeployed.options.address?.toLowerCase(),
+						to: isNullish(contractDeployed.options.address) ? contractDeployed.options.address : `Z${contractDeployed.options.address.slice(1).toLowerCase()}`,
 						transactionIndex: BigInt(0),
 						type: BigInt(2),
 					},

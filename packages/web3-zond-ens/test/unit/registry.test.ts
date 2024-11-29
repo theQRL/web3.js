@@ -23,7 +23,7 @@ import { namehash } from '../../src/utils';
 describe('registry', () => {
 	let object: Web3ContextObject;
 	let registry: Registry;
-	const mockAddress = '0x0000000000000000000000000000000000000000';
+	const mockAddress = 'Z0000000000000000000000000000000000000000';
 	const ENS_NAME = 'web3js.eth';
 
 	beforeAll(() => {

@@ -41,7 +41,7 @@ pragma solidity ^0.8.4;
 
 contract Test {
 	uint256 a;
-	address d = 0xdCad3a6d3569DF655070DEd06cb7A1b2Ccd1D3AF;
+	address d = ZdCad3a6d3569DF655070DEd06cb7A1b2Ccd1D3AF;
 
 	constructor(uint256 testInt) {
 		a = testInt;

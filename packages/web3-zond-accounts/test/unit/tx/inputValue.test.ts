@@ -14,7 +14,7 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-// import { Bytes } from '@theqrl/web3-types';
+// import { Bytes, ZPrefixedHexString } from '@theqrl/web3-types';
 import { hexToBytes } from '@theqrl/web3-utils';
 // import { Chain, Common, Hardfork, toUint8Array } from '../../../src/common';
 // import { Address } from '../../../src/tx/address';
@@ -27,11 +27,11 @@ import {
 import type {
 	FeeMarketEIP1559ValuesArray,
 } from '../../../src';
-// import type { BigIntLike, PrefixedHexString } from '../../../src/common/types';
+// import type { BigIntLike } from '../../../src/common/types';
 
 // NOTE(rgeraldes24): test 'Transaction Input Values' not valid atm
 /*
-type AddressLike = Address | Uint8Array | PrefixedHexString;
+type AddressLike = Address | Uint8Array | ZPrefixedHexString;
 // @returns: Array with subtypes of the AddressLike type for a given address
 function generateAddressLikeValues(address: string): AddressLike[] {
 	return [address, toUint8Array(address), new Address(toUint8Array(address))];
@@ -114,7 +114,7 @@ const baseTxValues = {
 	data: generateBufferLikeValues('0x65'),
 	gasLimit: generateBigIntLikeValues(100000),
 	nonce: generateBigIntLikeValues(0),
-	to: generateAddressLikeValues('0x0000000000000000000000000000000000000000'),
+	to: generateAddressLikeValues('Z0000000000000000000000000000000000000000'),
 	publicKey: generateBigIntLikeValues(100),
 	signature: generateBigIntLikeValues(100),
 	value: generateBigIntLikeValues(10),
@@ -186,22 +186,22 @@ test('[Invalid Access Lists]', () => {
 	const invalidAccessLists = [
 		[[]], // does not have an address and does not have slots
 		[[[], []]], // the address is an array
-		[['0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae']], // there is no storage slot array
+		[['Zde0b295669a9fd93d5f28d9ec85e40f4cb697bae']], // there is no storage slot array
 		[
 			[
-				'0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae',
+				'Zde0b295669a9fd93d5f28d9ec85e40f4cb697bae',
 				['0x0000000000000000000000000000000000000000000000000000000000000003', []],
 			],
 		], // one of the slots is an array
 		[
 			[
-				'0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae',
+				'Zde0b295669a9fd93d5f28d9ec85e40f4cb697bae',
 				['0x0000000000000000000000000000000000000000000000000000000000000003'],
 				'0xab',
 			],
 		], // extra field
 		[
-			'0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae',
+			'Zde0b295669a9fd93d5f28d9ec85e40f4cb697bae',
 			['0x0000000000000000000000000000000000000000000000000000000000000003'],
 		], // account/slot needs to be encoded in a deeper array layer
 	];

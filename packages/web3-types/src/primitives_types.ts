@@ -16,6 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 export type HexString = string;
+export type ZPrefixedHexString = string;
 export type Bytes = Uint8Array | HexString;
 export type Numbers = number | bigint | string | HexString;
 

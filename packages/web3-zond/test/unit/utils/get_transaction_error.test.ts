@@ -49,8 +49,8 @@ describe('getTransactionError', () => {
 				method: 'zond_sendTransaction',
 				params: [
 					{
-						from: '0x4fec0a51024b13030d26e70904b066c6d41157a5',
-						to: '0x0000000000000000000000000000000000000000',
+						from: 'Z4fec0a51024b13030d26e70904b066c6d41157a5',
+						to: 'Z0000000000000000000000000000000000000000',
 						value: '0x1',
 						gas: '0x1',
 						maxPriorityFeePerGas: '0x15b61074',
@@ -69,8 +69,8 @@ describe('getTransactionError', () => {
 			.mockImplementation();
 
 		const transaction = {
-			from: '0x4fec0a51024b13030d26e70904b066c6d41157a5',
-			to: '0x36361143b7e2c676f8ccd67743a89d26437f0529',
+			from: 'Z4fec0a51024b13030d26e70904b066c6d41157a5',
+			to: 'Z36361143b7e2c676f8ccd67743a89d26437f0529',
 			data: '0x819f48fe',
 			maxPriorityFeePerGas: '0x0',
 			maxFeePerGas: '0x15ab8f14',
@@ -87,8 +87,8 @@ describe('getTransactionError', () => {
 			.mockImplementation();
 
 		const transaction = {
-			from: '0x4fec0a51024b13030d26e70904b066c6d41157a5',
-			to: '0x36361143b7e2c676f8ccd67743a89d26437f0529',
+			from: 'Z4fec0a51024b13030d26e70904b066c6d41157a5',
+			to: 'Z36361143b7e2c676f8ccd67743a89d26437f0529',
 			data: '0x819f48fe',
 			maxPriorityFeePerGas: '0x0',
 			maxFeePerGas: '0x15ab8f14',
@@ -102,8 +102,8 @@ describe('getTransactionError', () => {
 	describe('TransactionRevertedWithoutReasonError', () => {
 		it('should throw TransactionRevertedWithoutReasonError without receipt', async () => {
 			const transaction = {
-				from: '0x4fec0a51024b13030d26e70904b066c6d41157a5',
-				to: '0x36361143b7e2c676f8ccd67743a89d26437f0529',
+				from: 'Z4fec0a51024b13030d26e70904b066c6d41157a5',
+				to: 'Z36361143b7e2c676f8ccd67743a89d26437f0529',
 				data: '0x819f48fe',
 				maxPriorityFeePerGas: '0x0',
 				maxFeePerGas: '0x15ab8f14',
@@ -116,8 +116,8 @@ describe('getTransactionError', () => {
 
 		it('should throw TransactionRevertedWithoutReasonError with receipt', async () => {
 			const transaction = {
-				from: '0x4fec0a51024b13030d26e70904b066c6d41157a5',
-				to: '0x36361143b7e2c676f8ccd67743a89d26437f0529',
+				from: 'Z4fec0a51024b13030d26e70904b066c6d41157a5',
+				to: 'Z36361143b7e2c676f8ccd67743a89d26437f0529',
 				data: '0x819f48fe',
 				maxPriorityFeePerGas: '0x0',
 				maxFeePerGas: '0x15ab8f14',
@@ -128,8 +128,8 @@ describe('getTransactionError', () => {
 				transactionIndex: BigInt(0),
 				blockHash: '0xc150c0a7f7f5c9014ea965d19b1be5f5ced07a6b17ea3b1126769d745dde9b2d',
 				blockNumber: BigInt(16738176),
-				from: '0x4fec0a51024b13030d26e70904b066c6d41157a5',
-				to: '0x36361143b7e2c676f8ccd67743a89d26437f0529',
+				from: 'Z4fec0a51024b13030d26e70904b066c6d41157a5',
+				to: 'Z36361143b7e2c676f8ccd67743a89d26437f0529',
 				cumulativeGasUsed: BigInt(23605),
 				gasUsed: BigInt(23605),
 				effectiveGasPrice: BigInt(2000000000),
@@ -161,8 +161,8 @@ describe('getTransactionError', () => {
 					method: 'zond_sendTransaction',
 					params: [
 						{
-							from: '0x4fec0a51024b13030d26e70904b066c6d41157a5',
-							to: '0x0000000000000000000000000000000000000000',
+							from: 'Z4fec0a51024b13030d26e70904b066c6d41157a5',
+							to: 'Z0000000000000000000000000000000000000000',
 							value: '0x1',
 							gas: '0x1',
 							maxPriorityFeePerGas: '0x0',
@@ -179,8 +179,8 @@ describe('getTransactionError', () => {
 
 		it('should throw TransactionRevertInstructionError without transaction and with receipt', async () => {
 			const transaction = {
-				from: '0x4fec0a51024b13030d26e70904b066c6d41157a5',
-				to: '0x36361143b7e2c676f8ccd67743a89d26437f0529',
+				from: 'Z4fec0a51024b13030d26e70904b066c6d41157a5',
+				to: 'Z36361143b7e2c676f8ccd67743a89d26437f0529',
 				data: '0x819f48fe',
 				maxPriorityFeePerGas: '0x0',
 				maxFeePerGas: '0x15ab8f14',
@@ -191,8 +191,8 @@ describe('getTransactionError', () => {
 				transactionIndex: BigInt(0),
 				blockHash: '0xc150c0a7f7f5c9014ea965d19b1be5f5ced07a6b17ea3b1126769d745dde9b2d',
 				blockNumber: BigInt(16738176),
-				from: '0x4fec0a51024b13030d26e70904b066c6d41157a5',
-				to: '0x36361143b7e2c676f8ccd67743a89d26437f0529',
+				from: 'Z4fec0a51024b13030d26e70904b066c6d41157a5',
+				to: 'Z36361143b7e2c676f8ccd67743a89d26437f0529',
 				cumulativeGasUsed: BigInt(23605),
 				gasUsed: BigInt(23605),
 				effectiveGasPrice: BigInt(2000000000),
@@ -215,8 +215,8 @@ describe('getTransactionError', () => {
 					method: 'zond_sendTransaction',
 					params: [
 						{
-							from: '0x4fec0a51024b13030d26e70904b066c6d41157a5',
-							to: '0x0000000000000000000000000000000000000000',
+							from: 'Z4fec0a51024b13030d26e70904b066c6d41157a5',
+							to: 'Z0000000000000000000000000000000000000000',
 							value: '0x1',
 							gas: '0x1',
 							maxPriorityFeePerGas: '0x0',
@@ -241,8 +241,8 @@ describe('getTransactionError', () => {
 			});
 
 			const transaction = {
-				from: '0x4fec0a51024b13030d26e70904b066c6d41157a5',
-				to: '0x36361143b7e2c676f8ccd67743a89d26437f0529',
+				from: 'Z4fec0a51024b13030d26e70904b066c6d41157a5',
+				to: 'Z36361143b7e2c676f8ccd67743a89d26437f0529',
 				data: '0x819f48fe',
 				maxPriorityFeePerGas: '0x0',
 				maxFeePerGas: '0x15ab8f14',
@@ -275,8 +275,8 @@ describe('getTransactionError', () => {
 			});
 
 			const transaction = {
-				from: '0x4fec0a51024b13030d26e70904b066c6d41157a5',
-				to: '0x36361143b7e2c676f8ccd67743a89d26437f0529',
+				from: 'Z4fec0a51024b13030d26e70904b066c6d41157a5',
+				to: 'Z36361143b7e2c676f8ccd67743a89d26437f0529',
 				data: '0x819f48fe',
 				maxPriorityFeePerGas: '0x0',
 				maxFeePerGas: '0x15ab8f14',
@@ -287,8 +287,8 @@ describe('getTransactionError', () => {
 				transactionIndex: BigInt(0),
 				blockHash: '0xc150c0a7f7f5c9014ea965d19b1be5f5ced07a6b17ea3b1126769d745dde9b2d',
 				blockNumber: BigInt(16738176),
-				from: '0x4fec0a51024b13030d26e70904b066c6d41157a5',
-				to: '0x36361143b7e2c676f8ccd67743a89d26437f0529',
+				from: 'Z4fec0a51024b13030d26e70904b066c6d41157a5',
+				to: 'Z36361143b7e2c676f8ccd67743a89d26437f0529',
 				cumulativeGasUsed: BigInt(23605),
 				gasUsed: BigInt(23605),
 				effectiveGasPrice: BigInt(2000000000),
@@ -335,8 +335,8 @@ describe('getTransactionError', () => {
 			});
 
 			const transaction = {
-				from: '0x4fec0a51024b13030d26e70904b066c6d41157a5',
-				to: '0x36361143b7e2c676f8ccd67743a89d26437f0529',
+				from: 'Z4fec0a51024b13030d26e70904b066c6d41157a5',
+				to: 'Z36361143b7e2c676f8ccd67743a89d26437f0529',
 				data: '0x819f48fe',
 				maxPriorityFeePerGas: '0x0',
 				maxFeePerGas: '0x15ab8f14',
@@ -381,8 +381,8 @@ describe('getTransactionError', () => {
 			});
 
 			const transaction = {
-				from: '0x4fec0a51024b13030d26e70904b066c6d41157a5',
-				to: '0x36361143b7e2c676f8ccd67743a89d26437f0529',
+				from: 'Z4fec0a51024b13030d26e70904b066c6d41157a5',
+				to: 'Z36361143b7e2c676f8ccd67743a89d26437f0529',
 				data: '0x819f48fe',
 				maxPriorityFeePerGas: '0x0',
 				maxFeePerGas: '0x15ab8f14',
@@ -393,8 +393,8 @@ describe('getTransactionError', () => {
 				transactionIndex: BigInt(0),
 				blockHash: '0xc150c0a7f7f5c9014ea965d19b1be5f5ced07a6b17ea3b1126769d745dde9b2d',
 				blockNumber: BigInt(16738176),
-				from: '0x4fec0a51024b13030d26e70904b066c6d41157a5',
-				to: '0x36361143b7e2c676f8ccd67743a89d26437f0529',
+				from: 'Z4fec0a51024b13030d26e70904b066c6d41157a5',
+				to: 'Z36361143b7e2c676f8ccd67743a89d26437f0529',
 				cumulativeGasUsed: BigInt(23605),
 				gasUsed: BigInt(23605),
 				effectiveGasPrice: BigInt(2000000000),

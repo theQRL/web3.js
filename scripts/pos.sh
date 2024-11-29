@@ -109,7 +109,7 @@ start() {
 		--accept-terms-of-use \
 		--jwt-secret=${TMP_FOLDER}/data/gzond/jwtsecret \
 		--contract-deployment-block=0 \
-		--suggested-fee-recipient=0x123463a4b065722e99115d6c222f267d9cabb524 \
+		--suggested-fee-recipient=Z123463a4b065722e99115d6c222f267d9cabb524 \
 		--enable-debug-rpc-endpoints >> ${TMP_FOLDER}/logs/beacon.log 2>&1 &
 
 	echo "Waiting for validator..."

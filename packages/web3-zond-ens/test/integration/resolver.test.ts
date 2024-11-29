@@ -18,7 +18,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import Web3Zond from '@theqrl/web3-zond';
 import { Contract, PayableTxOptions } from '@theqrl/web3-zond-contract';
-import { sha3 } from '@theqrl/web3-utils';
+import { hexToAddress, sha3 } from '@theqrl/web3-utils';
 
 import { Address, Bytes, DEFAULT_RETURN_FORMAT } from '@theqrl/web3-types';
 // eslint-disable-next-line import/no-extraneous-dependencies
@@ -66,7 +66,7 @@ describe('ens', () => {
 	let accountOne: string;
 
 	const ZERO_NODE: Bytes = '0x0000000000000000000000000000000000000000000000000000000000000000';
-	const addressOne: Address = '0x0000000000000000000000000000000000000001';
+	const addressOne: Address = 'Z0000000000000000000000000000000000000001';
 
 	const contentHash = '0x0000000000000000000000000000000000000000000000000000000000000001';
 
@@ -225,8 +225,10 @@ describe('ens', () => {
 
 		await resolver.methods.setAddr(domainNode, accounts[1]).send(sendOptions);
 
+		// NOTE(rgeraldes24): resolver.methods.addr(node, coin) return type is 'bytes';
+		// value is not converted automatically to the 'address' type via ABI
 		const res = await resolver.methods.addr(domainNode, DEFAULT_COIN_TYPE).call(sendOptions);
-		expect(res).toBe(accounts[1]);
+		expect(hexToAddress(res.toString())).toBe(accounts[1]);
 	});
 
 	it('fetches address', async () => {
@@ -236,7 +238,9 @@ describe('ens', () => {
 
 		await resolver.methods.setAddr(domainNode, accountOne).send(sendOptions);
 
+		// NOTE(rgeraldes24): ens.getAddress(domain) return type is 'bytes';
+		// value is not converted automatically to the 'address' type via ABI
 		const resultAddress = await ens.getAddress(domain);
-		expect(resultAddress).toBe(accountOne);
+		expect(hexToAddress(resultAddress.toString())).toBe(accountOne);
 	});
 });

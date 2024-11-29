@@ -25,7 +25,7 @@ import {
 	TransactionWithSenderAPI,
 	ZOND_DATA_FORMAT,
 } from '@theqrl/web3-types';
-import { isAddress, isHexStrict, isHexString32Bytes, isNullish, isUInt } from '@theqrl/web3-validator';
+import { isAddressString, isHexStrict, isHexString32Bytes, isNullish, isUInt } from '@theqrl/web3-validator';
 import {
 	ChainMismatchError,
 	HardforkMismatchError,
@@ -46,7 +46,7 @@ import { formatTransaction } from './utils/format_transaction.js';
 import { InternalTransaction } from './types.js';
 
 export function isBaseTransaction(value: BaseTransactionAPI): boolean {
-	if (!isNullish(value.to) && !isAddress(value.to)) return false;
+	if (!isNullish(value.to) && !isAddressString(value.to)) return false;
 	if (!isHexStrict(value.type) && !isNullish(value.type) && value.type.length !== 2) return false;
 	if (!isHexStrict(value.nonce)) return false;
 	if (!isHexStrict(value.gas)) return false;
@@ -58,7 +58,7 @@ export function isBaseTransaction(value: BaseTransactionAPI): boolean {
 }
 
 export function isAccessListEntry(value: AccessListEntry): boolean {
-	if (!isNullish(value.address) && !isAddress(value.address)) return false;
+	if (!isNullish(value.address) && !isAddressString(value.address)) return false;
 	if (
 		!isNullish(value.storageKeys) &&
 		!value.storageKeys.every(storageKey => isHexString32Bytes(storageKey))
@@ -88,7 +88,7 @@ export function isTransaction1559Unsigned(value: Transaction1559UnsignedAPI): bo
 }
 
 export function isTransactionWithSender(value: TransactionWithSenderAPI): boolean {
-	if (!isAddress(value.from)) return false;
+	if (!isAddressString(value.from)) return false;
 	if (!isBaseTransaction(value)) return false;
 	if (
 		!isTransaction1559Unsigned(value as Transaction1559UnsignedAPI)
@@ -103,8 +103,8 @@ export function validateTransactionWithSender(value: TransactionWithSenderAPI) {
 }
 
 export function isTransactionCall(value: TransactionCall): boolean {
-	if (!isNullish(value.from) && !isAddress(value.from)) return false;
-	if (!isAddress(value.to)) return false;
+	if (!isNullish(value.from) && !isAddressString(value.from)) return false;
+	if (!isAddressString(value.to)) return false;
 	if (!isNullish(value.gas) && !isHexStrict(value.gas)) return false;
 	if (!isNullish(value.value) && !isHexStrict(value.value)) return false;
 	if (!isNullish(value.data) && !isHexStrict(value.data)) return false;

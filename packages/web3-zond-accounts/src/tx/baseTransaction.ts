@@ -16,7 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { Numbers } from '@theqrl/web3-types';
-import { bytesToHex } from '@theqrl/web3-utils';
+import { bytesToHex, toHex } from '@theqrl/web3-utils';
 import { cryptoSignVerify } from '@theqrl/dilithium5';
 import { Dilithium } from '@theqrl/wallet.js';
 import { MAX_INTEGER, MAX_UINT64, SEED_BYTES } from './constants.js';
@@ -35,6 +35,7 @@ import type {
 } from './types.js';
 import { Address } from './address.js';
 import { checkMaxInitCodeSize } from './utils.js';
+import { isAddressString } from '@theqrl/web3-validator';
 
 interface TransactionCache {
 	hash: Uint8Array | undefined;
@@ -99,7 +100,21 @@ export abstract class BaseTransaction<TransactionObject> {
 
 		this.txOptions = opts;
 
-		const toB = toUint8Array(to === '' ? '0x' : to);
+		var toB: Uint8Array
+		if (typeof to === 'string') {
+			if (to === '') {
+				toB = toUint8Array('0x')
+			} else if (isAddressString(to)) {
+				toB = toUint8Array(toHex(to))
+			} else {
+				throw new Error(
+					`Cannot convert string to Uint8Array. only supports address strings and this string was given: ${to}`,
+				);
+			}
+		} else {
+			toB = toUint8Array(to);
+		}
+
 		const signatureB = toUint8Array(signature === '' ? '0x' : signature);
 		const publicKeyB = toUint8Array(publicKey === '' ? '0x' : publicKey);
 

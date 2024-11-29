@@ -34,7 +34,7 @@ import {
 	TypedObject,
 	TypedObjectAbbreviated,
 } from '@theqrl/web3-types';
-import { isAddress, isNullish, isHexStrict } from '@theqrl/web3-validator';
+import { isAddressString, isNullish, isHexStrict } from '@theqrl/web3-validator';
 import {
 	bytesToUint8Array,
 	bytesToHex,
@@ -43,6 +43,7 @@ import {
 	toHex,
 	toNumber,
 	utf8ToHex,
+	addressToHex,
 } from './converters.js';
 import { leftPad, rightPad, toTwosComplement } from './string_manipulation.js';
 
@@ -240,10 +241,10 @@ const solidityPack = (type: string, val: EncodingTypes): string => {
 	}
 
 	if (type === 'address') {
-		if (!isAddress(value)) {
+		if (!isAddressString(value)) {
 			throw new InvalidAddressError(value);
 		}
-		return value;
+		return addressToHex(value);
 	}
 	const name = elementaryName(type);
 	if (type.startsWith('uint')) {

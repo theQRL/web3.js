@@ -41,7 +41,7 @@ describe('Web3Zond.signTransaction', () => {
 		const transaction: Transaction = {
 			from: tempAcc.address,
 			nonce,
-			to: '0x0000000000000000000000000000000000000000',
+			to: 'Z0000000000000000000000000000000000000000',
 			value: '0x1',
 			type: BigInt(2),
 			gas: 21000,

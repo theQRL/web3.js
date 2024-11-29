@@ -16,8 +16,8 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { HexString } from '@theqrl/web3-types';
-import { toChecksumAddress, leftPad, hexToNumber } from '@theqrl/web3-utils';
-import { isAddress } from '@theqrl/web3-validator';
+import { toChecksumAddress, leftPad, toNumber, hexToAddress, addressToHex } from '@theqrl/web3-utils';
+import { isAddressString } from '@theqrl/web3-validator';
 import { InvalidAddressError } from '@theqrl/web3-errors';
 import { IbanOptions } from './types.js';
 
@@ -259,16 +259,16 @@ export class Iban {
 	 *
 	 * @example
 	 * ```ts
-	 * web3.zond.Iban.fromAddress("0x00c5496aEe77C1bA1f0854206A26DdA82a81D6D8");
+	 * web3.zond.Iban.fromAddress("Z00c5496aEe77C1bA1f0854206A26DdA82a81D6D8");
 	 * > Iban {_iban: "XE7338O073KYGTWWZN0F2WZ0R8PX5ZPPZS"}
 	 * ```
 	 */
 	public static fromAddress(address: HexString): Iban {
-		if (!isAddress(address)) {
+		if (!isAddressString(address)) {
 			throw new InvalidAddressError(address);
 		}
 
-		const num = BigInt(hexToNumber(address));
+		const num = BigInt(toNumber(addressToHex(address)));
 		const base36 = num.toString(36);
 		const padded = leftPad(base36, 15);
 		return Iban.fromBban(padded.toUpperCase());
@@ -286,7 +286,7 @@ export class Iban {
 	 * @example
 	 * ```ts
 	 * web3.zond.Iban.toAddress("XE7338O073KYGTWWZN0F2WZ0R8PX5ZPPZS");
-	 * > "0x00c5496aEe77C1bA1f0854206A26DdA82a81D6D8"
+	 * > "Z00c5496aEe77C1bA1f0854206A26DdA82a81D6D8"
 	 * ```
 	 */
 	public static toAddress = (iban: string): HexString => {
@@ -306,7 +306,7 @@ export class Iban {
 	 * ```ts
 	 * const iban = new web3.zond.Iban("XE7338O073KYGTWWZN0F2WZ0R8PX5ZPPZS");
 	 * iban.toAddress();
-	 * > "0x00c5496aEe77C1bA1f0854206A26DdA82a81D6D8"
+	 * > "Z00c5496aEe77C1bA1f0854206A26DdA82a81D6D8"
 	 * ```
 	 */
 	public toAddress = (): HexString => {
@@ -315,7 +315,7 @@ export class Iban {
 			const base36 = this._iban.slice(4);
 			const parsedBigInt = Iban._parseInt(base36, 36); // convert the base36 string to a bigint
 			const paddedBigInt = leftPad(parsedBigInt, 40);
-			return toChecksumAddress(paddedBigInt);
+			return toChecksumAddress(hexToAddress(paddedBigInt));
 		}
 		throw new Error('Iban is indirect and cannot be converted. Must be length of 34 or 35');
 	};
@@ -328,7 +328,7 @@ export class Iban {
 	 *
 	 * @example
 	 * ```ts
-	 * web3.zond.Iban.toIban("0x00c5496aEe77C1bA1f0854206A26DdA82a81D6D8");
+	 * web3.zond.Iban.toIban("Z00c5496aEe77C1bA1f0854206A26DdA82a81D6D8");
 	 * > "XE7338O073KYGTWWZN0F2WZ0R8PX5ZPPZS"
 	 * ```
 	 */

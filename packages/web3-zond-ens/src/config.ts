@@ -45,7 +45,7 @@ export const methodsInInterface: { [T: string]: string } = {
  */
 // TODO(youtrack/theqrl/web3.js/1)
 export const registryAddresses: { [T: string]: string } = {
-	main: '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e',
+	main: 'Z00000000000C2E074eC69A0dFb2997BA6C7d2e1e',
 };
 
 export const networkIds: { [T: string]: string } = {

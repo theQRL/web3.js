@@ -40,6 +40,9 @@ import {
 	toChecksumAddress,
 	bytesToUint8Array,
 	toBigInt,
+	addressToBytes,
+	addressToHex,
+	hexToAddress,
 } from '../../src/converters';
 
 import {
@@ -71,6 +74,11 @@ import {
 	toBigIntInvalidData,
 	toCheckSumInvalidData,
 	numberToHexstrictValidData,
+	addressToBytesValidData,
+	addressToHexValidData,
+	hexToAddressValidData,
+	hexToAddressInvalidData,
+	invalidAddressData,
 } from '../fixtures/converters';
 
 describe('converters', () => {
@@ -98,6 +106,48 @@ describe('converters', () => {
 		describe('invalid cases', () => {
 			it.each(hexToBytesInvalidData)('%s', (input, output) => {
 				expect(() => hexToBytes(input)).toThrow(output);
+			});
+		});
+	});
+
+	describe('addressToHex', () => {
+		describe('valid cases', () => {
+			it.each(addressToHexValidData)('%s', (input, output) => {
+				expect(addressToHex(input)).toEqual(output);
+			});
+		});
+
+		describe('invalid cases', () => {
+			it.each(invalidAddressData)('%s', (input, output) => {
+				expect(() => addressToHex(input)).toThrow(output);
+			});
+		});
+	});
+
+	describe('hexToAddress', () => {
+		describe('valid cases', () => {
+			it.each(hexToAddressValidData)('%s', (input, output) => {
+				expect(hexToAddress(input)).toEqual(output);
+			});
+		});
+
+		describe('invalid cases', () => {
+			it.each(hexToAddressInvalidData)('%s', (input, output) => {
+				expect(() => hexToAddress(input)).toThrow(output);
+			});
+		});
+	});
+
+	describe('addressToBytes', () => {
+		describe('valid cases', () => {
+			it.each(addressToBytesValidData)('%s', (input, output) => {
+				expect(addressToBytes(input)).toEqual(output);
+			});
+		});
+
+		describe('invalid cases', () => {
+			it.each(invalidAddressData)('%s', (input, output) => {
+				expect(() => addressToBytes(input)).toThrow(output);
 			});
 		});
 	});

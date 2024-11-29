@@ -19,8 +19,8 @@ import { ZOND_DATA_FORMAT, FormatType, Transaction } from '@theqrl/web3-types';
 
 export const transactionType0x2: FormatType<Transaction, typeof ZOND_DATA_FORMAT>[] = [
 	{
-		from: '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0',
-		to: '0x3535353535353535353535353535353535353535',
+		from: 'ZEB014f8c8B418Db6b45774c326A0E64C78914dC0',
+		to: 'Z3535353535353535353535353535353535353535',
 		value: '0x174876e800',
 		gas: '0x5208',
 		type: '0x2',
@@ -30,8 +30,8 @@ export const transactionType0x2: FormatType<Transaction, typeof ZOND_DATA_FORMAT
 		gasLimit: '0x5208',
 	},
 	{
-		from: '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0',
-		to: '0x3535353535353535353535353535353535353535',
+		from: 'ZEB014f8c8B418Db6b45774c326A0E64C78914dC0',
+		to: 'Z3535353535353535353535353535353535353535',
 		value: '0x174876e800',
 		gas: '0x5208',
 		maxFeePerGas: '0x1229298c00',
@@ -41,8 +41,8 @@ export const transactionType0x2: FormatType<Transaction, typeof ZOND_DATA_FORMAT
 		gasLimit: '0x5208',
 	},
 	{
-		from: '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0',
-		to: '0x3535353535353535353535353535353535353535',
+		from: 'ZEB014f8c8B418Db6b45774c326A0E64C78914dC0',
+		to: 'Z3535353535353535353535353535353535353535',
 		value: '0x174876e800',
 		gas: '0x5208',
 		maxPriorityFeePerGas: '0x49504f80',
@@ -52,8 +52,8 @@ export const transactionType0x2: FormatType<Transaction, typeof ZOND_DATA_FORMAT
 		gasLimit: '0x5208',
 	},
 	{
-		from: '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0',
-		to: '0x3535353535353535353535353535353535353535',
+		from: 'ZEB014f8c8B418Db6b45774c326A0E64C78914dC0',
+		to: 'Z3535353535353535353535353535353535353535',
 		value: '0x174876e800',
 		gas: '0x5208',
 		data: '0x0',
@@ -69,8 +69,8 @@ export const transactionType0x2: FormatType<Transaction, typeof ZOND_DATA_FORMAT
 		},
 	},
 	{
-		from: '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0',
-		to: '0x3535353535353535353535353535353535353535',
+		from: 'ZEB014f8c8B418Db6b45774c326A0E64C78914dC0',
+		to: 'Z3535353535353535353535353535353535353535',
 		value: '0x174876e800',
 		gas: '0x5208',
 		data: '0x0',
@@ -83,8 +83,8 @@ export const transactionType0x2: FormatType<Transaction, typeof ZOND_DATA_FORMAT
 
 export const transactionTypeUndefined: FormatType<Transaction, typeof ZOND_DATA_FORMAT>[] = [
 	{
-		from: '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0',
-		to: '0x3535353535353535353535353535353535353535',
+		from: 'ZEB014f8c8B418Db6b45774c326A0E64C78914dC0',
+		to: 'Z3535353535353535353535353535353535353535',
 		value: '0x174876e800',
 		gas: '0x5208',
 		data: '0x',
@@ -93,8 +93,8 @@ export const transactionTypeUndefined: FormatType<Transaction, typeof ZOND_DATA_
 		gasLimit: '0x5208',
 	},
 	{
-		from: '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0',
-		to: '0x3535353535353535353535353535353535353535',
+		from: 'ZEB014f8c8B418Db6b45774c326A0E64C78914dC0',
+		to: 'Z3535353535353535353535353535353535353535',
 		value: '0x174876e800',
 		gas: '0x5208',
 		data: '0x',
@@ -103,8 +103,8 @@ export const transactionTypeUndefined: FormatType<Transaction, typeof ZOND_DATA_
 		gasLimit: '0x5208',
 	},
 	{
-		from: '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0',
-		to: '0x3535353535353535353535353535353535353535',
+		from: 'ZEB014f8c8B418Db6b45774c326A0E64C78914dC0',
+		to: 'Z3535353535353535353535353535353535353535',
 		value: '0x174876e800',
 		gas: '0x5208',
 		maxFeePerGas: '0x1229298c00',
@@ -117,8 +117,8 @@ export const transactionTypeUndefined: FormatType<Transaction, typeof ZOND_DATA_
 		hardfork: 'nonExistent',
 	},
 	{
-		from: '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0',
-		to: '0x3535353535353535353535353535353535353535',
+		from: 'ZEB014f8c8B418Db6b45774c326A0E64C78914dC0',
+		to: 'Z3535353535353535353535353535353535353535',
 		value: '0x174876e800',
 		gas: '0x5208',
 		maxFeePerGas: '0x1229298c00',

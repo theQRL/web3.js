@@ -65,7 +65,7 @@ describe(`${getSystemTestBackend()} tests - getTransaction`, () => {
 			blockHash: '0xabc81c29235c7962f5a0420644761627bdc064a560c7d1842cdf9517f7d7984e',
 			blockNumber: BigInt(17030310),
 			transactionIndex: BigInt(91),
-			from: '0xd67da12dc33d9730d9341bbfa4f0b67d0688b28b',
+			from: 'Zd67da12dc33d9730d9341bbfa4f0b67d0688b28b',
 			maxPriorityFeePerGas: BigInt(100000000),
 			maxFeePerGas: BigInt(26848942133),
 			gas: BigInt(300858),

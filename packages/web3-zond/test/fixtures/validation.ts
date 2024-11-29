@@ -39,7 +39,7 @@ export const isBaseTransactionValidData: [BaseTransactionAPI, true][] = [
 	],
 	[
 		{
-			to: '0x6E599DA0bfF7A6598AC1224E4985430Bf16458a4',
+			to: 'Z6E599DA0bfF7A6598AC1224E4985430Bf16458a4',
 			type: '0x2',
 			nonce: '0x1',
 			gas: '0x5208',
@@ -54,7 +54,7 @@ export const isAccessListEntryValidData: [AccessListEntry, true][] = [
 	[{}, true],
 	[
 		{
-			address: '0x6E599DA0bfF7A6598AC1224E4985430Bf16458a4',
+			address: 'Z6E599DA0bfF7A6598AC1224E4985430Bf16458a4',
 		},
 		true,
 	],
@@ -69,7 +69,7 @@ export const isAccessListEntryValidData: [AccessListEntry, true][] = [
 	],
 	[
 		{
-			address: '0x6E599DA0bfF7A6598AC1224E4985430Bf16458a4',
+			address: 'Z6E599DA0bfF7A6598AC1224E4985430Bf16458a4',
 			storageKeys: [
 				'0x22f30f0608f88c510de0016370f1525b330e5839026bdff93f9ceef24d2275e6',
 				'0x63a01bba0d4f0ad913a241aed52f5c55807be35f554536abd1e451d4e6515b29',
@@ -107,7 +107,7 @@ export const isTransactionWithSenderValidData = (): [TransactionWithSenderAPI, t
 		return [
 			{
 				...transaction[0],
-				from: '0x6E599DA0bfF7A6598AC1224E4985430Bf16458a4',
+				from: 'Z6E599DA0bfF7A6598AC1224E4985430Bf16458a4',
 			},
 			true,
 		];
@@ -127,11 +127,11 @@ export const validateTransactionWithSenderInvalidData = (): [
 };
 
 export const isTransactionCallValidData: [TransactionCall, true][] = [
-	[{ to: '0x6E599DA0bfF7A6598AC1224E4985430Bf16458a4' }, true],
+	[{ to: 'Z6E599DA0bfF7A6598AC1224E4985430Bf16458a4' }, true],
 	[
 		{
-			from: '0x6E599DA0bfF7A6598AC1224E4985430Bf16458a4',
-			to: '0x6E599DA0bfF7A6598AC1224E4985430Bf16458a4',
+			from: 'Z6E599DA0bfF7A6598AC1224E4985430Bf16458a4',
+			to: 'Z6E599DA0bfF7A6598AC1224E4985430Bf16458a4',
 			gas: '0x5208',
 			value: '0x1',
 		},
@@ -139,8 +139,8 @@ export const isTransactionCallValidData: [TransactionCall, true][] = [
 	],
 	[
 		{
-			from: '0x6E599DA0bfF7A6598AC1224E4985430Bf16458a4',
-			to: '0x6E599DA0bfF7A6598AC1224E4985430Bf16458a4',
+			from: 'Z6E599DA0bfF7A6598AC1224E4985430Bf16458a4',
+			to: 'Z6E599DA0bfF7A6598AC1224E4985430Bf16458a4',
 			gas: '0x5208',
 			maxFeePerGas: '0x5208',
 			value: '0x1',

@@ -269,7 +269,7 @@ export const validFunctionsCall: { input: { abi: any; params: any }; output: str
 			},
 			params: [
 				'0x000000000000000000000000',
-				'0x0000000000000000000000000000000000000000',
+				'Z0000000000000000000000000000000000000000',
 				'170141183460469231731687303715884105727',
 				'-170141183460469231731687303715884105727',
 			],
@@ -452,12 +452,12 @@ export const validDecodeLogsData: {
 			data: '0x00000000000000000000000000000000000000000000000000000000000186a0',
 		},
 		output: {
-			'0': '0x6E599DA0bfF7A6598AC1224E4985430Bf16458a4',
-			'1': '0x6f1DF96865D09d21e8f3f9a7fbA3b17A11c7C53C',
+			'0': 'Z6E599DA0bfF7A6598AC1224E4985430Bf16458a4',
+			'1': 'Z6f1DF96865D09d21e8f3f9a7fbA3b17A11c7C53C',
 			'2': '100000',
 			__length__: 3,
-			from: '0x6E599DA0bfF7A6598AC1224E4985430Bf16458a4',
-			to: '0x6f1DF96865D09d21e8f3f9a7fbA3b17A11c7C53C',
+			from: 'Z6E599DA0bfF7A6598AC1224E4985430Bf16458a4',
+			to: 'Z6f1DF96865D09d21e8f3f9a7fbA3b17A11c7C53C',
 			value: '100000',
 		},
 	},
@@ -489,10 +489,10 @@ export const validDecodeLogsData: {
 			topics: ['0x000000000000000000000000cb00cde33a7a0fba30c63745534f1f7ae607076b'],
 		},
 		output: {
-			'0': '0xCB00CDE33a7a0Fba30C63745534F1f7Ae607076b',
+			'0': 'ZCB00CDE33a7a0Fba30C63745534F1f7Ae607076b',
 			'1': {
 				'0': 'Rick Sanchez',
-				'1': '0xCB00CDE33a7a0Fba30C63745534F1f7Ae607076b',
+				'1': 'ZCB00CDE33a7a0Fba30C63745534F1f7Ae607076b',
 				'2': {
 					'0': 'rick.c137@citadel.cfc',
 					'1': '+1 (555) 314-1593',
@@ -502,7 +502,7 @@ export const validDecodeLogsData: {
 				},
 				__length__: 3,
 				name: 'Rick Sanchez',
-				addr: '0xCB00CDE33a7a0Fba30C63745534F1f7Ae607076b',
+				addr: 'ZCB00CDE33a7a0Fba30C63745534F1f7Ae607076b',
 				contact: {
 					'0': 'rick.c137@citadel.cfc',
 					'1': '+1 (555) 314-1593',
@@ -512,10 +512,10 @@ export const validDecodeLogsData: {
 				},
 			},
 			__length__: 2,
-			addr: '0xCB00CDE33a7a0Fba30C63745534F1f7Ae607076b',
+			addr: 'ZCB00CDE33a7a0Fba30C63745534F1f7Ae607076b',
 			user: {
 				'0': 'Rick Sanchez',
-				'1': '0xCB00CDE33a7a0Fba30C63745534F1f7Ae607076b',
+				'1': 'ZCB00CDE33a7a0Fba30C63745534F1f7Ae607076b',
 				'2': {
 					'0': 'rick.c137@citadel.cfc',
 					'1': '+1 (555) 314-1593',
@@ -525,7 +525,7 @@ export const validDecodeLogsData: {
 				},
 				__length__: 3,
 				name: 'Rick Sanchez',
-				addr: '0xCB00CDE33a7a0Fba30C63745534F1f7Ae607076b',
+				addr: 'ZCB00CDE33a7a0Fba30C63745534F1f7Ae607076b',
 				contact: {
 					'0': 'rick.c137@citadel.cfc',
 					'1': '+1 (555) 314-1593',
@@ -897,7 +897,7 @@ export const validDecodeParametersData: {
 		outputResult: {
 			'0': {
 				'0': 'Rick Sanchez',
-				'1': '0xCB00CDE33a7a0Fba30C63745534F1f7Ae607076b',
+				'1': 'ZCB00CDE33a7a0Fba30C63745534F1f7Ae607076b',
 				'2': {
 					'0': 'rick.c137@citadel.cfc',
 					'1': '+1 (555) 314-1593',
@@ -906,7 +906,7 @@ export const validDecodeParametersData: {
 					phone: '+1 (555) 314-1593',
 				},
 				__length__: 3,
-				addr: '0xCB00CDE33a7a0Fba30C63745534F1f7Ae607076b',
+				addr: 'ZCB00CDE33a7a0Fba30C63745534F1f7Ae607076b',
 				contact: {
 					'0': 'rick.c137@citadel.cfc',
 					'1': '+1 (555) 314-1593',
@@ -919,7 +919,7 @@ export const validDecodeParametersData: {
 			__length__: 1,
 			user: {
 				'0': 'Rick Sanchez',
-				'1': '0xCB00CDE33a7a0Fba30C63745534F1f7Ae607076b',
+				'1': 'ZCB00CDE33a7a0Fba30C63745534F1f7Ae607076b',
 				'2': {
 					'0': 'rick.c137@citadel.cfc',
 					'1': '+1 (555) 314-1593',
@@ -928,7 +928,7 @@ export const validDecodeParametersData: {
 					phone: '+1 (555) 314-1593',
 				},
 				__length__: 3,
-				addr: '0xCB00CDE33a7a0Fba30C63745534F1f7Ae607076b',
+				addr: 'ZCB00CDE33a7a0Fba30C63745534F1f7Ae607076b',
 				contact: {
 					'0': 'rick.c137@citadel.cfc',
 					'1': '+1 (555) 314-1593',

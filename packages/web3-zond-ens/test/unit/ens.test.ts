@@ -43,7 +43,7 @@ const { getId } = require('@theqrl/web3-net');
 describe('ens', () => {
 	let object: Web3ContextObject;
 	let resolverContract: Contract<typeof PublicResolverAbi>;
-	const mockAddress = '0x0000000000000000000000000000000000000000';
+	const mockAddress = 'Z0000000000000000000000000000000000000000';
 	const ENS_NAME = 'web3js.zond';
 	let ens: ENS;
 

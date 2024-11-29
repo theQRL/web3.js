@@ -22,11 +22,11 @@ export const mockRpcResponse: TransactionReceipt = {
 	transactionIndex: '0x41',
 	blockHash: '0x1d59ff54b1eb26b013ce3cb5fc9dab3705b415a67127a003c3e61eb445bb8df2',
 	blockNumber: '0x5daf3b',
-	from: '0xa7d9ddbe1f17865597fbd27ec712455208b6b76d',
-	to: '0xf02c1c8e6114b1dbe8937a39260b5b0a374432bb',
+	from: 'Za7d9ddbe1f17865597fbd27ec712455208b6b76d',
+	to: 'Zf02c1c8e6114b1dbe8937a39260b5b0a374432bb',
 	cumulativeGasUsed: '0x33bc', // 13244
 	gasUsed: '0x4dc', // 1244
-	contractAddress: '0xb60e8dd61c5d32be8058bb8eb970870f07233155',
+	contractAddress: 'Zb60e8dd61c5d32be8058bb8eb970870f07233155',
 	logs: [],
 	logsBloom: '0xe21194c9509beb01be7e90c2bcefff2804cd85836ae12134f22ad4acda0fc547',
 	root: '0xe21194c9509beb01be7e90c2bcefff2804cd85836ae12134f22ad4acda0fc547',

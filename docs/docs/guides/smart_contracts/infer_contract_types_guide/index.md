@@ -17,9 +17,9 @@ import ERC20 from './node_modules/@openzeppelin/contracts/build/contracts/ERC20.
 (async function () {
 	const web3 = new Web3('rpc url');
 
-	const contract = new Contract(ERC20.abi, '0x7af963cF6D228E564e2A0aA0DdBF06210B38615D', web3);
+	const contract = new Contract(ERC20.abi, 'Z7af963cF6D228E564e2A0aA0DdBF06210B38615D', web3);
 
-	const holder = '0xa8F6eB216e26C1F7d924A801E46eaE0CE8ed1A0A';
+	const holder = 'Za8F6eB216e26C1F7d924A801E46eaE0CE8ed1A0A';
 
 	//Error because Contract doesn't know what methods exists
 	const balance = await contract.methods.balanceOf(holder).call();
@@ -40,9 +40,9 @@ const ERC20 = [
 (async function() {
     const web3 = new Web3("rpc url")
 
-    const contract = new Contract(ERC20, "0x7af963cF6D228E564e2A0aA0DdBF06210B38615D", web3)
+    const contract = new Contract(ERC20, "Z7af963cF6D228E564e2A0aA0DdBF06210B38615D", web3)
 
-    const holder = "0xa8F6eB216e26C1F7d924A801E46eaE0CE8ed1A0A"
+    const holder = "Za8F6eB216e26C1F7d924A801E46eaE0CE8ed1A0A"
 
     //Works now
     const balance = await contract.methods.balanceOf(holder).call()
@@ -108,11 +108,11 @@ import ERC20 from './artifacts/ERC20';
 
 	const contract = new Contract(
 		ERC20.abi as ContractAbi,
-		'0x7af963cF6D228E564e2A0aA0DdBF06210B38615D',
+		'Z7af963cF6D228E564e2A0aA0DdBF06210B38615D',
 		web3,
 	);
 
-	const holder = '0xa8F6eB216e26C1F7d924A801E46eaE0CE8ed1A0A';
+	const holder = 'Za8F6eB216e26C1F7d924A801E46eaE0CE8ed1A0A';
 
 	const balance = await contract.methods.balanceOf(holder).call();
 	const ticker = await contract.methods.symbol().call();

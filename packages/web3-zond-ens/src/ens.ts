@@ -53,7 +53,7 @@ export class ENS extends Web3Context<ZondExecutionAPI & Web3NetAPI> {
 	 * @example
 	 * ```ts
 	 * const ens = new ENS(
-	 * 	"0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
+	 * 	"Z00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
 	 * 	"http://localhost:8545"
 	 * );
 	 *
@@ -84,7 +84,7 @@ export class ENS extends Web3Context<ZondExecutionAPI & Web3NetAPI> {
 	 * const resolver = await ens.getResolver('resolver');
 	 *
 	 * console.log(resolver.options.address);
-	 * > '0x1234567890123456789012345678901234567890'
+	 * > 'Z1234567890123456789012345678901234567890'
 	 * ```
 	 */
 	public async getResolver(name: string): Promise<Contract<typeof PublicResolverAbi>> {
@@ -138,7 +138,7 @@ export class ENS extends Web3Context<ZondExecutionAPI & Web3NetAPI> {
 	 * ```ts
 	 * const address = await web3.zond.ens.getAddress('zond.ens');
 	 * console.log(address);
-	 * > '0xfB6916095ca1df60bB79Ce92cE3Ea74c37c5d359'
+	 * > 'ZfB6916095ca1df60bB79Ce92cE3Ea74c37c5d359'
 	 * ```
 	 */
 	public async getAddress(ENSName: string, coinType = 60) {
@@ -187,7 +187,7 @@ export class ENS extends Web3Context<ZondExecutionAPI & Web3NetAPI> {
 	 * @example
 	 * ```ts
 	 * console.log(await web3.zond.ens.checkNetwork());
-	 * > '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e'
+	 * > 'Z00000000000C2E074eC69A0dFb2997BA6C7d2e1e'
 	 * ```
 	 */
 	public async checkNetwork() {

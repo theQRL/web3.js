@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import { HexString } from '@theqrl/web3-types';
-import { bytesToHex } from '@theqrl/web3-utils';
+import { bytesToHex, toHex } from '@theqrl/web3-utils';
 import { setLengthLeft, toUint8Array } from '../common/utils.js';
 import type { AccessList, AccessListUint8Array, AccessListItem } from './types.js';
 import { isAccessList } from './types.js';
@@ -43,7 +43,7 @@ export const getAccessListData = (accessList: AccessListUint8Array | AccessList)
 		// eslint-disable-next-line @typescript-eslint/prefer-for-of
 		for (let i = 0; i < accessList.length; i += 1) {
 			const item: AccessListItem = accessList[i];
-			const addressBytes = toUint8Array(item.address);
+			const addressBytes = toUint8Array(toHex(item.address));
 			const storageItems: Uint8Array[] = [];
 			// eslint-disable-next-line @typescript-eslint/prefer-for-of
 			for (let index = 0; index < item.storageKeys.length; index += 1) {

@@ -217,7 +217,7 @@ export const blockSchema = {
 			format: 'bytes32',
 		},
 		miner: {
-			format: 'bytes',
+			format: 'address',
 		},
 		stateRoot: {
 			format: 'bytes32',

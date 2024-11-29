@@ -26,6 +26,7 @@ import {
 	padLeft,
 	hexToUint8Array,
 	uint8ArrayToHexString,
+	addressToHex,
 } from '../../src/utils';
 import { abiToJsonSchemaCases } from '../fixtures/abi_to_json_schema';
 import {
@@ -39,6 +40,8 @@ import {
 	invalidStringNumbers,
 	padLeftData,
 	validHexStrictDataWithUint8Array,
+	validAddressDataWithHex,
+	invalidAddressData,
 } from '../fixtures/validation';
 
 describe('utils', () => {
@@ -126,6 +129,17 @@ describe('utils', () => {
 			expect(() => {
 				numberToHex(input);
 			}).toThrow(new InvalidNumberError(input));
+		});
+	});
+	describe('addressToHex', () => {
+		it.each(validAddressDataWithHex)('valid address string data', (input, res) => {
+			expect(addressToHex(input)).toEqual(res);
+		});
+
+		it.each(invalidAddressData)('invalidAddressData', (input: string) => {
+			expect(() => {
+				addressToHex(input);
+			}).toThrow(new Error('Invalid address string'));
 		});
 	});
 

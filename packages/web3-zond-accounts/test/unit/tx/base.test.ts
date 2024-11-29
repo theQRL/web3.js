@@ -191,7 +191,7 @@ describe('[BaseTransaction]', () => {
 					continue;
 				}
 				const signedTx = tx.sign(hexToBytes(seed));
-				expect(signedTx.getSenderAddress().toString()).toBe(`0x${sendersAddress}`);
+				expect(signedTx.getSenderAddress().toString()).toBe(sendersAddress);
 			}
 		}
 	});

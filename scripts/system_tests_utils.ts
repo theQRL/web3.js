@@ -251,7 +251,7 @@ export const createNewAccount = async (config?: {
 		await refillAccount(mainAcc, acc.address, '10000000000000000000');
 	}
 
-	return { address: acc.address.toLowerCase(), seed: acc.seed! };
+	return { address: `Z${acc.address.slice(1).toLowerCase()}`, seed: acc.seed! };
 };
 let tempAccountList: { address: string; seed: string }[] = [];
 const walletsOnWorker = 20;

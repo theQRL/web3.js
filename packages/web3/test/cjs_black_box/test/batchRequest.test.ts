@@ -39,12 +39,12 @@ describe('CJS - Black Box Unit Tests - web3.BatchRequest', () => {
 		const request1 = {
 			id: 42,
 			method: 'zond_getBalance',
-			params: ['0x4242000000000000000000000000000000000000', 'latest'],
+			params: ['Z4242000000000000000000000000000000000000', 'latest'],
 		};
 		const request2 = {
 			id: 24,
 			method: 'zond_getBalance',
-			params: ['0x2424000000000000000000000000000000000000', 'latest'],
+			params: ['Z2424000000000000000000000000000000000000', 'latest'],
 		};
 
 		const batch = new web3.BatchRequest();

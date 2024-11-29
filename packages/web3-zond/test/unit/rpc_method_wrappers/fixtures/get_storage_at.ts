@@ -18,7 +18,7 @@ import { Address, BlockNumberOrTag, BlockTags, Numbers } from '@theqrl/web3-type
 
 export const mockRpcResponse = '0x033456732123ffff2342342dd12342434324234234fd234fd23fd4f23d4234';
 
-const address = '0x407d73d8a49eeb85d32cf465507dd71d507100c1';
+const address = 'Z407d73d8a49eeb85d32cf465507dd71d507100c1';
 
 /**
  * Array consists of:

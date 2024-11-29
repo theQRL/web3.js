@@ -34,7 +34,7 @@ describe('HttpProvider - implemented methods', () => {
 		jsonrpc: '2.0',
 		id: 42,
 		method: 'zond_getBalance',
-		params: ['0x407d73d8a49eeb85d32cf465507dd71d507100c1', 'latest'],
+		params: ['Z407d73d8a49eeb85d32cf465507dd71d507100c1', 'latest'],
 	} as Web3APIPayload<ZondExecutionAPI, 'zond_getBalance'>;
 
 	let httpProvider: HttpProvider;

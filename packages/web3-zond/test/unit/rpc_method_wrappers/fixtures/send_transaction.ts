@@ -25,12 +25,12 @@ export const expectedTransactionReceipt: TransactionReceipt = {
 	transactionIndex: '0x41',
 	blockHash: '0x1d59ff54b1eb26b013ce3cb5fc9dab3705b415a67127a003c3e61eb445bb8df2',
 	blockNumber: '0x5daf3b',
-	from: '0x2099d76D9a34cDd2694c4DC703930A6fBbc1d402',
-	to: '0xf02c1c8e6114b1dbe8937a39260b5b0a374432bb',
+	from: 'Z2099d76D9a34cDd2694c4DC703930A6fBbc1d402',
+	to: 'Zf02c1c8e6114b1dbe8937a39260b5b0a374432bb',
 	cumulativeGasUsed: '0x33bc', // 13244
 	effectiveGasPrice: '0x13a21bc946', // 84324108614
 	gasUsed: '0x4dc', // 1244
-	contractAddress: '0xb60e8dd61c5d32be8058bb8eb970870f07233155',
+	contractAddress: 'Zb60e8dd61c5d32be8058bb8eb970870f07233155',
 	logs: [],
 	logsBloom: '0x0016bef3b2913cc883e2993a12f1a2859e7b627c9d71048115232c92fe4e5d2f',
 	root: '0x0016bef3b2913cc883e2993a12f1a2859e7b627c9d71048115232c92fe4e5d2f',
@@ -39,11 +39,11 @@ export const expectedTransactionReceipt: TransactionReceipt = {
 };
 
 const inputTransaction = {
-	from: '0x2099d76D9a34cDd2694c4DC703930A6fBbc1d402',
+	from: 'Z2099d76D9a34cDd2694c4DC703930A6fBbc1d402',
 	gas: '0xc350',
 	input: '0x68656c6c6f21',
 	nonce: '0x15',
-	to: '0xf02c1c8e6114b1dbe8937a39260b5b0a374432bb',
+	to: 'Zf02c1c8e6114b1dbe8937a39260b5b0a374432bb',
 	value: '0xf3dbb76162000',
 	type: '0x2',
 	maxFeePerGas: '0x1475505aab',

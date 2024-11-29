@@ -14,11 +14,11 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import type { HexString, Numbers } from '@theqrl/web3-types';
+import type { Numbers, ZPrefixedHexString } from '@theqrl/web3-types';
 
 import type { Common } from '../common/common.js';
 // eslint-disable-next-line require-extensions/require-extensions
-import type { Uint8ArrayLike, PrefixedHexString } from '../common/types';
+import type { PrefixedHexString, Uint8ArrayLike } from '../common/types';
 import { Address } from './address.js';
 
 /**
@@ -61,7 +61,7 @@ export interface TxOptions {
  */
 
 export type AccessListItem = {
-	address: PrefixedHexString;
+	address: ZPrefixedHexString;
 	storageKeys: PrefixedHexString[];
 };
 
@@ -106,7 +106,7 @@ export type TxData = {
 	/**
 	 * The transaction's the address is sent to.
 	 */
-	to?: Address | Uint8Array | HexString;
+	to?: Address | Uint8Array | ZPrefixedHexString;
 
 	/**
 	 * The amount of Ether sent.

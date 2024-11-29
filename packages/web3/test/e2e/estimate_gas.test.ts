@@ -28,7 +28,7 @@ describe(`${getSystemTestBackend()} tests - estimateGas`, () => {
 	const blockData = mainnetBlockData;
 	const simpleZondTransaction: Transaction = {
 		from: getE2ETestAccountAddress(),
-		to: '0x0000000000000000000000000000000000000000',
+		to: 'Z0000000000000000000000000000000000000000',
 		value: '0x1',
 	};
 	const expectedSimpleZondTransactionGas = 21000;
