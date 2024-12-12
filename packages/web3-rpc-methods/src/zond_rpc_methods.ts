@@ -314,11 +314,11 @@ export async function getCompilers(requestManager: Web3RequestManager) {
 	});
 }
 
-export async function compileSolidity(requestManager: Web3RequestManager, code: string) {
+export async function compileHyperion(requestManager: Web3RequestManager, code: string) {
 	validator.validate(['string'], [code]);
 
 	return requestManager.send({
-		method: 'zond_compileSolidity',
+		method: 'zond_compileHyperion',
 		params: [code],
 	});
 }

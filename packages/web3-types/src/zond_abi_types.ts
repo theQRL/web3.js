@@ -19,7 +19,7 @@ import { Address } from './zond_types.js';
 import { Bytes, Numbers } from './primitives_types.js';
 import { FixedSizeArray } from './utility_types.js';
 
-type _SolidityIndexRange =
+type _HyperionIndexRange =
 	| 1
 	| 2
 	| 3
@@ -51,7 +51,7 @@ type _SolidityIndexRange =
 
 export type ConvertToNumber<
 	T extends string,
-	Range extends number = _SolidityIndexRange,
+	Range extends number = _HyperionIndexRange,
 > = Range extends unknown ? (`${Range}` extends T ? Range : never) : never;
 
 export type Components = {

@@ -36,7 +36,7 @@ const Web3Utils = require('web3-utils');
 console.log(Web3Utils);
 {
     sha3: function(){},
-    soliditySha3: function(){},
+    hyperionSha3: function(){},
     isAddress: function(){},
     ...
 }

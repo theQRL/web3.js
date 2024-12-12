@@ -36,8 +36,9 @@ Using this JSON interface, web3.js is able to create a JavaScript object represe
 
 #### Example
 
-```solidity title='Solidity Contract'
-pragma solidity ^0.8.4;
+```hyperion title='Hyperion Contract'
+// TODO(now.youtrack.cloud/issue/web3js-11)
+pragma hyperion ^0.8.4;
 
 contract Test {
 	uint256 a;

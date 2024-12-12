@@ -242,7 +242,7 @@ export const FormatTypes: { [ name: string ]: string } = Object.freeze({
     // Human-Readable with nice spacing, including all names
     full: "full",
 
-    // JSON-format a la Solidity
+    // JSON-format a la Hyperion
     json: "json"
 });
 

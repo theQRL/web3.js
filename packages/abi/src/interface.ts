@@ -288,7 +288,7 @@ export class Interface {
         return result;
     }
 
-    // Get the sighash (the bytes4 selector) used by Solidity to identify a function
+    // Get the sighash (the bytes4 selector) used by Hyperion to identify a function
     getSighash(fragment: ErrorFragment | FunctionFragment | string): string {
         if (typeof(fragment) === "string") {
             try {
@@ -305,7 +305,7 @@ export class Interface {
         return getStatic<(f: ErrorFragment | FunctionFragment) => string>(this.constructor, "getSighash")(fragment);
     }
 
-    // Get the topic (the bytes32 hash) used by Solidity to identify an event
+    // Get the topic (the bytes32 hash) used by Hyperion to identify an event
     getEventTopic(eventFragment: EventFragment | string): string {
         if (typeof(eventFragment) === "string") {
             eventFragment = this.getEvent(eventFragment);

@@ -488,7 +488,7 @@ describe('Web3Zond.sendTransaction', () => {
 
 			const expectedThrownError = {
 				name: 'TransactionRevertInstructionError',
-				message: 'Transaction has been reverted by the EVM',
+				message: 'Transaction has been reverted by the ZVM',
 				code: 402,
 				reason:
 					getSystemTestBackend() === 'gzond'

@@ -1054,7 +1054,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	// TODO Decide what to do with transaction.to
 	// https://github.com/ChainSafe/web3.js/pull/4525#issuecomment-982330076
 	/**
-	 * Executes a message call within the EVM without creating a transaction.
+	 * Executes a message call within the ZVM without creating a transaction.
 	 * It does not publish anything to the blockchain and does not consume any gas.
 	 *
 	 * @param transaction - A transaction object where all properties are optional except `to`, however it's recommended to include the `from` property or it may default to `Z0000000000000000000000000000000000000000` depending on your node or provider.
@@ -1071,7 +1071,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	}
 
 	/**
-	 * Simulates the transaction within the EVM to estimate the amount of gas to be used by the transaction.
+	 * Simulates the transaction within the ZVM to estimate the amount of gas to be used by the transaction.
 	 * The transaction will not be added to the blockchain, and actual gas usage can vary when interacting
 	 * with a contract as a result of updating the contract's state.
 	 *

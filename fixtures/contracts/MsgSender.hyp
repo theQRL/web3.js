@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GNU
-
-pragma solidity ^0.8.13;
+// TODO(now.youtrack.cloud/issue/web3js-11)
+pragma hyperion ^0.8.13;
 
 contract MsgSender {
 	string public testString;

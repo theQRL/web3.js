@@ -21,7 +21,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 export const MAX_UINT64 = BigInt('0xffffffffffffffff');
 
 /**
- * The max integer that the evm can handle (2^256-1)
+ * The max integer that the zvm can handle (2^256-1)
  */
 export const MAX_INTEGER = BigInt(
 	'0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',

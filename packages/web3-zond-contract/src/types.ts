@@ -148,14 +148,14 @@ export interface ContractOptions {
 export interface NonPayableMethodObject<Inputs = unknown[], Outputs = unknown[]> {
 	arguments: Inputs;
 	/**
-	 * This will call a method and execute its smart contract method in the EVM without sending any transaction. Note calling cannot alter the smart contract state.
+	 * This will call a method and execute its smart contract method in the ZVM without sending any transaction. Note calling cannot alter the smart contract state.
 	 *
 	 * ```ts
 	 * // using the promise
 	 * const result = await myContract.methods.myMethod(123).call({from: 'Zde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe'});
 	 *
 	 * // MULTI-ARGUMENT RETURN:
-	 * // Solidity
+	 * // Hyperion
 	 * contract MyContract {
 	 *   function myFunction() returns(uint256 myNumber, string myString) {
 	 *       return (23456, "Hello!%");
@@ -175,7 +175,7 @@ export interface NonPayableMethodObject<Inputs = unknown[], Outputs = unknown[]>
 	 *
 	 *
 	 * // SINGLE-ARGUMENT RETURN:
-	 * // Solidity
+	 * // Hyperion
 	 * contract MyContract {
 	 *   function myFunction() returns(string myString) {
 	 *       return "Hello!%";
@@ -294,7 +294,7 @@ export interface NonPayableMethodObject<Inputs = unknown[], Outputs = unknown[]>
 	): Promise<FormatType<Numbers, ReturnFormat>>;
 
 	/**
-	 * Encodes the ABI for this method. The resulting hex string is 32-bit function signature hash plus the passed parameters in Solidity tightly packed format.
+	 * Encodes the ABI for this method. The resulting hex string is 32-bit function signature hash plus the passed parameters in Hyperion tightly packed format.
 	 * This can be used to send a transaction, call a method, or pass it into another smart contract’s method as arguments.
 	 * Set the data field on `web3.zond.sendTransaction` options as the encodeABI() result and it is the same as calling the contract method with `contract.myMethod.send()`.
 	 *
@@ -338,14 +338,14 @@ export interface NonPayableMethodObject<Inputs = unknown[], Outputs = unknown[]>
 export interface PayableMethodObject<Inputs = unknown[], Outputs = unknown[]> {
 	arguments: Inputs;
 	/**
-	 * Will call a method and execute its smart contract method in the EVM without sending any transaction. Note calling cannot alter the smart contract state.
+	 * Will call a method and execute its smart contract method in the ZVM without sending any transaction. Note calling cannot alter the smart contract state.
 	 *
 	 * ```ts
 	 * // using the promise
 	 * const result = await myContract.methods.myMethod(123).call({from: 'Zde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe'});
 	 *
 	 * // MULTI-ARGUMENT RETURN:
-	 * // Solidity
+	 * // Hyperion
 	 * contract MyContract {
 	 *   function myFunction() returns(uint256 myNumber, string myString) {
 	 *       return (23456, "Hello!%");
@@ -365,7 +365,7 @@ export interface PayableMethodObject<Inputs = unknown[], Outputs = unknown[]> {
 	 *
 	 *
 	 * // SINGLE-ARGUMENT RETURN:
-	 * // Solidity
+	 * // Hyperion
 	 * contract MyContract {
 	 *   function myFunction() returns(string myString) {
 	 *       return "Hello!%";
@@ -483,7 +483,7 @@ export interface PayableMethodObject<Inputs = unknown[], Outputs = unknown[]> {
 	): Promise<FormatType<Numbers, ReturnFormat>>;
 
 	/**
-	 * Encodes the ABI for this method. The resulting hex string is 32-bit function signature hash plus the passed parameters in Solidity tightly packed format.
+	 * Encodes the ABI for this method. The resulting hex string is 32-bit function signature hash plus the passed parameters in Hyperion tightly packed format.
 	 * This can be used to send a transaction, call a method, or pass it into another smart contract’s method as arguments.
 	 * Set the data field on `web3.zond.sendTransaction` options as the encodeABI() result and it is the same as calling the contract method with `contract.myMethod.send()`.
 	 *

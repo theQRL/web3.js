@@ -437,8 +437,7 @@ export interface Eip712TypedData {
 }
 
 /**
- * To contain the gas Fee Data to be used with EIP-1559 transactions.
- * EIP-1559 was applied to Ethereum after London hardfork.
+ * To contain the gas Fee Data to be used with transactions.
  *  
  * Typically you will only need `maxFeePerGas` and `maxPriorityFeePerGas` for a transaction following EIP-1559.
  * However, if you want to get informed about the fees of last block, you can use `baseFeePerGas` too.

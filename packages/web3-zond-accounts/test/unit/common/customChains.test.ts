@@ -80,7 +80,7 @@ describe('[Common]: Custom chains', () => {
 		common = Common.custom(CustomChain.PolygonMumbai);
 		expect(common.hardfork()).toEqual(common.DEFAULT_HARDFORK);
 
-		common = Common.custom(CustomChain.OptimisticEthereum, { hardfork: Hardfork.Byzantium });
+		common = Common.custom(CustomChain.CustomZond, { hardfork: Hardfork.Byzantium });
 		expect(common.hardfork()).toEqual(Hardfork.Byzantium);
 
 		expect(() => {

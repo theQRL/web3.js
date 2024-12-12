@@ -69,7 +69,7 @@ export const sha3RawValidData: [Bytes, string | undefined][] = [
 
 export const compareSha3JSRawValidData: [string, string][] = [...compareSha3JSValidData];
 
-export const soliditySha3Data: [TypedObject[] | TypedObjectAbbreviated[], string | undefined][] = [
+export const hyperionSha3Data: [TypedObject[] | TypedObjectAbbreviated[], string | undefined][] = [
 	[
 		[{ type: 'string', value: '31323334' }],
 		'0xf15f8da2ad27e486d632dc37d24912f634398918d6f9913a0a0ff84e388be62b',
@@ -149,23 +149,23 @@ export const soliditySha3Data: [TypedObject[] | TypedObjectAbbreviated[], string
 	],
 ];
 
-export const soliditySha3ValidData: [
+export const hyperionSha3ValidData: [
 	TypedObject[] | TypedObjectAbbreviated[],
 	string | undefined,
-][] = [...soliditySha3Data, [[{ t: 'string', v: '' }], undefined]];
+][] = [...hyperionSha3Data, [[{ t: 'string', v: '' }], undefined]];
 
-export const soliditySha3RawValidData: [
+export const hyperionSha3RawValidData: [
 	TypedObject[] | TypedObjectAbbreviated[],
 	string | undefined,
 ][] = [
-	...soliditySha3Data,
+	...hyperionSha3Data,
 	[
 		[{ t: 'string', v: '' }],
 		'0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470',
 	],
 ];
 
-export const soliditySha3InvalidData: [any, string][] = [
+export const hyperionSha3InvalidData: [any, string][] = [
 	[{ t: 'int8', v: 500 }, 'Invalid value given "500". Error: value is larger than size.'],
 	[
 		{ t: 'bytes', v: '0x407D73d8a49eeb85D32Cf465507dd71d507100c' },
@@ -305,7 +305,7 @@ export const elementaryNameValidData: [any, string][] = [
 	['int256', '256'],
 ];
 
-export const soliditySha3BigIntValidData: [Sha3Input[], string][] = [
+export const hyperionSha3BigIntValidData: [Sha3Input[], string][] = [
 	[[3434], '0xf219fa5590f999dc677e94dd9cf99cf14103d2f4323898edb31db982d5909687'],
 	[[BigInt(3434)], '0xf219fa5590f999dc677e94dd9cf99cf14103d2f4323898edb31db982d5909687'],
 	[

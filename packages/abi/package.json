@@ -1,7 +1,7 @@
 {
   "name": "@theqrl/abi",
   "version": "0.1.0",
-  "description": "Utilities and Classes for parsing, formatting and managing Ethereum ABIs.",
+  "description": "Utilities and Classes for parsing, formatting and managing Zond ABIs.",
   "license": "MIT",
   "main": "./lib/commonjs/index.js",
 	"module": "./lib/esm/index.js",

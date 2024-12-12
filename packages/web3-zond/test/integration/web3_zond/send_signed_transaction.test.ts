@@ -311,7 +311,7 @@ describe('Web3Zond.sendSignedTransaction', () => {
 
 			const expectedThrownError = {
 				name: 'TransactionRevertInstructionError',
-				message: 'Transaction has been reverted by the EVM',
+				message: 'Transaction has been reverted by the ZVM',
 				innerError: undefined,
 				reason:
 					getSystemTestBackend() === 'gzond'

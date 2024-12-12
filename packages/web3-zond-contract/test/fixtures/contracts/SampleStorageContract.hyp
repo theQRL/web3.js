@@ -15,7 +15,8 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-pragma solidity ^0.8.7;
+// TODO(now.youtrack.cloud/issue/web3js-11)
+pragma hyperion ^0.8.7;
 
 contract SampleStorageContract {
 	uint256 uintNum;

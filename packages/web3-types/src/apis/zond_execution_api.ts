@@ -233,5 +233,5 @@ export type ZondExecutionAPI = {
 	zond_clearSubscriptions: (keepSyncing?: boolean) => void;
 	// Non-supported by execution-apis specs
 	zond_getCompilers: () => string[];
-	zond_compileSolidity: (code: string) => CompileResultAPI;
+	zond_compileHyperion: (code: string) => CompileResultAPI;
 };

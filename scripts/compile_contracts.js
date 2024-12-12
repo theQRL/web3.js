@@ -22,7 +22,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 const { promisify } = require('util');
 const { resolve } = require('path');
-const { compile } = require('solc');
+const { compile } = require('hypc');
 const { rm, readdirSync, readFileSync, writeFileSync, mkdirSync, existsSync } = require('fs');
 
 const rmPromise = promisify(rm);
@@ -70,8 +70,8 @@ function findImports(path) {
 
 	const compileInput = {
 		...input,
-		language: 'Solidity',
-		settings: { outputSelection: { '*': { '*': ['abi', 'evm.bytecode.object'] } } },
+		language: 'Hyperion',
+		settings: { outputSelection: { '*': { '*': ['abi', 'zvm.bytecode.object'] } } },
 	};
 
 	const compileResult = JSON.parse(
@@ -92,7 +92,7 @@ function findImports(path) {
 	// Output contains all objects from all contracts
 	// Write the contents of each to different files
 	for (let contract in output) {
-		const contractName = contract.replace('.sol', '');
+		const contractName = contract.replace('.hyp', '');
 		const contractBuild = output[contract][contractName];
 
 		if (!contractBuild || (contractBuild && !contractBuild['abi'])) {
@@ -102,7 +102,7 @@ function findImports(path) {
 		const contractTsInterface = `export const ${contractName}Abi = ${JSON.stringify(
 			contractBuild['abi'],
 		)} as const; \n export const ${contractName}Bytecode = '0x${
-			contractBuild['evm']['bytecode']['object']
+			contractBuild['zvm']['bytecode']['object']
 		}';`;
 
 		writeFileSync(

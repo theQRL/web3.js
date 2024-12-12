@@ -11,7 +11,7 @@
 
 This is a sub-package of [web3.js][repo].
 
-`web3-zond-abi` contains functions for the encode and decode EVM in/output.
+`web3-zond-abi` contains functions for the encode and decode ZVM in/output.
 
 ## Installation
 

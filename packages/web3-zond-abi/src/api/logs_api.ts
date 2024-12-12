@@ -25,7 +25,7 @@ const _decodeParameter = (inputType: string, clonedTopic: string) =>
 
 /**
  * Decodes ABI-encoded log data and indexed topic data.
- * @param inputs - A {@link AbiParameter} input array. See the [Solidity documentation](https://docs.soliditylang.org/en/develop/types.html) for a list of types.
+ * @param inputs - A {@link AbiParameter} input array. See the [Hyperion documentation](https://docs.soliditylang.org/en/develop/types.html) for a list of types.
  * @param data - The ABI byte code in the `data` field of a log.
  * @param topics - An array with the index parameter topics of the log, without the topic[0] if its a non-anonymous event, otherwise with topic[0]
  * @returns - The result object containing the decoded parameters.

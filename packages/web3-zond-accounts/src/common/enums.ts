@@ -32,5 +32,5 @@ export enum ConsensusAlgorithm {
 
 export enum CustomChain {
 	// NOTE(rgeraldes24): one entry is required for now
-	OptimisticEthereum = 'optimistic-ethereum',
+	CustomZond = 'custom-zond',
 }

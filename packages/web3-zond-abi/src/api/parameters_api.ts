@@ -23,7 +23,7 @@ import { formatParam, isAbiFragment, mapTypes, modifyParams } from '../utils.js'
 
 /**
  * Encodes a parameter based on its type to its ABI representation.
- * @param abi - An array of {@link AbiInput}. See [Solidity's documentation](https://solidity.readthedocs.io/en/v0.5.3/abi-spec.html#json) for more details.
+ * @param abi - An array of {@link AbiInput}. See [Hyperion's documentation](https://solidity.readthedocs.io/en/v0.5.3/abi-spec.html#json) for more details.
  * @param params - The actual parameters to encode.
  * @returns - The ABI encoded parameters
  * @example
@@ -74,7 +74,7 @@ export const encodeParameters = (abi: ReadonlyArray<AbiInput>, params: unknown[]
 
 /**
  * Encodes a parameter based on its type to its ABI representation.
- * @param abi -  The type of the parameter. See the [Solidity documentation](https://docs.soliditylang.org/en/develop/types.html) for a list of types.
+ * @param abi -  The type of the parameter. See the [Hyperion documentation](https://docs.soliditylang.org/en/develop/types.html) for a list of types.
  * @param param - The actual parameter to encode.
  * @returns -  The ABI encoded parameter
  * @example
@@ -188,7 +188,7 @@ export const decodeParametersWith = (
  */
 /**
  * Decodes ABI encoded parameters to its JavaScript types.
- * @param abi -  An array of {@link AbiInput}. See the [Solidity documentation](https://docs.soliditylang.org/en/develop/types.html) for a list of types.
+ * @param abi -  An array of {@link AbiInput}. See the [Hyperion documentation](https://docs.soliditylang.org/en/develop/types.html) for a list of types.
  * @param bytes - The ABI byte code to decode
  * @returns - The result object containing the decoded parameters.
  * @example
@@ -297,7 +297,7 @@ export const decodeParameters = (
  */
 /**
  * Decodes an ABI encoded parameter to its JavaScript type.
- * @param abi -  The type of the parameter. See the [Solidity documentation](https://docs.soliditylang.org/en/develop/types.html) for a list of types.
+ * @param abi -  The type of the parameter. See the [Hyperion documentation](https://docs.soliditylang.org/en/develop/types.html) for a list of types.
  * @param bytes - The ABI byte code to decode
  * @returns - The decoded parameter
  * @example

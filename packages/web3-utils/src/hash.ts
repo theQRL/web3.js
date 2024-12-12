@@ -229,7 +229,7 @@ const bitLength = (value: bigint | number): number => {
  * @param type - the input to pad
  * @returns = the padded value
  */
-const solidityPack = (type: string, val: EncodingTypes): string => {
+const hyperionPack = (type: string, val: EncodingTypes): string => {
 	const value = val.toString();
 	if (type === 'string') {
 		if (typeof val === 'string') return utf8ToHex(val);
@@ -308,17 +308,17 @@ const solidityPack = (type: string, val: EncodingTypes): string => {
  * @param arg - the input to return the tightly packed value
  * @returns - the tightly packed value
  */
-export const processSolidityEncodePackedArgs = (arg: Sha3Input): string => {
+export const processHyperionEncodePackedArgs = (arg: Sha3Input): string => {
 	const [type, val] = getType(arg);
 
 	// array case
 	if (Array.isArray(val)) {
 		// go through each element of the array and use map function to create new hexarg list
-		const hexArg = val.map((v: Numbers | boolean) => solidityPack(type, v).replace('0x', ''));
+		const hexArg = val.map((v: Numbers | boolean) => hyperionPack(type, v).replace('0x', ''));
 		return hexArg.join('');
 	}
 
-	const hexArg = solidityPack(type, val);
+	const hexArg = hyperionPack(type, val);
 	return hexArg.replace('0x', '');
 };
 
@@ -327,12 +327,12 @@ export const processSolidityEncodePackedArgs = (arg: Sha3Input): string => {
  */
 export const encodePacked = (...values: Sha3Input[]): string => {
 	const args = Array.prototype.slice.call(values);
-	const hexArgs = args.map(processSolidityEncodePackedArgs);
+	const hexArgs = args.map(processHyperionEncodePackedArgs);
 	return `0x${hexArgs.join('').toLowerCase()}`;
 };
 
 /**
- * Will tightly pack values given in the same way solidity would then hash.
+ * Will tightly pack values given in the same way hyperion would then hash.
  * returns a hash string, or null if input is empty
  * @param values - the input to return the tightly packed values
  * @returns - the keccack246 of the tightly packed values
@@ -340,26 +340,26 @@ export const encodePacked = (...values: Sha3Input[]): string => {
  * @example
  * ```ts
  *  console.log([{ type: 'string', value: '31323334' }]);
- * console.log(web3.utils.soliditySha3({ type: "string", value: "31323334" }));
+ * console.log(web3.utils.hyperionSha3({ type: "string", value: "31323334" }));
  * > 0xf15f8da2ad27e486d632dc37d24912f634398918d6f9913a0a0ff84e388be62b
  * ```
  */
-export const soliditySha3 = (...values: Sha3Input[]): string | undefined =>
+export const hyperionSha3 = (...values: Sha3Input[]): string | undefined =>
 	sha3(encodePacked(...values));
 
 /**
- * Will tightly pack values given in the same way solidity would then hash.
+ * Will tightly pack values given in the same way hyperion would then hash.
  * returns a hash string, if input is empty will return `0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470`
  * @param values - the input to return the tightly packed values
  * @returns - the keccack246 of the tightly packed values
  *
  * @example
  * ```ts
- * console.log(web3.utils.soliditySha3Raw({ type: "string", value: "helloworld" }))
+ * console.log(web3.utils.hyperionSha3Raw({ type: "string", value: "helloworld" }))
  * > 0xfa26db7ca85ead399216e7c6316bc50ed24393c3122b582735e7f3b0f91b93f0
  * ```
  */
-export const soliditySha3Raw = (...values: TypedObject[] | TypedObjectAbbreviated[]): string =>
+export const hyperionSha3Raw = (...values: TypedObject[] | TypedObjectAbbreviated[]): string =>
 	sha3Raw(encodePacked(...values));
 
 /**

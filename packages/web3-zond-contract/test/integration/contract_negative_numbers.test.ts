@@ -21,7 +21,7 @@ import {
 	NegativeNumbersBytecode,
 } from '../shared_fixtures/build/NegativeNumbers';
 
-describe('Contract - NegativeNumbers.sol', () => {
+describe('Contract - NegativeNumbers.hyp', () => {
 	const storedNegativeNumber = '-170141183460469231731687303715884105727';
 
 	let contract: Contract<typeof NegativeNumbersAbi>;

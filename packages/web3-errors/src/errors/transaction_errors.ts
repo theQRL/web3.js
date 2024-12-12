@@ -101,7 +101,7 @@ export class TransactionRevertInstructionError<
 		public data?: string,
 	) {
 		super(
-			`Transaction has been reverted by the EVM${
+			`Transaction has been reverted by the ZVM${
 				receipt === undefined ? '' : `:\n ${BaseWeb3Error.convertToString(receipt)}`
 			}`,
 		);
@@ -177,7 +177,7 @@ export class TransactionRevertedWithoutReasonError<
 > extends TransactionError<ReceiptType> {
 	public constructor(receipt?: ReceiptType) {
 		super(
-			`Transaction has been reverted by the EVM${
+			`Transaction has been reverted by the ZVM${
 				receipt === undefined ? '' : `:\n ${BaseWeb3Error.convertToString(receipt)}`
 			}`,
 			receipt,

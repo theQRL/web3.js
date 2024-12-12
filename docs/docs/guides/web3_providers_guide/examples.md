@@ -24,7 +24,7 @@ Before we get started, make sure you have a basic understanding of JavaScript an
 
 4. **Gzond** (Optional, used only at the IPC provider example)
 
-    Gzond (go-zond) is a Zond execution client meaning it handles transactions, deployment and execution of smart contracts and contains an embedded computer known as the Ethereum Virtual Machine. You can install it by following the instructions here: [https://geth.ethereum.org/docs/getting-started/installing-geth](https://geth.ethereum.org/docs/getting-started/installing-geth)
+    Gzond (go-zond) is a Zond execution client meaning it handles transactions, deployment and execution of smart contracts and contains an embedded computer known as the Zond Virtual Machine. You can install it by following the instructions here: [https://geth.ethereum.org/docs/getting-started/installing-geth](https://geth.ethereum.org/docs/getting-started/installing-geth)
 
 ## Types of Providers
 

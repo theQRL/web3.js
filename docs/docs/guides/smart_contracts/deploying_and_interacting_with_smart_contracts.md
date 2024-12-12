@@ -7,7 +7,7 @@ sidebar_label: 'Deploying and Interacting with Smart Contracts'
 
 ## Introduction
 
-In this tutorial, we will walk through the process of deploying a smart contract to the Zond network, generating the ABI, and interacting with the smart contract using web3.js. We will cover the basic concepts of Zond, Solidity, and web3.js and provide step-by-step instructions for deploying a simple smart contract to a test network using Ganache.
+In this tutorial, we will walk through the process of deploying a smart contract to the Zond network, generating the ABI, and interacting with the smart contract using web3.js. We will cover the basic concepts of Zond, Hyperion, and web3.js and provide step-by-step instructions for deploying a simple smart contract to a test network using Ganache.
 
 ## Overview
 
@@ -15,8 +15,8 @@ Here is a high-level overview of the steps we will be taking in this tutorial:
 
 1. Setting up the Environment
 2. Create a new project directory and initialize a new Node.js project.
-3. Write the Solidity code for the smart contract and save it to a file.
-4. Compile the Solidity code using the Solidity Compiler and get its ABI and Bytecode.
+3. Write the Hyperion code for the smart contract and save it to a file.
+4. Compile the Hyperion code using the Hyperion Compiler and get its ABI and Bytecode.
 5. Set up the web3.js library and connect to the Ganache network.
 6. Deploy the smart contract to the Ganache network using web3.js.
 7. Interact with the smart contract using web3.js.
@@ -46,15 +46,16 @@ npm init -y
 
 This will create a new `package.json` file in your project directory.
 
-## Step 3: Write the Solidity code for the smart contract and save it to a file
+## Step 3: Write the Hyperion code for the smart contract and save it to a file
 
-In this step, we will write the Solidity code for the smart contract and save it as a file in our project directory.
+In this step, we will write the Hyperion code for the smart contract and save it as a file in our project directory.
 
-Create a new file called `MyContract.sol` in your project directory and add the following Solidity code to it:
+Create a new file called `MyContract.hyp` in your project directory and add the following Hyperion code to it:
 
-```solidity
+```hyperion
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+// TODO(now.youtrack.cloud/issue/web3js-11)
+pragma hyperion ^0.8.0;
 
 contract MyContract {
 	uint256 public myNumber;
@@ -72,45 +73,47 @@ contract MyContract {
 
 This simple smart contract defines a `myNumber` variable that can be set by calling the `setMyNumber` function.
 
-## Step 4: Compile the Solidity code using the Solidity Compiler and get its ABI and Bytecode.
+## Step 4: Compile the Hyperion code using the Hyperion Compiler and get its ABI and Bytecode.
+
+TODO(now.youtrack.cloud/issue/web3js-12)
 
 :::tip
-📝 Alternatively, you can use something like `npm i solc && npx solcjs MyContract.sol --bin --abi`. And then rename the files to `MyContractBytecode.bin` and `MyContractAbi.json`, in order to keep them the same as they will be used later in this tutorial.
-More on solc-js is at https://github.com/ethereum/solc-js
+📝 Alternatively, you can use something like `npm i hypc && npx hypcjs MyContract.hyp --bin --abi`. And then rename the files to `MyContractBytecode.bin` and `MyContractAbi.json`, in order to keep them the same as they will be used later in this tutorial.
+More on hypc-js is at https://github.com/ethereum/solc-js 
 :::
 
-In this step, we will use the Solidity Compiler (solc) to compile the Solidity code and generate the compiled code.
+In this step, we will use the Hyperion Compiler (hypc) to compile the Hyperion code and generate the compiled code.
 
-First, install the `solc` package using npm.
+First, install the `hypc` package using npm.
 
 :::note
-📝 Specify a version for the compiler that is compatible with the version you specified in the .sol file above (with `pragma solidity ^0.8.0;`):
+📝 Specify a version for the compiler that is compatible with the version you specified in the .hyp file above (with `pragma hyperion ^0.8.0;`):
 :::
 
 ```
-npm install solc@0.8.0
+npm install hypc@0.8.0
 ```
 
 Next, create a new file called `compile.js` in your project directory and add the following code to it:
 
 ```javascript
 // This code will compile smart contract and generate its ABI and bytecode
-// Alternatively, you can use something like `npm i solc && npx solcjs MyContract.sol --bin --abi`
+// Alternatively, you can use something like `npm i hypc && npx hypcjs MyContract.hyp --bin --abi`
 
-import solc from 'solc';
+import hypc from 'hypc';
 import path from 'path';
 import fs from 'fs';
 
-const fileName = 'MyContract.sol';
+const fileName = 'MyContract.hyp';
 const contractName = 'MyContract';
 
-// Read the Solidity source code from the file system
+// Read the Hyperion source code from the file system
 const contractPath = path.join(__dirname, fileName);
 const sourceCode = fs.readFileSync(contractPath, 'utf8');
 
-// solc compiler config
+// hypc compiler config
 const input = {
-	language: 'Solidity',
+	language: 'Hyperion',
 	sources: {
 		[fileName]: {
 			content: sourceCode,
@@ -125,11 +128,11 @@ const input = {
 	},
 };
 
-// Compile the Solidity code using solc
-const compiledCode = JSON.parse(solc.compile(JSON.stringify(input)));
+// Compile the Hyperion code using hypc
+const compiledCode = JSON.parse(hypc.compile(JSON.stringify(input)));
 
 // Get the bytecode from the compiled contract
-const bytecode = compiledCode.contracts[fileName][contractName].evm.bytecode.object;
+const bytecode = compiledCode.contracts[fileName][contractName].zvm.bytecode.object;
 
 // Write the bytecode to a new file
 const bytecodePath = path.join(__dirname, 'MyContractBytecode.bin');
@@ -149,9 +152,9 @@ fs.writeFileSync(abiPath, JSON.stringify(abi, null, '\t'));
 console.log('Contract ABI:\n', abi);
 ```
 
-This code reads the Solidity code from the `MyContract.sol` file, compiles it using `solc`, and generates the ABI and bytecode for the smart contract. It then writes the bytecode to a new file called `MyContractBytecode.bin` and the contract ABI to `MyContractAbi.json`. And it logs them to the console.
+This code reads the Hyperion code from the `MyContract.hyp` file, compiles it using `hypc`, and generates the ABI and bytecode for the smart contract. It then writes the bytecode to a new file called `MyContractBytecode.bin` and the contract ABI to `MyContractAbi.json`. And it logs them to the console.
 
-Run the following command to compile the Solidity code:
+Run the following command to compile the Hyperion code:
 
 ```
 node compile.js
@@ -418,7 +421,7 @@ With this knowledge, you can start experimenting with writing smart contract in 
 ## Additional Resources
 
 -   [Official web3.js Documentation](https://docs.web3js.org/)
--   [Solidity Documentation](https://solidity.readthedocs.io/)
+-   [Hyperion Documentation](https://solidity.readthedocs.io/)
 -   [Ganache](https://www.trufflesuite.com/ganache)
 -   [Truffle](https://trufflesuite.com/)
 -   [Remix IDE](https://remix.ethereum.org/)
@@ -426,12 +429,12 @@ With this knowledge, you can start experimenting with writing smart contract in 
 ## Tips and Best Practices
 
 -   Always test your smart contracts on a local network like Ganache before deploying them to the mainnet.
--   Use the latest version of web3.js and Solidity to take advantage of the latest features and security patches.
+-   Use the latest version of web3.js and Hyperion to take advantage of the latest features and security patches.
 -   Keep your private keys secure and never share them with anyone.
 -   Use the gas limit and gas fee parameters carefully to avoid spending too much on transaction fees.
 -   Use the `estimateGas` function in web3.js to estimate the gas required for a transaction before sending it to the network.
 -   Use events to notify the client application about state changes in the smart contract.
--   Use a linter like Solhint to check for common Solidity coding errors.
+-   Use a linter like Solhint to check for common Hyperion coding errors.
 
 ## Final Thoughts
 

@@ -33,7 +33,7 @@ import { validateTransactionForSigning } from '../validation.js';
 import { formatTransaction } from './format_transaction.js';
 import { transactionBuilder } from './transaction_builder.js';
 
-const getEthereumjsTxDataFromTransaction = (
+const getZondjsTxDataFromTransaction = (
 	transaction: FormatType<PopulatedUnsignedTransaction, typeof ZOND_DATA_FORMAT>,
 ) => ({
 	nonce: transaction.nonce,
@@ -54,7 +54,7 @@ const getEthereumjsTxDataFromTransaction = (
 	).maxFeePerGas,
 });
 
-const getEthereumjsTransactionOptions = (
+const getZondjsTransactionOptions = (
 	transaction: FormatType<PopulatedUnsignedTransaction, typeof ZOND_DATA_FORMAT>,
 	web3Context: Web3Context<ZondExecutionAPI>,
 ) => {
@@ -141,7 +141,7 @@ export const prepareTransactionForSigning = async (
 	);
 
 	return TransactionFactory.fromTxData(
-		getEthereumjsTxDataFromTransaction(formattedTransaction),
-		getEthereumjsTransactionOptions(formattedTransaction, web3Context),
+		getZondjsTxDataFromTransaction(formattedTransaction),
+		getZondjsTransactionOptions(formattedTransaction, web3Context),
 	);
 };
