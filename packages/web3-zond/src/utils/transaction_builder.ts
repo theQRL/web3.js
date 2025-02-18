@@ -36,7 +36,7 @@ import {
 import { Web3Context } from '@theqrl/web3-core';
 import { publicKeyToAddress } from '@theqrl/web3-zond-accounts';
 import { getId } from '@theqrl/web3-net';
-import { isNullish, isNumber, isHexStrict, isAddress } from '@theqrl/web3-validator';
+import { isNullish, isNumber, isAddressString } from '@theqrl/web3-validator';
 import {
 	InvalidTransactionWithSender,
 	InvalidTransactionWithReceiver,
@@ -45,6 +45,7 @@ import {
 	UnableToPopulateNonceError,
 } from '@theqrl/web3-errors';
 import { bytesToHex, format, hexToBytes } from '@theqrl/web3-utils';
+import { Dilithium } from '@theqrl/wallet.js';
 import { NUMBER_DATA_FORMAT } from '../constants.js';
 // eslint-disable-next-line import/no-cycle
 import { getChainId, getTransactionCount, estimateGas } from '../rpc_method_wrappers.js';
@@ -53,7 +54,6 @@ import { transactionSchema } from '../schemas.js';
 import { InternalTransaction } from '../types.js';
 // eslint-disable-next-line import/no-cycle
 import { getTransactionGasPricing } from './get_transaction_gas_pricing.js';
-import { Dilithium } from '@theqrl/wallet.js';
 
 export const getTransactionFromOrToAttr = (
 	attr: 'from' | 'to',
@@ -66,10 +66,10 @@ export const getTransactionFromOrToAttr = (
 	publicKey?: HexString | Uint8Array,
 ): Address | undefined => {
 	if (transaction !== undefined && attr in transaction && transaction[attr] !== undefined) {
-		if (typeof transaction[attr] === 'string' && isAddress(transaction[attr] as string)) {
+		if (typeof transaction[attr] === 'string' && isAddressString(transaction[attr] as string)) {
 			return transaction[attr] as Address;
 		}
-		if (!isHexStrict(transaction[attr] as string) && isNumber(transaction[attr] as Numbers)) {
+		if (isNumber(transaction[attr] as Numbers)) {
 			if (web3Context.wallet) {
 				const account = web3Context.wallet.get(
 					format({ format: 'uint' }, transaction[attr] as Numbers, NUMBER_DATA_FORMAT),

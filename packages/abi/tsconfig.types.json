@@ -1,0 +1,20 @@
+{
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"declarationDir": "./lib/types",
+		"declaration": true,
+		"declarationMap": true,
+		"emitDeclarationOnly": true,
+		"strictNullChecks": false,
+		"target": "es2022",
+		"lib": [
+			"es2020",
+			"es5"
+		],
+		"noUnusedParameters": false,
+		// "moduleResolution": "node16",
+		"importHelpers": true,
+		"noEmitOnError": true
+	},
+	"include": ["src/**/*", "index.d.ts"]
+}

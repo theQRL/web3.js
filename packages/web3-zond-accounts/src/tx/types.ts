@@ -14,42 +14,12 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import type { HexString, Numbers } from '@theqrl/web3-types';
+import type { Numbers, ZPrefixedHexString } from '@theqrl/web3-types';
 
 import type { Common } from '../common/common.js';
 // eslint-disable-next-line require-extensions/require-extensions
-import type { Uint8ArrayLike, PrefixedHexString } from '../common/types';
+import type { PrefixedHexString, Uint8ArrayLike } from '../common/types';
 import { Address } from './address.js';
-
-/**
- * Can be used in conjunction with {@link Transaction.supports}
- * to query on tx capabilities
- */
-export enum Capability {
-	/**
-	 * Tx supports EIP-155 replay protection
-	 * See: [155](https://eips.ethereum.org/EIPS/eip-155) Replay Attack Protection EIP
-	 */
-	EIP155ReplayProtection = 155,
-
-	/**
-	 * Tx supports EIP-1559 gas fee market mechanism
-	 * See: [1559](https://eips.ethereum.org/EIPS/eip-1559) Fee Market EIP
-	 */
-	EIP1559FeeMarket = 1559,
-
-	/**
-	 * Tx is a typed transaction as defined in EIP-2718
-	 * See: [2718](https://eips.ethereum.org/EIPS/eip-2718) Transaction Type EIP
-	 */
-	EIP2718TypedTransaction = 2718,
-
-	/**
-	 * Tx supports access list generation as defined in EIP-2930
-	 * See: [2930](https://eips.ethereum.org/EIPS/eip-2930) Access Lists EIP
-	 */
-	EIP2930AccessLists = 2930,
-}
 
 /**
  * The options for initializing a {@link Transaction}.
@@ -91,7 +61,7 @@ export interface TxOptions {
  */
 
 export type AccessListItem = {
-	address: PrefixedHexString;
+	address: ZPrefixedHexString;
 	storageKeys: PrefixedHexString[];
 };
 
@@ -119,10 +89,6 @@ export function isAccessList(input: AccessListUint8Array | AccessList): input is
 	return !isAccessListUint8Array(input); // This is exactly the same method, except the output is negated.
 }
 
-// export interface Dilithium5Signature {
-// 	signature: Uint8Array;
-// }
-
 /**
  * Legacy {@link Transaction} Data
  */
@@ -133,12 +99,6 @@ export type TxData = {
 	nonce?: Numbers | Uint8Array;
 
 	/**
-	 * The transaction's gas price.
-	 */
-	// eslint-disable-next-line @typescript-eslint/ban-types
-	gasPrice?: Numbers | Uint8Array | null;
-
-	/**
 	 * The transaction's gas limit.
 	 */
 	gasLimit?: Numbers | Uint8Array;
@@ -146,7 +106,7 @@ export type TxData = {
 	/**
 	 * The transaction's the address is sent to.
 	 */
-	to?: Address | Uint8Array | HexString;
+	to?: Address | Uint8Array | ZPrefixedHexString;
 
 	/**
 	 * The amount of Ether sent.
@@ -176,9 +136,9 @@ export type TxData = {
 };
 
 /**
- * {@link AccessListEIP2930Transaction} data.
+ * {@link FeeMarketEIP1559Transaction} data.
  */
-export interface AccessListEIP2930TxData extends TxData {
+export interface FeeMarketEIP1559TxData extends TxData {
 	/**
 	 * The transaction's chain ID
 	 */
@@ -189,48 +149,17 @@ export interface AccessListEIP2930TxData extends TxData {
 	 */
 	// eslint-disable-next-line @typescript-eslint/ban-types
 	accessList?: AccessListUint8Array | AccessList | null;
-}
 
-/**
- * {@link FeeMarketEIP1559Transaction} data.
- */
-export interface FeeMarketEIP1559TxData extends AccessListEIP2930TxData {
-	/**
-	 * The transaction's gas price, inherited from {@link Transaction}.  This property is not used for EIP1559
-	 * transactions and should always be undefined for this specific transaction type.
-	 */
-	// eslint-disable-next-line @typescript-eslint/ban-types
-	gasPrice?: never | null;
 	/**
 	 * The maximum inclusion fee per gas (this fee is given to the miner)
 	 */
 	maxPriorityFeePerGas?: Numbers | Uint8Array;
+
 	/**
 	 * The maximum total fee
 	 */
 	maxFeePerGas?: Numbers | Uint8Array;
 }
-
-/**
- * Uint8Array values array for a legacy {@link Transaction}
- */
-export type TxValuesArray = Uint8Array[];
-
-/**
- * Uint8Array values array for an {@link AccessListEIP2930Transaction}
- */
-export type AccessListEIP2930ValuesArray = [
-	Uint8Array,
-	Uint8Array,
-	Uint8Array,
-	Uint8Array,
-	Uint8Array,
-	Uint8Array,
-	Uint8Array,
-	AccessListUint8Array,
-	Uint8Array?,
-	Uint8Array?,
-];
 
 /**
  * Uint8Array values array for a {@link FeeMarketEIP1559Transaction}
@@ -247,7 +176,6 @@ export type FeeMarketEIP1559ValuesArray = [
 	AccessListUint8Array,
 	Uint8Array?,
 	Uint8Array?,
-	Uint8Array?,
 ];
 
 type JsonAccessListItem = { address: string; storageKeys: string[] };
@@ -258,11 +186,9 @@ type JsonAccessListItem = { address: string; storageKeys: string[] };
  *
  * Note that all values are marked as optional
  * and not all the values are present on all tx types
- * (an EIP1559 tx e.g. lacks a `gasPrice`).
  */
 export interface JsonTx {
 	nonce?: string;
-	gasPrice?: string;
 	gasLimit?: string;
 	to?: string;
 	data?: string;
@@ -274,6 +200,4 @@ export interface JsonTx {
 	type?: string;
 	maxPriorityFeePerGas?: string;
 	maxFeePerGas?: string;
-	maxFeePerDataGas?: string;
-	versionedHashes?: string[];
 }

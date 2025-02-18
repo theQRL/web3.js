@@ -19,7 +19,7 @@ import { keccak256 } from 'ethereum-cryptography/keccak.js';
 import { bytesToUtf8, utf8ToBytes } from 'ethereum-cryptography/utils.js';
 import { Address, Bytes, HexString, Numbers, ValueTypes } from '@theqrl/web3-types';
 import {
-	isAddress,
+	isAddressString,
 	isHex,
 	isHexStrict,
 	isNullish,
@@ -41,7 +41,7 @@ const expo10 = (expo: number) => base ** BigInt(expo);
 
 // Ref: https://ethdocs.org/en/latest/ether.html
 /** @internal */
-export const ethUnitMap = {
+export const zondUnitMap = {
 	noether: BigInt('0'),
 	wei: BigInt(1),
 	kwei: expo10(3),
@@ -71,7 +71,7 @@ export const ethUnitMap = {
 	tether: expo10(30),
 };
 
-export type EtherUnits = keyof typeof ethUnitMap;
+export type EtherUnits = keyof typeof zondUnitMap;
 /**
  * Convert a value from bytes to Uint8Array
  * @param data - Data to be converted
@@ -136,6 +136,53 @@ export const hexToBytes = (bytes: HexString): Uint8Array => {
 		return bytesToUint8Array(`0x${bytes}`);
 	}
 	return bytesToUint8Array(bytes);
+};
+
+/**
+ * Convert an address string to a byte array
+ * @param hex - Address string to be converted
+ * @returns - The byte array representation of the input address string
+ *
+ * @example
+ * ```ts
+ * console.log(web3.utils.addressToBytes('Z7465737474657374746573747465737474657374'));
+ * > Uint8Array(20) [ 116, 101, 115, 116, 116, 101, 115, 116, 116, 101, 115, 116, 116, 101, 115, 116, 116, 101, 115, 116 ]
+ * ```
+ */
+export const addressToBytes = (value: Address): Uint8Array => {
+	return bytesToUint8Array(addressToHex(value));
+};
+
+/**
+ * Convert a hex string to an address string
+ * @param hex - Hex string to be converted
+ * @returns - The address representation of the input value
+ *
+ * @example
+ * ```ts
+ * console.log(web3.utils.hexToAddress('0x74657374123123131231231313a1231231112312'));
+ * > "Z74657374123123131231231313a1231231112312"
+ * ```
+ */
+export const hexToAddress = (value: HexString): Address => {
+	validator.validate(['hex'], [value]);
+	return value.replace('0x', 'Z');
+};
+
+/**
+ * Convert an address string to a hex string
+ * @param hex - Address string to be converted
+ * @returns - The hex representation of the input value
+ *
+ * @example
+ * ```ts
+ * console.log(web3.utils.addressToHex('Z74657374123123131231231313a1231231112312'));
+ * > "0x74657374123123131231231313a1231231112312"
+ * ```
+ */
+export const addressToHex = (value: Address): HexString => {
+	validator.validate(['address'], [value]);
+	return validatorUtils.addressToHex(value);
 };
 
 /**
@@ -335,10 +382,6 @@ export const toHex = (
 	value: Numbers | Bytes | Address | boolean | object,
 	returnType?: boolean,
 ): HexString | ValueTypes => {
-	if (typeof value === 'string' && isAddress(value)) {
-		return returnType ? 'address' : `0x${value.toLowerCase().replace(/^0x/i, '')}`;
-	}
-
 	if (typeof value === 'boolean') {
 		// eslint-disable-next-line no-nested-ternary
 		return returnType ? 'bool' : value ? '0x01' : '0x00';
@@ -367,6 +410,9 @@ export const toHex = (
 		}
 		if (isHex(value) && !isInt(value)) {
 			return returnType ? 'bytes' : `0x${value}`;
+		}
+		if (isAddressString(value)) {
+			return returnType ? 'address' : addressToHex(value);
 		}
 
 		if (!Number.isFinite(value)) {
@@ -464,7 +510,7 @@ export const toBigInt = (value: unknown): bigint => {
  * ```
  */
 export const fromWei = (number: Numbers, unit: EtherUnits): string => {
-	const denomination = ethUnitMap[unit];
+	const denomination = zondUnitMap[unit];
 
 	if (!denomination) {
 		throw new InvalidUnitError(unit);
@@ -524,7 +570,7 @@ export const fromWei = (number: Numbers, unit: EtherUnits): string => {
 export const toWei = (number: Numbers, unit: EtherUnits): string => {
 	validator.validate(['number'], [number]);
 
-	const denomination = ethUnitMap[unit];
+	const denomination = zondUnitMap[unit];
 
 	if (!denomination) {
 		throw new InvalidUnitError(unit);
@@ -562,21 +608,21 @@ export const toWei = (number: Numbers, unit: EtherUnits): string => {
 };
 
 /**
- * Will convert an upper or lowercase Ethereum address to a checksum address.
+ * Will convert an upper or lowercase Zond address to a checksum address.
  * @param address - An address string
  * @returns	The checksum address
  * @example
  * ```ts
- * web3.utils.toChecksumAddress('0xc1912fee45d61c87cc5ea59dae31190fffff232d');
- * > "0xc1912fEE45d61C87Cc5EA59DaE31190FFFFf232d"
+ * web3.utils.toChecksumAddress('Zc1912fee45d61c87cc5ea59dae31190fffff232d');
+ * > "Zc1912fEE45d61C87Cc5EA59DaE31190FFFFf232d"
  * ```
  */
 export const toChecksumAddress = (address: Address): string => {
-	if (!isAddress(address, false)) {
+	if (!isAddressString(address, false)) {
 		throw new InvalidAddressError(address);
 	}
 
-	const lowerCaseAddress = address.toLowerCase().replace(/^0x/i, '');
+	const lowerCaseAddress = address.toLowerCase().replace(/^z/i, '');
 
 	const hash = bytesToHex(keccak256(utf8ToBytes(lowerCaseAddress)));
 
@@ -586,7 +632,7 @@ export const toChecksumAddress = (address: Address): string => {
 	)
 		return ''; // // EIP-1052 if hash is equal to c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470, keccak was given empty data
 
-	let checksumAddress = '0x';
+	let checksumAddress = 'Z';
 
 	const addressHash = hash.replace(/^0x/i, '');
 

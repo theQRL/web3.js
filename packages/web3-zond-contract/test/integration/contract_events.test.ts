@@ -46,7 +46,7 @@ describe('contract', () => {
 			arguments: [10, 'string init value'],
 		};
 
-		sendOptions = { from: acc.address, /*gas: '1000000'*/ type: 2 };
+		sendOptions = { from: acc.address, /*gas: '1000000'*/ };
 
 		contractDeployed = await contract.deploy(deployOptions).send(sendOptions);
 	});
@@ -212,7 +212,7 @@ describe('contract', () => {
 			expect(
 				await contractDeployed.getPastEvents('MultiValueEvent', {
 					fromBlock: 0,
-					toBlock: 1000,
+					toBlock: 10000,
 				}),
 			).toHaveLength(2);
 		});
@@ -227,7 +227,7 @@ describe('contract', () => {
 			expect(
 				await contractDeployed.getPastEvents('MultiValueEvent', {
 					fromBlock: '0',
-					toBlock: '1000',
+					toBlock: '10000',
 				}),
 			).toHaveLength(2);
 		});
@@ -242,7 +242,7 @@ describe('contract', () => {
 			expect(
 				await contractDeployed.getPastEvents('MultiValueEvent', {
 					fromBlock: BigInt(0),
-					toBlock: BigInt(1000),
+					toBlock: BigInt(10000),
 				}),
 			).toHaveLength(2);
 		});

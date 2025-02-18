@@ -50,7 +50,7 @@ jest.mock('../../src/rpc_method_wrappers');
 jest.spyOn(rpcMethodWrappers, 'getTransaction').mockResolvedValue(tx);
 jest.spyOn(rpcMethodWrappers, 'getTransactionReceipt').mockResolvedValue(txReceipt);
 
-describe('web3_eth_methods_with_parameters', () => {
+describe('web3_zond_methods_with_parameters', () => {
 	let web3Zond: Web3Zond;
 
 	beforeAll(() => {

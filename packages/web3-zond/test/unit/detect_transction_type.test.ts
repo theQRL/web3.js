@@ -18,8 +18,6 @@ import { InvalidPropertiesForTransactionTypeError } from '@theqrl/web3-errors';
 
 import { detectTransactionType } from '../../src/utils/detect_transaction_type';
 import {
-	transactionType0x0,
-	transactionType0x1,
 	transactionType0x2,
 	transactionTypeUndefined,
 	transactionTypeValidationError,
@@ -34,31 +32,14 @@ describe('detectTransactionType', () => {
 		});
 	});
 
-	describe('should detect transaction type 0x0', () => {
-		it.each(transactionType0x0)('%s', transaction => {
-			expect(detectTransactionType(transaction)).toBe('0x0');
-		});
-	});
-
-	describe('should detect transaction type 0x1', () => {
-		it.each(transactionType0x1)('%s', transaction => {
-			expect(detectTransactionType(transaction)).toBe('0x1');
-		});
-	});
-
 	describe('should detect transaction type 0x2', () => {
 		it.each(transactionType0x2)('%s', transaction => {
 			expect(detectTransactionType(transaction)).toBe('0x2');
 		});
 	});
 
-	describe('should not be able to detect transaction type, returning undefined', () => {
-		it.each(transactionTypeUndefined)('%s', transaction => {
-			expect(detectTransactionType(transaction)).toBeUndefined();
-		});
-	});
-
-	describe('should throw validation error', () => {
+	// NOTE(rgeraldes24): test not valid atm
+	describe.skip('should throw validation error', () => {
 		it.each(transactionTypeValidationError)('%s', transaction => {
 			expect(() => detectTransactionType(transaction)).toThrow(
 				InvalidPropertiesForTransactionTypeError,

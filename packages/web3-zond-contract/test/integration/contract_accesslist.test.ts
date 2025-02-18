@@ -23,6 +23,7 @@ import {
 	describeIf,
 	getSystemTestBackend,
 } from '../fixtures/system_test_utils';
+import { isNullish } from '@theqrl/web3-utils';
 
 describe('contract', () => {
 	describeIf(getSystemTestBackend() === 'gzond')('createAccessList', () => {
@@ -42,7 +43,7 @@ describe('contract', () => {
 				arguments: ['My Greeting'],
 			};
 
-			sendOptions = { from: acc.address, /*gas: '1000000'*/ type: 2 };
+			sendOptions = { from: acc.address, /*gas: '1000000'*/ };
 		});
 
 		it('create access list for setter', async () => {
@@ -51,7 +52,7 @@ describe('contract', () => {
 
 			const receipt = await deployedContract.methods
 				.setGreeting('New Greeting')
-				.send({ gas: '1000000', type: 2 });
+				.send({ gas: '1000000' });
 			expect(receipt.from).toEqual(acc.address);
 
 			const accessList = await deployedContract.methods
@@ -61,7 +62,7 @@ describe('contract', () => {
 			const accessListResult = {
 				accessList: [
 					{
-						address: deployedContract.options.address?.toLowerCase(),
+						address: isNullish(deployedContract.options.address) ? deployedContract.options.address : `Z${deployedContract.options.address.slice(1).toLowerCase()}`,
 						storageKeys: [
 							'0x0000000000000000000000000000000000000000000000000000000000000001',
 						],
@@ -79,7 +80,7 @@ describe('contract', () => {
 
 			const receipt = await deployedContract.methods
 				.setGreeting('New Greeting')
-				.send({ gas: '1000000', type: 2 });
+				.send({ gas: '1000000' });
 			expect(receipt.from).toEqual(acc.address);
 
 			const accessList = await deployedContract.methods.greet().createAccessList();
@@ -87,7 +88,7 @@ describe('contract', () => {
 			const accessListResult = {
 				accessList: [
 					{
-						address: deployedContract.options.address?.toLowerCase(),
+						address: isNullish(deployedContract.options.address) ? deployedContract.options.address : `Z${deployedContract.options.address.slice(1).toLowerCase()}`,
 						storageKeys: [
 							'0x0000000000000000000000000000000000000000000000000000000000000001',
 						],

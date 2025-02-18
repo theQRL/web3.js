@@ -23,14 +23,15 @@ import {
 } from '@theqrl/web3-types';
 
 export const mockRpcResponse =
-	'{"accessList":[{"address":"0x15859bdf5aff2080a9968f6a410361e9598df62f","storageKeys":["0x0000000000000000000000000000000000000000000000000000000000000000"]}],"gasUsed":"0x7671"}';
+	'{"accessList":[{"address":"Z15859bdf5aff2080a9968f6a410361e9598df62f","storageKeys":["0x0000000000000000000000000000000000000000000000000000000000000000"]}],"gasUsed":"0x7671"}';
 
 const transaction: TransactionForAccessList = {
-	from: '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0',
-	to: '0x940b25304947ae863568B3804434EC77E2160b87',
+	from: 'ZEB014f8c8B418Db6b45774c326A0E64C78914dC0',
+	to: 'Z940b25304947ae863568B3804434EC77E2160b87',
 	value: '0x0',
 	gas: '0x5208',
-	gasPrice: '0x4a817c800',
+	maxFeePerGas: '0x4a817c800',
+	maxPriorityFeePerGas: '0x0',
 	data: '0x9a67c8b100000000000000000000000000000000000000000000000000000000000004d0',
 };
 

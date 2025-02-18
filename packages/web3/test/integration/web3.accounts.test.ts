@@ -26,6 +26,7 @@ import {
 import Web3, { SupportedProviders } from '../../src/index';
 
 const hexRegx = /0[xX][0-9a-fA-F]+/;
+const addressRegx = /Z[0-9a-fA-F]{40}/;
 
 describe('web3.accounts', () => {
 	let clientUrl: string | SupportedProviders;
@@ -51,7 +52,7 @@ describe('web3.accounts', () => {
 
 			expect(account).toEqual(
 				expect.objectContaining({
-					address: expect.stringMatching(hexRegx),
+					address: expect.stringMatching(addressRegx),
 					seed: expect.stringMatching(hexRegx),
 				}),
 			);
@@ -66,7 +67,6 @@ describe('web3.accounts', () => {
 					value: web3.utils.toWei('0.00001', 'ether'),
 					gas: '0x5218',
 					data: '0x1',
-					type: 2,
 					maxFeePerGas: '0x19475bd7f8',
 					maxPriorityFeePerGas: '0x5eae5feec',
 				};
@@ -77,13 +77,11 @@ describe('web3.accounts', () => {
 						from: tempAccount,
 						to: account.address,
 						value: web3.utils.toWei('2', 'ether'),
-						type: 2,
 					}),
 				).resolves.toBeDefined();
 
 				const txWithGas = {
 					...tx,
-					//gasPrice: '0x271000',
 				};
 				// Sign the tx from that account
 				const signedTx = await account.signTransaction(txWithGas);
@@ -114,10 +112,8 @@ describe('web3.accounts', () => {
 					value: web3.utils.toWei('0.1', 'ether'),
 					gas: '0x1',
 					data: '0x1',
-					//gasPrice: '0x38562',
 					maxFeePerGas: '0x19475bd7f8',
 					maxPriorityFeePerGas: '0x5eae5feec',
-					type: 2,
 				};
 
 				await expect(account.signTransaction(tx)).rejects.toThrow('gasLimit is too low.');
@@ -134,7 +130,6 @@ describe('web3.accounts', () => {
 					value: web3.utils.toWei('0.1', 'ether'),
 					gas: '0x1',
 					data: '0x1',
-					type: 2,
 				};
 
 				await expect(account.signTransaction(tx)).rejects.toThrow('Error');
@@ -152,8 +147,6 @@ describe('web3.accounts', () => {
 				value: web3.utils.toWei('0.1', 'ether'),
 				gas: '0x5218',
 				data: '0x1',
-				//gasPrice: '0x48523',
-				type: 2,
 				maxFeePerGas: '0x19475bd7f8',
 				maxPriorityFeePerGas: '0x5eae5feec',
 			};
@@ -164,7 +157,6 @@ describe('web3.accounts', () => {
 					from: tempAccount,
 					to: account.address,
 					value: web3.utils.toWei('0.5', 'ether'),
-					type: 2,
 				}),
 			).resolves.toBeDefined();
 
@@ -195,8 +187,6 @@ describe('web3.accounts', () => {
 				value: web3.utils.toWei('0.1', 'ether'),
 				gas: '0x1',
 				data: '0x1',
-				//gasPrice: '0x1',
-				type: 2,
 				maxFeePerGas: '0x19475bd7f8',
 				maxPriorityFeePerGas: '0x5eae5feec',
 			};

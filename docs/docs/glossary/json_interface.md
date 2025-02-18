@@ -2,9 +2,9 @@
 title: JSON Interface
 ---
 
-The JSON interface is a `JSON` object describing the [Application Binary Interface (ABI)](https://docs.soliditylang.org/en/develop/abi-spec.html) for an Ethereum smart contract.
+The JSON interface is a `JSON` object describing the [Application Binary Interface (ABI)](https://docs.soliditylang.org/en/develop/abi-spec.html) for an Zond smart contract.
 
-Using this JSON interface, web3.js is able to create a JavaScript object representing the smart contract , its methods and events using the `web3.eth.Contract` object.
+Using this JSON interface, web3.js is able to create a JavaScript object representing the smart contract , its methods and events using the `web3.zond.Contract` object.
 
 ### Specification
 
@@ -36,12 +36,13 @@ Using this JSON interface, web3.js is able to create a JavaScript object represe
 
 #### Example
 
-```solidity title='Solidity Contract'
-pragma solidity ^0.8.4;
+```hyperion title='Hyperion Contract'
+// TODO(now.youtrack.cloud/issue/web3js-11)
+pragma hyperion ^0.8.4;
 
 contract Test {
 	uint256 a;
-	address d = 0xdCad3a6d3569DF655070DEd06cb7A1b2Ccd1D3AF;
+	address d = ZdCad3a6d3569DF655070DEd06cb7A1b2Ccd1D3AF;
 
 	constructor(uint256 testInt) {
 		a = testInt;

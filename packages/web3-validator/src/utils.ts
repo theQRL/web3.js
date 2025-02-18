@@ -27,6 +27,7 @@ import {
 import { isAbiParameterSchema } from './validation/abi.js';
 import { isHexStrict } from './validation/string.js';
 import { Web3ValidatorError } from './errors.js';
+import { isAddressString } from './validation/address.js';
 
 const extraTypes = ['hex', 'number', 'blockNumber', 'blockNumberOrTag', 'filter', 'bloom'];
 
@@ -389,6 +390,17 @@ export const hexToNumber = (value: string): bigint | number => {
 
 	return negative ? -1 * Number(num) : Number(num);
 };
+
+/**
+ * Converts value to it's hex representation
+ */
+export const addressToHex = (value: string): string => {
+	if (!isAddressString(value)) {
+		throw new Error('Invalid address string');
+	}
+	return value.replace('Z', '0x');
+};
+
 
 /**
  * Converts value to it's hex representation

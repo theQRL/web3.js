@@ -69,14 +69,14 @@ describe('ens', () => {
 	let accountOne: string;
 
 	const ZERO_NODE: Bytes = '0x0000000000000000000000000000000000000000000000000000000000000000';
-	const addressOne: Address = '0x0000000000000000000000000000000000000001';
+	const addressOne: Address = 'Z0000000000000000000000000000000000000001';
 
 	beforeAll(async () => {
 		accounts = await getSystemTestAccounts();
 
 		[defaultAccount, accountOne] = accounts;
 
-		sendOptions = { from: defaultAccount, gas: '10000000', type: 2 };
+		sendOptions = { from: defaultAccount, gas: '10000000' };
 
 		const Registry = new Contract(ENSRegistryAbi, undefined, {
 			provider: getSystemTestProvider(),

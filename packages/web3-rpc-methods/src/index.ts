@@ -16,6 +16,5 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import * as zondRpcMethods from './zond_rpc_methods.js';
 import * as netRpcMethods from './net_rpc_methods.js';
-import * as personalRpcMethods from './personal_rpc_methods.js';
 
-export { zondRpcMethods, netRpcMethods, personalRpcMethods };
+export { zondRpcMethods, netRpcMethods };

@@ -14,25 +14,17 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
+
 export type ForkName =
-	| 'London+3860'
-	| 'London'
-	| 'Berlin'
-	| 'Istanbul'
-	| 'Byzantium'
-	| 'ConstantinopleFix'
-	| 'Constantinople'
-	| 'EIP150'
-	| 'EIP158'
-	| 'Frontier'
-	| 'Homestead';
+	| 'Shanghai';
 
 export type ForkNamesMap = { [forkName in ForkName]: string };
 
 export interface TxData {
 	data: string;
 	gasLimit: string;
-	gasPrice: string;
+	maxFeePerGas: string;
+	maxPriorityFeePerGas: string;
 	nonce: string;
 	to: string;
 	value: string;
@@ -40,25 +32,6 @@ export interface TxData {
 	publicKey: string;
 	signature: string;
 }
-
-// The type of each entry from ./ttTransactionTestEip155VitaliksTests.json
-export interface VitaliksTestsDataEntry {
-	blocknumber: string;
-	hash: string;
-	rlp: string;
-	sender: string;
-	transaction: TxData;
-}
-
-// The type of ./txs.json
-export type TxsJsonEntry = {
-	seed: string;
-	sendersAddress: string;
-	type: string;
-	cost: number;
-	raw: string[];
-	data: TxData;
-};
 
 export type ForksData = {
 	[forkName in ForkName]: { hash?: string; sender?: string; exception?: string };

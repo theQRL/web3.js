@@ -26,9 +26,8 @@ import {
 	createNewAccount,
 	refillAccount,
 	signAndSendContractMethodEIP1559,
-	signAndSendContractMethodEIP2930,
 } from '../fixtures/system_test_utils';
-import { processAsync, toUpperCaseHex } from '../shared_fixtures/utils';
+import { processAsync, toUpperCaseAddress } from '../shared_fixtures/utils';
 
 const initialSupply = BigInt('5000000000');
 
@@ -51,7 +50,7 @@ describe('contract', () => {
 
 		it('should deploy the contract', async () => {
 			const acc = await createTempAccount();
-			const sendOptionsLocal = { from: acc.address, /*gas: '10000000'*/ type: 2 };
+			const sendOptionsLocal = { from: acc.address, /*gas: '10000000'*/ };
 			await expect(
 				contract.deploy(deployOptions).send(sendOptionsLocal),
 			).resolves.toBeDefined();
@@ -71,7 +70,7 @@ describe('contract', () => {
 				mainAcc = await createTempAccount();
 				pkAccount = await createNewAccount();
 				await refillAccount(mainAcc.address, pkAccount.address, '20000000000000000');
-				sendOptions = { from: mainAcc.address, /*gas: '10000000'*/ type: 2 };
+				sendOptions = { from: mainAcc.address, /*gas: '10000000'*/ };
 				contractDeployed = await contract.deploy(deployOptions).send(sendOptions);
 			});
 			describe('methods', () => {
@@ -100,7 +99,7 @@ describe('contract', () => {
 						value,
 					);
 				});
-				it.each([signAndSendContractMethodEIP1559, signAndSendContractMethodEIP2930])(
+				it.each([signAndSendContractMethodEIP1559])(
 					'should transfer tokens with local wallet %p',
 					async signAndSendContractMethod => {
 						const value = BigInt(10);
@@ -117,8 +116,7 @@ describe('contract', () => {
 						).toBe(value);
 					},
 				);
-
-				it.each([signAndSendContractMethodEIP1559, signAndSendContractMethodEIP2930])(
+				it.each([signAndSendContractMethodEIP1559])(
 					'should approve and transferFrom tokens with local wallet %p',
 					async signAndSendContractMethod => {
 						const value = BigInt(10);
@@ -135,7 +133,7 @@ describe('contract', () => {
 						expect(res.status).toBe(BigInt(1));
 						expect(
 							(res.logs as LogsOutput[])[0].topics[2].endsWith(
-								pkAccount.address.substring(2),
+								pkAccount.address.substring(1),
 							),
 						).toBe(true);
 
@@ -162,8 +160,7 @@ describe('contract', () => {
 						).toBe(value - transferFromValue);
 					},
 				);
-
-				it.each([signAndSendContractMethodEIP1559, signAndSendContractMethodEIP2930])(
+				it.each([signAndSendContractMethodEIP1559])(
 					'should approve and transferFrom tokens with local wallet %p',
 					async signAndSendContractMethod => {
 						const value = BigInt(10);
@@ -216,8 +213,8 @@ describe('contract', () => {
 							const event = contractDeployed.events.Transfer();
 							event.on('data', data => {
 								resolve({
-									from: toUpperCaseHex(data.returnValues.from as string),
-									to: toUpperCaseHex(data.returnValues.to as string),
+									from: toUpperCaseAddress(data.returnValues.from as string),
+									to: toUpperCaseAddress(data.returnValues.to as string),
 									value: data.returnValues.value,
 								});
 							});
@@ -227,8 +224,8 @@ describe('contract', () => {
 								.send(sendOptions);
 						}),
 					).resolves.toEqual({
-						from: toUpperCaseHex(sendOptions.from as string),
-						to: toUpperCaseHex(acc2.address),
+						from: toUpperCaseAddress(sendOptions.from as string),
+						to: toUpperCaseAddress(acc2.address),
 						value: BigInt(100),
 					});
 				});

@@ -23,8 +23,8 @@ import { FeeMarketEIP1559Transaction } from '../../../src';
 import testdata from '../../fixtures/json/eip1559.json';
 
 const common = new Common({
-	chain: 5,
-	hardfork: Hardfork.London,
+	chain: 1,
+	hardfork: Hardfork.Shanghai,
 });
 // @ts-expect-error set private property
 common._chainParams.chainId = 4;
@@ -139,14 +139,15 @@ describe('[FeeMarketEIP1559Transaction]', () => {
 		expect(Object.isFrozen(signedTxn)).toBe(false);
 	});
 
-	it('common propagates from the common of tx, not the common in TxOptions', () => {
+	// NOTE(rgeraldes24): test not valid atm: no eips available
+	it.skip('common propagates from the common of tx, not the common in TxOptions', () => {
 		const data = testdata[0];
 		// eslint-disable-next-line @typescript-eslint/no-unsafe-call
 		const seed = hexToBytes(data.seed.slice(2));
 		const txn = FeeMarketEIP1559Transaction.fromTxData(data, { common, freeze: false });
 		const newCommon = new Common({
-			chain: Chain.Goerli,
-			hardfork: Hardfork.London,
+			chain: Chain.Mainnet,
+			hardfork: Hardfork.Shanghai,
 			eips: [2537],
 		});
 		expect(Object.isFrozen(newCommon)).not.toEqual(common);
@@ -194,7 +195,7 @@ describe('[FeeMarketEIP1559Transaction]', () => {
 			maxPriorityFeePerGas: '0x1284d',
 			maxFeePerGas: '0x1d97c',
 			gasLimit: '0x8ae0',
-			to: '0x000000000000000000000000000000000000aaaa',
+			to: 'Z000000000000000000000000000000000000aaaa',
 			value: '0x2933bc9',
 			data: '0x',
 			accessList: [],

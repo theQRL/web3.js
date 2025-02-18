@@ -18,6 +18,7 @@ import { ContractExecutionError } from '@theqrl/web3-errors';
 import { Contract } from '../../src';
 import { BasicAbi, BasicBytecode } from '../shared_fixtures/build/Basic';
 import { getSystemTestProvider, createTempAccount } from '../fixtures/system_test_utils';
+import { isNullish } from '@theqrl/web3-utils';
 
 describe('contract', () => {
 	let contract: Contract<typeof BasicAbi>;
@@ -37,7 +38,7 @@ describe('contract', () => {
 			arguments: [10, 'string init value'],
 		};
 
-		sendOptions = { from: acc.address, gas: '1000000', type: 2 };
+		sendOptions = { from: acc.address, gas: '1000000' };
 
 		contractDeployed = await contract.deploy(deployOptions).send(sendOptions);
 	});
@@ -64,7 +65,7 @@ describe('contract', () => {
 				});
 				const deployedTempContract = await tempContract
 					.deploy({ arguments: [10, 'string init value'] })
-					.send({type: 2});
+					.send();
 				const res = await deployedTempContract.methods.getStringValue().call();
 				expect(res).toBe('string init value');
 			});
@@ -107,7 +108,7 @@ describe('contract', () => {
 			it('should returns a receipt (EIP-1559, maxFeePerGas and maxPriorityFeePerGas specified)', async () => {
 				const tempAcc = await createTempAccount();
 
-				const sendOptionsLocal = { from: tempAcc.address, /*gas: '1000000'*/ type: 2 };
+				const sendOptionsLocal = { from: tempAcc.address, /*gas: '1000000'*/ };
 
 				const contractLocal = await contract.deploy(deployOptions).send(sendOptionsLocal);
 				const receipt = await contractLocal.methods
@@ -140,8 +141,8 @@ describe('contract', () => {
 				});
 				const deployedTempContract = await tempContract
 					.deploy({ arguments: [10, 'string init value'] })
-					.send({type: 2});
-				await deployedTempContract.methods.setValues(10, 'TEST', true).send({type: 2});
+					.send();
+				await deployedTempContract.methods.setValues(10, 'TEST', true).send();
 
 				expect(await deployedTempContract.methods.getStringValue().call()).toBe('TEST');
 			});
@@ -159,7 +160,7 @@ describe('contract', () => {
 						logsBloom:
 							'0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
 						status: BigInt(0),
-						to: contractDeployed.options.address?.toLowerCase(),
+						to: isNullish(contractDeployed.options.address) ? contractDeployed.options.address : `Z${contractDeployed.options.address.slice(1).toLowerCase()}`,
 						transactionIndex: BigInt(0),
 						type: BigInt(2),
 					},

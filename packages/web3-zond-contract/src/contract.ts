@@ -195,20 +195,22 @@ export class Contract<Abi extends ContractAbi>
 	implements Web3EventEmitter<ContractEventEmitterInterface<Abi>>
 {
 	/**
-	 * The options `object` for the contract instance. `from`, `gas` and `gasPrice` are used as fallback values when sending transactions.
+	 * The options `object` for the contract instance. `from`, `gas`, `maxFeePerGas` and `maxPriorityFeePerGas` are used as fallback values when sending transactions.
 	 *
 	 * ```ts
 	 * myContract.options;
 	 * > {
-	 *     address: '0x1234567890123456789012345678901234567891',
+	 *     address: 'Z1234567890123456789012345678901234567891',
 	 *     jsonInterface: [...],
-	 *     from: '0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe',
-	 *     gasPrice: '10000000000000',
+	 *     from: 'Zde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe',
+	 *     maxFeePerGas: '10000000000000',
+	 * 	   maxPriorityFeePerGas: '0',	
 	 *     gas: 1000000
 	 * }
 	 *
-	 * myContract.options.from = '0x1234567890123456789012345678901234567891'; // default from address
-	 * myContract.options.gasPrice = '20000000000000'; // default gas price in wei
+	 * myContract.options.from = 'Z1234567890123456789012345678901234567891'; // default from address
+	 * myContract.options.maxFeePerGas = '20000000000000'; // default max fee per gas in wei
+	 * myContract.options.maxPriorityFeePerGas = '0'; // default max priority fee per gas in wei
 	 * myContract.options.gas = 5000000; // provide as fallback always 5M gas
 	 * ```
 	 */
@@ -256,9 +258,9 @@ export class Contract<Abi extends ContractAbi>
 	 * @returns - The contract instance with all its methods and events.
 	 *
 	 * ```ts title="Example"
-	 * var myContract = new web3.zond.Contract([...], '0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe', {
-	 *   from: '0x1234567890123456789012345678901234567891', // default from address
-	 *   gasPrice: '20000000000' // default gas price in wei, 20 gwei in this case
+	 * var myContract = new web3.zond.Contract([...], 'Zde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe', {
+	 *   from: 'Z1234567890123456789012345678901234567891', // default from address
+	 *   maxFeePerGas: '20000000000' // default max fee per gas in wei, 20 gwei in this case
 	 * });
 	 * ```
 	 *
@@ -266,7 +268,7 @@ export class Contract<Abi extends ContractAbi>
 	 *
 	 * ```ts title="Example"
 	 * const myContractAbi = [....] as const; // ABI definitions
-	 * const myContract = new web3.zond.Contract(myContractAbi, '0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe');
+	 * const myContract = new web3.zond.Contract(myContractAbi, 'Zde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe');
 	 * ```
 	 */
 	public constructor(
@@ -388,7 +390,8 @@ export class Contract<Abi extends ContractAbi>
 			address,
 			jsonInterface: this._jsonInterface,
 			gas: options?.gas ?? options?.gasLimit,
-			gasPrice: options?.gasPrice,
+			maxFeePerGas: options?.maxFeePerGas,
+			maxPriorityFeePerGas: options?.maxPriorityFeePerGas,
 			from: options?.from,
 			input: options?.input,
 			data: options?.data,
@@ -443,13 +446,13 @@ export class Contract<Abi extends ContractAbi>
 	 *
 	 * ```ts
 	 * // calling a method
-	 * const result = await myContract.methods.myMethod(123).call({from: '0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe'});
+	 * const result = await myContract.methods.myMethod(123).call({from: 'Zde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe'});
 	 *
 	 * // or sending and using a promise
-	 * const receipt = await myContract.methods.myMethod(123).send({from: '0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe'});
+	 * const receipt = await myContract.methods.myMethod(123).send({from: 'Zde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe'});
 	 *
 	 * // or sending and using the events
-	 * const sendObject = myContract.methods.myMethod(123).send({from: '0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe'});
+	 * const sendObject = myContract.methods.myMethod(123).send({from: 'Zde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe'});
 	 * sendObject.on('transactionHash', function(hash){
 	 *   ...
 	 * });
@@ -476,7 +479,7 @@ export class Contract<Abi extends ContractAbi>
 	 * @returns - The new contract instance.
 	 *
 	 * ```ts
-	 * const contract1 = new zond.Contract(abi, address, {gasPrice: '12345678', from: fromAddress});
+	 * const contract1 = new zond.Contract(abi, address, {maxFeePerGas: '12345678', maxPriorityFeePerGas: '0', from: fromAddress});
 	 *
 	 * const contract2 = contract1.clone();
 	 * contract2.options.address = address2;
@@ -493,7 +496,8 @@ export class Contract<Abi extends ContractAbi>
 				this.options.address,
 				{
 					gas: this.options.gas,
-					gasPrice: this.options.gasPrice,
+					maxFeePerGas: this.options.maxFeePerGas,
+					maxPriorityFeePerGas: this.options.maxPriorityFeePerGas,
 					from: this.options.from,
 					input: this.options.input,
 					data: this.options.data,
@@ -508,7 +512,8 @@ export class Contract<Abi extends ContractAbi>
 				[...this._jsonInterface, ...this._errorsInterface] as unknown as Abi,
 				{
 					gas: this.options.gas,
-					gasPrice: this.options.gasPrice,
+					maxFeePerGas: this.options.maxFeePerGas,
+					maxPriorityFeePerGas: this.options.maxPriorityFeePerGas,
 					from: this.options.from,
 					input: this.options.input,
 					data: this.options.data,
@@ -533,9 +538,10 @@ export class Contract<Abi extends ContractAbi>
 	 *   arguments: [123, 'My String']
 	 * })
 	 * .send({
-	 *   from: '0x1234567890123456789012345678901234567891',
+	 *   from: 'Z1234567890123456789012345678901234567891',
 	 *   gas: 1500000,
-	 *   gasPrice: '30000000000000'
+	 *   maxFeePerGas: '30000000000000',
+	 *   maxPriorityFeePerGas: '0'
 	 * }, function(error, transactionHash){ ... })
 	 * .on('error', function(error){ ... })
 	 * .on('transactionHash', function(transactionHash){ ... })
@@ -555,9 +561,10 @@ export class Contract<Abi extends ContractAbi>
 	 *   arguments: [123, 'My String']
 	 * })
 	 * .send({
-	 *   from: '0x1234567890123456789012345678901234567891',
+	 *   from: 'Z1234567890123456789012345678901234567891',
 	 *   gas: 1500000,
-	 *   gasPrice: '30000000000000'
+	 *   maxFeePerGas: '30000000000000',
+	 *   maxPriorityFeePerGas: '0',
 	 * })
 	 * .then(function(newContractInstance){
 	 *   console.log(newContractInstance.options.address) // instance with the new contract address
@@ -692,7 +699,7 @@ export class Contract<Abi extends ContractAbi>
 	 *   transactionHash: '0x7f9fade1c0d57a7af66ab4ead79fade1c0d57a7af66ab4ead7c2c2eb7b11a91385',
 	 *   blockHash: '0xfd43ade1c09fade1c0d57a7af66ab4ead7c2c2eb7b11a91ffdd57a7af66ab4ead7',
 	 *   blockNumber: 1234,
-	 *   address: '0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe'
+	 *   address: 'Zde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe'
 	 * },{
 	 *   ...
 	 * }]

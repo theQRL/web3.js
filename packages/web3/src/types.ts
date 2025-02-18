@@ -39,7 +39,6 @@ import { Contract } from '@theqrl/web3-zond-contract';
 import { ENS } from '@theqrl/web3-zond-ens';
 import { Net } from '@theqrl/web3-net';
 import { Iban } from '@theqrl/web3-zond-iban';
-import { Personal } from '@theqrl/web3-zond-personal';
 
 /**
  * The Zond interface for main web3 object. It provides extra methods in addition to `web3-zond` interface.
@@ -51,7 +50,6 @@ export interface Web3ZondInterface extends Zond {
 	 * Extended [Contract](/api/web3-zond-contract/class/Contract) constructor for main `web3` object. See [Contract](/api/web3-zond-contract/class/Contract) for further details.
 	 *
 	 * You can use `.setProvider` on this constructor to set provider for **all the instances** of the contracts which were created by `web3.zond.Contract`.
-	 * Please check the {@doclink guides/web3_upgrade_guide/x/providers_migration_guide | following guide} to understand more about setting provider.
 	 *
 	 * ```ts
 	 * web3.zond.Contract.setProvider(myProvider)
@@ -81,6 +79,7 @@ export interface Web3ZondInterface extends Zond {
 		recoverTransaction: typeof recoverTransaction;
 		hashMessage: typeof hashMessage;
 		sign: typeof sign;
+		// TODO(youtrack/theqrl/web3.js/3)
 		//encrypt: typeof encrypt;
 		// decrypt: (
 		// 	keystore: string,
@@ -89,5 +88,4 @@ export interface Web3ZondInterface extends Zond {
 		// ) => Promise<Web3Account>;
 		wallet: Wallet;
 	};
-	personal: Personal;
 }

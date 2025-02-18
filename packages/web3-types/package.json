@@ -1,6 +1,6 @@
 {
 	"name": "@theqrl/web3-types",
-	"version": "0.2.1",
+	"version": "0.3.0",
 	"publishConfig": {
 		"access": "public"
 	},
@@ -46,7 +46,7 @@
 	},
 	"devDependencies": {
 		"@humeris/espresso-shot": "^4.0.0",
-		"@theqrl/eslint-config-base-web3": "^0.2.1",
+		"@theqrl/eslint-config-base-web3": "^0.3.0",
 		"@types/jest": "^28.1.6",
 		"@typescript-eslint/eslint-plugin": "^5.30.7",
 		"@typescript-eslint/parser": "^5.30.7",

@@ -23,9 +23,7 @@ import {
 	isAccessListEntry,
 	isBaseTransaction,
 	isTransaction1559Unsigned,
-	isTransaction2930Unsigned,
 	isTransactionCall,
-	isTransactionLegacyUnsigned,
 	isTransactionWithSender,
 	validateTransactionCall,
 	validateTransactionWithSender,
@@ -35,9 +33,7 @@ import {
 	isAccessListValidData,
 	isBaseTransactionValidData,
 	isTransaction1559UnsignedValidData,
-	isTransaction2930UnsignedValidData,
 	isTransactionCallValidData,
-	isTransactionLegacyUnsignedValidData,
 	isTransactionWithSenderValidData,
 	validateTransactionCallInvalidData,
 	validateTransactionWithSenderInvalidData,
@@ -62,16 +58,6 @@ describe('validation', () => {
 	describe('isTransaction1559Unsigned', () => {
 		it.each(isTransaction1559UnsignedValidData())('%s', (input, output) => {
 			expect(isTransaction1559Unsigned(input)).toEqual(output);
-		});
-	});
-	describe('isTransactionLegacyUnsigned', () => {
-		it.each(isTransactionLegacyUnsignedValidData())('%s', (input, output) => {
-			expect(isTransactionLegacyUnsigned(input)).toEqual(output);
-		});
-	});
-	describe('isTransaction2930Unsigned', () => {
-		it.each(isTransaction2930UnsignedValidData())('%s', (input, output) => {
-			expect(isTransaction2930Unsigned(input)).toEqual(output);
 		});
 	});
 	describe('isTransactionWithSender', () => {

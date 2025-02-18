@@ -21,12 +21,12 @@ import Web3, { FMT_BYTES, FMT_NUMBER } from '../../src';
 import { getSystemE2ETestProvider, getE2ETestAccountAddress } from './e2e_utils';
 import { closeOpenConnection, getSystemTestBackend } from '../shared_fixtures/system_tests_utils';
 import { toAllVariants } from '../shared_fixtures/utils';
-import { sepoliaBlockData } from './fixtures/sepolia';
 import { mainnetBlockData } from './fixtures/mainnet';
 
 describe(`${getSystemTestBackend()} tests - getBalance`, () => {
 	const provider = getSystemE2ETestProvider();
-	const blockData = getSystemTestBackend() === 'sepolia' ? sepoliaBlockData : mainnetBlockData;
+	// const blockData = getSystemTestBackend() === 'sepolia' ? sepoliaBlockData : mainnetBlockData;
+	const blockData = mainnetBlockData;
 	const expectedBalance =
 		getSystemTestBackend() === 'sepolia' ? '172530374997217200' : '2099795781954790368';
 

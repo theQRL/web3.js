@@ -20,15 +20,14 @@ import { Web3Context } from '@theqrl/web3-core';
 import HttpProvider from '@theqrl/web3-providers-http';
 import { isNullish } from '@theqrl/web3-validator';
 import {
-	AccessListEIP2930Transaction,
 	FeeMarketEIP1559Transaction,
-	Transaction,
 } from '@theqrl/web3-zond-accounts';
 import { zondRpcMethods } from '@theqrl/web3-rpc-methods';
 
 import { bytesToHex, hexToBytes } from '@theqrl/web3-utils';
 import { prepareTransactionForSigning } from '../../src/utils/prepare_transaction_for_signing';
 import { validTransactions } from '../fixtures/prepare_transaction_for_signing';
+
 
 describe('prepareTransactionForSigning', () => {
 	const web3Context = new Web3Context<ZondExecutionAPI>({
@@ -58,7 +57,7 @@ describe('prepareTransactionForSigning', () => {
 				// @ts-expect-error - Mocked implementation doesn't have correct method signature
 				jest.spyOn(zondRpcMethods, 'getBlockByNumber').mockImplementation(() => mockBlock);
 
-				const ethereumjsTx = await prepareTransactionForSigning(
+				const zondjsTx = await prepareTransactionForSigning(
 					expectedTransaction,
 					web3Context,
 					expectedSeed,
@@ -67,19 +66,17 @@ describe('prepareTransactionForSigning', () => {
 
 				// should produce an web3-utils/tx instance
 				expect(
-					ethereumjsTx instanceof Transaction ||
-						ethereumjsTx instanceof AccessListEIP2930Transaction ||
-						ethereumjsTx instanceof FeeMarketEIP1559Transaction,
+					zondjsTx instanceof FeeMarketEIP1559Transaction,
 				).toBeTruthy();
-				expect(ethereumjsTx.sign).toBeDefined();
+				expect(zondjsTx.sign).toBeDefined();
 
 				// should sign transaction
-				const signedTransaction = ethereumjsTx.sign(
+				const signedTransaction = zondjsTx.sign(
 					hexToBytes(expectedSeed.substring(2)),
 				);
 
 				const senderAddress = signedTransaction.getSenderAddress().toString();
-				expect(senderAddress).toBe(expectedAddress.toLowerCase());
+				expect(senderAddress).toBe(`Z${expectedAddress.slice(1).toLowerCase()}`);
 
 				// should be able to obtain expectedRlpEncodedTransaction
 				const rlpEncodedTransaction = bytesToHex(signedTransaction.serialize());

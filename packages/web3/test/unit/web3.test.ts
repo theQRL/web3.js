@@ -35,7 +35,7 @@ describe('Web3 object', () => {
 	describe('creating a Contract object with the constructor at Web3 -> zond.Contract', () => {
 		const Web3Contract = new Web3().zond.Contract;
 		const abi = [{ name: 'any', type: 'function' }];
-		const address = '0x0000000000000000000000000000000000000000';
+		const address = 'Z0000000000000000000000000000000000000000';
 		const options = { gas: '100' };
 
 		it('should work when `address`=`undefined` and `options`=`undefined`', () => {

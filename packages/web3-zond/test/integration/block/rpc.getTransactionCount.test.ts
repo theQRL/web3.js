@@ -20,10 +20,8 @@ import { Contract } from '@theqrl/web3-zond-contract';
 import { Web3Zond } from '../../../src';
 import {
 	getSystemTestProvider,
-	createNewAccount,
 	createTempAccount,
 	closeOpenConnection,
-	refillAccount,
 } from '../../fixtures/system_test_utils';
 import { BasicAbi, BasicBytecode } from '../../shared_fixtures/build/Basic';
 import { toAllVariants } from '../../shared_fixtures/utils';
@@ -53,7 +51,7 @@ describe('rpc with block', () => {
 		web3Zond = new Web3Zond({
 			provider: clientUrl,
 			config: {
-				transactionPollingTimeout: 15000,
+				transactionPollingTimeout: 5000,
 			},
 		});
 
@@ -101,14 +99,7 @@ describe('rpc with block', () => {
 				format: Object.values(FMT_NUMBER),
 			}),
 		)('getTransactionCount', async ({ block, format }) => {
-			const acc = await createNewAccount({ unlock: true/*, refill: true*/ });
-			await refillAccount(
-				(
-					await createTempAccount()
-				).address,
-				acc.address,
-				'100000000000000000000',
-			);
+			const acc = await createTempAccount();
 			const [receipt] = await sendFewTxes({
 				from: acc.address,
 				value: '0x1',

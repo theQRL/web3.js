@@ -43,7 +43,7 @@ const { getId } = require('@theqrl/web3-net');
 describe('ens', () => {
 	let object: Web3ContextObject;
 	let resolverContract: Contract<typeof PublicResolverAbi>;
-	const mockAddress = '0x0000000000000000000000000000000000000000';
+	const mockAddress = 'Z0000000000000000000000000000000000000000';
 	const ENS_NAME = 'web3js.zond';
 	let ens: ENS;
 
@@ -141,10 +141,10 @@ describe('ens', () => {
 			expect(localEns.registryAddress).toBe(registryAddresses.main);
 		});
 		it('set params', async () => {
-			const localEns = new ENS(registryAddresses.goerli, 'http://127.0.0.1:8545');
+			const localEns = new ENS(registryAddresses.main, 'http://127.0.0.1:8545');
 			// @ts-expect-error check clientUrl field
 			expect(localEns.provider?.clientUrl).toBe('http://127.0.0.1:8545');
-			expect(localEns.registryAddress).toBe(registryAddresses.goerli);
+			expect(localEns.registryAddress).toBe(registryAddresses.main);
 		});
 	});
 

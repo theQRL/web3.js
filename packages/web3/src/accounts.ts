@@ -84,6 +84,7 @@ export const initAccountsForContext = (context: Web3Context<ZondExecutionAPI>) =
 	const wallet = new Wallet({
 		create: createWithContext,
 		seedToAccount: seedToAccountWithContext,
+		// TODO(youtrack/theqrl/web3.js/3)
 		//decrypt: decryptWithContext,
 	});
 
@@ -91,10 +92,12 @@ export const initAccountsForContext = (context: Web3Context<ZondExecutionAPI>) =
 		signTransaction: signTransactionWithContext,
 		create: createWithContext,
 		seedToAccount: seedToAccountWithContext,
+		// TODO(youtrack/theqrl/web3.js/3)
 		//decrypt: decryptWithContext,
 		recoverTransaction,
 		hashMessage,
 		sign,
+		// TODO(youtrack/theqrl/web3.js/3)
 		//encrypt,
 		wallet,
 	};

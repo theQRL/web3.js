@@ -69,7 +69,7 @@ export const sha3RawValidData: [Bytes, string | undefined][] = [
 
 export const compareSha3JSRawValidData: [string, string][] = [...compareSha3JSValidData];
 
-export const soliditySha3Data: [TypedObject[] | TypedObjectAbbreviated[], string | undefined][] = [
+export const hyperionSha3Data: [TypedObject[] | TypedObjectAbbreviated[], string | undefined][] = [
 	[
 		[{ type: 'string', value: '31323334' }],
 		'0xf15f8da2ad27e486d632dc37d24912f634398918d6f9913a0a0ff84e388be62b',
@@ -128,7 +128,7 @@ export const soliditySha3Data: [TypedObject[] | TypedObjectAbbreviated[], string
 		'0x661136a4267dba9ccdf6bfddb7c00e714de936674c4bdb065a531cf1cb15c7fc',
 	],
 	[
-		[{ type: 'address', value: '0x407D73d8a49eeb85D32Cf465507dd71d507100c1' }],
+		[{ type: 'address', value: 'Z407D73d8a49eeb85D32Cf465507dd71d507100c1' }],
 		'0x4e8ebbefa452077428f93c9520d3edd60594ff452a29ac7d2ccc11d47f3ab95b',
 	],
 	[
@@ -139,7 +139,7 @@ export const soliditySha3Data: [TypedObject[] | TypedObjectAbbreviated[], string
 		[
 			{ t: 'string', v: 'Hello!%' },
 			{ t: 'int8', v: -23 },
-			{ t: 'address', v: '0x85F43D8a49eeB85d32Cf465507DD71d507100C1d' },
+			{ t: 'address', v: 'Z85F43D8a49eeB85d32Cf465507DD71d507100C1d' },
 		],
 		'0xa13b31627c1ed7aaded5aecec71baf02fe123797fffd45e662eac8e06fbe4955',
 	],
@@ -149,23 +149,23 @@ export const soliditySha3Data: [TypedObject[] | TypedObjectAbbreviated[], string
 	],
 ];
 
-export const soliditySha3ValidData: [
+export const hyperionSha3ValidData: [
 	TypedObject[] | TypedObjectAbbreviated[],
 	string | undefined,
-][] = [...soliditySha3Data, [[{ t: 'string', v: '' }], undefined]];
+][] = [...hyperionSha3Data, [[{ t: 'string', v: '' }], undefined]];
 
-export const soliditySha3RawValidData: [
+export const hyperionSha3RawValidData: [
 	TypedObject[] | TypedObjectAbbreviated[],
 	string | undefined,
 ][] = [
-	...soliditySha3Data,
+	...hyperionSha3Data,
 	[
 		[{ t: 'string', v: '' }],
 		'0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470',
 	],
 ];
 
-export const soliditySha3InvalidData: [any, string][] = [
+export const hyperionSha3InvalidData: [any, string][] = [
 	[{ t: 'int8', v: 500 }, 'Invalid value given "500". Error: value is larger than size.'],
 	[
 		{ t: 'bytes', v: '0x407D73d8a49eeb85D32Cf465507dd71d507100c' },
@@ -193,7 +193,7 @@ export const encodePackData: [TypedObject[] | TypedObjectAbbreviated[], any][] =
 	],
 	[[{ type: 'string', value: '' }], '0x'],
 	[
-		[{ type: 'address', value: '0xc1912fee45d61c87cc5ea59dae31190fffff232d' }],
+		[{ type: 'address', value: 'Zc1912fee45d61c87cc5ea59dae31190fffff232d' }],
 		'0xc1912fee45d61c87cc5ea59dae31190fffff232d',
 	],
 	[[{ type: 'bool', value: true }], '0x01'],
@@ -219,7 +219,7 @@ export const encodePackData: [TypedObject[] | TypedObjectAbbreviated[], any][] =
 		'0x44555ffffffffdd2222222222222244445565535220000000000000000000000',
 	],
 	[
-		[{ v: '0x407D73d8a49eeb85D32Cf465507dd71d507100c1', t: 'address' }],
+		[{ v: 'Z407D73d8a49eeb85D32Cf465507dd71d507100c1', t: 'address' }],
 		'0x407d73d8a49eeb85d32cf465507dd71d507100c1',
 	],
 	[
@@ -265,11 +265,11 @@ export const encodePackedInvalidData: [any, string][] = [
 	[{ type: 'boolean', value: 1234 }, 'Invalid value given "1234". Error: not a valid boolean.'],
 	[
 		{ type: 'address', value: 1234 },
-		'Invalid value given "1234". Error: invalid ethereum address',
+		'Invalid value given "1234". Error: invalid zond address',
 	],
 	[
 		{ type: 'address', value: '0x2' },
-		'Invalid value given "0x2". Error: invalid ethereum address',
+		'Invalid value given "0x2". Error: invalid zond address',
 	],
 	[{ type: 'uint612', value: 13 }, 'Invalid value given "13". Error: invalid size given.'],
 	[
@@ -305,7 +305,7 @@ export const elementaryNameValidData: [any, string][] = [
 	['int256', '256'],
 ];
 
-export const soliditySha3BigIntValidData: [Sha3Input[], string][] = [
+export const hyperionSha3BigIntValidData: [Sha3Input[], string][] = [
 	[[3434], '0xf219fa5590f999dc677e94dd9cf99cf14103d2f4323898edb31db982d5909687'],
 	[[BigInt(3434)], '0xf219fa5590f999dc677e94dd9cf99cf14103d2f4323898edb31db982d5909687'],
 	[

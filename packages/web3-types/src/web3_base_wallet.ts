@@ -75,12 +75,14 @@ export interface Web3BaseWalletAccount {
 		readonly message?: string;
 		readonly signature: HexString;
 	};
+	// TODO(youtrack/theqrl/web3.js/3)
 	// readonly encrypt: (password: string, options?: Record<string, unknown>) => Promise<KeyStore>;
 }
 
 export interface Web3AccountProvider<T> {
 	seedToAccount: (seed: string) => T;
 	create: () => T;
+	// TODO(youtrack/theqrl/web3.js/3)
 	// decrypt: (
 	// 	keystore: KeyStore | string,
 	// 	password: string,
@@ -101,6 +103,7 @@ export abstract class Web3BaseWallet<T extends Web3BaseWalletAccount> extends Ar
 	public abstract get(addressOrIndex: string | number): T | undefined;
 	public abstract remove(addressOrIndex: string | number): boolean;
 	public abstract clear(): this;
+	// TODO(youtrack/theqrl/web3.js/3)
 	// public abstract encrypt(
 	// 	password: string,
 	// 	options?: Record<string, unknown>,

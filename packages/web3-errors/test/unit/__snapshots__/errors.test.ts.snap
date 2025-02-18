@@ -170,7 +170,7 @@ exports[`errors InvalidPropertiesForTransactionTypeError should have valid json 
 Object {
   "code": 439,
   "innerError": undefined,
-  "message": "The following properties are invalid for the transaction type 0x0: property",
+  "message": "The following properties are invalid for the transaction type 0x2: property",
   "name": "InvalidPropertiesForTransactionTypeError",
 }
 `;
@@ -365,7 +365,7 @@ Object {
   "code": 402,
   "data": undefined,
   "innerError": undefined,
-  "message": "Transaction has been reverted by the EVM:
+  "message": "Transaction has been reverted by the ZVM:
  {\\"attr1\\":\\"attr1\\"}",
   "name": "TransactionRevertInstructionError",
   "reason": "message",
@@ -386,7 +386,7 @@ Object {
   "customErrorName": "customErrorName",
   "data": "data",
   "innerError": undefined,
-  "message": "Transaction has been reverted by the EVM",
+  "message": "Transaction has been reverted by the ZVM",
   "name": "TransactionRevertWithCustomError",
   "reason": "reason",
   "receipt": Object {
@@ -400,7 +400,7 @@ exports[`errors TransactionRevertedWithoutReasonError should have valid json str
 Object {
   "code": 405,
   "innerError": undefined,
-  "message": "Transaction has been reverted by the EVM:
+  "message": "Transaction has been reverted by the ZVM:
  {\\"attr1\\":\\"attr1\\"}",
   "name": "TransactionRevertedWithoutReasonError",
   "receipt": Object {

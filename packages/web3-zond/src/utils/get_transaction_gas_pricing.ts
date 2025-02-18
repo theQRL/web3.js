@@ -25,10 +25,10 @@ import {
 	ZOND_DATA_FORMAT,
 } from '@theqrl/web3-types';
 import { isNullish } from '@theqrl/web3-validator';
-import { Eip1559NotSupportedError, UnsupportedTransactionTypeError } from '@theqrl/web3-errors';
+import { UnsupportedTransactionTypeError } from '@theqrl/web3-errors';
 import { format } from '@theqrl/web3-utils';
 // eslint-disable-next-line import/no-cycle
-import { getBlock, getGasPrice } from '../rpc_method_wrappers.js';
+import { getBlock } from '../rpc_method_wrappers.js';
 import { InternalTransaction } from '../types.js';
 // eslint-disable-next-line import/no-cycle
 import { getTransactionType } from './transaction_builder.js';
@@ -40,20 +40,6 @@ async function getEip1559GasPricing<ReturnFormat extends DataFormat>(
 ): Promise<FormatType<{ maxPriorityFeePerGas?: Numbers; maxFeePerGas?: Numbers }, ReturnFormat>> {
 	const block = await getBlock(web3Context, web3Context.defaultBlock, false, returnFormat);
 
-	if (isNullish(block.baseFeePerGas)) throw new Eip1559NotSupportedError();
-
-	if (!isNullish(transaction.gasPrice)) {
-		const convertedTransactionGasPrice = format(
-			{ format: 'uint' },
-			transaction.gasPrice as Numbers,
-			returnFormat,
-		);
-
-		return {
-			maxPriorityFeePerGas: convertedTransactionGasPrice,
-			maxFeePerGas: convertedTransactionGasPrice,
-		};
-	}
 	return {
 		maxPriorityFeePerGas: format(
 			{ format: 'uint' },
@@ -78,7 +64,7 @@ export async function getTransactionGasPricing<ReturnFormat extends DataFormat>(
 	returnFormat: ReturnFormat,
 ): Promise<
 	| FormatType<
-			{ gasPrice?: Numbers; maxPriorityFeePerGas?: Numbers; maxFeePerGas?: Numbers },
+			{ maxPriorityFeePerGas?: Numbers; maxFeePerGas?: Numbers },
 			ReturnFormat
 	  >
 	| undefined
@@ -88,26 +74,12 @@ export async function getTransactionGasPricing<ReturnFormat extends DataFormat>(
 		if (transactionType.startsWith('-'))
 			throw new UnsupportedTransactionTypeError(transactionType);
 
-		// https://github.com/ethereum/EIPs/blob/master/EIPS/eip-2718.md#transactions
-		if (transactionType < '0x0' || transactionType > '0x7f')
+		if (transactionType !== '0x2')
 			throw new UnsupportedTransactionTypeError(transactionType);
 
-		if (
-			isNullish(transaction.gasPrice) &&
-			(transactionType === '0x0' || transactionType === '0x1')
-		)
-			return {
-				gasPrice: await getGasPrice(web3Context, returnFormat),
-				maxPriorityFeePerGas: undefined,
-				maxFeePerGas: undefined,
-			};
-
-		if (transactionType === '0x2') {
-			return {
-				gasPrice: undefined,
-				...(await getEip1559GasPricing(transaction, web3Context, returnFormat)),
-			};
-		}
+		return {
+			...(await getEip1559GasPricing(transaction, web3Context, returnFormat)),
+		};
 	}
 
 	return undefined;

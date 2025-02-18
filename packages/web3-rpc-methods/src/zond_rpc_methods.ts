@@ -44,16 +44,16 @@ export async function getSyncing(requestManager: Web3RequestManager) {
 	});
 }
 
-export async function getCoinbase(requestManager: Web3RequestManager) {
+export async function getGasPrice(requestManager: Web3RequestManager) {
 	return requestManager.send({
-		method: 'zond_coinbase',
+		method: 'zond_gasPrice',
 		params: [],
 	});
 }
 
-export async function getGasPrice(requestManager: Web3RequestManager) {
+export async function getMaxPriorityFeePerGas(requestManager: Web3RequestManager) {
 	return requestManager.send({
-		method: 'zond_gasPrice',
+		method: 'zond_maxPriorityFeePerGas',
 		params: [],
 	});
 }
@@ -314,29 +314,11 @@ export async function getCompilers(requestManager: Web3RequestManager) {
 	});
 }
 
-export async function compileSolidity(requestManager: Web3RequestManager, code: string) {
+export async function compileHyperion(requestManager: Web3RequestManager, code: string) {
 	validator.validate(['string'], [code]);
 
 	return requestManager.send({
-		method: 'zond_compileSolidity',
-		params: [code],
-	});
-}
-
-export async function compileLLL(requestManager: Web3RequestManager, code: string) {
-	validator.validate(['string'], [code]);
-
-	return requestManager.send({
-		method: 'zond_compileLLL',
-		params: [code],
-	});
-}
-
-export async function compileSerpent(requestManager: Web3RequestManager, code: string) {
-	validator.validate(['string'], [code]);
-
-	return requestManager.send({
-		method: 'zond_compileSerpent',
+		method: 'zond_compileHyperion',
 		params: [code],
 	});
 }

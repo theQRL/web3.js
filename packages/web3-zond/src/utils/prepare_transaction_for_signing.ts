@@ -19,7 +19,6 @@ import {
 	ZondExecutionAPI,
 	HexString,
 	PopulatedUnsignedEip1559Transaction,
-	PopulatedUnsignedEip2930Transaction,
 	PopulatedUnsignedTransaction,
 	Transaction,
 	ValidChains,
@@ -34,11 +33,10 @@ import { validateTransactionForSigning } from '../validation.js';
 import { formatTransaction } from './format_transaction.js';
 import { transactionBuilder } from './transaction_builder.js';
 
-const getEthereumjsTxDataFromTransaction = (
+const getZondjsTxDataFromTransaction = (
 	transaction: FormatType<PopulatedUnsignedTransaction, typeof ZOND_DATA_FORMAT>,
 ) => ({
 	nonce: transaction.nonce,
-	gasPrice: transaction.gasPrice,
 	gasLimit: transaction.gasLimit ?? transaction.gas,
 	to: transaction.to,
 	value: transaction.value,
@@ -46,7 +44,7 @@ const getEthereumjsTxDataFromTransaction = (
 	type: transaction.type,
 	chainId: transaction.chainId,
 	accessList: (
-		transaction as FormatType<PopulatedUnsignedEip2930Transaction, typeof ZOND_DATA_FORMAT>
+		transaction as FormatType<PopulatedUnsignedEip1559Transaction, typeof ZOND_DATA_FORMAT>
 	).accessList,
 	maxPriorityFeePerGas: (
 		transaction as FormatType<PopulatedUnsignedEip1559Transaction, typeof ZOND_DATA_FORMAT>
@@ -56,7 +54,7 @@ const getEthereumjsTxDataFromTransaction = (
 	).maxFeePerGas,
 });
 
-const getEthereumjsTransactionOptions = (
+const getZondjsTransactionOptions = (
 	transaction: FormatType<PopulatedUnsignedTransaction, typeof ZOND_DATA_FORMAT>,
 	web3Context: Web3Context<ZondExecutionAPI>,
 ) => {
@@ -143,7 +141,7 @@ export const prepareTransactionForSigning = async (
 	);
 
 	return TransactionFactory.fromTxData(
-		getEthereumjsTxDataFromTransaction(formattedTransaction),
-		getEthereumjsTransactionOptions(formattedTransaction, web3Context),
+		getZondjsTxDataFromTransaction(formattedTransaction),
+		getZondjsTransactionOptions(formattedTransaction, web3Context),
 	);
 };

@@ -21,13 +21,14 @@ import Web3, { FMT_BYTES, FMT_NUMBER } from '../../src';
 import { getSystemE2ETestProvider } from './e2e_utils';
 import { closeOpenConnection, getSystemTestBackend } from '../shared_fixtures/system_tests_utils';
 import { toAllVariants } from '../shared_fixtures/utils';
-import { sepoliaBlockData } from './fixtures/sepolia';
 import { mainnetBlockData } from './fixtures/mainnet';
 
 describe(`${getSystemTestBackend()} tests - getBlockTransactionCount`, () => {
 	const provider = getSystemE2ETestProvider();
-	const blockData = getSystemTestBackend() === 'sepolia' ? sepoliaBlockData : mainnetBlockData;
-	const expectedTransactionCount = getSystemTestBackend() === 'sepolia' ? 30 : 196;
+	// const blockData = getSystemTestBackend() === 'sepolia' ? sepoliaBlockData : mainnetBlockData;
+	// const expectedTransactionCount = getSystemTestBackend() === 'sepolia' ? 30 : 196;
+	const blockData = mainnetBlockData;
+	const expectedTransactionCount = 196;
 
 	let web3: Web3;
 

@@ -1,10 +1,10 @@
 {
 	"name": "@theqrl/web3-zond-abi",
-	"version": "0.2.1",
+	"version": "0.3.0",
 	"publishConfig": {
 		"access": "public"
 	},
-	"description": "Web3 module encode and decode EVM in/output.",
+	"description": "Web3 module encode and decode ZVM in/output.",
 	"main": "./lib/commonjs/index.js",
 	"module": "./lib/esm/index.js",
 	"exports": {
@@ -14,7 +14,7 @@
 			"require": "./lib/commonjs/index.js"
 		}
 	},
-	"repository": "https://github.com/ethereum/web3.js/tree/4.x/packages/web3-eth-abi",
+	"repository": "https://github.com/theQRL/web3.js/tree/main/packages/web3-zond-abi",
 	"author": "ChainSafe Systems",
 	"license": "LGPL-3.0",
 	"engines": {
@@ -45,15 +45,15 @@
 		"test:integration": "jest --config=./test/integration/jest.config.js --passWithNoTests"
 	},
 	"dependencies": {
-		"@ethersproject/abi": "^5.7.0",
 		"@ethersproject/bignumber": "^5.7.0",
-		"@theqrl/web3-errors": "^0.2.1",
-		"@theqrl/web3-types": "^0.2.1",
-		"@theqrl/web3-utils": "^0.2.1"
+		"@theqrl/abi": "^0.1.0",
+		"@theqrl/web3-errors": "^0.3.0",
+		"@theqrl/web3-types": "^0.3.0",
+		"@theqrl/web3-utils": "^0.3.0"
 	},
 	"devDependencies": {
 		"@humeris/espresso-shot": "^4.0.0",
-		"@theqrl/eslint-config-base-web3": "^0.2.1",
+		"@theqrl/eslint-config-base-web3": "^0.3.0",
 		"@types/jest": "^28.1.6",
 		"@types/jest-when": "^3.5.2",
 		"@typescript-eslint/eslint-plugin": "^5.30.7",

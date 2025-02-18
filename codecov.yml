@@ -45,9 +45,6 @@ component_management:
     - component_id: "@theqrl/web3-zond-iban"
       paths:
           - /packages/web3-zond-iban/src/
-    - component_id: "@theqrl/web3-zond-personal"
-      paths:
-          - /packages/web3-zond-personal/src/
     - component_id: "@theqrl/web3-net"
       paths:
           - /packages/web3-net/src/

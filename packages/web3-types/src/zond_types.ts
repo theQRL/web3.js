@@ -14,7 +14,7 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { Bytes, HexString, Numbers } from './primitives_types.js';
+import { Bytes, HexString, ZPrefixedHexString, Numbers } from './primitives_types.js';
 
 export type ValueTypes = 'address' | 'bool' | 'string' | 'int256' | 'uint256' | 'bytes' | 'bigint';
 // Hex encoded 32 bytes
@@ -33,14 +33,13 @@ export type HexString256Bytes = HexString;
 export type Uint = HexString;
 // Hex encoded unsigned integer 32 bytes
 export type Uint256 = HexString;
-// Hex encoded address
-export type Address = HexString;
+// Z-prefixed hex encoded address
+export type Address = ZPrefixedHexString;
 
 // https://github.com/ethereum/execution-apis/blob/main/src/schemas/filter.json#L59
 export type Topic = HexString32Bytes;
 
 export type TransactionHash = HexString;
-export type Uncles = HexString32Bytes[];
 export enum BlockTags {
 	EARLIEST = 'earliest',
 	LATEST = 'latest',
@@ -53,20 +52,19 @@ export type BlockTag = `${BlockTags}`;
 export type BlockNumberOrTag = Numbers | BlockTag;
 
 export interface Proof {
-	readonly address: HexString;
+	readonly address: ZPrefixedHexString;
 	readonly nonce: string;
 	readonly balance: string;
 }
 
 export interface TransactionInput {
 	readonly [key: string]: unknown;
-	readonly to?: HexString; // If its a contract creation tx then no address wil be specified.
-	readonly from?: HexString;
+	readonly to?: ZPrefixedHexString; // If its a contract creation tx then no address wil be specified.
+	readonly from?: ZPrefixedHexString;
 	readonly data?: string;
 	readonly input?: string;
 	readonly gas: HexString;
 	readonly gasLimit?: string;
-	readonly gasPrice?: string;
 	readonly maxPriorityFeePerGas?: string;
 	readonly maxFeePerGas?: string;
 	readonly nonce: string;
@@ -79,8 +77,8 @@ export interface TransactionInput {
 
 export type TransactionOutput = {
 	readonly [key: string]: unknown;
-	readonly to?: HexString; // If its a contract creation tx then no address wil be specified.
-	readonly from?: HexString;
+	readonly to?: ZPrefixedHexString; // If its a contract creation tx then no address wil be specified.
+	readonly from?: ZPrefixedHexString;
 	readonly input: string;
 	readonly gas?: Numbers;
 	readonly gasLimit?: string;
@@ -88,10 +86,9 @@ export type TransactionOutput = {
 	readonly value: Numbers;
 	readonly blockNumber?: Numbers;
 	readonly transactionIndex?: Numbers;
-} & (
-	| { maxPriorityFeePerGas: Numbers; maxFeePerGas: Numbers; gasPrice?: never }
-	| { maxPriorityFeePerGas?: never; maxFeePerGas?: never; gasPrice: Numbers }
-);
+	maxPriorityFeePerGas: Numbers;
+	maxFeePerGas: Numbers;
+}
 
 export interface LogsInput {
 	readonly blockHash?: HexString;
@@ -100,7 +97,7 @@ export interface LogsInput {
 	readonly id?: string;
 	readonly blockNumber?: HexString;
 	readonly transactionIndex?: HexString;
-	readonly address: HexString;
+	readonly address: ZPrefixedHexString;
 	readonly topics: HexString[];
 	readonly data: HexString;
 }
@@ -123,10 +120,8 @@ export interface BlockInput {
 	readonly size: HexString;
 	readonly timestamp: HexString;
 	readonly number?: HexString;
-	readonly difficulty?: HexString;
-	readonly totalDifficulty?: HexString;
 	readonly transactions?: TransactionInput[];
-	readonly miner?: HexString;
+	readonly miner?: ZPrefixedHexString;
 	readonly baseFeePerGas?: HexString;
 }
 
@@ -136,10 +131,8 @@ export interface BlockOutput {
 	readonly size: bigint | number;
 	readonly timestamp: bigint | number;
 	readonly number?: bigint | number;
-	readonly difficulty?: bigint | number;
-	readonly totalDifficulty?: bigint | number;
 	readonly transactions?: TransactionOutput[];
-	readonly miner?: HexString;
+	readonly miner?: ZPrefixedHexString;
 	readonly baseFeePerGas?: bigint | number;
 	readonly parentHash?: HexString32Bytes;
 }
@@ -155,31 +148,18 @@ export interface BlockHeaderOutput {
 	readonly hash?: HexString32Bytes;
 	readonly parentHash?: HexString32Bytes;
 	readonly receiptsRoot?: HexString32Bytes;
-	readonly miner?: HexString;
+	readonly miner?: ZPrefixedHexString;
 	readonly stateRoot?: HexString32Bytes;
 	readonly transactionsRoot?: HexString32Bytes;
 	readonly withdrawalsRoot?: HexString32Bytes;
 	readonly logsBloom?: Bytes;
-	readonly difficulty?: Numbers;
 	readonly number?: Numbers;
 	readonly gasLimit: Numbers;
 	readonly gasUsed: Numbers;
 	readonly timestamp: Numbers;
 	readonly extraData?: Bytes;
-	readonly nonce?: Numbers;
-	readonly sha3Uncles: HexString32Bytes[];
 	readonly baseFeePerGas?: Numbers;
-
-	// These fields are returned when the RPC client is Nethermind,
-	// but aren't available in other clients such as Gzond
-	readonly author?: Address;
-	readonly totalDifficulty?: Numbers;
-	readonly size?: Numbers;
-	readonly excessDataGas?: Numbers;
-	readonly mixHash?: HexString32Bytes;
-	readonly transactions?: TransactionOutput[];
-	readonly uncles?: Uncles;
-	readonly withdrawals?: Withdrawals[];
+	readonly prevRandao?: HexString32Bytes;
 }
 
 export interface ReceiptInput {
@@ -189,7 +169,7 @@ export interface ReceiptInput {
 	readonly cumulativeGasUsed: HexString;
 	readonly gasUsed: HexString;
 	readonly logs?: LogsInput[];
-	readonly contractAddress?: HexString;
+	readonly contractAddress?: ZPrefixedHexString;
 	readonly status?: string;
 	readonly effectiveGasPrice?: HexString;
 }
@@ -200,29 +180,9 @@ export interface ReceiptOutput {
 	readonly cumulativeGasUsed: bigint | number;
 	readonly gasUsed: bigint | number;
 	readonly logs?: LogsOutput[];
-	readonly contractAddress?: HexString;
+	readonly contractAddress?: ZPrefixedHexString;
 	readonly status: boolean;
 	readonly effectiveGasPrice?: bigint | number;
-}
-
-export interface PostInput {
-	readonly ttl?: HexString;
-	readonly workToProve?: HexString;
-	readonly priority?: HexString;
-	readonly expiry?: HexString;
-	readonly sent?: HexString;
-	readonly workProved?: HexString;
-	readonly topics?: HexString[];
-}
-
-export interface PostOutput {
-	readonly ttl?: bigint | number;
-	readonly workToProve?: bigint | number;
-	readonly priority?: bigint | number;
-	readonly expiry?: bigint | number;
-	readonly sent?: bigint | number;
-	readonly workProved?: bigint | number;
-	readonly topics?: string[];
 }
 
 export interface SyncInput {
@@ -268,30 +228,11 @@ export type AccessListResult = {
 	readonly gasUsed?: Numbers;
 };
 
-export type ValidChains = 'goerli' | 'kovan' | 'mainnet' | 'rinkeby' | 'ropsten' | 'sepolia';
+export type ValidChains = 'mainnet';
 
 // This list of hardforks is expected to be in order
 // keep this in mind when making changes to it
 export enum HardforksOrdered {
-	chainstart = 'chainstart',
-	frontier = 'frontier',
-	homestead = 'homestead',
-	dao = 'dao',
-	tangerineWhistle = 'tangerineWhistle',
-	spuriousDragon = 'spuriousDragon',
-	byzantium = 'byzantium',
-	constantinople = 'constantinople',
-	petersburg = 'petersburg',
-	istanbul = 'istanbul',
-	muirGlacier = 'muirGlacier',
-	berlin = 'berlin',
-	london = 'london',
-	altair = 'altair',
-	arrowGlacier = 'arrowGlacier',
-	grayGlacier = 'grayGlacier',
-	bellatrix = 'bellatrix',
-	merge = 'merge',
-	capella = 'capella',
 	shanghai = 'shanghai',
 }
 
@@ -349,7 +290,6 @@ interface TransactionBase {
 	accessList?: AccessList;
 	common?: Common;
 	gas?: Numbers;
-	gasPrice?: Numbers;
 	type?: Numbers;
 	maxFeePerGas?: Numbers;
 	maxPriorityFeePerGas?: Numbers;
@@ -400,12 +340,11 @@ export interface TransactionInfo extends Transaction {
 	readonly transactionIndex?: Numbers;
 }
 
-export interface PopulatedUnsignedBaseTransaction {
+export interface PopulatedUnsignedEip1559Transaction {
 	from: Address;
 	to?: Address;
 	value: Numbers;
 	gas?: Numbers;
-	gasPrice: Numbers;
 	type: Numbers;
 	input?: Bytes;
 	data?: Bytes;
@@ -416,50 +355,37 @@ export interface PopulatedUnsignedBaseTransaction {
 	chainId: Numbers;
 	common: Common;
 	gasLimit: Numbers;
-}
-
-export interface PopulatedUnsignedEip2930Transaction extends PopulatedUnsignedBaseTransaction {
 	accessList: AccessList;
-}
-
-export interface PopulatedUnsignedEip1559Transaction extends PopulatedUnsignedEip2930Transaction {
-	gasPrice: never;
 	maxFeePerGas: Numbers;
 	maxPriorityFeePerGas: Numbers;
 }
+
 export type PopulatedUnsignedTransaction =
-	| PopulatedUnsignedBaseTransaction
-	| PopulatedUnsignedEip2930Transaction
-	| PopulatedUnsignedEip1559Transaction;
+	PopulatedUnsignedEip1559Transaction;
 
 export interface BlockBase<
 	ByteType,
-	HexStringType,
+	ZPrefixedHexStringType,
 	NumberType,
 	extraDataType,
 	TransactionTypes,
 	logsBloomType,
 > {
 	readonly parentHash: ByteType;
-	readonly sha3Uncles: ByteType;
-	readonly miner: HexStringType;
+	readonly miner: ZPrefixedHexStringType;
 	readonly stateRoot: ByteType;
 	readonly transactionsRoot: ByteType;
 	readonly receiptsRoot: ByteType;
 	readonly logsBloom?: logsBloomType;
-	readonly difficulty?: NumberType;
 	readonly number: NumberType;
 	readonly gasLimit: NumberType;
 	readonly gasUsed: NumberType;
 	readonly timestamp: NumberType;
 	readonly extraData: extraDataType;
-	readonly mixHash: ByteType;
-	readonly nonce: NumberType;
-	readonly totalDifficulty: NumberType;
-	readonly baseFeePerGas?: NumberType;
+	readonly prevRandao: ByteType;
+	readonly baseFeePerGas: NumberType;
 	readonly size: NumberType;
 	readonly transactions: TransactionTypes;
-	readonly uncles: Uncles;
 	readonly hash?: ByteType;
 }
 
@@ -508,4 +434,37 @@ export interface Eip712TypedData {
 	readonly primaryType: string;
 	readonly domain: Record<string, string | number>;
 	readonly message: Record<string, unknown>;
+}
+
+/**
+ * To contain the gas Fee Data to be used with transactions.
+ *  
+ * Typically you will only need `maxFeePerGas` and `maxPriorityFeePerGas` for a transaction following EIP-1559.
+ * However, if you want to get informed about the fees of last block, you can use `baseFeePerGas` too.
+ * 
+ * 
+ * 	@see https://eips.ethereum.org/EIPS/eip-1559
+ * 
+ */
+export interface FeeData {
+	/**
+	 * The baseFeePerGas returned from the last available block.
+	 * 
+	 * However, the user will only pay (the future baseFeePerGas + the maxPriorityFeePerGas). 
+	 * And this value is just for getting informed about the fees of last block.
+	 */
+	readonly baseFeePerGas?: Numbers;
+
+	/**
+	 * The maximum fee that the user would be willing to pay per-gas.
+	 * 
+	 * However, the user will only pay (the future baseFeePerGas + the maxPriorityFeePerGas).
+	 * And the `maxFeePerGas` could be used to prevent paying more than it, if `baseFeePerGas` went too high.
+	 */
+	readonly maxFeePerGas?: Numbers;
+
+	/**
+	 * The validator's tip for including a transaction in a block.
+	 */
+	readonly maxPriorityFeePerGas?: Numbers;
 }

@@ -39,7 +39,7 @@ describe('Web3Zond.estimateGas', () => {
 	it('should estimate a simple value transfer', async () => {
 		const transaction: Transaction = {
 			from: tempAcc.address,
-			to: '0x0000000000000000000000000000000000000000',
+			to: 'Z0000000000000000000000000000000000000000',
 			value: '0x1',
 			type: BigInt(2),
 		};

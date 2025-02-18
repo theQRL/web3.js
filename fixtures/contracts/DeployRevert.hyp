@@ -1,0 +1,9 @@
+// SPDX-License-Identifier: GNU
+// TODO(now.youtrack.cloud/issue/web3js-11)
+pragma hyperion ^0.8.13;
+
+contract DeployRevert {
+	constructor() public {
+		require(false);
+	}
+}

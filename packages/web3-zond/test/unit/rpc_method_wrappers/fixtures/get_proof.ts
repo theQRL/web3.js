@@ -42,7 +42,7 @@ export const mockRpcResponse = {
 	],
 };
 
-const address = '0x407d73d8a49eeb85d32cf465507dd71d507100c1';
+const address = 'Z407d73d8a49eeb85d32cf465507dd71d507100c1';
 
 /**
  * Array consists of:

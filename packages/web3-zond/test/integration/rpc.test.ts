@@ -54,7 +54,6 @@ describe('rpc', () => {
 	let deployOptions: Record<string, unknown>;
 	let sendOptions: Record<string, unknown>;
 	let tempAcc: { address: string; seed: string };
-	//let tempAcc2: { address: string; seed: string };
 	beforeAll(async () => {
 		clientUrl = getSystemTestProvider();
 		web3Zond = new Web3Zond({
@@ -72,8 +71,7 @@ describe('rpc', () => {
 			arguments: [10, 'string init value'],
 		};
 		tempAcc = await createTempAccount();
-		//tempAcc2 = await createTempAccount();
-		sendOptions = { from: tempAcc.address, /*gas: '1000000'*/ type: 2 };
+		sendOptions = { from: tempAcc.address, /*gas: '1000000'*/ };
 
 		contractDeployed = await contract.deploy(deployOptions).send(sendOptions);
 	});
@@ -96,17 +94,8 @@ describe('rpc', () => {
 			expect(isSyncing).toBe(false);
 		});
 
-		// TODO: in future release, set coinbase account in node and match actual address here
-		/*
-		it('getCoinbase', async () => {
-			const coinbase = await web3Zond.getCoinbase();
-			expect(coinbase.startsWith('0x')).toBe(true);
-			expect(coinbase).toHaveLength(42);
-		});
-		*/
-
 		it('getAccounts', async () => {
-			const account = await createNewAccount({ unlock: true });
+			const account = await createTempAccount();
 			const accList = await web3Zond.getAccounts();
 			const accListLowerCase = accList.map((add: string) => add.toLowerCase());
 			expect(accListLowerCase).toContain(account.address.toLowerCase());
@@ -129,7 +118,7 @@ describe('rpc', () => {
 			expect(typeof res).toBe(mapFormatToType[format as string]);
 			expect(parseInt(String(res), 16)).toBeGreaterThan(0);
 		});
-
+		
 		it.each(Object.values(FMT_NUMBER))('getBalance', async format => {
 			const value = '0xa';
 			const newAccount = await createNewAccount();
@@ -289,6 +278,7 @@ describe('rpc', () => {
 			// expect(res[0]).toEqual(tempAcc.address);
 		});
 
+
 		it('getPastLogs', async () => {
 			const listOfStrings = ['t1', 't2', 't3'];
 			const resTx = [];
@@ -301,7 +291,7 @@ describe('rpc', () => {
 			const res: Array<any> = await web3Zond.getPastLogs({
 				address: contractDeployed.options.address as string,
 				fromBlock: numberToHex(Math.min(...resTx.map(d => Number(d.blockNumber)))),
-				toBlock: numberToHex(1000),
+				toBlock: numberToHex(10000),
 			});
 			const results = res.map(
 				r =>
@@ -313,7 +303,7 @@ describe('rpc', () => {
 			const res2: Array<any> = await web3Zond.getPastLogs({
 				address: contractDeployed.options.address as string,
 				fromBlock: Math.min(...resTx.map(d => Number(d.blockNumber))),
-				toBlock: 1000,
+				toBlock: 10000,
 			});
 			const results2 = res2.map(
 				r =>
@@ -324,7 +314,7 @@ describe('rpc', () => {
 			const res3: Array<any> = await web3Zond.getPastLogs({
 				address: contractDeployed.options.address as string,
 				fromBlock: BigInt(Math.min(...resTx.map(d => Number(d.blockNumber)))),
-				toBlock: BigInt(1000),
+				toBlock: BigInt(10000),
 			});
 			const results3 = res3.map(
 				r =>

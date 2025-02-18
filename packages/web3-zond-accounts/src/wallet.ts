@@ -91,14 +91,14 @@ export class Wallet<
 	 * web3.zond.accounts.wallet.create(2)
 	 * > Wallet(2) [
 	 *   {
-	 *     address: '0xde38310a42B751AE57d30cFFF4a0A3c52A442fCE',
+	 *     address: 'Zde38310a42B751AE57d30cFFF4a0A3c52A442fCE',
 	 *     seed: '0x6422c9d28efdcbee93c1d32a5fc6fd6fa081b985487885296cf8c9bbb5872600',
 	 *     signTransaction: [Function: signTransaction],
 	 *     sign: [Function: sign],
 	 *     encrypt: [Function: encrypt]
 	 *   },
 	 *   {
-	 *     address: '0x766BF755246d924B1d017Fdb5390f38a60166691',
+	 *     address: 'Z766BF755246d924B1d017Fdb5390f38a60166691',
 	 *     seed: '0x756530f13c0eb636ebdda655335f5dea9921e3362e2e588b0ad59e556f7751f0',
 	 *     signTransaction: [Function: signTransaction],
 	 *     sign: [Function: sign],
@@ -110,8 +110,8 @@ export class Wallet<
 	 *     decrypt: [Function: decrypt]
 	 *   },
 	 *   _addressMap: Map(2) {
-	 *     '0xde38310a42b751ae57d30cfff4a0a3c52a442fce' => 0,
-	 *     '0x766bf755246d924b1d017fdb5390f38a60166691' => 1
+	 *     'Zde38310a42b751ae57d30cfff4a0a3c52a442fce' => 0,
+	 *     'Z766bf755246d924b1d017fdb5390f38a60166691' => 1
 	 *   },
 	 *   _defaultKeyName: 'web3js_wallet'
 	 * ]
@@ -137,7 +137,7 @@ export class Wallet<
 	 * web3.zond.accounts.wallet.add('0xbce9b59981303e76c4878b1a6d7b088ec6b9dd5c966b7d5f54d7a749ff683387');
 	 * > Wallet(1) [
 	 *   {
-	 *     address: '0x85D70633b90e03e0276B98880286D0D055685ed7',
+	 *     address: 'Z85D70633b90e03e0276B98880286D0D055685ed7',
 	 *     seed: '0xbce9b59981303e76c4878b1a6d7b088ec6b9dd5c966b7d5f54d7a749ff683387',
 	 *     signTransaction: [Function: signTransaction],
 	 *     sign: [Function: sign],
@@ -148,7 +148,7 @@ export class Wallet<
 	 *     publicKeyToAccount: [Function: publicKeyToAccount],
 	 *     decrypt: [Function: decrypt]
 	 *   },
-	 *   _addressMap: Map(1) { '0x85d70633b90e03e0276b98880286d0d055685ed7' => 0 },
+	 *   _addressMap: Map(1) { 'Z85d70633b90e03e0276b98880286d0d055685ed7' => 0 },
 	 *   _defaultKeyName: 'web3js_wallet'
 	 * ]
 	 * ```
@@ -160,7 +160,7 @@ export class Wallet<
 		let index = this.length;
 		const existAccount = this.get(account.address);
 		if (existAccount) {
-			console.warn(`Account ${account.address.toLowerCase()} already exists.`);
+			console.warn(`Account Z${account.address.slice(1).toLowerCase()} already exists.`);
 			index = this._addressMap.get(account.address.toLowerCase()) ?? index;
 		}
 		this._addressMap.set(account.address.toLowerCase(), index);
@@ -197,7 +197,7 @@ export class Wallet<
 	 * ```ts
 	 * web3.zond.accounts.wallet.add('0xbce9b59981303e76c4878b1a6d7b088ec6b9dd5c966b7d5f54d7a749ff683387');
 	 *
-	 * web3.zond.accounts.wallet.remove('0x85D70633b90e03e0276B98880286D0D055685ed7');
+	 * web3.zond.accounts.wallet.remove('Z85D70633b90e03e0276B98880286D0D055685ed7');
 	 * > true
 	 * web3.zond.accounts.wallet
 	 * > Wallet(0) [
@@ -259,6 +259,7 @@ export class Wallet<
 		return this;
 	}
 
+	// TODO(youtrack/theqrl/web3.js/3)
 	/**
 	 * Encrypts all wallet accounts to an array of encrypted keystore v3 objects.
 	 *
@@ -286,6 +287,7 @@ export class Wallet<
 	// 	return Promise.all(this.map(async (account: T) => account.encrypt(password, options)));
 	// }
 
+	// TODO(youtrack/theqrl/web3.js/3)
 	/**
 	 * Decrypts keystore v3 objects.
 	 *
@@ -335,22 +337,22 @@ export class Wallet<
 	 *   },
 	 *   _defaultKeyName: 'web3js_wallet',
 	 *   _accounts: {
-	 *     '0x85d70633b90e03e0276b98880286d0d055685ed7': {
-	 *       address: '0x85D70633b90e03e0276B98880286D0D055685ed7',
+	 *     'Z85d70633b90e03e0276b98880286d0d055685ed7': {
+	 *       address: 'Z85D70633b90e03e0276B98880286D0D055685ed7',
 	 *       seed: '0xbce9b59981303e76c4878b1a6d7b088ec6b9dd5c966b7d5f54d7a749ff683387',
 	 *       signTransaction: [Function: signTransaction],
 	 *       sign: [Function: sign],
 	 *       encrypt: [Function: encrypt]
 	 *     },
-	 *     '0x06f702337909c06c82b09b7a22f0a2f0855d1f68': {
-	 *       address: '0x06F702337909C06C82B09B7A22F0a2f0855d1F68',
+	 *     'Z06f702337909c06c82b09b7a22f0a2f0855d1f68': {
+	 *       address: 'Z06F702337909C06C82B09B7A22F0a2f0855d1F68',
 	 *       seed: '87a51da18900da7398b3bab03996833138f269f8f66dd1237b98df6b9ce14573',
 	 *       signTransaction: [Function: signTransaction],
 	 *       sign: [Function: sign],
 	 *       encrypt: [Function: encrypt]
 	 *     },
-	 *     '0xb5d89661b59a9af0b34f58d19138baa2de48baaf': {
-	 *       address: '0xB5d89661B59a9aF0b34f58D19138bAa2de48BAaf',
+	 *     'Zb5d89661b59a9af0b34f58d19138baa2de48baaf': {
+	 *       address: 'ZB5d89661B59a9aF0b34f58D19138bAa2de48BAaf',
 	 *       seed: '7ee61c5282979aae9dd795bb6a54e8bdc2bfe009acb64eb9a67322eec3b3da6e',
 	 *       signTransaction: [Function: signTransaction],
 	 *       sign: [Function: sign],

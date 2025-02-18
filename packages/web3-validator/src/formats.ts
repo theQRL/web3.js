@@ -16,7 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import { Filter } from '@theqrl/web3-types';
 import { ValidInputTypes } from './types.js';
-import { isAddress } from './validation/address.js';
+import { isAddressString } from './validation/address.js';
 import { isBlockNumber, isBlockNumberOrTag, isBlockTag } from './validation/block.js';
 import { isBloom } from './validation/bloom.js';
 import { isBoolean } from './validation/boolean.js';
@@ -26,7 +26,7 @@ import { isHexStrict, isString } from './validation/string.js';
 import { isNumber, isInt, isUInt } from './validation/numbers.js';
 
 const formats: { [key: string]: (data: unknown) => boolean } = {
-	address: (data: unknown) => isAddress(data as ValidInputTypes),
+	address: (data: unknown) => isAddressString(data as string),
 	bloom: (data: unknown) => isBloom(data as ValidInputTypes),
 	blockNumber: (data: unknown) => isBlockNumber(data as string | number | bigint),
 	blockTag: (data: unknown) => isBlockTag(data as string),
@@ -41,8 +41,7 @@ const formats: { [key: string]: (data: unknown) => boolean } = {
 	string: (data: unknown) => isString(data as ValidInputTypes),
 };
 // generate formats for all numbers types
-for (let i = 3; i <= 8; i += 1) {
-	const bitSize = 2 ** i;
+for (let bitSize = 8; bitSize <= 256; bitSize += 8) {
 	formats[`int${bitSize}`] = data => isInt(data as ValidInputTypes, { bitSize });
 	formats[`uint${bitSize}`] = data => isUInt(data as ValidInputTypes, { bitSize });
 }

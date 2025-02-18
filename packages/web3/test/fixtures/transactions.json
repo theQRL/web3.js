@@ -2,7 +2,7 @@
 	{
 		"name": "random-2",
 		"transaction": {
-			"to": "0xD0F118AFa9C2c9cc50F10d94cCC1cbDda2758b36",
+			"to": "ZD0F118AFa9C2c9cc50F10d94cCC1cbDda2758b36",
 			"nonce": 15,
 			"gasLimit": "0x331bce0f90",
 			"maxFeePerGas": "0x58e8d1dda1",
@@ -11,7 +11,7 @@
 			"value": "0x91e32e2f5a",
 			"accessList": [
 				{
-					"address": "0x032f5546f1B932555cB43e2b16C844d118078430",
+					"address": "Z032f5546f1B932555cB43e2b16C844d118078430",
 					"storageKeys": []
 				}
 			],

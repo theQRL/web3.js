@@ -45,7 +45,7 @@ describe('defaults', () => {
 	});
 
 	describe('defaults', () => {
-		it('should fail if Ethereum Node did not respond because of a high nonce', async () => {
+		it('should fail if Zond Node did not respond because of a high nonce', async () => {
 			// Make the test run faster by causing the timeout to happen after 0.2 second
 			web3Zond.transactionSendTimeout = 200;
 			web3Zond.transactionPollingTimeout = 200;
@@ -73,7 +73,7 @@ describe('defaults', () => {
 				if (error instanceof TransactionSendTimeoutError) {
 					// eslint-disable-next-line jest/no-conditional-expect
 					expect(error.message).toContain(
-						`connected Ethereum Node did not respond within ${
+						`connected Zond Node did not respond within ${
 							web3Zond.transactionSendTimeout / 1000
 						} seconds`,
 					);

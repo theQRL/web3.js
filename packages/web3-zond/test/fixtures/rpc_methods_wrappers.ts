@@ -41,8 +41,8 @@ export const getBlockNumberValidData: [DataFormat, any, any][] = [
 ];
 
 export const transactionWithSender: TransactionWithSenderAPI = {
-	to: '0x407d73d8a49eeb85d32cf465507dd71d507100c1',
-	type: '0x0',
+	to: 'Z407d73d8a49eeb85d32cf465507dd71d507100c1',
+	type: '0x2',
 	nonce: '0x1',
 	gas: '0xc350',
 	value: '0x1',
@@ -50,8 +50,7 @@ export const transactionWithSender: TransactionWithSenderAPI = {
 	maxFeePerGas: '0x1475505aab',
 	maxPriorityFeePerGas: '0x7f324180',
 	accessList: [],
-	gasPrice: '0x4a817c800',
-	from: '0x407d73d8a49eeb85d32cf465507dd71d507100c1',
+	from: 'Z407d73d8a49eeb85d32cf465507dd71d507100c1',
 	chainId: '0x1',
 };
 

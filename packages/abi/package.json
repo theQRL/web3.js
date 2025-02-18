@@ -1,0 +1,73 @@
+{
+  "name": "@theqrl/abi",
+  "version": "0.1.0",
+  "description": "Utilities and Classes for parsing, formatting and managing Zond ABIs.",
+  "license": "MIT",
+  "main": "./lib/commonjs/index.js",
+	"module": "./lib/esm/index.js",
+	"exports": {
+		".": {
+			"types": "./lib/types/index.d.ts",
+			"import": "./lib/esm/index.js",
+			"require": "./lib/commonjs/index.js"
+		}
+	},
+  "files": [
+		"lib/**/*",
+		"src/**/*"
+	],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "directory": "packages/abi",
+    "type": "git",
+    "url": "git://github.com/ethers-io/ethers.js.git"
+  },
+  "scripts": {
+		"clean": "rimraf dist && rimraf lib",
+		"prebuild": "yarn clean",
+		"build": "yarn build:cjs & yarn build:esm & yarn build:types",
+		"build:cjs": "tsc --build tsconfig.cjs.json && echo '{\"type\": \"commonjs\"}' > ./lib/commonjs/package.json",
+		"build:esm": "tsc --build tsconfig.esm.json && echo '{\"type\": \"module\"}' > ./lib/esm/package.json",
+		"build:types": "tsc --build tsconfig.types.json",
+		"build:check": "node -e \"require('./lib')\"",
+		"lint": "eslint --ext .js,.ts .",
+		"lint:fix": "eslint --fix --ext .js,.ts .",
+		"format": "prettier --write '**/*'",
+		"test": "jest --config=./test/unit/jest.config.js",
+		"test:coverage:unit": "jest --config=./test/unit/jest.config.js --coverage=true --coverage-reporters=text",
+		"test:coverage:integration": "jest --config=./test/integration/jest.config.js --passWithNoTests --coverage=true --coverage-reporters=text",
+		"test:ci": "jest --coverage=true --coverage-reporters=json --verbose",
+		"test:watch": "npm test -- --watch",
+		"test:unit": "jest --config=./test/unit/jest.config.js",
+		"test:integration": "jest --config=./test/integration/jest.config.js --passWithNoTests"
+	},
+  "sideEffects": false,
+  "dependencies": {
+    "@ethersproject/address": "^5.7.0",
+    "@ethersproject/bignumber": "^5.7.0",
+    "@ethersproject/bytes": "^5.7.0",
+    "@ethersproject/constants": "^5.7.0",
+    "@ethersproject/hash": "^5.7.0",
+    "@ethersproject/keccak256": "^5.7.0",
+    "@ethersproject/logger": "^5.7.0",
+    "@ethersproject/properties": "^5.7.0",
+    "@ethersproject/strings": "^5.7.0",
+	"@theqrl/web3-utils": "^0.3.0"
+  },
+  "devDependencies": {
+		"@theqrl/eslint-config-base-web3": "^0.3.0",
+		"@types/jest": "^28.1.6",
+		"@typescript-eslint/eslint-plugin": "^5.30.7",
+		"@typescript-eslint/parser": "^5.30.7",
+		"eslint": "^8.20.0",
+		"eslint-config-prettier": "^8.5.0",
+		"eslint-plugin-import": "^2.26.0",
+		"jest": "^28.1.3",
+		"jest-extended": "^3.0.1",
+		"prettier": "^2.7.1",
+		"ts-jest": "^28.0.7",
+		"typescript": "^4.7.4"
+	}
+}

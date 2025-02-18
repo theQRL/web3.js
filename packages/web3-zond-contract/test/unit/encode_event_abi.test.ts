@@ -18,7 +18,7 @@ import { AbiEventFragment } from '@theqrl/web3-types';
 import { ContractOptions, encodeEventABI } from '../../src';
 
 const contractOptions: ContractOptions = {
-	address: '0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe',
+	address: 'Zde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe',
 } as ContractOptions;
 const abiEventFragment: AbiEventFragment & { signature: string } = {
 	anonymous: false,
@@ -55,7 +55,7 @@ describe('encodeEventAbi', () => {
 
 		expect(encodedEventFilter).toMatchObject({
 			fromBlock: '0xa',
-			address: '0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae',
+			address: 'Zde0b295669a9fd93d5f28d9ec85e40f4cb697bae',
 		});
 	});
 
@@ -66,7 +66,7 @@ describe('encodeEventAbi', () => {
 
 		expect(encodedEventFilter).toMatchObject({
 			toBlock: '0xa',
-			address: '0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae',
+			address: 'Zde0b295669a9fd93d5f28d9ec85e40f4cb697bae',
 		});
 	});
 
@@ -77,7 +77,7 @@ describe('encodeEventAbi', () => {
 
 		expect(encodedEventFilter).toMatchObject({
 			topics: ['0x3f6d5d7b72c0059e2ecac56fd4adeefb2cff23aa41d13170f78ea6bf81e6e0ca'],
-			address: '0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae',
+			address: 'Zde0b295669a9fd93d5f28d9ec85e40f4cb697bae',
 		});
 	});
 
@@ -97,7 +97,7 @@ describe('encodeEventAbi', () => {
 
 		expect(encodedEventFilter).toMatchObject({
 			fromBlock: '0x3e8',
-			address: '0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae',
+			address: 'Zde0b295669a9fd93d5f28d9ec85e40f4cb697bae',
 		});
 	});
 
@@ -179,7 +179,7 @@ describe('encodeEventAbi', () => {
 				// eslint-disable-next-line no-null/no-null
 				null,
 			],
-			address: '0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae',
+			address: 'Zde0b295669a9fd93d5f28d9ec85e40f4cb697bae',
 		});
 	});
 
@@ -199,7 +199,7 @@ describe('encodeEventAbi', () => {
 				null,
 				'0x0000000000000000000000000000000000000000000000000000000000000001',
 			],
-			address: '0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae',
+			address: 'Zde0b295669a9fd93d5f28d9ec85e40f4cb697bae',
 		});
 	});
 });

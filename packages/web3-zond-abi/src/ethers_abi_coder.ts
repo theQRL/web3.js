@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { AbiCoder } from '@ethersproject/abi';
+import { AbiCoder } from '@theqrl/abi';
 import type { BigNumber } from '@ethersproject/bignumber';
 
 const ethersAbiCoder = new AbiCoder((_, value) => {
@@ -23,7 +23,7 @@ const ethersAbiCoder = new AbiCoder((_, value) => {
 		return (value as BigNumber).toBigInt();
 	}
 
-	// Because of tye type def from @ethersproject/abi
+	// Because of the type def from @ethersproject/abi
 	// eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
 	return value;
 });

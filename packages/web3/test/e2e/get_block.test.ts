@@ -23,13 +23,13 @@ import Web3, { FMT_BYTES, FMT_NUMBER } from '../../src';
 import { getSystemE2ETestProvider } from './e2e_utils';
 import { closeOpenConnection, getSystemTestBackend } from '../shared_fixtures/system_tests_utils';
 import { toAllVariants } from '../shared_fixtures/utils';
-import { sepoliaBlock, sepoliaBlockData, sepoliaBlockHydrated } from './fixtures/sepolia';
 import { mainnetBlockHydrated } from './fixtures/mainnet_block_hydrated';
 import { mainnetBlock, mainnetBlockData } from './fixtures/mainnet';
 
 describe(`${getSystemTestBackend()} tests - getBlock`, () => {
 	const provider = getSystemE2ETestProvider();
-	const blockData = getSystemTestBackend() === 'sepolia' ? sepoliaBlockData : mainnetBlockData;
+	// const blockData = getSystemTestBackend() === 'sepolia' ? sepoliaBlockData : mainnetBlockData;
+	const blockData = mainnetBlockData;
 
 	let web3: Web3;
 
@@ -66,9 +66,9 @@ describe(`${getSystemTestBackend()} tests - getBlock`, () => {
 			})),
 		};
 		let expectedBlock: Block = ((): Block => {
-			if (getSystemTestBackend() === 'sepolia') {
-				return hydrated ? sepoliaBlockHydrated : sepoliaBlock;
-			}
+			// if (getSystemTestBackend() === 'sepolia') {
+			// 	return hydrated ? sepoliaBlockHydrated : sepoliaBlock;
+			// }
 
 			return hydrated ? mainnetBlockHydrated : mainnetBlock;
 		})();
@@ -79,9 +79,7 @@ describe(`${getSystemTestBackend()} tests - getBlock`, () => {
 			});
 
 		if (blockData[block] === 'pending') {
-			result.nonce = '0x0';
-			result.miner = '0x0000000000000000000000000000000000000000';
-			result.totalDifficulty = '0x0';
+			result.miner = 'Z0000000000000000000000000000000000000000';
 		}
 
 		if (block === 'blockHash' || block === 'blockNumber') {

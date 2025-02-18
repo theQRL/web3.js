@@ -20,12 +20,12 @@ import { TransactionFactory } from '../../../src';
 
 const common = new Common({
 	chain: Chain.Mainnet,
-	hardfork: Hardfork.Merge,
-	eips: [3860],
+	hardfork: Hardfork.Shanghai,
+	eips: [],
 });
 
 const maxInitCodeSize = common.param('vm', 'maxInitCodeSize');
-const txTypes = [0, 1, 2];
+const txTypes = [2];
 const addressZero = Address.zero();
 
 describe('[EIP3860 tests]', () => {

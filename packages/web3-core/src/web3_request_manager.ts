@@ -225,10 +225,11 @@ export class Web3RequestManager<
 				);
 		}
 
+		// NOTE(rgeraldes24): there are unit/integration tests that depend on the legacy providers
 		// TODO: This could be deprecated and removed.
 		if (isLegacyRequestProvider(provider)) {
 			return new Promise<JsonRpcResponse<ResponseType>>((resolve, reject) => {
-				const rejectWithError = (err: unknown) =>
+				const rejectWithError = (err: unknown) => {
 					reject(
 						this._processJsonRpcResponse(
 							payload,
@@ -239,6 +240,8 @@ export class Web3RequestManager<
 							},
 						),
 					);
+				};
+
 				const resolveWithResponse = (response: JsonRpcResponse<ResponseType>) =>
 					resolve(
 						this._processJsonRpcResponse(payload, response, {
@@ -268,7 +271,20 @@ export class Web3RequestManager<
 					const responsePromise = result as unknown as Promise<
 						JsonRpcResponse<ResponseType>
 					>;
-					responsePromise.then(resolveWithResponse).catch(rejectWithError);
+					responsePromise.then(resolveWithResponse).catch(error => {
+						try {
+							// Attempt to process the error response
+							const processedError = this._processJsonRpcResponse(
+								payload,
+								error as JsonRpcResponse<ResponseType, unknown>,
+								{ legacy: true, error: true },
+							);
+							reject(processedError);
+						} catch (processingError) {
+							// Catch any errors that occur during the error processing
+							reject(processingError);
+						}
+					});
 				}
 			});
 		}
@@ -292,7 +308,7 @@ export class Web3RequestManager<
 
 					if (isNullish(response)) {
 						throw new ResponseError(
-							'' as never,
+							{} as never,
 							'Got a "nullish" response from provider.',
 						);
 					}
@@ -322,7 +338,7 @@ export class Web3RequestManager<
 				);
 		}
 
-		throw new ProviderError('Provider does not have a request or send method to use.');
+		throw new ProviderError('Provider does not have a request method to use.');
 	}
 
 	// eslint-disable-next-line class-methods-use-this

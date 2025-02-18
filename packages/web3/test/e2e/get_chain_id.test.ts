@@ -23,7 +23,8 @@ import { toAllVariants } from '../shared_fixtures/utils';
 
 describe(`${getSystemTestBackend()} tests - getChainId`, () => {
 	const provider = getSystemE2ETestProvider();
-	const expectedChainId = getSystemTestBackend() === 'sepolia' ? 11155111 : 1;
+	// const expectedChainId = getSystemTestBackend() === 'sepolia' ? 11155111 : 1;
+	const expectedChainId = 1;
 
 	let web3: Web3;
 

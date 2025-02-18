@@ -16,7 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { AbiError } from '@theqrl/web3-errors';
-import { AbiCoder, ParamType } from '@ethersproject/abi';
+import { AbiCoder, ParamType } from '@theqrl/abi';
 import { isNullish, leftPad, rightPad, toHex } from '@theqrl/web3-utils';
 import {
 	AbiInput,
@@ -119,7 +119,7 @@ export const mapTypes = (
 		}
 
 		// Remap `function` type params to bytes24 since Ethers does not
-		// recognize former type. Solidity docs say `Function` is a bytes24
+		// recognize former type. Hyperion docs say `Function` is a bytes24
 		// encoding the contract address followed by the function selector hash.
 		if (typeof type === 'object' && type.type === 'function') {
 			modifiedType = { ...type, type: 'bytes24' };

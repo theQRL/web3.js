@@ -16,7 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { Address } from '@theqrl/web3-types';
-import { /*Web3ValidatorError,*/ isHexStrict } from '@theqrl/web3-validator';
+import { /*Web3ValidatorError,*/ isAddressString } from '@theqrl/web3-validator';
 import {
 	create,
 	//decrypt,
@@ -52,7 +52,7 @@ describe('accounts', () => {
 				const account = create();
 				expect(typeof account.seed).toBe('string');
 				expect(typeof account.address).toBe('string');
-				expect(isHexStrict(account.address)).toBe(true);
+				expect(isAddressString(account.address)).toBe(true);
 				//expect(typeof account.encrypt).toBe('function');
 				expect(typeof account.sign).toBe('function');
 				expect(typeof account.signTransaction).toBe('function');
@@ -142,6 +142,7 @@ describe('accounts', () => {
 		// });
 	});
 
+	// TODO(youtrack/theqrl/web3.js/3)
 	// describe('encrypt', () => {
 	// 	describe('valid cases', () => {
 	// 		it.each(validEncryptData)('%s', async (input, output) => {

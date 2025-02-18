@@ -30,7 +30,7 @@ describe('resolver', () => {
 	let registry: Registry;
 	let resolver: Resolver;
 	let contract: Contract<typeof PublicResolverAbi>;
-	const mockAddress = '0x0000000000000000000000000000000000000000';
+	const mockAddress = 'Z0000000000000000000000000000000000000000';
 	const ENS_NAME = 'web3js.eth';
 
 	beforeAll(() => {

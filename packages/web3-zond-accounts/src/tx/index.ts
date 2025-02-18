@@ -17,7 +17,5 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 // @ethereumjs/tx version 4.1.1
 export { FeeMarketEIP1559Transaction } from './eip1559Transaction.js';
-export { AccessListEIP2930Transaction } from './eip2930Transaction.js';
-export { Transaction } from './legacyTransaction.js';
 export { TransactionFactory } from './transactionFactory.js';
 export * from './types.js';

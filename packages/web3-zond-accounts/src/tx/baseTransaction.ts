@@ -16,7 +16,9 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { Numbers } from '@theqrl/web3-types';
-import { bytesToHex } from '@theqrl/web3-utils';
+import { bytesToHex, toHex } from '@theqrl/web3-utils';
+import { cryptoSignVerify } from '@theqrl/dilithium5';
+import { Dilithium } from '@theqrl/wallet.js';
 import { MAX_INTEGER, MAX_UINT64, SEED_BYTES } from './constants.js';
 import {
 	Chain,
@@ -26,22 +28,14 @@ import {
 	uint8ArrayToBigInt,
 } from '../common/index.js';
 import type {
-	AccessListEIP2930TxData,
-	AccessListEIP2930ValuesArray,
 	FeeMarketEIP1559TxData,
 	FeeMarketEIP1559ValuesArray,
 	JsonTx,
-	TxData,
 	TxOptions,
-	TxValuesArray,
 } from './types.js';
-import { Capability } from './types.js';
 import { Address } from './address.js';
 import { checkMaxInitCodeSize } from './utils.js';
-import { 
-	cryptoSignVerify 
-} from '@theqrl/dilithium5';
-import { Dilithium } from '@theqrl/wallet.js';
+import { isAddressString } from '@theqrl/web3-validator';
 
 interface TransactionCache {
 	hash: Uint8Array | undefined;
@@ -54,7 +48,7 @@ interface TransactionCache {
 /**
  * This base class will likely be subject to further
  * refactoring along the introduction of additional tx types
- * on the Ethereum network.
+ * on the Zond network.
  *
  * It is therefore not recommended to use directly.
  */
@@ -80,13 +74,6 @@ export abstract class BaseTransaction<TransactionObject> {
 	protected readonly txOptions: TxOptions;
 
 	/**
-	 * List of tx type defining EIPs,
-	 * e.g. 1559 (fee market) and 2930 (access lists)
-	 * for FeeMarketEIP1559Transaction objects
-	 */
-	protected activeCapabilities: number[] = [];
-
-	/**
 	 * The default chain the tx falls back to if no Common
 	 * is provided and if the chain can't be derived from
 	 * a passed in chainId (only EIP-2718 typed txs) or
@@ -102,10 +89,10 @@ export abstract class BaseTransaction<TransactionObject> {
 	 *
 	 * @hidden
 	 */
-	protected DEFAULT_HARDFORK: string | Hardfork = Hardfork.Merge;
+	protected DEFAULT_HARDFORK: string | Hardfork = Hardfork.Shanghai;
 
 	public constructor(
-		txData: TxData | AccessListEIP2930TxData | FeeMarketEIP1559TxData,
+		txData: FeeMarketEIP1559TxData,
 		opts: TxOptions,
 	) {
 		const { nonce, gasLimit, to, value, data, signature, publicKey, type } = txData;
@@ -113,7 +100,21 @@ export abstract class BaseTransaction<TransactionObject> {
 
 		this.txOptions = opts;
 
-		const toB = toUint8Array(to === '' ? '0x' : to);
+		var toB: Uint8Array
+		if (typeof to === 'string') {
+			if (to === '') {
+				toB = toUint8Array('0x')
+			} else if (isAddressString(to)) {
+				toB = toUint8Array(toHex(to))
+			} else {
+				throw new Error(
+					`Cannot convert string to Uint8Array. only supports address strings and this string was given: ${to}`,
+				);
+			}
+		} else {
+			toB = toUint8Array(to);
+		}
+
 		const signatureB = toUint8Array(signature === '' ? '0x' : signature);
 		const publicKeyB = toUint8Array(publicKey === '' ? '0x' : publicKey);
 
@@ -137,38 +138,16 @@ export abstract class BaseTransaction<TransactionObject> {
 		const createContract = this.to === undefined || this.to === null;
 		const allowUnlimitedInitCodeSize = opts.allowUnlimitedInitCodeSize ?? false;
 		const common = opts.common ?? this._getCommon();
-		if (createContract && common.isActivatedEIP(3860) && !allowUnlimitedInitCodeSize) {
+		if (createContract && !allowUnlimitedInitCodeSize) {
 			checkMaxInitCodeSize(common, this.data.length);
 		}
 	}
 
 	/**
 	 * Returns the transaction type.
-	 *
-	 * Note: legacy txs will return tx type `0`.
 	 */
 	public get type() {
 		return this._type;
-	}
-
-	/**
-	 * Checks if a tx type defining capability is active
-	 * on a tx, for example the EIP-1559 fee market mechanism
-	 * or the EIP-2930 access list feature.
-	 *
-	 * Note that this is different from the tx type itself,
-	 * so EIP-2930 access lists can very well be active
-	 * on an EIP-1559 tx for example.
-	 *
-	 * This method can be useful for feature checks if the
-	 * tx type is unknown (e.g. when instantiated with
-	 * the tx factory).
-	 *
-	 * See `Capabilites` in the `types` module for a reference
-	 * on all supported capabilities.
-	 */
-	public supports(capability: Capability) {
-		return this.activeCapabilities.includes(capability);
 	}
 
 	/**
@@ -201,7 +180,7 @@ export abstract class BaseTransaction<TransactionObject> {
 		const txFee = this.common.param('gasPrices', 'tx');
 		let fee = this.getDataFee();
 		if (txFee) fee += txFee;
-		if (this.common.gteHardfork('homestead') && this.toCreationAddress()) {
+		if (this.toCreationAddress()) {
 			const txCreationFee = this.common.param('gasPrices', 'txCreation');
 			if (txCreationFee) fee += txCreationFee;
 		}
@@ -222,7 +201,7 @@ export abstract class BaseTransaction<TransactionObject> {
 			this.data[i] === 0 ? (cost += txDataZero) : (cost += txDataNonZero);
 		}
 		// eslint-disable-next-line no-null/no-null
-		if ((this.to === undefined || this.to === null) && this.common.isActivatedEIP(3860)) {
+		if ((this.to === undefined || this.to === null)) {
 			const dataLength = BigInt(Math.ceil(this.data.length / 32));
 			const initCodeCost = this.common.param('gasPrices', 'initCodeWordCost') * dataLength;
 			cost += initCodeCost;
@@ -250,12 +229,10 @@ export abstract class BaseTransaction<TransactionObject> {
 	 * with {@link Block.fromValuesArray}.
 	 *
 	 * For an unsigned tx this method uses the empty Uint8Array values for the
-	 * signature parameters `v`, `r` and `s` for encoding. For an EIP-155 compliant
+	 * signature parameters `publicKey` and `signature` for encoding. For an EIP-155 compliant
 	 * representation for external signing use {@link BaseTransaction.getMessageToSign}.
 	 */
 	public abstract raw():
-		| TxValuesArray
-		| AccessListEIP2930ValuesArray
 		| FeeMarketEIP1559ValuesArray;
 
 	/**
@@ -326,34 +303,12 @@ export abstract class BaseTransaction<TransactionObject> {
 			const msg = this._errorMsg(`Seed must be ${SEED_BYTES} bytes in length.`);
 			throw new Error(msg);
 		}
-		
-		// Hack for the constellation that we have got a legacy tx after spuriousDragon with a non-EIP155 conforming signature
-		// and want to recreate a signature (where EIP155 should be applied)
-		// Leaving this hack lets the legacy.spec.ts -> sign(), verifySignature() test fail
-		// 2021-06-23
-		let hackApplied = false;
-		if (
-			this.type === 0 &&
-			this.common.gteHardfork('spuriousDragon') &&
-			!this.supports(Capability.EIP155ReplayProtection)
-		) {
-			this.activeCapabilities.push(Capability.EIP155ReplayProtection);
-			hackApplied = true;
-		}
 
 		const msgHash = this.getMessageToSign(true);
 		const buf = Buffer.from(seed);
 		const acc = new Dilithium(buf);
 		const signature = acc.sign(msgHash)
 		const tx = this._processSignatureAndPublicKey(signature, acc.getPK());
-
-		// Hack part 2
-		if (hackApplied) {
-			const index = this.activeCapabilities.indexOf(Capability.EIP155ReplayProtection);
-			if (index > -1) {
-				this.activeCapabilities.splice(index, 1);
-			}
-		}
 
 		return tx;
 	}
@@ -470,14 +425,10 @@ export abstract class BaseTransaction<TransactionObject> {
 	protected static _validateNotArray(values: { [key: string]: any }) {
 		const txDataKeys = [
 			'nonce',
-			'gasPrice',
 			'gasLimit',
 			'to',
 			'value',
 			'data',
-			'v',
-			'r',
-			's',
 			'type',
 			'baseFee',
 			'maxFeePerGas',

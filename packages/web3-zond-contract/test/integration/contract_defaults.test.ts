@@ -40,7 +40,7 @@ describe('contract', () => {
 				arguments: ['My Greeting'],
 			};
 
-			sendOptions = { from: acc.address, gas: '1000000', type: 2 };
+			sendOptions = { from: acc.address, gas: '1000000' };
 		});
 
 		it('should use "defaultAccount" on "instance" level instead of "from"', async () => {
@@ -50,14 +50,14 @@ describe('contract', () => {
 			// We didn't specify "from" in this call
 			const receipt = await deployedContract.methods
 				.setGreeting('New Greeting')
-				.send({ gas: '1000000', type: 2 });
+				.send({ gas: '1000000' });
 			expect(receipt.from).toEqual(acc.address);
 		});
 
 		it('should throw error when "from" is not set on any level', () => {
 			contract.defaultAccount = undefined;
 
-			expect(() => contract.deploy(deployOptions).send({ gas: '1000000', type: 2 })).toThrow(
+			expect(() => contract.deploy(deployOptions).send({ gas: '1000000' })).toThrow(
 				'Contract "from" address not specified',
 			);
 		});

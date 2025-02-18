@@ -23,14 +23,14 @@ export const mockRpcResponse: FilterResultsAPI = [
 		blockHash: '0x8216c5785ac562ff41e2dcfdf5785ac562ff41e2dcfdf829c5a142f1fccd7d',
 		transactionHash: '0xdf829c5a142f1fccd7d8216c5785ac562ff41e2dcfdf5785ac562ff41e2dcf',
 		transactionIndex: '0x0',
-		address: '0x16c5785ac562ff41e2dcfdf829c5a142f1fccd7d',
+		address: 'Z16c5785ac562ff41e2dcfdf829c5a142f1fccd7d',
 		data: '0x0000000000000000000000000000000000000000000000000000000000000000',
 		topics: ['0x59ebeb90bc63057b6515673c3ecf9438e5058bca0f92585014eced636878c9a5'],
 	},
 ];
 
 const filter: Filter = {
-	address: '0x407d73d8a49eeb85d32cf465507dd71d507100c1',
+	address: 'Z407d73d8a49eeb85d32cf465507dd71d507100c1',
 	topics: [
 		'0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b',
 		// Using "null" value intentionally for validation

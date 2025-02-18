@@ -67,7 +67,6 @@ describe('sendTransaction', () => {
 
 			if (
 				sendTransactionOptions?.ignoreGasPricing ||
-				!isNullish(inputTransaction.gasPrice) ||
 				(!isNullish(inputTransaction.maxPriorityFeePerGas) &&
 					!isNullish(inputTransaction.maxFeePerGas))
 			)

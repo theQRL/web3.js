@@ -17,92 +17,10 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 import { InvalidBlockError } from '@theqrl/web3-errors';
 import {
-	checkAddressCheckSum as checkAddressCheckSumValidator,
-	isAddress as isAddressValidator,
 	isBlockTag,
-	isBloom as isBloomValidator,
-	isContractAddressInBloom as isContractAddressInBloomValidator,
-	isHex as isHexValidator,
-	isHexStrict as isHexStrictValidator,
-	isInBloom as isInBloomValidator,
 	isNullish as isNullishValidator,
-	isTopic as isTopicValidator,
-	isTopicInBloom as isTopicInBloomValidator,
-	isUserZondAddressInBloom as isUserZondAddressInBloomValidator,
 } from '@theqrl/web3-validator';
 import { BlockNumberOrTag, BlockTags } from '@theqrl/web3-types';
-
-/**
- * @deprecated Will be removed in next release. Please use `web3-validator` package instead.
- */
-export const isHexStrict = isHexStrictValidator;
-
-/**
- * returns true if input is a hexstring, number or bigint
- *
- * @deprecated Will be removed in next release. Please use `web3-validator` package instead.
- */
-export const isHex = isHexValidator;
-
-/**
- * Checks the checksum of a given address. Will also return false on non-checksum addresses.
- *
- * @deprecated Will be removed in next release. Please use `web3-validator` package instead.
- */
-export const checkAddressCheckSum = checkAddressCheckSumValidator;
-
-/**
- * Checks if a given string is a valid Zond address. It will also check the checksum, if the address has upper and lowercase letters.
- *
- * @deprecated Will be removed in next release. Please use `web3-validator` package instead.
- */
-export const isAddress = isAddressValidator;
-
-/**
- * Returns true if the bloom is a valid bloom
- * https://github.com/joshstevens19/ethereum-bloom-filters/blob/fbeb47b70b46243c3963fe1c2988d7461ef17236/src/index.ts#L7
- *
- * @deprecated Will be removed in next release. Please use `web3-validator` package instead.
- */
-export const isBloom = isBloomValidator;
-
-/**
- * Returns true if the value is part of the given bloom
- * note: false positives are possible.
- *
- * @deprecated Will be removed in next release. Please use `web3-validator` package instead.
- */
-export const isInBloom = isInBloomValidator;
-
-/**
- * Returns true if the zond users address is part of the given bloom note: false positives are possible.
- *
- * @deprecated Will be removed in next release. Please use `web3-validator` package instead.
- */
-export const isUserZondAddressInBloom = isUserZondAddressInBloomValidator;
-
-/**
- * Returns true if the contract address is part of the given bloom.
- * note: false positives are possible.
- *
- * @deprecated Will be removed in next release. Please use `web3-validator` package instead.
- */
-export const isContractAddressInBloom = isContractAddressInBloomValidator;
-
-/**
- * Checks if its a valid topic
- *
- * @deprecated Will be removed in next release. Please use `web3-validator` package instead.
- */
-export const isTopic = isTopicValidator;
-
-/**
- * Returns true if the topic is part of the given bloom.
- * note: false positives are possible.
- *
- * @deprecated Will be removed in next release. Please use `web3-validator` package instead.
- */
-export const isTopicInBloom = isTopicInBloomValidator;
 
 /**
  * Compares between block A and block B

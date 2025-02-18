@@ -44,11 +44,12 @@ export const sendFewTxes = async ({
 	value,
 	from,
 	times = 3,
-	//gas,
+	gas,
 }: SendFewTxParams): Promise<TransactionReceipt[]> => {
 	const res: TransactionReceipt[] = [];
 	const toAddress = to ?? createAccount().address;
 	const web3 = new Web3(getSystemTestProvider());
+
 	for (let i = 0; i < times; i += 1) {
 		res.push(
 			// eslint-disable-next-line no-await-in-loop
@@ -56,7 +57,7 @@ export const sendFewTxes = async ({
 				to: toAddress,
 				value,
 				from,
-				//gas: gas ?? '300000',
+				gas: gas ?? '300000',
 				type: BigInt(2),
 			}),
 		);
@@ -66,7 +67,7 @@ export const sendFewTxes = async ({
 	return res;
 };
 
-const regexHex20 = /0[xX][0-9a-fA-F]{40}/i;
+const regexAddress = /Z[0-9a-fA-F]{40}/i;
 const regexHex32 = /0[xX][0-9a-fA-F]{64}/i;
 
 type ExpectOptions = {
@@ -82,8 +83,8 @@ export const validateTransaction = (
 	expect(tx.blockHash).toMatch(regexHex32);
 	expect(Number(tx.blockNumber)).toBeGreaterThan(0);
 	expect(tx.transactionIndex).toBeDefined();
-	expect(tx.from).toMatch(regexHex20);
-	expect(tx.to).toMatch(regexHex20);
+	expect(tx.from).toMatch(regexAddress);
+	expect(tx.to).toMatch(regexAddress);
 	expect(Number(tx.value)).toBe(1);
 	expect(tx.input).toBe('0x');
 	expect(tx.publicKey).toBeDefined();
@@ -91,36 +92,31 @@ export const validateTransaction = (
 	expect(Number(tx.gas)).toBeGreaterThan(0);
 };
 export const validateBlock = (b: Block) => {
-	expect(b.nonce).toBeDefined();
 	expect(Number(b.baseFeePerGas)).toBeGreaterThan(0);
 	expect(b.number).toBeDefined();
 	expect(b.hash).toMatch(regexHex32);
 	expect(b.parentHash).toMatch(regexHex32);
-	expect(b.sha3Uncles).toMatch(regexHex32);
 	expect(b.transactionsRoot).toMatch(regexHex32);
 	expect(b.receiptsRoot).toMatch(regexHex32);
 	expect(b.logsBloom).toBeDefined();
-	expect(b.miner).toMatch(regexHex20);
-	expect(b.difficulty).toBeDefined();
+	expect(b.miner).toMatch(regexAddress);
 	expect(b.stateRoot).toMatch(regexHex32);
 	expect(b.gasLimit).toBeDefined();
 	expect(b.gasUsed).toBeDefined();
 	expect(b.timestamp).toBeDefined();
 	expect(b.extraData).toBeDefined();
-	expect(b.mixHash).toMatch(regexHex32);
-	expect(b.totalDifficulty).toBeDefined();
+	expect(b.prevRandao).toMatch(regexHex32);
 	expect(b.baseFeePerGas).toBeDefined();
 	expect(b.size).toBeDefined();
 	expect(Array.isArray(b.transactions)).toBe(true);
-	expect(Array.isArray(b.uncles)).toBe(true);
 };
 export const validateReceipt = (r: TransactionReceipt) => {
 	expect(r.transactionHash).toMatch(regexHex32);
 	expect(r.transactionIndex).toBeDefined();
 	expect(r.blockHash).toMatch(regexHex32);
 	expect(r.blockNumber).toBeDefined();
-	expect(r.from).toMatch(regexHex20);
-	expect(r.to).toMatch(regexHex20);
+	expect(r.from).toMatch(regexAddress);
+	expect(r.to).toMatch(regexAddress);
 	expect(r.cumulativeGasUsed).toBeDefined();
 	expect(r.gasUsed).toBeDefined();
 	expect(r.effectiveGasPrice).toBeDefined();

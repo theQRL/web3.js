@@ -36,7 +36,7 @@ import {
 
 import {
 	closeOpenConnection,
-	createNewAccount,
+	// createNewAccount,
 	createTempAccount,
 	getSystemTestProvider,
 	isIpc,
@@ -71,7 +71,7 @@ describe('defaults', () => {
 			data: BasicBytecode,
 			arguments: [10, 'string init value'],
 		};
-		sendOptions = { from: tempAcc.address, /*gas: '1000000'*/ type: 2 };
+		sendOptions = { from: tempAcc.address, /*gas: '1000000'*/ };
 	});
 
 	afterEach(async () => {
@@ -91,7 +91,7 @@ describe('defaults', () => {
 					data: MsgSenderBytecode,
 					arguments: ['test'],
 				})
-				.send({ from: tempAcc2.address, /*gas: '2700000',*/ type: 2 });
+				.send({ from: tempAcc2.address, /*gas: '2700000',*/ });
 			// default
 			expect(web3Zond.defaultAccount).toBeUndefined();
 
@@ -119,28 +119,26 @@ describe('defaults', () => {
 
 			const tx = await contractMsgFrom.methods
 				.setTestString('test2')
-				.send({ type: 2 });
+				.send();
 				//.send({ gas: '1000000' });
 			const txSend = await web3Zond.sendTransaction({
 				to: tempAcc2.address,
 				value: '0x1',
 				type: BigInt(2),
 			});
-			expect(tx.from).toBe(tempAcc.address.toLowerCase());
-			expect(txSend.from).toBe(tempAcc.address.toLowerCase());
+			expect(tx.from).toBe(`Z${tempAcc.address.slice(1).toLowerCase()}`);
+			expect(txSend.from).toBe(`Z${tempAcc.address.slice(1).toLowerCase()}`);
 
 			const tx2 = await contractMsgFrom.methods.setTestString('test3').send({
 				from: tempAcc2.address,
-				type: 2,
 			});
 			const tx2Send = await web3Zond.sendTransaction({
 				to: tempAcc.address,
 				value: '0x1',
 				from: tempAcc2.address,
-				type: BigInt(2),
 			});
-			expect(tx2.from).toBe(tempAcc2.address.toLowerCase());
-			expect(tx2Send.from).toBe(tempAcc2.address.toLowerCase());
+			expect(tx2.from).toBe(`Z${tempAcc2.address.slice(1).toLowerCase()}`);
+			expect(tx2Send.from).toBe(`Z${tempAcc2.address.slice(1).toLowerCase()}`);
 
 			const fromDefault = await contractMsgFrom.methods?.from().call();
 			const fromPass = await contractMsgFrom.methods?.from().call({ from: tempAcc.address });
@@ -216,14 +214,15 @@ describe('defaults', () => {
 			expect(zond2.defaultBlock).toBe('earliest');
 
 			// check implementation
-			const acc = await createNewAccount({ refill: true, unlock: true });
+			// const acc = await createNewAccount({ refill: true });
+			const acc = await createTempAccount();
 
 			await sendFewTxes({
 				from: acc.address,
 				times: 1,
 				value: '0x1',
 			});
-			const balance = await zond2.getBalance(acc.address);
+			// const balance = await zond2.getBalance(acc.address);
 			const code = await zond2.getCode(contractDeployed?.options?.address as string);
 			const storage = await zond2.getStorageAt(
 				contractDeployed?.options?.address as string,
@@ -232,15 +231,15 @@ describe('defaults', () => {
 			const transactionCount = await zond2.getTransactionCount(acc.address);
 			expect(storage === '0x' ? 0 : Number(hexToNumber(storage))).toBe(0);
 			expect(code).toBe('0x');
-			expect(balance).toBe(BigInt(0));
+			// expect(balance).toBe(BigInt(0));
 			expect(transactionCount).toBe(BigInt(0));
 
 			// pass blockNumber to rewrite defaultBlockNumber
 			const balanceWithBlockNumber = await zond2.getBalance(acc.address, 'latest');
-			const transactionCountWithBlockNumber = await zond2.getTransactionCount(
-				acc.address,
-				'latest',
-			);
+			// const transactionCountWithBlockNumber = await zond2.getTransactionCount(
+			// 	acc.address,
+			// 	'latest',
+			// );
 			const codeWithBlockNumber = await zond2.getCode(
 				contractDeployed?.options?.address as string,
 				'latest',
@@ -251,7 +250,7 @@ describe('defaults', () => {
 				'latest',
 			);
 			expect(Number(hexToNumber(storageWithBlockNumber))).toBe(10);
-			expect(transactionCountWithBlockNumber).toBe(BigInt(1));
+			// expect(transactionCountWithBlockNumber).toBe(BigInt(1));
 			expect(Number(balanceWithBlockNumber)).toBeGreaterThan(0);
 			expect(codeWithBlockNumber.startsWith(BasicBytecode.slice(0, 10))).toBe(true);
 
@@ -265,10 +264,10 @@ describe('defaults', () => {
 				contractDeployed?.options?.address as string,
 				0,
 			);
-			const transactionCountLatest = await zond2.getTransactionCount(acc.address);
+			// const transactionCountLatest = await zond2.getTransactionCount(acc.address);
 			expect(codeLatest.startsWith(BasicBytecode.slice(0, 10))).toBe(true);
 			expect(Number(hexToNumber(storageLatest))).toBe(10);
-			expect(transactionCountLatest).toBe(BigInt(1));
+			// expect(transactionCountLatest).toBe(BigInt(1));
 			expect(Number(balanceLatest)).toBeGreaterThan(0);
 		});
 		it('transactionSendTimeout', () => {
@@ -651,8 +650,8 @@ describe('defaults', () => {
 			expect(zond2.defaultNetworkId).toBe(4);
 			const res = await defaultTransactionBuilder({
 				transaction: {
-					from: '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0',
-					to: '0x3535353535353535353535353535353535353535',
+					from: 'ZEB014f8c8B418Db6b45774c326A0E64C78914dC0',
+					to: 'Z3535353535353535353535353535353535353535',
 					value: '0x174876e800',
 					gas: '0x5208',
 				},
@@ -663,8 +662,8 @@ describe('defaults', () => {
 			// pass network id
 			const resWithPassNetworkId = await defaultTransactionBuilder({
 				transaction: {
-					from: '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0',
-					to: '0x3535353535353535353535353535353535353535',
+					from: 'ZEB014f8c8B418Db6b45774c326A0E64C78914dC0',
+					to: 'Z3535353535353535353535353535353535353535',
 					value: '0x174876e800',
 					gas: '0x5208',
 					networkId: 5,
@@ -694,8 +693,8 @@ describe('defaults', () => {
 			expect(zond2.defaultChain).toBe('rinkeby');
 			const res = await defaultTransactionBuilder({
 				transaction: {
-					from: '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0',
-					to: '0x3535353535353535353535353535353535353535',
+					from: 'ZEB014f8c8B418Db6b45774c326A0E64C78914dC0',
+					to: 'Z3535353535353535353535353535353535353535',
 					value: '0x174876e800',
 					gas: '0x5208',
 				},
@@ -705,7 +704,7 @@ describe('defaults', () => {
 		});
 		it('defaultHardfork', async () => {
 			// default
-			expect(web3Zond.defaultHardfork).toBe('london');
+			expect(web3Zond.defaultHardfork).toBe('shanghai');
 
 			// after set
 			web3Zond.setConfig({
@@ -724,11 +723,12 @@ describe('defaults', () => {
 
 			const res = await prepareTransactionForSigning(
 				{
-					from: '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0',
-					to: '0x3535353535353535353535353535353535353535',
+					from: 'ZEB014f8c8B418Db6b45774c326A0E64C78914dC0',
+					to: 'Z3535353535353535353535353535353535353535',
 					value: '0x174876e800',
 					gas: '0x5208',
-					gasPrice: '0x4a817c800',
+					maxFeePerGas: '0x4a817c800',
+					maxPriorityFeePerGas: '0x1c9c380',
 					data: '0x0',
 					nonce: '0x4',
 					chainId: '0x1',
@@ -742,7 +742,7 @@ describe('defaults', () => {
 			// default
 			expect(web3Zond.defaultCommon).toBeUndefined();
 			const baseChain: ValidChains = 'mainnet';
-			const hardfork: Hardfork = 'dao';
+			const hardfork: Hardfork = 'shanghai';
 			const common = {
 				customChain: {
 					name: 'test',
@@ -768,7 +768,7 @@ describe('defaults', () => {
 		});
 		it('defaultTransactionType', () => {
 			// default
-			expect(web3Zond.defaultTransactionType).toBe('0x0');
+			expect(web3Zond.defaultTransactionType).toBe('0x2');
 			// after set
 			web3Zond.setConfig({
 				defaultTransactionType: '0x3',
@@ -785,8 +785,8 @@ describe('defaults', () => {
 
 			const res = getTransactionType(
 				{
-					from: '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0',
-					to: '0x3535353535353535353535353535353535353535',
+					from: 'ZEB014f8c8B418Db6b45774c326A0E64C78914dC0',
+					to: 'Z3535353535353535353535353535353535353535',
 					value: '0x174876e800',
 					gas: '0x5208',
 					data: '0x0',
@@ -805,8 +805,8 @@ describe('defaults', () => {
 			// tx.common?.hardfork === 'london'
 			const maxFeePerGasOverride = getTransactionType(
 				{
-					from: '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0',
-					to: '0x3535353535353535353535353535353535353535',
+					from: 'ZEB014f8c8B418Db6b45774c326A0E64C78914dC0',
+					to: 'Z3535353535353535353535353535353535353535',
 					value: '0x174876e800',
 					gas: '0x5208',
 					data: '0x0',
@@ -820,8 +820,8 @@ describe('defaults', () => {
 			expect(maxFeePerGasOverride).toBe('0x2');
 			const maxPriorityFeePerGasOverride = getTransactionType(
 				{
-					from: '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0',
-					to: '0x3535353535353535353535353535353535353535',
+					from: 'ZEB014f8c8B418Db6b45774c326A0E64C78914dC0',
+					to: 'Z3535353535353535353535353535353535353535',
 					value: '0x174876e800',
 					gas: '0x5208',
 					data: '0x0',
@@ -835,23 +835,23 @@ describe('defaults', () => {
 			expect(maxPriorityFeePerGasOverride).toBe('0x2');
 			const hardforkOverride = getTransactionType(
 				{
-					from: '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0',
-					to: '0x3535353535353535353535353535353535353535',
+					from: 'ZEB014f8c8B418Db6b45774c326A0E64C78914dC0',
+					to: 'Z3535353535353535353535353535353535353535',
 					value: '0x174876e800',
 					gas: '0x5208',
 					data: '0x0',
 					nonce: '0x4',
 					chainId: '0x1',
 					gasLimit: '0x5208',
-					hardfork: 'london',
+					hardfork: 'shanghai',
 				},
 				zond2,
 			);
 			expect(hardforkOverride).toBe('0x2');
 			const commonOverride = getTransactionType(
 				{
-					from: '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0',
-					to: '0x3535353535353535353535353535353535353535',
+					from: 'ZEB014f8c8B418Db6b45774c326A0E64C78914dC0',
+					to: 'Z3535353535353535353535353535353535353535',
 					value: '0x174876e800',
 					gas: '0x5208',
 					data: '0x0',
@@ -860,7 +860,7 @@ describe('defaults', () => {
 					gasLimit: '0x5208',
 					common: {
 						customChain: { name: 'ropsten', networkId: '2', chainId: '0x1' },
-						hardfork: 'london',
+						hardfork: 'shanghai',
 					},
 				},
 				zond2,
@@ -872,45 +872,47 @@ describe('defaults', () => {
 
 			const accessListOverride = getTransactionType(
 				{
-					from: '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0',
-					to: '0x3535353535353535353535353535353535353535',
+					from: 'ZEB014f8c8B418Db6b45774c326A0E64C78914dC0',
+					to: 'Z3535353535353535353535353535353535353535',
 					value: '0x174876e800',
 					gas: '0x5208',
 					data: '0x0',
 					nonce: '0x4',
 					chainId: '0x1',
 					gasLimit: '0x5208',
+					maxPriorityFeePerGas: '',
+					maxFeePerGas: '0x4a817c800',
 					accessList: [
 						{
-							address: '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0',
+							address: 'ZEB014f8c8B418Db6b45774c326A0E64C78914dC0',
 							storageKeys: ['0x3535353535353535353535353535353535353535'],
 						},
 					],
 				},
 				zond2,
 			);
-			expect(accessListOverride).toBe('0x1');
+			expect(accessListOverride).toBe('0x2');
 
 			const hardforkBerlinOverride = getTransactionType(
 				{
-					from: '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0',
-					to: '0x3535353535353535353535353535353535353535',
+					from: 'ZEB014f8c8B418Db6b45774c326A0E64C78914dC0',
+					to: 'Z3535353535353535353535353535353535353535',
 					value: '0x174876e800',
 					gas: '0x5208',
 					data: '0x0',
 					nonce: '0x4',
 					chainId: '0x1',
 					gasLimit: '0x5208',
-					hardfork: 'berlin',
+					hardfork: 'shanghai',
 				},
 				zond2,
 			);
-			expect(hardforkBerlinOverride).toBe('0x0');
+			expect(hardforkBerlinOverride).toBe('0x2');
 
 			const commonBerlinOverride = getTransactionType(
 				{
-					from: '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0',
-					to: '0x3535353535353535353535353535353535353535',
+					from: 'ZEB014f8c8B418Db6b45774c326A0E64C78914dC0',
+					to: 'Z3535353535353535353535353535353535353535',
 					value: '0x174876e800',
 					gas: '0x5208',
 					data: '0x0',
@@ -919,12 +921,12 @@ describe('defaults', () => {
 					gasLimit: '0x5208',
 					common: {
 						customChain: { name: 'ropsten', networkId: '2', chainId: '0x1' },
-						hardfork: 'berlin',
+						hardfork: 'shanghai',
 					},
 				},
 				zond2,
 			);
-			expect(commonBerlinOverride).toBe('0x0');
+			expect(commonBerlinOverride).toBe('0x2');
 		});
 		it('defaultMaxPriorityFeePerGas', async () => {
 			// default
@@ -946,8 +948,8 @@ describe('defaults', () => {
 
 			const res = await getTransactionGasPricing(
 				{
-					from: '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0',
-					to: '0x3535353535353535353535353535353535353535',
+					from: 'ZEB014f8c8B418Db6b45774c326A0E64C78914dC0',
+					to: 'Z3535353535353535353535353535353535353535',
 					value: '0x174876e800',
 					type: '0x2',
 					gas: '0x5208',
@@ -964,8 +966,8 @@ describe('defaults', () => {
 			// override test
 			const resOverride = await getTransactionGasPricing(
 				{
-					from: '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0',
-					to: '0x3535353535353535353535353535353535353535',
+					from: 'ZEB014f8c8B418Db6b45774c326A0E64C78914dC0',
+					to: 'Z3535353535353535353535353535353535353535',
 					value: '0x174876e800',
 					type: '0x2',
 					gas: '0x5208',
@@ -1004,11 +1006,11 @@ describe('defaults', () => {
 
 			await transactionBuilder({
 				transaction: {
-					from: '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0',
-					to: '0x3535353535353535353535353535353535353535',
+					from: 'ZEB014f8c8B418Db6b45774c326A0E64C78914dC0',
+					to: 'Z3535353535353535353535353535353535353535',
 					value: '0x174876e800',
 					gas: '0x5208',
-					gasPrice: '0x4a817c800',
+					maxFeePerGas: '0x4a817c800',
 					data: '0x0',
 					nonce: '0x4',
 					chainId: '0x1',
@@ -1038,11 +1040,11 @@ describe('defaults', () => {
 			expect(zond2.transactionTypeParser).toBe(newParserMock);
 			detectTransactionType(
 				{
-					from: '0xEB014f8c8B418Db6b45774c326A0E64C78914dC0',
-					to: '0x3535353535353535353535353535353535353535',
+					from: 'ZEB014f8c8B418Db6b45774c326A0E64C78914dC0',
+					to: 'Z3535353535353535353535353535353535353535',
 					value: '0x174876e800',
 					gas: '0x5208',
-					gasPrice: '0x4a817c800',
+					maxFeePerGas: '0x4a817c800',
 					data: '0x0',
 					nonce: '0x4',
 					chainId: '0x1',

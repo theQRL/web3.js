@@ -29,7 +29,7 @@ import {
 
 Error.stackTraceLimit = Infinity;
 
-describe.skip('zond', () => {
+describe('zond', () => {
 	let web3: Web3;
 	let accounts: string[] = [];
 	let clientUrl: string;
@@ -102,12 +102,13 @@ describe.skip('zond', () => {
 				web3.zond.sendTransaction({
 					from: accounts[0],
 					gas: '0x3d0900',
-					gasPrice: '0x3B9ACBF4',
+					maxFeePerGas: '0x3B9ACBF4',
+					maxPriorityFeePerGas: '0x0',
 					input: '0x608060405234801561001057600080fdklkl',
 					nonce: '0x10',
 					to: undefined,
 					value: '0x0',
-					type: '0x0',
+					type: '0x2',
 					publicKey: '0x1ba80b16306d1de8ff809c00f67c305e8636326096aba282828d331aa2ec30a1',
 					signature: '0x39f77e0b68d5524826e4385ad4e1f01e748f32c177840184ae65d9592fdfe5c',
 				}),
@@ -125,7 +126,8 @@ describe.skip('zond', () => {
 					from: accounts[0],
 					to: accounts[1],
 					gas: '0x76c0',
-					gasPrice: '0x9184e72a000',
+					maxFeePerGas: '0x3B9ACBF4',
+					maxPriorityFeePerGas: '0x0',
 					value: '0x9184e72a',
 					data: '0xd46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445675',
 				}),

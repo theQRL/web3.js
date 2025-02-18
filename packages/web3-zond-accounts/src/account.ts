@@ -39,9 +39,12 @@ import {
 	toChecksumAddress,
 	uint8ArrayConcat,
 	utf8ToHex,
+	hexToAddress,
 } from '@theqrl/web3-utils';
 
 import { isHexStrict, isNullish } from '@theqrl/web3-validator';
+import { CryptoPublicKeyBytes } from '@theqrl/dilithium5';
+import { Dilithium, getDilithiumAddressFromPK } from '@theqrl/wallet.js'
 import { TransactionFactory } from './tx/transactionFactory.js';
 import type {
 	SignTransactionResult,
@@ -49,11 +52,6 @@ import type {
 	Web3Account,
 	SignResult,
 } from './types.js';
-import { 
-	
-	CryptoPublicKeyBytes, 
-} from '@theqrl/dilithium5';
-import { Dilithium, getDilithiumAddressFromPK } from '@theqrl/wallet.js'
 
 /**
  * Get the public key Uint8Array after the validation
@@ -81,7 +79,7 @@ export const parseAndValidatePublicKey = (data: Bytes, ignoreLength?: boolean): 
 
 /**
  *
- * Hashes the given message. The data will be UTF-8 HEX decoded and enveloped as follows: "\\x19Ethereum Signed Message:\\n" + message.length + message and hashed using keccak256.
+ * Hashes the given message. The data will be UTF-8 HEX decoded and enveloped as follows: "\\x19Zond Signed Message:\\n" + message.length + message and hashed using keccak256.
  *
  * @param message - A message to hash, if its HEX it will be UTF8 decoded.
  * @returns The hashed message
@@ -99,17 +97,17 @@ export const hashMessage = (message: string): string => {
 	const messageBytes = hexToBytes(messageHex);
 
 	const preamble = hexToBytes(
-		fromUtf8(`\x19Ethereum Signed Message:\n${messageBytes.byteLength}`),
+		fromUtf8(`\x19Zond Signed Message:\n${messageBytes.byteLength}`),
 	);
 
-	const ethMessage = uint8ArrayConcat(preamble, messageBytes);
+	const zondMessage = uint8ArrayConcat(preamble, messageBytes);
 
-	return sha3Raw(ethMessage); // using keccak in web3-utils.sha3Raw instead of SHA3 (NIST Standard) as both are different
+	return sha3Raw(zondMessage); // using keccak in web3-utils.sha3Raw instead of SHA3 (NIST Standard) as both are different
 };
 
 /**
  * Signs arbitrary data with the private key derived from the given seed.
- * **_NOTE:_** The value passed as the data parameter will be UTF-8 HEX decoded and wrapped as follows: "\\x19Ethereum Signed Message:\\n" + message.length + message
+ * **_NOTE:_** The value passed as the data parameter will be UTF-8 HEX decoded and wrapped as follows: "\\x19Zond Signed Message:\\n" + message.length + message
  *
  * @param data - The data to sign
  * @param seed - The 40 byte seed
@@ -152,7 +150,7 @@ export const sign = (data: string, seed: Bytes): SignResult => {
  * Signing an eip 1559 transaction
  * ```ts
  * signTransaction({
- *	to: '0xF0109fC8DF283027b6285cc889F5aA624EaC1F55',
+ *	to: 'ZF0109fC8DF283027b6285cc889F5aA624EaC1F55',
  *	maxPriorityFeePerGas: '0x3B9ACA00',
  *	maxFeePerGas: '0xB2D05E00',
  *	gasLimit: '0x6A4012',
@@ -207,7 +205,7 @@ export const signTransaction = async (
  * @returns The Zond address used to sign this transaction
  * ```ts
  * recoverTransaction('0xf869808504e3b29200831e848094f0109fc8df283027b6285cc889f5aa624eac1f55843b9aca008025a0c9cf86333bcb065d140032ecaab5d9281bde80f21b9687b3e94161de42d51895a0727a108a0b8d101465414033c3f705a9c7b826e596766046ee1183dbc8aeaa68');
- * > "0x2c7536E3605D9C16a7a3D7b1898e529396a65c23"
+ * > "Z2c7536E3605D9C16a7a3D7b1898e529396a65c23"
  * ```
  */
 export const recoverTransaction = (rawTransaction: HexString): Address => {
@@ -226,17 +224,18 @@ export const recoverTransaction = (rawTransaction: HexString): Address => {
  * @example
  * ```ts
  * publicKeyToAddress("0xbe6383dad004f233317e46ddb46ad31b16064d14447a95cc1d8c8d4bc61c3728")
- * > "0xEB014f8c8B418Db6b45774c326A0E64C78914dC0"
+ * > "ZEB014f8c8B418Db6b45774c326A0E64C78914dC0"
  * ```
  */
 export const publicKeyToAddress = (publicKey: Bytes): string => {
 	const publicKeyUint8Array = parseAndValidatePublicKey(publicKey);	
 	const address = getDilithiumAddressFromPK(publicKeyUint8Array);
 
-	return toChecksumAddress(bytesToHex(address));
+	return toChecksumAddress(hexToAddress(bytesToHex(address)));
 };
 
 
+// TODO(youtrack/theqrl/web3.js/3)
 /**
  * encrypt a private key with a password, returns a V3 JSON Keystore
  *
@@ -446,7 +445,7 @@ export const parseAndValidateSeed = (data: Bytes , ignoreLength?: boolean): Uint
  * ```ts
  * seedToAccount("0x348ce564d427a3311b6536bbcff9390d69395b06ed6c486954e971d960fe8709");
  * >    {
- * 			address: '0xb8CE9ab6943e0eCED004cDe8e3bBed6568B2Fa01',
+ * 			address: 'Zb8CE9ab6943e0eCED004cDe8e3bBed6568B2Fa01',
  * 			seed: '0x348ce564d427a3311b6536bbcff9390d69395b06ed6c486954e971d960fe8709',
  * 			sign,
  * 			signTransaction,
@@ -473,6 +472,7 @@ export const seedToAccount = (seed: Bytes, ignoreLength?: boolean): Web3Account 
 	};
 };
 
+// TODO(youtrack/theqrl/web3.js/3)
 // /**
 //  *
 //  * Generates and returns a Web3Account object that includes the private and public key
@@ -482,7 +482,7 @@ export const seedToAccount = (seed: Bytes, ignoreLength?: boolean): Web3Account 
 //  * ```ts
 //  * web3.zond.accounts.create();
 //  * {
-//  * address: '0xbD504f977021b5E5DdccD8741A368b147B3B38bB',
+//  * address: 'ZbD504f977021b5E5DdccD8741A368b147B3B38bB',
 //  * seed: '0x964ced1c69ad27a311c432fdc0d8211e987595f7eb34ab405a5f16bdc9563ec5',
 //  * signTransaction: [Function: signTransaction],
 //  * sign: [Function: sign],
@@ -525,7 +525,7 @@ export const create = (): Web3Account => {
 //  *    }
 //  *   }, '123').then(console.log)
 //  * > {
-//  * address: '0xcdA9A91875fc35c8Ac1320E098e584495d66e47c',
+//  * address: 'ZcdA9A91875fc35c8Ac1320E098e584495d66e47c',
 //  * privateKey: '67f476289210e3bef3c1c75e4de993ff0a00663df00def84e73aa7411eac18a6',
 //  * signTransaction: [Function: signTransaction],
 //  * sign: [Function: sign],

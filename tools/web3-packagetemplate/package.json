@@ -1,10 +1,10 @@
 {
 	"name": "@theqrl/web3-packagetemplate",
-	"version": "0.2.1",
+	"version": "0.3.0",
 	"publishConfig": {
 		"access": "public"
 	},
-	"description": "Package template for Web3 4.x.x",
+	"description": "Package template for Web3",
 	"main": "lib/index.js",
 	"repository": "https://github.com/ChainSafe/web3.js",
 	"author": "ChainSafe Systems",
@@ -37,7 +37,7 @@
 		"test:integration": "jest --config=./test/integration/jest.config.js --passWithNoTests"
 	},
 	"devDependencies": {
-		"@theqrl/eslint-config-base-web3": "^0.2.1",
+		"@theqrl/eslint-config-base-web3": "^0.3.0",
 		"@types/jest": "^28.1.6",
 		"@typescript-eslint/eslint-plugin": "^5.30.7",
 		"@typescript-eslint/parser": "^5.30.7",

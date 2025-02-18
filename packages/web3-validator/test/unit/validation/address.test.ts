@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { checkAddressCheckSum, isAddress } from '../../../src/validation/address';
+import { checkAddressCheckSum, isAddressString } from '../../../src/validation/address';
 import {
 	validCheckAddressCheckSumData,
 	invalidAddressData,
@@ -24,16 +24,16 @@ import {
 
 describe('validation', () => {
 	describe('address', () => {
-		describe('isAddress', () => {
+		describe('isAddressString', () => {
 			describe('valid cases', () => {
 				it.each(validAddressData)('%s', input => {
-					expect(isAddress(input)).toBeTruthy();
+					expect(isAddressString(input)).toBeTruthy();
 				});
 			});
 
 			describe('invalid cases', () => {
 				it.each(invalidAddressData)('%s', input => {
-					expect(isAddress(input)).toBeFalsy();
+					expect(isAddressString(input)).toBeFalsy();
 				});
 			});
 		});

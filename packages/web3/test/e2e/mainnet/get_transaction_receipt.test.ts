@@ -62,14 +62,14 @@ describe(`${getSystemTestBackend()} tests - getTransactionReceipt`, () => {
 		expect(result).toMatchObject({
 			blockHash: '0xabc81c29235c7962f5a0420644761627bdc064a560c7d1842cdf9517f7d7984e',
 			blockNumber: BigInt(17030310),
-			// contractAddress: '0xedfd52255571b4a9a9d4445989e39f5c14ff0447',
+			// contractAddress: 'Zedfd52255571b4a9a9d4445989e39f5c14ff0447',
 			cumulativeGasUsed: BigInt(9010200),
 			effectiveGasPrice: BigInt(19330338402),
-			from: '0xd67da12dc33d9730d9341bbfa4f0b67d0688b28b',
+			from: 'Zd67da12dc33d9730d9341bbfa4f0b67d0688b28b',
 			gasUsed: BigInt(245737),
 			logs: [
 				{
-					address: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
+					address: 'Z2260fac5e5542a773aa44fbcfedf7c193bc2c599',
 					blockHash: '0xabc81c29235c7962f5a0420644761627bdc064a560c7d1842cdf9517f7d7984e',
 					blockNumber: BigInt(17030310),
 					data: '0x0000000000000000000000000000000000000000000000000000000000668442',
@@ -101,7 +101,7 @@ describe(`${getSystemTestBackend()} tests - getTransactionReceipt`, () => {
 					transactionIndex: BigInt(91),
 				},
 				{
-					address: '0x5de8ab7e27f6e7a1fff3e5b337584aa43961beef',
+					address: 'Z5de8ab7e27f6e7a1fff3e5b337584aa43961beef',
 					blockHash: '0xabc81c29235c7962f5a0420644761627bdc064a560c7d1842cdf9517f7d7984e',
 					blockNumber: BigInt(17030310),
 					data: '0x00000000000000000000000000000000000000003fff92b9d57d1d7fca09d7dc',
@@ -117,7 +117,7 @@ describe(`${getSystemTestBackend()} tests - getTransactionReceipt`, () => {
 					transactionIndex: BigInt(91),
 				},
 				{
-					address: '0x5de8ab7e27f6e7a1fff3e5b337584aa43961beef',
+					address: 'Z5de8ab7e27f6e7a1fff3e5b337584aa43961beef',
 					blockHash: '0xabc81c29235c7962f5a0420644761627bdc064a560c7d1842cdf9517f7d7984e',
 					blockNumber: BigInt(17030310),
 					data: '0x000000000000000000000000000000000000000000006d462a82e28035f62824',
@@ -133,7 +133,7 @@ describe(`${getSystemTestBackend()} tests - getTransactionReceipt`, () => {
 					transactionIndex: BigInt(91),
 				},
 				{
-					address: '0xa6e265667e1e18c28f2b5dc529f775c5f0d56d4a',
+					address: 'Za6e265667e1e18c28f2b5dc529f775c5f0d56d4a',
 					blockHash: '0xabc81c29235c7962f5a0420644761627bdc064a560c7d1842cdf9517f7d7984e',
 					blockNumber: BigInt(17030310),
 					data: '0x000000000000000000000000000000000000000000000001a055690d9db80000',
@@ -149,7 +149,7 @@ describe(`${getSystemTestBackend()} tests - getTransactionReceipt`, () => {
 					transactionIndex: BigInt(91),
 				},
 				{
-					address: '0x69a592d2129415a4a1d1b1e309c17051b7f28d57',
+					address: 'Z69a592d2129415a4a1d1b1e309c17051b7f28d57',
 					blockHash: '0xabc81c29235c7962f5a0420644761627bdc064a560c7d1842cdf9517f7d7984e',
 					blockNumber: BigInt(17030310),
 					data: '0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001a055690d9db8000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',

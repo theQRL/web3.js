@@ -82,10 +82,10 @@ export abstract class Web3Config
 		contractDataInputFill: 'input',
 		defaultNetworkId: undefined,
 		defaultChain: 'mainnet',
-		defaultHardfork: 'london',
+		defaultHardfork: 'shanghai',
 		// TODO - Check if there is a default Common
 		defaultCommon: undefined,
-		defaultTransactionType: '0x0',
+		defaultTransactionType: '0x2',
 		defaultMaxPriorityFeePerGas: toHex(2500000000),
 		enableExperimentalFeatures: {
 			useSubscriptionWhenCheckingBlockTimeout: false,
@@ -193,7 +193,7 @@ export abstract class Web3Config
 	}
 
 	/**
-	 * The time used to wait for Ethereum Node to return the sent transaction result.
+	 * The time used to wait for Zond Node to return the sent transaction result.
 	 * Note: If the RPC call stuck at the Node and therefor timed-out, the transaction may still be pending or even mined by the Network. We recommend checking the pending transactions in such a case.
 	 * Default is `750` seconds (12.5 minutes).
 	 */
@@ -373,22 +373,9 @@ export abstract class Web3Config
 	}
 
 	/**
-	 * Will return the default hardfork. Default is `london`
+	 * Will return the default hardfork. Default is `shanghai`
 	 * The default hardfork property can be one of the following:
-	 * - `chainstart`
-	 * - `homestead`
-	 * - `dao`
-	 * - `tangerineWhistle`
-	 * - `spuriousDragon`
-	 * - `byzantium`
-	 * - `constantinople`
-	 * - `petersburg`
-	 * - `istanbul`
-	 * - `berlin`
-	 * - `london`
-	 * - 'arrowGlacier',
-	 * - 'tangerineWhistle',
-	 * - 'muirGlacier'
+	 * - 'shanghai'
 	 *
 	 */
 	public get defaultHardfork() {
@@ -419,8 +406,8 @@ export abstract class Web3Config
 	 * 	- `name` - `string`: (optional) The name of the chain
 	 * 	- `networkId` - `number`: Network ID of the custom chain
 	 * 	- `chainId` - `number`: Chain ID of the custom chain
-	 * - `baseChain` - `string`: (optional) mainnet, goerli, kovan, rinkeby, or ropsten
-	 * - `hardfork` - `string`: (optional) chainstart, homestead, dao, tangerineWhistle, spuriousDragon, byzantium, constantinople, petersburg, istanbul, berlin, or london
+	 * - `baseChain` - `string`: (optional) mainnet
+	 * - `hardfork` - `string`: (optional) shanghai
 	 * Default is `undefined`.
 	 *
 	 */

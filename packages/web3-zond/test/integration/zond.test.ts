@@ -64,7 +64,7 @@ describe('zond', () => {
 				arguments: [10, 'string init value'],
 			};
 
-			sendOptions = { from: tempAcc.address, /*gas: '1000000'*/ type: 2 };
+			sendOptions = { from: tempAcc.address, /*gas: '1000000'*/ };
 
 			const deployedContract = await contract.deploy(deployOptions).send(sendOptions);
 			const { provider } = web3Zond;

@@ -63,13 +63,6 @@ export abstract class Web3Subscription<
 		args: ArgsType,
 		options: { subscriptionManager: Web3SubscriptionManager; returnFormat?: DataFormat },
 	);
-	/**
-	 * @deprecated This constructor overloading should not be used
-	 */
-	public constructor(
-		args: ArgsType,
-		options: { requestManager: Web3RequestManager<API>; returnFormat?: DataFormat },
-	);
 	public constructor(
 		public readonly args: ArgsType,
 		options: (
@@ -80,24 +73,13 @@ export abstract class Web3Subscription<
 		},
 	) {
 		super();
-		const { requestManager } = options as { requestManager: Web3RequestManager<API> };
 		const { subscriptionManager } = options as { subscriptionManager: Web3SubscriptionManager };
-		if (requestManager && subscriptionManager) {
+		if (!subscriptionManager) {
 			throw new SubscriptionError(
-				'Only requestManager or subscriptionManager should be provided at Subscription constructor',
+				'subscriptionManager should be provided at Subscription constructor',
 			);
 		}
-		if (!requestManager && !subscriptionManager) {
-			throw new SubscriptionError(
-				'Either requestManager or subscriptionManager should be provided at Subscription constructor',
-			);
-		}
-		if (requestManager) {
-			// eslint-disable-next-line deprecation/deprecation
-			this._subscriptionManager = new Web3SubscriptionManager(requestManager, {}, true);
-		} else {
-			this._subscriptionManager = subscriptionManager;
-		}
+		this._subscriptionManager = subscriptionManager;
 
 		this._returnFormat = options?.returnFormat ?? (DEFAULT_RETURN_FORMAT as DataFormat);
 	}

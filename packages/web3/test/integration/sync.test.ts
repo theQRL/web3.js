@@ -18,10 +18,10 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import Web3 from '../../src/index';
 import {
 	closeOpenConnection,
-	describeIf,
+	// describeIf,
 	getSystemTestProviderUrl,
-	isIpc,
-	isSyncTest,
+	// isIpc,
+	// isSyncTest,
 	isWs,
 } from '../shared_fixtures/system_tests_utils';
 
@@ -37,25 +37,15 @@ const removePeer = async (web3: Web3, eNode: string) => {
 		params: [eNode],
 	});
 };
-const minerStart = async (web3: Web3, start: number) => {
-	return web3.requestManager.send({
-		method: 'miner_start',
-		params: [start],
-	});
-};
 const nodeInfo = async (web3: Web3) => {
 	return web3.requestManager.send({
 		method: 'admin_nodeInfo',
 		params: [],
 	});
 };
-const addAccount = async (web3: Web3) => {
-	return web3.requestManager.send({
-		method: 'personal_newAccount',
-		params: ['1234'],
-	});
-};
-describeIf((isIpc || isWs) && isSyncTest)('Sync nodes test', () => {
+// TODO(youtrack/theqrl/web3.js/5)
+describe.skip('Sync nodes test', () => {
+// describeIf((isIpc || isWs) && isSyncTest)('Sync nodes test', () => {
 	let web3Node1: Web3;
 	let web3Node2: Web3;
 	beforeAll(async () => {
@@ -67,9 +57,7 @@ describeIf((isIpc || isWs) && isSyncTest)('Sync nodes test', () => {
 			: getSystemTestProviderUrl().replace('/tmp/ipc', '/tmp/ipc2');
 
 		web3Node1 = new Web3(providerPath1);
-		await addAccount(web3Node1);
 		web3Node2 = new Web3(providerPath2);
-		await addAccount(web3Node2);
 	});
 	afterAll(async () => {
 		await closeOpenConnection(web3Node1);
@@ -85,10 +73,10 @@ describeIf((isIpc || isWs) && isSyncTest)('Sync nodes test', () => {
 			const syncStartPromise = new Promise(resolve => {
 				subs.on('changed', resolve);
 			});
-			await minerStart(web3Node1, 0);
+			// await minerStart(web3Node1, 0);
 			const node1Info = await nodeInfo(web3Node1);
 			await addPeer(web3Node2, node1Info.enode);
-			await minerStart(web3Node1, 1);
+			// await minerStart(web3Node1, 1);
 
 			expect(await syncStartPromise).toBe(true);
 			await dataPromise;

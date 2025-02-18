@@ -72,7 +72,7 @@ import { EventLog, ContractAbiWithSignature } from './types.js';
  *   transactionHash: '0x7f9fade1c0d57a7af66ab4ead79fade1c0d57a7af66ab4ead7c2c2eb7b11a91385',
  *   blockHash: '0xfd43ade1c09fade1c0d57a7af66ab4ead7c2c2eb7b11a91ffdd57a7af66ab4ead7',
  *   blockNumber: 1234,
- *   address: '0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe'
+ *   address: 'Zde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe'
  * }
  * ```
  */
@@ -111,19 +111,6 @@ export class LogsSubscription extends Web3Subscription<
 			jsonInterface: ContractAbiWithSignature;
 		},
 		options: { subscriptionManager: Web3SubscriptionManager; returnFormat?: DataFormat },
-	);
-	/**
-	 * @deprecated This constructor overloading should not be used
-	 */
-	public constructor(
-		args: {
-			address?: HexString;
-			// eslint-disable-next-line @typescript-eslint/ban-types
-			topics?: (Topic | Topic[] | null)[];
-			abi: AbiEventFragment & { signature: HexString };
-			jsonInterface: ContractAbiWithSignature;
-		},
-		options: { requestManager: Web3RequestManager; returnFormat?: DataFormat },
 	);
 	public constructor(
 		args: {

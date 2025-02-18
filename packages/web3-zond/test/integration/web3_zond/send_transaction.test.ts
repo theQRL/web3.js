@@ -25,7 +25,7 @@ import {
 	TransactionWithToLocalWalletIndex,
 	TransactionWithFromAndToLocalWalletIndex,
 	Address,
-	//DEFAULT_RETURN_FORMAT,
+	DEFAULT_RETURN_FORMAT,
 } from '@theqrl/web3-types';
 import { Wallet } from '@theqrl/web3-zond-accounts';
 import { isHexStrict } from '@theqrl/web3-validator';
@@ -39,6 +39,7 @@ import {
 	getSystemTestProvider,
 } from '../../fixtures/system_test_utils';
 import { SimpleRevertAbi, SimpleRevertDeploymentData } from '../../fixtures/simple_revert';
+import { isNullish } from '@theqrl/web3-utils';
 
 describe('Web3Zond.sendTransaction', () => {
 	let web3Zond: Web3Zond;
@@ -56,7 +57,7 @@ describe('Web3Zond.sendTransaction', () => {
 	it('should make a simple value transfer', async () => {
 		const transaction: Transaction = {
 			from: tempAcc.address,
-			to: '0x0000000000000000000000000000000000000000',
+			to: 'Z0000000000000000000000000000000000000000',
 			value: BigInt(1),
 			type: BigInt(2),
 		};
@@ -79,7 +80,7 @@ describe('Web3Zond.sendTransaction', () => {
 
 		const transaction: TransactionWithFromLocalWalletIndex = {
 			from: 0,
-			to: '0x0000000000000000000000000000000000000000',
+			to: 'Z0000000000000000000000000000000000000000',
 			type: BigInt(2),
 			value: BigInt(1),
 		};
@@ -92,7 +93,7 @@ describe('Web3Zond.sendTransaction', () => {
 
 		expect(minedTransactionData).toMatchObject({
 			from: tempAcc.address,
-			to: '0x0000000000000000000000000000000000000000',
+			to: 'Z0000000000000000000000000000000000000000',
 			value: BigInt(1),
 		});
 	});
@@ -120,9 +121,10 @@ describe('Web3Zond.sendTransaction', () => {
 			response.transactionHash,
 		);
 
+		const acc = wallet.get(0);
 		expect(minedTransactionData).toMatchObject({
 			from: tempAcc.address,
-			to: wallet.get(0)?.address.toLowerCase(),
+			to: isNullish(acc) ? acc : `Z${acc.address.slice(1).toLowerCase()}`,
 			value: BigInt(1),
 		});
 	});
@@ -154,16 +156,17 @@ describe('Web3Zond.sendTransaction', () => {
 			response.transactionHash,
 		);
 
+		const acc = wallet.get(1);
 		expect(minedTransactionData).toMatchObject({
 			from: tempAcc.address,
-			to: wallet.get(1)?.address.toLowerCase(),
+			to: isNullish(acc) ? acc : `Z${acc.address.slice(1).toLowerCase()}`,
 			value: BigInt(1),
 		});
 	});
 	it('should make a transaction with no value transfer', async () => {
 		const transaction: Transaction = {
 			from: tempAcc.address,
-			to: '0x0000000000000000000000000000000000000000',
+			to: 'Z0000000000000000000000000000000000000000',
 			value: BigInt(0),
 			type: BigInt(2),
 		};
@@ -176,7 +179,7 @@ describe('Web3Zond.sendTransaction', () => {
 	it('should send a transaction with data', async () => {
 		const transaction: Transaction = {
 			from: tempAcc.address,
-			to: '0x0000000000000000000000000000000000000000',
+			to: 'Z0000000000000000000000000000000000000000',
 			data: '0x64edfbf0e2c706ba4a09595315c45355a341a576cc17f3a19f43ac1c02f814ee',
 			value: BigInt(0),
 			type: BigInt(2),
@@ -239,46 +242,10 @@ describe('Web3Zond.sendTransaction', () => {
 	});
 
 	describe('Transaction Types', () => {
-		/*
-		it('should send a successful type 0x0 transaction', async () => {
-			const transaction: Transaction = {
-				from: tempAcc.address,
-				to: '0x0000000000000000000000000000000000000000',
-				value: BigInt(1),
-				type: BigInt(0),
-			};
-			const response = await web3Zond.sendTransaction(transaction);
-			expect(response.type).toBe(BigInt(0));
-			expect(response.status).toBe(BigInt(1));
-
-			const minedTransactionData = await web3Zond.getTransaction(response.transactionHash);
-			expect(minedTransactionData).toMatchObject(transaction);
-		});
-
-		it('should send a successful type 0x1 transaction', async () => {
-			const transaction: Transaction = {
-				from: tempAcc.address,
-				to: '0x0000000000000000000000000000000000000000',
-				value: BigInt(1),
-				type: BigInt(1),
-				// TODO If this property is not included, tx gets default to type: 0x0
-				// from what I can tell our library isn't doing this, but it happens
-				// with both Gzond and Ganache, so I'm not sure
-				accessList: [],
-			};
-			const response = await web3Zond.sendTransaction(transaction);
-			expect(response.type).toBe(BigInt(1));
-			expect(response.status).toBe(BigInt(1));
-
-			const minedTransactionData = await web3Zond.getTransaction(response.transactionHash);
-			expect(minedTransactionData).toMatchObject(transaction);
-		});
-		*/
-
 		it('should send a successful type 0x2 transaction', async () => {
 			const transaction: Transaction = {
 				from: tempAcc.address,
-				to: '0x0000000000000000000000000000000000000000',
+				to: 'Z0000000000000000000000000000000000000000',
 				value: BigInt(1),
 				type: BigInt(2),
 			};
@@ -290,26 +257,45 @@ describe('Web3Zond.sendTransaction', () => {
 			expect(minedTransactionData).toMatchObject(transaction);
 		});
 
-		/*
-		it('should send a successful type 0x0 transaction with data', async () => {
+		it('should send a successful type 0x2 transaction (fee per gas from: calculateFeeData)', async () => {
 			const transaction: Transaction = {
 				from: tempAcc.address,
-				to: '0x0000000000000000000000000000000000000000',
+				to: 'Z0000000000000000000000000000000000000000',
+				value: BigInt(1),
+				type: BigInt(2),
+			};
+
+			const feeData = await web3Zond.calculateFeeData();
+			transaction.maxPriorityFeePerGas = feeData.maxPriorityFeePerGas;
+			transaction.maxFeePerGas = feeData.maxFeePerGas;
+
+			const response = await web3Zond.sendTransaction(transaction);
+			expect(response.type).toBe(BigInt(2));
+			expect(response.status).toBe(BigInt(1));
+
+			const minedTransactionData = await web3Zond.getTransaction(response.transactionHash);
+			expect(minedTransactionData).toMatchObject(transaction);
+		});
+
+		it('should send a successful type 0x2 transaction with data', async () => {
+			const transaction: Transaction = {
+				from: tempAcc.address,
+				to: 'Z0000000000000000000000000000000000000000',
 				data: '0x64edfbf0e2c706ba4a09595315c45355a341a576cc17f3a19f43ac1c02f814ee',
 				value: BigInt(1),
+				type: BigInt(2),
 			};
 			const response = await web3Zond.sendTransaction(transaction, DEFAULT_RETURN_FORMAT);
-			expect(response.type).toBe(BigInt(0));
+			expect(response.type).toBe(BigInt(2));
 			expect(response.status).toBe(BigInt(1));
 			const minedTransactionData = await web3Zond.getTransaction(response.transactionHash);
 			expect(minedTransactionData).toMatchObject(transaction);
 		});
-		*/
 	});
 	it('should autofill a successful type 0x2 transaction with only maxFeePerGas passed', async () => {
 		const transaction: Transaction = {
 			from: tempAcc.address,
-			to: '0x0000000000000000000000000000000000000000',
+			to: 'Z0000000000000000000000000000000000000000',
 			value: BigInt(1),
 			maxFeePerGas: BigInt(2500000016),
 		};
@@ -323,7 +309,7 @@ describe('Web3Zond.sendTransaction', () => {
 	it('should autofill a successful type 0x2 transaction with only maxPriorityFeePerGas passed', async () => {
 		const transaction: Transaction = {
 			from: tempAcc.address,
-			to: '0x0000000000000000000000000000000000000000',
+			to: 'Z0000000000000000000000000000000000000000',
 			value: BigInt(1),
 			maxPriorityFeePerGas: BigInt(100),
 		};
@@ -334,6 +320,25 @@ describe('Web3Zond.sendTransaction', () => {
 		expect(minedTransactionData).toMatchObject(transaction);
 	});
 
+	it('should send type 0x2 transaction with maxPriorityFeePerGas got from await web3Zond.getMaxPriorityFeePerGas()', async () => {
+			const transaction: Transaction = {
+				from: tempAcc.address,
+				to: 'Z0000000000000000000000000000000000000000',
+				value: BigInt(1),
+				maxPriorityFeePerGas: await web3Zond.getMaxPriorityFeePerGas(),
+			};
+			const response = await web3Zond.sendTransaction(transaction);
+
+			// eslint-disable-next-line jest/no-standalone-expect
+			expect(response.type).toBe(BigInt(2));
+			// eslint-disable-next-line jest/no-standalone-expect
+			expect(response.status).toBe(BigInt(1));
+			const minedTransactionData = await web3Zond.getTransaction(response.transactionHash);
+			// eslint-disable-next-line jest/no-standalone-expect
+			expect(minedTransactionData).toMatchObject(transaction);
+		},
+	);
+
 	describe('Transaction PromiEvents', () => {
 		let transaction: Transaction;
 
@@ -341,7 +346,7 @@ describe('Web3Zond.sendTransaction', () => {
 			tempAcc = await createTempAccount();
 			transaction = {
 				from: tempAcc.address,
-				to: '0x0000000000000000000000000000000000000000',
+				to: 'Z0000000000000000000000000000000000000000',
 				value: '0x1',
 				type: '0x2',
 			};
@@ -451,7 +456,7 @@ describe('Web3Zond.sendTransaction', () => {
 		it('Should throw TransactionRevertInstructionError because gas too low', async () => {
 			const transaction: Transaction = {
 				from: tempAcc.address,
-				to: '0x0000000000000000000000000000000000000000',
+				to: 'Z0000000000000000000000000000000000000000',
 				value: BigInt(1),
 				gas: 1,
 				type: BigInt(2),
@@ -476,14 +481,14 @@ describe('Web3Zond.sendTransaction', () => {
 		it('Should throw TransactionRevertInstructionError because insufficient funds', async () => {
 			const transaction: Transaction = {
 				from: tempAcc.address,
-				to: '0x0000000000000000000000000000000000000000',
+				to: 'Z0000000000000000000000000000000000000000',
 				value: BigInt('999999999999999999999999999999999999999999999999999999999'),
 				type: BigInt(2),
 			};
 
 			const expectedThrownError = {
 				name: 'TransactionRevertInstructionError',
-				message: 'Transaction has been reverted by the EVM',
+				message: 'Transaction has been reverted by the ZVM',
 				code: 402,
 				reason:
 					getSystemTestBackend() === 'gzond'

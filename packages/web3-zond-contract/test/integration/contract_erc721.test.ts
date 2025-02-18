@@ -24,11 +24,10 @@ import {
 	isWs,
 	createTempAccount,
 	signAndSendContractMethodEIP1559,
-	signAndSendContractMethodEIP2930,
 	createNewAccount,
 	refillAccount,
 } from '../fixtures/system_test_utils';
-import { processAsync, toUpperCaseHex } from '../shared_fixtures/utils';
+import { processAsync, toUpperCaseAddress } from '../shared_fixtures/utils';
 
 describe('contract', () => {
 	describe('erc721', () => {
@@ -48,7 +47,7 @@ describe('contract', () => {
 				data: ERC721TokenBytecode,
 				arguments: [],
 			};
-			sendOptions = { from: acc.address, /*gas: '10000000'*/ type: 2 };
+			sendOptions = { from: acc.address, /*gas: '10000000'*/ };
 		});
 
 		it('should deploy the contract', async () => {
@@ -66,7 +65,7 @@ describe('contract', () => {
 			});
 			beforeEach(async () => {
 				acc2 = await createTempAccount();
-				sendOptions = { from: acc.address, /*gas: '10000000'*/ type: 2 };
+				sendOptions = { from: acc.address, /*gas: '10000000'*/ };
 				contractDeployed = await contract.deploy(deployOptions).send(sendOptions);
 			});
 
@@ -87,15 +86,14 @@ describe('contract', () => {
 
 					const tokenId = toBigInt(0);
 					expect(
-						toUpperCaseHex(
+						toUpperCaseAddress(
 							(await contractDeployed.methods
 								.ownerOf(tokenId)
 								.call()) as unknown as string,
 						),
-					).toBe(toUpperCaseHex(tempAccount.address));
+					).toBe(toUpperCaseAddress(tempAccount.address));
 				});
-
-				it.each([signAndSendContractMethodEIP1559, signAndSendContractMethodEIP2930])(
+				it.each([signAndSendContractMethodEIP1559])(
 					'should award item with local wallet %p',
 					async signAndSendContractMethod => {
 						const tempAccount = await createTempAccount();
@@ -110,16 +108,15 @@ describe('contract', () => {
 						);
 						const tokenId = toBigInt(0);
 						expect(
-							toUpperCaseHex(
+							toUpperCaseAddress(
 								(await contractDeployed.methods
 									.ownerOf(tokenId)
 									.call()) as unknown as string,
 							),
-						).toBe(toUpperCaseHex(tempAccount.address));
+						).toBe(toUpperCaseAddress(tempAccount.address));
 					},
 				);
-
-				it.each([signAndSendContractMethodEIP1559, signAndSendContractMethodEIP2930])(
+				it.each([signAndSendContractMethodEIP1559])(
 					'should transferFrom item with local wallet %p',
 					async signAndSendContractMethod => {
 						const tempAccount = await createTempAccount();
@@ -147,16 +144,15 @@ describe('contract', () => {
 						);
 
 						expect(
-							toUpperCaseHex(
+							toUpperCaseAddress(
 								(await contractDeployed.methods
 									.ownerOf(tokenId)
 									.call()) as unknown as string,
 							),
-						).toBe(toUpperCaseHex(tempAccountTo.address));
+						).toBe(toUpperCaseAddress(tempAccountTo.address));
 					},
 				);
-
-				it.each([signAndSendContractMethodEIP1559, signAndSendContractMethodEIP2930])(
+				it.each([signAndSendContractMethodEIP1559])(
 					'should safeTransferFrom item with local wallet %p',
 					async signAndSendContractMethod => {
 						const tempAccount = await createTempAccount();
@@ -190,16 +186,15 @@ describe('contract', () => {
 						);
 
 						expect(
-							toUpperCaseHex(
+							toUpperCaseAddress(
 								(await contractDeployed.methods
 									.ownerOf(tokenId)
 									.call()) as unknown as string,
 							),
-						).toBe(toUpperCaseHex(tempAccountTo.address));
+						).toBe(toUpperCaseAddress(tempAccountTo.address));
 					},
 				);
-
-				it.each([signAndSendContractMethodEIP1559, signAndSendContractMethodEIP2930])(
+				it.each([signAndSendContractMethodEIP1559])(
 					'should approve item with local wallet %p',
 					async signAndSendContractMethod => {
 						const tempAccount = await createTempAccount();
@@ -228,8 +223,7 @@ describe('contract', () => {
 						);
 					},
 				);
-
-				it.each([signAndSendContractMethodEIP1559, signAndSendContractMethodEIP2930])(
+				it.each([signAndSendContractMethodEIP1559])(
 					'should set approve for all item with local wallet %p',
 					async signAndSendContractMethod => {
 						const tempAccount = await createTempAccount();
@@ -283,8 +277,8 @@ describe('contract', () => {
 							const event = contractDeployed.events.Transfer();
 							event.on('data', data => {
 								resolve({
-									from: toUpperCaseHex(data.returnValues.from as string),
-									to: toUpperCaseHex(data.returnValues.to as string),
+									from: toUpperCaseAddress(data.returnValues.from as string),
+									to: toUpperCaseAddress(data.returnValues.to as string),
 									tokenId: data.returnValues.tokenId,
 								});
 							});
@@ -294,8 +288,8 @@ describe('contract', () => {
 								.send(sendOptions);
 						}),
 					).resolves.toEqual({
-						from: '0x0000000000000000000000000000000000000000',
-						to: toUpperCaseHex(acc2.address),
+						from: 'Z0000000000000000000000000000000000000000',
+						to: toUpperCaseAddress(acc2.address),
 						tokenId: BigInt(0),
 					});
 				});

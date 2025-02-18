@@ -98,6 +98,7 @@ export interface LegacyRequestProvider {
 	): void;
 }
 
+
 export interface SimpleProvider<API extends Web3APISpec> {
 	request<Method extends Web3APIMethod<API>, ResponseType = Web3APIReturnType<API, Method>>(
 		args: Web3APIPayload<API, Method>,

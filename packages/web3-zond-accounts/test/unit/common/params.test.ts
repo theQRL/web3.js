@@ -18,18 +18,19 @@ import { Chain, Common, Hardfork } from '../../../src/common';
 
 describe('[Common]: Parameter access for param(), paramByHardfork()', () => {
 	it('Basic usage', () => {
-		const c = new Common({ chain: Chain.Mainnet, eips: [2537] });
-		expect(c.paramByHardfork('gasPrices', 'ecAdd', 'byzantium')).toEqual(BigInt(500));
+		const c = new Common({ chain: Chain.Mainnet, eips: [] });
+		expect(c.paramByHardfork('gasPrices', 'ecAdd', 'shanghai')).toEqual(BigInt(150));
 
-		c.setHardfork(Hardfork.Byzantium);
-		expect(c.param('gasPrices', 'ecAdd')).toEqual(BigInt(500));
-		c.setHardfork(Hardfork.Istanbul);
+		// NOTE(rgeraldes24): there are no param updates yet
+		// c.setHardfork(Hardfork.Byzantium);
+		// expect(c.param('gasPrices', 'ecAdd')).toEqual(BigInt(500));
+		// c.setHardfork(Hardfork.Istanbul);
 		expect(c.param('gasPrices', 'ecAdd')).toEqual(BigInt(150));
-		c.setHardfork(Hardfork.MuirGlacier);
-		expect(c.param('gasPrices', 'ecAdd')).toEqual(BigInt(150));
+		// c.setHardfork(Hardfork.MuirGlacier);
+		// expect(c.param('gasPrices', 'ecAdd')).toEqual(BigInt(150));
 
 		expect(c.param('gasPrices', 'notexistingvalue')).toEqual(BigInt(0));
-		expect(c.paramByHardfork('gasPrices', 'notexistingvalue', 'byzantium')).toEqual(BigInt(0));
+		expect(c.paramByHardfork('gasPrices', 'notexistingvalue', 'shanghai')).toEqual(BigInt(0));
 	});
 
 	it('Error cases for param(), paramByHardfork()', () => {
@@ -39,30 +40,39 @@ describe('[Common]: Parameter access for param(), paramByHardfork()', () => {
 			c.paramByHardfork('gasPrizes', 'ecAdd', 'byzantium');
 		}).toThrow('Topic gasPrizes not defined');
 
-		c.setHardfork(Hardfork.Byzantium);
-		expect(c.param('gasPrices', 'ecAdd')).toEqual(BigInt(500));
+		c.setHardfork(Hardfork.Shanghai);
+		expect(c.param('gasPrices', 'ecAdd')).toEqual(BigInt(150));
 	});
 
+	// NOTE(rgeraldes24): there are no param updates yet
 	it('Parameter updates', () => {
 		const c = new Common({ chain: Chain.Mainnet });
 
-		expect(c.paramByHardfork('pow', 'minerReward', 'chainstart')).toEqual(
-			BigInt(5000000000000000000),
+		expect(c.paramByHardfork('gasPrices', 'ecAdd', 'shanghai')).toEqual(
+			BigInt(150),
 		);
 
-		expect(c.paramByHardfork('pow', 'minerReward', 'byzantium')).toEqual(
-			BigInt(3000000000000000000),
-		);
+		// expect(c.paramByHardfork('pow', 'minerReward', 'byzantium')).toEqual(
+		// 	BigInt(3000000000000000000),
+		// );
 
-		expect(c.paramByHardfork('gasPrices', 'netSstoreNoopGas', 'constantinople')).toEqual(
-			BigInt(200),
-		);
+		// NOTE(rgeraldes24): removed along EIP-1283
+		// expect(c.paramByHardfork('gasPrices', 'netSstoreNoopGas', 'constantinople')).toEqual(
+		// 	BigInt(200),
+		// );
 
-		expect(c.paramByHardfork('gasPrices', 'netSstoreNoopGas', 'petersburg')).toEqual(BigInt(0));
+		// NOTE(rgeraldes24): removed along EIP-1283
+		// expect(c.paramByHardfork('gasPrices', 'netSstoreNoopGas', 'petersburg')).toEqual(BigInt(0));
 	});
 
+	// NOTE(rgeraldes24): there are no param updates yet
 	it('Access by block number, paramByBlock()', () => {
-		const c = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Byzantium });
+		const c = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Shanghai });
+		expect(c.paramByBlock('gasPrices', 'ecAdd', 4370000)).toEqual(BigInt(150));
+		expect(c.paramByBlock('gasPrices', 'ecAdd', 4369999)).toEqual(BigInt(150));
+
+		/*
+		const c = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Shanghai });
 		expect(c.paramByBlock('pow', 'minerReward', 4370000)).toEqual(BigInt(3000000000000000000));
 		expect(c.paramByBlock('pow', 'minerReward', 4369999)).toEqual(BigInt(5000000000000000000));
 
@@ -70,9 +80,11 @@ describe('[Common]: Parameter access for param(), paramByHardfork()', () => {
 		expect(c.paramByBlock('pow', 'minerReward', 4370000, td)).toEqual(
 			BigInt(3000000000000000000),
 		);
+		*/
 	});
 
-	it('EIP param access, paramByEIP()', () => {
+	// NOTE(rgeraldes): unused: no eips available(merged)
+	it.skip('EIP param access, paramByEIP()', () => {
 		const c = new Common({ chain: Chain.Mainnet });
 
 		expect(c.paramByEIP('gasPrices', 'notexistingvalue', 2537)).toBeUndefined();
@@ -87,16 +99,5 @@ describe('[Common]: Parameter access for param(), paramByHardfork()', () => {
 		}).toThrow('not defined');
 
 		expect(c.paramByEIP('gasPrices', 'Bls12381G1AddGas', 2537)).toEqual(BigInt(600));
-	});
-
-	it('returns the right block delay for EIP3554', () => {
-		for (const fork of [Hardfork.MuirGlacier, Hardfork.Berlin]) {
-			const c = new Common({ chain: Chain.Mainnet, hardfork: fork });
-			let delay = c.param('pow', 'difficultyBombDelay');
-			expect(delay).toEqual(BigInt(9000000));
-			c.setEIPs([3554]);
-			delay = c.param('pow', 'difficultyBombDelay');
-			expect(delay).toEqual(BigInt(9500000));
-		}
 	});
 });
