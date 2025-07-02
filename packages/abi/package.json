@@ -1,6 +1,6 @@
 {
 	"name": "@theqrl/abi",
-	"version": "0.3.2",
+	"version": "0.3.3",
 	"description": "Utilities and Classes for parsing, formatting and managing Zond ABIs.",
 	"license": "MIT",
 	"main": "./lib/commonjs/index.js",
@@ -54,7 +54,7 @@
 		"@ethersproject/logger": "^5.7.0",
 		"@ethersproject/properties": "^5.7.0",
 		"@ethersproject/strings": "^5.7.0",
-		"@theqrl/web3-utils": "^0.3.2"
+		"@theqrl/web3-utils": "^0.3.3"
 	},
 	"devDependencies": {
 		"@theqrl/eslint-config-base-web3": "^0.3.0",

@@ -1,6 +1,6 @@
 {
 	"name": "@theqrl/web3-errors",
-	"version": "0.3.2",
+	"version": "0.3.3",
 	"publishConfig": {
 		"access": "public"
 	},
@@ -44,7 +44,7 @@
 		"test:integration": "jest --config=./test/integration/jest.config.js --passWithNoTests"
 	},
 	"dependencies": {
-		"@theqrl/web3-types": "^0.3.2"
+		"@theqrl/web3-types": "^0.3.3"
 	},
 	"devDependencies": {
 		"@theqrl/eslint-config-base-web3": "^0.3.0",
