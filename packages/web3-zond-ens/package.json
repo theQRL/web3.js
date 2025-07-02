@@ -1,6 +1,6 @@
 {
 	"name": "@theqrl/web3-zond-ens",
-	"version": "0.3.0",
+	"version": "0.3.2",
 	"publishConfig": {
 		"access": "public"
 	},
@@ -62,14 +62,14 @@
 	},
 	"dependencies": {
 		"@adraffy/ens-normalize": "^1.8.8",
-		"@theqrl/web3-core": "^0.3.0",
-		"@theqrl/web3-errors": "^0.3.0",
-		"@theqrl/web3-net": "^0.3.0",
-		"@theqrl/web3-types": "^0.3.0",
-		"@theqrl/web3-utils": "^0.3.0",
-		"@theqrl/web3-validator": "^0.3.0",
-		"@theqrl/web3-zond": "^0.3.0",
-		"@theqrl/web3-zond-contract": "^0.3.0"
+		"@theqrl/web3-core": "^0.3.2",
+		"@theqrl/web3-errors": "^0.3.2",
+		"@theqrl/web3-net": "^0.3.2",
+		"@theqrl/web3-types": "^0.3.2",
+		"@theqrl/web3-utils": "^0.3.2",
+		"@theqrl/web3-validator": "^0.3.2",
+		"@theqrl/web3-zond": "^0.3.2",
+		"@theqrl/web3-zond-contract": "^0.3.2"
 	},
 	"gitHead": "d4f3246946fec86d908a215b27568aa8faea88d7"
 }

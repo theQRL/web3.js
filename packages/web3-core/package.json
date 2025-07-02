@@ -1,6 +1,6 @@
 {
 	"name": "@theqrl/web3-core",
-	"version": "0.3.0",
+	"version": "0.3.2",
 	"publishConfig": {
 		"access": "public"
 	},
@@ -45,16 +45,16 @@
 		"test:integration": "jest --config=./test/integration/jest.config.js --passWithNoTests"
 	},
 	"dependencies": {
-		"@theqrl/web3-errors": "^0.3.0",
-		"@theqrl/web3-providers-http": "^0.3.0",
-		"@theqrl/web3-providers-ws": "^0.3.0",
-		"@theqrl/web3-types": "^0.3.0",
-		"@theqrl/web3-utils": "^0.3.0",
-		"@theqrl/web3-validator": "^0.3.0",
-		"@theqrl/web3-zond-iban": "^0.3.0"
+		"@theqrl/web3-errors": "^0.3.2",
+		"@theqrl/web3-providers-http": "^0.3.2",
+		"@theqrl/web3-providers-ws": "^0.3.2",
+		"@theqrl/web3-types": "^0.3.2",
+		"@theqrl/web3-utils": "^0.3.2",
+		"@theqrl/web3-validator": "^0.3.2",
+		"@theqrl/web3-zond-iban": "^0.3.2"
 	},
 	"optionalDependencies": {
-		"@theqrl/web3-providers-ipc": "^0.3.0"
+		"@theqrl/web3-providers-ipc": "^0.3.2"
 	},
 	"devDependencies": {
 		"@theqrl/eslint-config-base-web3": "^0.3.0",

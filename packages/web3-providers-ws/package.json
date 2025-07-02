@@ -1,6 +1,6 @@
 {
 	"name": "@theqrl/web3-providers-ws",
-	"version": "0.3.0",
+	"version": "0.3.2",
 	"publishConfig": {
 		"access": "public"
 	},
@@ -63,9 +63,9 @@
 		"typescript": "^4.7.4"
 	},
 	"dependencies": {
-		"@theqrl/web3-errors": "^0.3.0",
-		"@theqrl/web3-types": "^0.3.0",
-		"@theqrl/web3-utils": "^0.3.0",
+		"@theqrl/web3-errors": "^0.3.2",
+		"@theqrl/web3-types": "^0.3.2",
+		"@theqrl/web3-utils": "^0.3.2",
 		"@types/ws": "8.5.3",
 		"isomorphic-ws": "^5.0.0",
 		"ws": "^8.8.1"

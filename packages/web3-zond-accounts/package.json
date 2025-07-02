@@ -1,6 +1,6 @@
 {
 	"name": "@theqrl/web3-zond-accounts",
-	"version": "0.3.0",
+	"version": "0.3.2",
 	"publishConfig": {
 		"access": "public"
 	},
@@ -46,7 +46,7 @@
 	},
 	"devDependencies": {
 		"@theqrl/eslint-config-base-web3": "^0.3.0",
-		"@theqrl/web3-providers-ipc": "^0.3.0",
+		"@theqrl/web3-providers-ipc": "^0.3.2",
 		"@types/jest": "^28.1.6",
 		"@typescript-eslint/eslint-plugin": "^5.30.7",
 		"@typescript-eslint/parser": "^5.30.7",
@@ -64,10 +64,10 @@
 		"@ethereumjs/rlp": "^4.0.1",
 		"@theqrl/dilithium5": "^0.0.9",
 		"@theqrl/wallet.js": "^0.1.0",
-		"@theqrl/web3-errors": "^0.3.0",
-		"@theqrl/web3-types": "^0.3.0",
-		"@theqrl/web3-utils": "^0.3.0",
-		"@theqrl/web3-validator": "^0.3.0",
+		"@theqrl/web3-errors": "^0.3.2",
+		"@theqrl/web3-types": "^0.3.2",
+		"@theqrl/web3-utils": "^0.3.2",
+		"@theqrl/web3-validator": "^0.3.2",
 		"crc-32": "^1.2.2",
 		"ethereum-cryptography": "^2.0.0",
 		"sha3": "^2.1.4"

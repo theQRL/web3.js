@@ -2,6 +2,8 @@
 
 _This document has not yet been fully ported from the original web3.js repository. It is a work in progress and will be updated in the future._
 
+_We need to use lerna pinned at v6 either with npx or installed globally to run the commands in this document_
+
 ## Version Number Definition
 
 The @theqrl/web3.js project follows the [semver 2.0.0 specification](https://semver.org/).
