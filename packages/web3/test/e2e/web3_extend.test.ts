@@ -20,7 +20,7 @@ import Web3 from '../../src';
 import { getSystemE2ETestProvider } from './e2e_utils';
 import { closeOpenConnection, getSystemTestBackend } from '../shared_fixtures/system_tests_utils';
 
-declare module 'web3' {
+declare module '@theqrl/web3' {
 	interface Web3Context {
 		L2Module: {
 			getL2BlockInfo(): Promise<bigint>;

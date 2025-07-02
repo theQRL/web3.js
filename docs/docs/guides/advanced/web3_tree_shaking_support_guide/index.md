@@ -34,10 +34,10 @@ For further information about `sideEffects` see [webpack docs](https://webpack.j
 import Web3Zond from '@theqrl/web3-zond';
 ```
 
-If you only need a few functions from `web3-utils`:
+If you only need a few functions from `@theqrl/web3-utils`:
 
 ```ts
-import { numberToHex, hexToNumber } from 'web3-utils';
+import { numberToHex, hexToNumber } from '@theqrl/web3-utils';
 ```
 
 You can find an example app with tree shaking [here](https://github.com/ChainSafe/web3js-example-react-app).

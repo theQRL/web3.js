@@ -2735,7 +2735,7 @@ web3-core@^5.0.0:
   integrity sha512-vVtZMUbZasYd/4bqHOP3t/l3dHOFzYCPnsxZM+ptc2p96GvryC6/OwwZZ6eh14bkih7VvSmUX/heuajCK4HQ1g==
   dependencies:
     web3-errors "^5.0.0"
-    web3-eth-iban "^5.0.0"
+    web3-zond-iban "^5.0.0"
     web3-providers-http "^5.0.0"
     web3-providers-ipc "^5.0.0"
     web3-providers-ws "^5.0.0"
@@ -2750,9 +2750,9 @@ web3-errors@^5.0.0:
   dependencies:
     web3-types "^5.0.0"
 
-web3-eth-abi@^5.0.0:
+web3-zond-abi@^5.0.0:
   version "5.0.0"
-  resolved "http://localhost:4873/web3-eth-abi/-/web3-eth-abi-5.0.0.tgz#f88c78121a3f65107b44b34638e9a534e8cbdff6"
+  resolved "http://localhost:4873/web3-zond-abi/-/web3-zond-abi-5.0.0.tgz#f88c78121a3f65107b44b34638e9a534e8cbdff6"
   integrity sha512-TYsp6uXzXKSxJOEmWVkwyaFeFYrLCiu++Y4kAYXKFXOY+pSWGQ1owml/24KE+nLO9INvXir4ATxGVC3SuhZeYA==
   dependencies:
     "@ethersproject/abi" "^5.7.0"
@@ -2761,9 +2761,9 @@ web3-eth-abi@^5.0.0:
     web3-types "^5.0.0"
     web3-utils "^5.0.0"
 
-web3-eth-accounts@^5.0.0:
+web3-zond-accounts@^5.0.0:
   version "5.0.0"
-  resolved "http://localhost:4873/web3-eth-accounts/-/web3-eth-accounts-5.0.0.tgz#75d223096e899db803bed2c684b8d542ea9b3cda"
+  resolved "http://localhost:4873/web3-zond-accounts/-/web3-zond-accounts-5.0.0.tgz#75d223096e899db803bed2c684b8d542ea9b3cda"
   integrity sha512-btDSO3A4EgAe3ibGQRjJOHPkA6ngMWWcgpvmQCQFBolCQQhGSiV72ywtjrDakJQtDPbdjKDGnFKQCzTC+dudWw==
   dependencies:
     "@ethereumjs/tx" "^3.5.2"
@@ -2773,37 +2773,37 @@ web3-eth-accounts@^5.0.0:
     web3-utils "^5.0.0"
     web3-validator "^5.0.0"
 
-web3-eth-contract@5.0.0, web3-eth-contract@^5.0.0:
+web3-zond-contract@5.0.0, web3-zond-contract@^5.0.0:
   version "5.0.0"
-  resolved "http://localhost:4873/web3-eth-contract/-/web3-eth-contract-5.0.0.tgz#f54ccbc1194227f0e319358c924cd15732f01504"
+  resolved "http://localhost:4873/web3-zond-contract/-/web3-zond-contract-5.0.0.tgz#f54ccbc1194227f0e319358c924cd15732f01504"
   integrity sha512-dmzzYo56rzIAWHYIyU7drf5pRNTqHzfV/gyZIhZr/r5/9B4fwnmaROeDmiYvvGHtRa7bYbQ4/BFbyBvc+Mv6Ag==
   dependencies:
     web3-core "^5.0.0"
     web3-errors "^5.0.0"
     web3-eth "^5.0.0"
-    web3-eth-abi "^5.0.0"
+    web3-zond-abi "^5.0.0"
     web3-types "^5.0.0"
     web3-utils "^5.0.0"
     web3-validator "^5.0.0"
 
-web3-eth-ens@^5.0.0:
+web3-zond-ens@^5.0.0:
   version "5.0.0"
-  resolved "http://localhost:4873/web3-eth-ens/-/web3-eth-ens-5.0.0.tgz#938bf7982ab7208cb281745e9be9854a94d5f1ba"
+  resolved "http://localhost:4873/web3-zond-ens/-/web3-zond-ens-5.0.0.tgz#938bf7982ab7208cb281745e9be9854a94d5f1ba"
   integrity sha512-bz/brHWOvW8nSkt/8RPTi6aEuyNZHkl9W8siIpPHMPfNPpV49IGHhLz8WA9UuEhVbs+VJj5/7qMWkRVujS+omA==
   dependencies:
     "@adraffy/ens-normalize" "^1.8.8"
     web3-core "^5.0.0"
     web3-errors "^5.0.0"
     web3-eth "^5.0.0"
-    web3-eth-contract "^5.0.0"
+    web3-zond-contract "^5.0.0"
     web3-net "^5.0.0"
     web3-types "^5.0.0"
     web3-utils "^5.0.0"
     web3-validator "^5.0.0"
 
-web3-eth-iban@^5.0.0:
+web3-zond-iban@^5.0.0:
   version "5.0.0"
-  resolved "http://localhost:4873/web3-eth-iban/-/web3-eth-iban-5.0.0.tgz#381a800d82d0a9cff5d812d672b304391ddbb836"
+  resolved "http://localhost:4873/web3-zond-iban/-/web3-zond-iban-5.0.0.tgz#381a800d82d0a9cff5d812d672b304391ddbb836"
   integrity sha512-jB2uQynx4/30ODjGKPr/v3ftHYnqfAq/JGOZaBSdj5uZnCOnwZO5zHQE7LeBDsvyR0D5zkSVtKfGJHyChrod9Q==
   dependencies:
     web3-errors "^5.0.0"
@@ -2811,9 +2811,9 @@ web3-eth-iban@^5.0.0:
     web3-utils "^5.0.0"
     web3-validator "^5.0.0"
 
-web3-eth-personal@^5.0.0:
+web3-zond-personal@^5.0.0:
   version "5.0.0"
-  resolved "http://localhost:4873/web3-eth-personal/-/web3-eth-personal-5.0.0.tgz#2bef135325ce087db83b2965d6bf81b32a3b1cac"
+  resolved "http://localhost:4873/web3-zond-personal/-/web3-zond-personal-5.0.0.tgz#2bef135325ce087db83b2965d6bf81b32a3b1cac"
   integrity sha512-RjTPVrXQ1xHNtLDBiMwBctBQRyddEt2pdvS/Ew7NJLJUHYLD4guzc1u/iszx5skrGA7TV5PCQGwFVFkUg08Bug==
   dependencies:
     web3-core "^5.0.0"
@@ -2825,7 +2825,7 @@ web3-eth-personal@^5.0.0:
 
 web3-eth@5.0.0, web3-eth@^5.0.0:
   version "5.0.0"
-  resolved "http://localhost:4873/web3-eth/-/web3-eth-5.0.0.tgz#e3c0767117191415b912288689bdc40790e1e1e7"
+  resolved "http://localhost:4873/web3-eth/-/web3-zond-5.0.0.tgz#e3c0767117191415b912288689bdc40790e1e1e7"
   integrity sha512-K0i1CT/aFJFEVPfo8GHSVMvFz+XkFxVeOSjNlXyjD5lmOhZc95axxjlqFRwDXphy//GilggTlVuYC4NWpueQaw==
   dependencies:
     "@ethereumjs/common" "^2.6.5"
@@ -2833,8 +2833,8 @@ web3-eth@5.0.0, web3-eth@^5.0.0:
     setimmediate "^1.0.5"
     web3-core "^5.0.0"
     web3-errors "^5.0.0"
-    web3-eth-abi "^5.0.0"
-    web3-eth-accounts "^5.0.0"
+    web3-zond-abi "^5.0.0"
+    web3-zond-accounts "^5.0.0"
     web3-net "^5.0.0"
     web3-providers-ws "^5.0.0"
     web3-rpc-methods "^5.0.0"
@@ -2924,12 +2924,12 @@ web3@5.0.0:
     web3-core "^5.0.0"
     web3-errors "^5.0.0"
     web3-eth "^5.0.0"
-    web3-eth-abi "^5.0.0"
-    web3-eth-accounts "^5.0.0"
-    web3-eth-contract "^5.0.0"
-    web3-eth-ens "^5.0.0"
-    web3-eth-iban "^5.0.0"
-    web3-eth-personal "^5.0.0"
+    web3-zond-abi "^5.0.0"
+    web3-zond-accounts "^5.0.0"
+    web3-zond-contract "^5.0.0"
+    web3-zond-ens "^5.0.0"
+    web3-zond-iban "^5.0.0"
+    web3-zond-personal "^5.0.0"
     web3-net "^5.0.0"
     web3-providers-http "^5.0.0"
     web3-providers-ipc "^5.0.0"

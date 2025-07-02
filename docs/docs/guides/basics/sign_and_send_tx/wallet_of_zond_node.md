@@ -11,7 +11,7 @@ If Zond node has unlocked account in its wallet you can send transaction without
 
 ```ts
 // First step: initialize web3 instance
-import Web3 from 'web3';
+import Web3 from '@theqrl/web3';
 const web3 = new Web3(/* PROVIDER*/);
 
 // Second step: sign and send the transaction
@@ -37,7 +37,7 @@ List of references:
 
 ```ts
 // First step: initialize web3 instance
-import Web3 from 'web3';
+import Web3 from '@theqrl/web3';
 const web3 = new Web3(/* PROVIDER*/);
 
 // Second step: sign and send the transaction

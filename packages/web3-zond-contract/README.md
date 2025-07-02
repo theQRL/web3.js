@@ -1,38 +1,35 @@
-<p align="center">
-  <img src="assets/logo/web3js.jpg" width="500" alt="web3.js" />
-</p>
 
-# web3.js - Zond Contract Package
+# @theqrl/web3.js - Zond Contract Package
 
 ![ES Version](https://img.shields.io/badge/ES-2020-yellow)
-![Node Version](https://img.shields.io/badge/node-14.x-green)
-[![NPM Package][npm-image]][npm-url]
-[![Downloads][downloads-image]][npm-url]
+![Node Version](https://img.shields.io/badge/node-18.x-green)
+[![NPM Package](https://img.shields.io/npm/v/@theqrl/web3-zond-contract)](https://www.npmjs.com/package/@theqrl/web3-zond-contract)
+[![Downloads](https://img.shields.io/npm/v/@theqrl/web3-zond-contract)](https://www.npmjs.com/package/@theqrl/web3-zond-contract)
 
-This is a sub-package of [web3.js][repo].
+This is a sub-package of [@theqrl/web3.js](https://github.com/theqrl/web3.js).
 
-`web3-zond-contract` contains the contract package used in `web3-zond`.
+`@theqrl/web3-zond-contract` contains the contract package used in `@theqrl/web3-zond`.
 
 ## Installation
 
-You can install the package either using [NPM](https://www.npmjs.com/package/web3-eth-contract) or using [Yarn](https://yarnpkg.com/package/web3-eth-contract)
+You can install the package either using [NPM](https://www.npmjs.com/package/@theqrl/web3-zond-contract) or using [Yarn](https://yarnpkg.com/package/@theqrl/web3-zond-contract)
 
 ### Using NPM
 
 ```bash
-npm install web3-zond-contract
+npm install @theqrl/web3-zond-contract
 ```
 
 ### Using Yarn
 
 ```bash
-yarn add web3-zond-contract
+yarn add @theqrl/web3-zond-contract
 ```
 
 ## Getting Started
 
--   :writing_hand: If you have questions [submit an issue](https://github.com/ChainSafe/web3.js/issues/new) or join us on [Discord](https://discord.gg/yjyvFRP)
-    ![Discord](https://img.shields.io/discord/593655374469660673.svg?label=Discord&logo=discord)
+-   :writing_hand: If you have questions [submit an issue](https://github.com/theqrl/web3.js/issues/new) or join us on [Discord](https://theqrl.org/discord)
+    ![Discord](https://img.shields.io/discord/357604137204056065.svg?label=Discord&logo=discord)
 
 ## Prerequisites
 
@@ -60,7 +57,7 @@ const contract = new Contract(abi);
 
 We have tested the Typescript interface support for the ABIs compiled with hyperion version `v0.4.x` and above. If you face any issue regarding the contract typing, please create an issue to report to us.
 
-The Typescript support for fixed length array types are supported up 30 elements. See more details [here](https://github.com/ChainSafe/web3.js/blob/nh%2F4562-contract-typing/packages/web3-eth-abi/src/number_map_type.ts#L1). This limitation is only to provide more performant developer experience in IDEs. In future we may come up with a workaround to avoid this limitation. If you have any idea feel free to share.
+The Typescript support for fixed length array types are supported up 30 elements. This limitation is only to provide more performant developer experience in IDEs. In future we may come up with a workaround to avoid this limitation. If you have any idea feel free to share.
 
 ## Package.json Scripts
 
@@ -75,8 +72,8 @@ The Typescript support for fixed length array types are supported up 30 elements
 | test:integration | Uses `jest` to run tests under `/test/integration` |
 | test:unit        | Uses `jest` to run tests under `/test/unit`        |
 
-[docs]: https://docs.web3js.org/
-[repo]: https://github.com/web3/web3.js/tree/4.x/packages/web3-eth-contract
-[npm-image]: https://img.shields.io/github/package-json/v/web3/web3.js/4.x?filename=packages%2Fweb3-eth-contract%2Fpackage.json
-[npm-url]: https://npmjs.org/package/web3-eth-contract
-[downloads-image]: https://img.shields.io/npm/dm/web3-eth-contract?label=npm%20downloads
+[docs]: https://docs.theqrl.org/
+[repo]: https://github.com/theqrl/web3.js/tree/main/packages/web3-zond-contract
+[npm-image]: https://img.shields.io/github/package-json/v/theqrl/web3.js/main?filename=packages%2Fweb3-zond-contract%2Fpackage.json
+[npm-url]: https://npmjs.org/package/@theqrl/web3-zond-contract
+[downloads-image]: https://img.shields.io/npm/dm/@theqrl/web3-zond-contract?label=npm%20downloads

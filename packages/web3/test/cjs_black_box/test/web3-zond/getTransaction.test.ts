@@ -22,7 +22,7 @@ import {
 } from '../../../shared_fixtures/system_tests_utils';
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
-const Web3 = require('web3').default;
+const Web3 = require('@theqrl/web3').default;
 
 describe('CJS - Black Box Unit Tests - web3.zond.getTransaction', () => {
 	let web3: typeof Web3;

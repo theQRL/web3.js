@@ -14,8 +14,8 @@
 			"require": "./lib/commonjs/index.js"
 		}
 	},
-	"repository": "https://github.com/ChainSafe/web3.js",
-	"author": "ChainSafe Systems",
+	"repository": "https://github.com/theqrl/web3.js",
+	"author": "The QRL Contributors",
 	"license": "LGPL-3.0",
 	"engines": {
 		"node": ">=14",

@@ -1,38 +1,34 @@
-<p align="center">
-  <img src="assets/logo/web3js.jpg" width="500" alt="web3.js" />
-</p>
-
-# web3.js - Web3-Zond-Abi
+# @theqrl/web3.js - Web3-Zond-Abi
 
 ![ES Version](https://img.shields.io/badge/ES-2020-yellow)
-![Node Version](https://img.shields.io/badge/node-14.x-green)
-[![NPM Package][npm-image]][npm-url]
-[![Downloads][downloads-image]][npm-url]
+![Node Version](https://img.shields.io/badge/node-18.x-green)
+[![NPM Package](https://img.shields.io/npm/v/@theqrl/web3-zond-abi)](https://www.npmjs.com/package/@theqrl/web3-zond-abi)
+[![Downloads](https://img.shields.io/npm/dm/@theqrl/web3-zond-abi)](https://www.npmjs.com/package/@theqrl/web3-zond-abi)
 
-This is a sub-package of [web3.js][repo].
+This is a sub-package of [@theqrl/web3.js](https://github.com/theqrl/web3.js).
 
-`web3-zond-abi` contains functions for the encode and decode ZVM in/output.
+`@theqrl/web3-zond-abi` contains functions for the encode and decode ZVM in/output.
 
 ## Installation
 
-You can install the package either using [NPM](https://www.npmjs.com/package/web3-eth-abi) or using [Yarn](https://yarnpkg.com/package/web3-eth-abi)
+You can install the package either using [NPM](https://www.npmjs.com/package/@theqrl/web3-zond-abi) or using [Yarn](https://yarnpkg.com/package/@theqrl/web3-zond-abi)
 
 ### Using NPM
 
 ```bash
-npm install web3-zond-abi
+npm install @theqrl/web3-zond-abi
 ```
 
 ### Using Yarn
 
 ```bash
-yarn add web3-zond-abi
+yarn add @theqrl/web3-zond-abi
 ```
 
 ## Getting Started
 
--   :writing_hand: If you have questions [submit an issue](https://github.com/ChainSafe/web3.js/issues/new) or join us on [Discord](https://discord.gg/yjyvFRP)
-    ![Discord](https://img.shields.io/discord/593655374469660673.svg?label=Discord&logo=discord)
+-   :writing_hand: If you have questions [submit an issue](https://github.com/theqrl/web3.js/issues/new) or join us on [Discord](https://theqrl.org/discord)
+    ![Discord](https://img.shields.io/discord/357604137204056065.svg?label=Discord&logo=discord)
 
 ## Prerequisites
 
@@ -52,8 +48,8 @@ yarn add web3-zond-abi
 | test:integration | Uses `jest` to run tests under `/test/integration` |
 | test:unit        | Uses `jest` to run tests under `/test/unit`        |
 
-[docs]: https://docs.web3js.org/
-[repo]: https://github.com/web3/web3.js/tree/4.x/packages/web3-eth-abi
-[npm-image]: https://img.shields.io/github/package-json/v/web3/web3.js/4.x?filename=packages%2Fweb3-eth-abi%2Fpackage.json
-[npm-url]: https://npmjs.org/package/web3-eth-abi
-[downloads-image]: https://img.shields.io/npm/dm/web3-eth-abi?label=npm%20downloads
+[docs]: https://docs.theqrl.org/
+[repo]: https://github.com/theqrl/web3.js/tree/main/packages/web3-zond-abi
+[npm-image]: https://img.shields.io/github/package-json/v/theqrl/web3.js/main?filename=packages%2Fweb3-zond-abi%2Fpackage.json
+[npm-url]: https://npmjs.org/package/@theqrl/web3-zond-abi
+[downloads-image]: https://img.shields.io/npm/dm/@theqrl/web3-zond-abi?label=npm%20downloads

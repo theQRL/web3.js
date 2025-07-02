@@ -2,7 +2,7 @@
 	"name": "web3.js",
 	"private": true,
 	"description": "Zond API wrappers and utilities",
-	"author": "ChainSafe Systems",
+	"author": "The QRL Contributors",
 	"license": "LGPL-3.0",
 	"keywords": [
 		"zond",
@@ -11,13 +11,13 @@
 		"web3.js",
 		"blockchain"
 	],
-	"homepage": "https://github.com/ChainSafe/web3.js#readme",
+	"homepage": "https://github.com/theqrl/web3.js#readme",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/ChainSafe/web3.js.git"
+		"url": "git+https://github.com/theqrl/web3.js.git"
 	},
 	"bugs": {
-		"url": "https://github.com/ChainSafe/web3.js/issues"
+		"url": "https://github.com/theqrl/web3.js/issues"
 	},
 	"engines": {
 		"node": ">=14",

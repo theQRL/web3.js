@@ -31,8 +31,8 @@ Before we start writing and deploying our contract, we need to set up our enviro
 First, create a new project directory for your project and navigate into it:
 
 ```
-mkdir web3-eth-tutorial
-cd web3-eth-tutorial
+mkdir web3-zond-tutorial
+cd web3-zond-tutorial
 ```
 
 Next, initialize a new Node.js project using npm:
@@ -57,7 +57,7 @@ In this step, we will set up the web3.js library and connect to the Ganache netw
 First, install the `web3` package using npm:
 
 ```
-npm install @theqrl/web3@4.0.1-rc.1
+npm install @theqrl/web3
 ```
 
 Note that we are installing the latest version of 4.x, at the time of this tutorial writing. You can check the latest version at https://www.npmjs.com/package/@theqrl/web3?activeTab=versions
@@ -65,7 +65,7 @@ Note that we are installing the latest version of 4.x, at the time of this tutor
 Next, create a new file called `index.ts` in your project directory and add the following code to it:
 
 ```javascript
-const { Web3 } = require('web3'); //  web3.js has native ESM builds and (`import Web3 from 'web3'`)
+const { Web3 } = require('@theqrl/web3'); //  web3.js has native ESM builds and (`import Web3 from '@theqrl/web3'`)
 
 // Set up a connection to the Ganache network
 const web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:7545'));
@@ -99,7 +99,7 @@ In the first example, we are going to send a simple value transaction.
 Create a file named `transaction.ts` and fill it with the following code:
 
 ```typescript
-const { Web3 } = require('web3'); //  web3.js has native ESM builds and (`import Web3 from 'web3'`)
+const { Web3 } = require('@theqrl/web3'); //  web3.js has native ESM builds and (`import Web3 from '@theqrl/web3'`)
 const fs = require('fs');
 const path = require('path');
 
@@ -202,7 +202,7 @@ transactionHash {
 In the next example, we are going to use `estimateGas` function to see the expected gas for contract deployment. (For more on contracts, please see the corresponding tutotial). Create a file named `estimate.ts` and fill it with the following code:
 
 ```typescript
-import Web3, { ZOND_DATA_FORMAT, DEFAULT_RETURN_FORMAT } from 'web3';
+import Web3, { ZOND_DATA_FORMAT, DEFAULT_RETURN_FORMAT } from '@theqrl/web3';
 
 async function estimate() {
 	// abi of our contract
@@ -284,7 +284,7 @@ If everything is working correctly, you should see something like the following:
 In the next example we are going to sign a transaction and use `sendSignedTransaction` to send the signed transaction. Create a file named `sendSigned.ts` and fill it with the following code:
 
 ```typescript
-import Web3 from 'web3';
+import Web3 from '@theqrl/web3';
 const web3 = new Web3('http://localhost:7545');
 
 //make sure to copy the private key from ganache
@@ -347,7 +347,7 @@ Transaction receipt: {
 
 ## Conclusion
 
-In this tutorial, we learned how to use different methods provied by the `web3-eth` package.
+In this tutorial, we learned how to use different methods provided by the `@theqrl/web3` package.
 
 With this knowledge, you can start experimenting with the Zond blockchain. Keep in mind that this is just the beginning, and there is a lot more to learn about Zond and web3.js. So keep exploring and building, and have fun!
 
