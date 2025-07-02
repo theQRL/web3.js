@@ -1,6 +1,6 @@
 {
 	"name": "@theqrl/web3-zond-abi",
-	"version": "0.3.2",
+	"version": "0.3.3",
 	"publishConfig": {
 		"access": "public"
 	},
@@ -47,9 +47,9 @@
 	"dependencies": {
 		"@ethersproject/bignumber": "^5.7.0",
 		"@theqrl/abi": "^0.1.0",
-		"@theqrl/web3-errors": "^0.3.2",
-		"@theqrl/web3-types": "^0.3.2",
-		"@theqrl/web3-utils": "^0.3.2"
+		"@theqrl/web3-errors": "^0.3.3",
+		"@theqrl/web3-types": "^0.3.3",
+		"@theqrl/web3-utils": "^0.3.3"
 	},
 	"devDependencies": {
 		"@humeris/espresso-shot": "^4.0.0",
