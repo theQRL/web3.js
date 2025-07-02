@@ -24,7 +24,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
  * To use it standalone:
  *
  * ```ts
- * const Contract = require('web3-zond-contract');
+ * const Contract = require('@theqrl/web3-zond-contract');
  *
  * // set provider for all later instances to use
  * Contract.setProvider('ws://localhost:8546');

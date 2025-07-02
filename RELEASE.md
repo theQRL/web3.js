@@ -44,7 +44,7 @@ Further details about versioning can be found in the [semver 2.0.0 specification
 8. `git tag bumped-version`: Tag the commit with bumped version having prefix `v` , e.g. `git tag v4.0.1-alpha.0`
 9. `git push origin release/bumped-version`: Push release branch to `origin`
 10. `git push origin --tags`: Push release tag created in `Step 8` to `origin`
-11. Create a draft release on Github similar to [this](https://github.com/ChainSafe/web3.js/releases/tag/web3-providers-base%401.0.0-alpha.1)
+11. Create a draft release on Github similar to [this](https://github.com/theqrl/web3.js/releases/tag/web3-providers-base%401.0.0-alpha.1)
     - Check `This is a pre-release`
     - In the release description, copy all entries in `CHANGELOG.md` for the version being released
 12. Click `Save draft`

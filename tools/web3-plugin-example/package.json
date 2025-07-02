@@ -5,12 +5,12 @@
 		"access": "public"
 	},
 	"description": "Example implementations of Web3.js' plugin system",
-	"repository": "https://github.com/ChainSafe/web3.js",
+	"repository": "https://github.com/theqrl/web3.js",
 	"engines": {
 		"node": ">=14",
 		"npm": ">=6.12.0"
 	},
-	"author": "ChainSafe Systems",
+	"author": "The QRL Contributors",
 	"license": "LGPL-3.0",
 	"keywords": [
 		"Zond",

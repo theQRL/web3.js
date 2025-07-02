@@ -112,6 +112,6 @@ web3.customRpcMethods.customRpcMethod();
 
 For more details follow :
 
--   [Example Plugin Code](https://github.com/web3/web3.js/tree/4.x/tools/web3-plugin-example)
+-   [Example Plugin Code](https://github.com/web3/web3.js/tree/main/tools/web3-plugin-example)
 -   [Web3 Plugin developers Guide](/guides/web3_plugin_guide/plugin_authors)
 -   [Web3 Plugin Users Guide](/guides/web3_plugin_guide/plugin_users)

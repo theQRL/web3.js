@@ -52,7 +52,7 @@ To connect to the Zond network using the HTTP provider, follow these steps:
 3. Install web3.js using npm:
 
     ```bash
-    npm install web3@4.0.1-rc.1
+    npm install @theqrl/web3@4.0.1-rc.1
     ```
 
 4. Create a new JavaScript file called `web3-http-provider.js` in your code editor.
@@ -60,7 +60,7 @@ To connect to the Zond network using the HTTP provider, follow these steps:
 5. Copy and paste the following code into your `web3-http-provider.js` file and save it:
 
     ```js
-    const { Web3 } = require('web3');
+    const { Web3 } = require('@theqrl/web3');
 
     // Connect to the Zond network using the HTTP provider
     const ganacheUrl = 'http://localhost:7545';
@@ -143,7 +143,7 @@ The first 3 steps are the same as in the pervious section. So, you may skip them
 3. Install web3.js using npm:
 
     ```bash
-     npm install web3@4.0.1-rc.1
+     npm install @theqrl/web3@4.0.1-rc.1
     ```
 
 4. Create a new JavaScript file called `web3-websocket-provider.js` in your code editor.
@@ -151,7 +151,7 @@ The first 3 steps are the same as in the pervious section. So, you may skip them
 5. Copy and paste the following code into your `web3-websocket-provider.js` file and save it:
 
 ```js
-const { Web3 } = require('web3');
+const { Web3 } = require('@theqrl/web3');
 
 // Connect to the Zond network using WebSocket provider
 const ganacheUrl = 'ws://localhost:8545';
@@ -280,7 +280,7 @@ INFO [12-10|15:10:37.127] Mapped network port		  	proto=udp extport=0 intport=30
 4. Install web3.js using npm:
 
     ```bash
-    npm install web3@4.0.1-rc.1
+    npm install @theqrl/web3@4.0.1-rc.1
     ```
 
 5. Create a new JavaScript file called `web3-ipc-provider.js` in your code editor.
@@ -288,8 +288,8 @@ INFO [12-10|15:10:37.127] Mapped network port		  	proto=udp extport=0 intport=30
 6. Copy and paste the following code into your `web3-ipc-provider.js` file and save it:
 
     ```js
-    const { Web3 } = require('web3');
-    const { IpcProvider } = require('web3-providers-ipc');
+    const { Web3 } = require('@theqrl/web3');
+    const { IpcProvider } = require('@theqrl/web3-providers-ipc');
 
     // Connect to the Zond network using IPC provider
     const ipcPath = '<path>'; // Replace with your actual IPC path
@@ -362,14 +362,14 @@ Here is a step-by-step example and a code snippet to connect your web applicatio
 3. Install web3.js and HTTP provider using npm:
 
     ```bash
-    npm install web3@4.0.1-rc.1 @truffle/hdwallet-provider bip39
+    npm install @theqrl/web3@4.0.1-rc.1 @truffle/hdwallet-provider bip39
     ```
 
 4. Create a new JavaScript file, called `index.js`, in your code editor.
 5. Copy and paste the following code into your JavaScript file, and then save the file:
 
     ```js
-    const { Web3 } = require('web3');
+    const { Web3 } = require('@theqrl/web3');
     const HDWalletProvider = require('@truffle/hdwallet-provider');
     const bip39 = require('bip39');
 

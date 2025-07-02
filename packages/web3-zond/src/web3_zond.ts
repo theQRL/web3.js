@@ -1052,7 +1052,7 @@ export class Web3Zond extends Web3Context<Web3ZondExecutionAPI, RegisteredSubscr
 	}
 
 	// TODO Decide what to do with transaction.to
-	// https://github.com/ChainSafe/web3.js/pull/4525#issuecomment-982330076
+	// https://github.com/theqrl/web3.js/pull/4525#issuecomment-982330076
 	/**
 	 * Executes a message call within the ZVM without creating a transaction.
 	 * It does not publish anything to the blockchain and does not consume any gas.

@@ -22,7 +22,7 @@
   "repository": {
     "directory": "packages/abi",
     "type": "git",
-    "url": "git://github.com/ethers-io/ethers.js.git"
+    "url": "git://github.com/theQRL/web3.js.git"
   },
   "scripts": {
 		"clean": "rimraf dist && rimraf lib",

@@ -65,7 +65,7 @@ The key rule for setting provider is as follows:
 ### Local Gzond Node
 
 ```ts
-const { Web3 } = require('web3');
+const { Web3 } = require('@theqrl/web3');
 const web3 = new Web3('http://localhost:8545');
 // or
 const web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:8545'));
@@ -90,7 +90,7 @@ const web3 = new Web3(
 
 ```ts
 // Using a remote node provider, like Alchemy (https://www.alchemyapi.io/supernode), is simple.
-const { Web3 } = require('web3');
+const { Web3 } = require('@theqrl/web3');
 const web3 = new Web3('https://eth-mainnet.alchemyapi.io/v2/your-api-key');
 ```
 
@@ -98,7 +98,7 @@ const web3 = new Web3('https://eth-mainnet.alchemyapi.io/v2/your-api-key');
 
 As stated above, the injected provider should be in compliance with [EIP-1193](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1193.md). And it is tested with Ganache provider, Hardhat provider, and Incubed (IN3) as a provider.
 
-The web3.js Provider specifications are defined in [web3 base provider](https://github.com/ChainSafe/web3.js/blob/4.x/packages/web3-types/src/web3_base_provider.ts) for Injected Providers.
+The web3.js Provider specifications are defined in [web3 base provider](https://github.com/theqrl/web3.js/blob/4.x/packages/web3-types/src/web3_base_provider.ts) for Injected Providers.
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/web3@4.0.1-rc.1/dist/web3.min.js"></script>

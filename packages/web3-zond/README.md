@@ -1,38 +1,35 @@
-<p align="center">
-  <img src="assets/logo/web3js.jpg" width="500" alt="web3.js" />
-</p>
 
-# web3.js - Zond
+# @theqrl/web3.js - Zond
 
 ![ES Version](https://img.shields.io/badge/ES-2020-yellow)
 ![Node Version](https://img.shields.io/badge/node-14.x-green)
-[![NPM Package][npm-image]][npm-url]
-[![Downloads][downloads-image]][npm-url]
+[![NPM Package](https://img.shields.io/npm/v/@theqrl/web3-zond)](https://www.npmjs.com/package/@theqrl/web3-zond)
+[![Downloads](https://img.shields.io/npm/v/@theqrl/web3-zond)](https://www.npmjs.com/package/@theqrl/web3-zond)
 
-This is a sub-package of [web3.js][repo].
+This is a sub-package of [@theqrl/web3.js](https://github.com/theqrl/web3.js).
 
-`web3-zond` contains modules to interact with the Zond blockchain and smart contracts.
+`@theqrl/web3-zond` contains modules to interact with the Zond blockchain and smart contracts.
 
 ## Installation
 
-You can install the package either using [NPM](https://www.npmjs.com/package/web3-eth) or using [Yarn](https://yarnpkg.com/package/web3-eth)
+You can install the package either using [NPM](https://www.npmjs.com/package/@theqrl/web3-zond) or using [Yarn](https://yarnpkg.com/package/@theqrl/web3-zond)
 
 ### Using NPM
 
 ```bash
-npm install web3-zond
+npm install @theqrl/web3-zond
 ```
 
 ### Using Yarn
 
 ```bash
-yarn add web3-zond
+yarn add @theqrl/web3-zond
 ```
 
 ## Getting Started
 
--   :writing_hand: If you have questions [submit an issue](https://github.com/ChainSafe/web3.js/issues/new) or join us on [Discord](https://discord.gg/yjyvFRP)
-    ![Discord](https://img.shields.io/discord/593655374469660673.svg?label=Discord&logo=discord)
+-   :writing_hand: If you have questions [submit an issue](https://github.com/theqrl/web3.js/issues/new) or join us on [Discord](https://theqrl.org/discord)
+    ![Discord](https://img.shields.io/discord/357604137204056065.svg?label=Discord&logo=discord)
 
 ## Prerequisites
 
@@ -52,8 +49,8 @@ yarn add web3-zond
 | test:integration | Uses `jest` to run tests under `/test/integration` |
 | test:unit        | Uses `jest` to run tests under `/test/unit`        |
 
-[docs]: https://docs.web3js.org/
-[repo]: https://github.com/web3/web3.js/tree/4.x/packages/web3-eth
-[npm-image]: https://img.shields.io/github/package-json/v/web3/web3.js/4.x?filename=packages%2Fweb3-eth%2Fpackage.json
-[npm-url]: https://npmjs.org/package/web3-eth
-[downloads-image]: https://img.shields.io/npm/dm/web3-eth?label=npm%20downloads
+[docs]: https://docs.theqrl.org/
+[repo]: https://github.com/theqrl/web3.js/tree/main/packages/web3-zond
+[npm-image]: https://img.shields.io/github/package-json/v/theqrl/web3.js/main?filename=packages%2Fweb3-zond%2Fpackage.json
+[npm-url]: https://npmjs.org/package/@theqrl/web3-zond
+[downloads-image]: https://img.shields.io/npm/dm/@theqrl/web3-zond?label=npm%20downloads

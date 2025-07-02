@@ -14,12 +14,12 @@
 			"require": "./lib/commonjs/index.js"
 		}
 	},
-	"repository": "https://github.com/ChainSafe/web3.js",
+	"repository": "https://github.com/theqrl/web3.js",
 	"engines": {
 		"node": ">=14.0.0",
 		"npm": ">=6.12.0"
 	},
-	"author": "ChainSafe Systems",
+	"author": "The QRL Contributors",
 	"browser": "./dist/web3.min.js",
 	"license": "LGPL-3.0",
 	"keywords": [

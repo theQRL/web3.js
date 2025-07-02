@@ -2,7 +2,7 @@
 	"name": "web3_black_box_esm_tests",
 	"version": "1.0.0",
 	"main": "index.js",
-	"author": "ChainSafe Systems",
+	"author": "The QRL Contributors",
 	"license": "LGPL-3.0",
 	"type": "module",
 	"scripts": {

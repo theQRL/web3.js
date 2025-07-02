@@ -11,7 +11,7 @@ To help you get started, take a look at a list of useful plugins at <https://web
 
 ## Installing the Plugin
 
-Unless otherwise mentioned by the plugin author, installing a plugin should be as simple as `yarn add web3-plugin-example`. This should add the plugin as a dependency within your `package.json` and the plugin should be available to import within your code.
+Unless otherwise mentioned by the plugin author, installing a plugin should be as simple as `yarn add @theqrl/web3-plugin-example`. This should add the plugin as a dependency within your `package.json` and the plugin should be available to import within your code.
 
 ```json
 # package.json

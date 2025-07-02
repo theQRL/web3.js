@@ -1,18 +1,15 @@
 Zond ABI Coder
 ==================
 
-This sub-module is part of the [ethers project](https://github.com/ethers-io/ethers.js).
+This sub-module is a fork of the [ethers project](https://github.com/ethers-io/ethers.js).
 
 It is responsible for encoding and decoding the Application Binary Interface (ABI)
-used by most smart contracts to interoperate between other smart contracts and clients.
+used by most Zond smart contracts to interoperate between other smart contracts and clients.
 
-For more information, see the [documentation](https://docs.ethers.io/v5/api/utils/abi/).
+More information, can be inferred from the [ethers project documentation](https://docs.ethers.io/v5/api/utils/abi/).
 
 Importing
 ---------
-
-Most users will prefer to use the [umbrella package](https://www.npmjs.com/package/ethers),
-but for those with more specific needs, individual components can be imported.
 
 ```javascript
 const {

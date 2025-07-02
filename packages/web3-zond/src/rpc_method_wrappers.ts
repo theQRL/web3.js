@@ -849,7 +849,7 @@ export async function signTransaction<ReturnFormat extends DataFormat>(
 }
 
 // TODO Decide what to do with transaction.to
-// https://github.com/ChainSafe/web3.js/pull/4525#issuecomment-982330076
+// https://github.com/theqrl/web3.js/pull/4525#issuecomment-982330076
 /**
  * View additional documentations here: {@link Web3Zond.call}
  * @param web3Context ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.

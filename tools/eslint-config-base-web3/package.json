@@ -5,7 +5,7 @@
 		"access": "public"
 	},
 	"description": "Base eslint config for Web3 project.",
-	"author": "ChainSafe Systems",
+	"author": "The QRL Contributors",
 	"private": true,
 	"license": "LGPL-3.0",
 	"keywords": [
@@ -16,13 +16,13 @@
 		"web3.js",
 		"blockchain"
 	],
-	"homepage": "https://github.com/ChainSafe/web3.js#readme",
+	"homepage": "https://github.com/theqrl/web3.js#readme",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/ChainSafe/web3.js.git"
+		"url": "git+https://github.com/theqrl/web3.js.git"
 	},
 	"bugs": {
-		"url": "https://github.com/ChainSafe/web3.js/issues"
+		"url": "https://github.com/theqrl/web3.js/issues"
 	},
 	"engines": {
 		"node": ">=12",
