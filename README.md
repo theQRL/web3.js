@@ -9,7 +9,7 @@
 ![Contributors](https://img.shields.io/github/contributors/web3/web3.js?label=contributors%20on%20all%20branches)
 
 ![ES Version](https://img.shields.io/badge/ES-2020-yellow)
-![Node Version](https://img.shields.io/badge/node-14.x-green)
+![Node Version](https://img.shields.io/badge/node-18.x-green)
 
 Web3.js is a TypeScript implementation of the [Zond JSON RPC API](https://eth.wiki/json-rpc/API) and related tooling maintained by [The QRL Contributors](https://chainsafe.io).
 

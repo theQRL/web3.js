@@ -2,7 +2,7 @@
 # @theqrl/web3.js - Zond
 
 ![ES Version](https://img.shields.io/badge/ES-2020-yellow)
-![Node Version](https://img.shields.io/badge/node-14.x-green)
+![Node Version](https://img.shields.io/badge/node-18.x-green)
 [![NPM Package](https://img.shields.io/npm/v/@theqrl/web3-zond)](https://www.npmjs.com/package/@theqrl/web3-zond)
 [![Downloads](https://img.shields.io/npm/v/@theqrl/web3-zond)](https://www.npmjs.com/package/@theqrl/web3-zond)
 
