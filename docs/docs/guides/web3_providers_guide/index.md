@@ -12,7 +12,7 @@ web3.js providers are objects responsible for enabling connectivity with the Zon
 Connecting to a chain happens through a provider. You can pass the provider to the constructor as in the following example:
 
 ```ts
-import Web3 from 'web3';
+import Web3 from '@theqrl/web3';
 
 const web3 = new Web3(/* PROVIDER*/);
 
@@ -89,19 +89,19 @@ const web3 = new Web3(
 ### Remote Node Provider
 
 ```ts
-// Using a remote node provider, like Alchemy (https://www.alchemyapi.io/supernode), is simple.
+// Using a remote node provider
 const { Web3 } = require('@theqrl/web3');
-const web3 = new Web3('https://eth-mainnet.alchemyapi.io/v2/your-api-key');
+const web3 = new Web3('https://url-to-remote-node');
 ```
 
 ### Injected providers
 
 As stated above, the injected provider should be in compliance with [EIP-1193](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1193.md). And it is tested with Ganache provider, Hardhat provider, and Incubed (IN3) as a provider.
 
-The web3.js Provider specifications are defined in [web3 base provider](https://github.com/theqrl/web3.js/blob/4.x/packages/web3-types/src/web3_base_provider.ts) for Injected Providers.
+The web3.js Provider specifications are defined in [web3 base provider](https://github.com/theqrl/web3.js/blob/main/packages/web3-types/src/web3_base_provider.ts) for Injected Providers.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/web3@4.0.1-rc.1/dist/web3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@theqrl/web3@0.3.0/dist/web3.min.js"></script>
 <script>
 	window.addEventListener('load', function () {
 		// Check if web3 is available
@@ -134,7 +134,7 @@ There are differences in the objects that could be passed in the Provider constr
 #### HttpProvider
 
 The options is of type `HttpProviderOptions`, which is an object with a single key named `providerOptions` and its value is an object of type `RequestInit`.
-Regarding `RequestInit` see [microsoft's github](https://microsoft.github.io/PowerBI-JavaScript/interfaces/_node_modules_typedoc_node_modules_typescript_lib_lib_dom_d_.requestinit.html).
+Regarding `RequestInit` see [mdn docs](https://developer.mozilla.org/en-US/docs/Web/API/RequestInit).
 
 For example:
 
@@ -164,7 +164,7 @@ const httpOptions = {
 
 Use WebSocketProvider to connect to a Node using a WebSocket connection, i.e. over the `ws` or `wss` protocol.
 
-The options object is of type `ClientRequestArgs` or of `ClientOptions`. See [here](https://microsoft.github.io/PowerBI-JavaScript/interfaces/_node_modules__types_node_http_d_._http_.clientrequestargs.html) for `ClientRequestArgs` and [here](https://github.com/websockets/ws) for `ClientOptions`.
+The options object is of type `ClientRequestArgs` or of `ClientOptions`. See [here](https://docs.deno.com/api/node/http/~/ClientRequestArgs) for `ClientRequestArgs` and [here](https://github.com/websockets/ws) for `ClientOptions`.
 
 The second option parameter can be given regarding reconnecting. And here is its type:
 
@@ -234,10 +234,9 @@ const reconnectOptions: ReconnectOptions = {
 
 The IPC Provider could be used in node.js dapps when running a local node. And it provide the most secure connection.
 
-It accepts a second parameter called `socketOptions`. And, its type is `SocketConstructorOpts`. See [here](https://microsoft.github.io/PowerBI-JavaScript/interfaces/_node_modules__types_node_net_d_._net_.socketconstructoropts.html) for full details. And here is its interface:
+It accepts a second parameter called `socketOptions`. And, its type is `SocketConstructorOpts`. See [here](https://docs.deno.com/api/node/net/~/SocketConstructorOpts) for details. And here is its interface:
 
 ```ts
-// for more check: https://microsoft.github.io/PowerBI-JavaScript/interfaces/_node_modules__types_node_net_d_._net_.socketconstructoropts.html
 interface SocketConstructorOpts {
 	fd?: number | undefined;
 	allowHalfOpen?: boolean | undefined;

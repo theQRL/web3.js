@@ -24,7 +24,7 @@ This will give your plugin access to [requestManager](/api/web3-core/class/Web3C
 :::caution
 
 ```ts
-import { Web3PluginBase } from 'web3';
+import { Web3PluginBase } from '@theqrl/web3';
 
 export default class CustomRpcMethodsPlugin extends Web3PluginBase {
 	// step 1
@@ -35,7 +35,7 @@ export default class CustomRpcMethodsPlugin extends Web3PluginBase {
 2. After that add public `pluginNamespace` property. This will be used to access your plugin, as mentioned in step number 5 code example.
 
 ```ts
-import { Web3PluginBase } from 'web3';
+import { Web3PluginBase } from '@theqrl/web3';
 
 export default class CustomRpcMethodsPlugin extends Web3PluginBase {
 	public pluginNamespace = 'customRpcMethods'; // step 2
@@ -45,7 +45,7 @@ export default class CustomRpcMethodsPlugin extends Web3PluginBase {
 3. Once plugin class is created using above mentioned steps, its very easy to add new RPC methods like:
 
 ```ts
-import { Web3PluginBase } from 'web3';
+import { Web3PluginBase } from '@theqrl/web3';
 
 export default class CustomRpcMethodsPlugin extends Web3PluginBase {
 	public pluginNamespace = 'customRpcMethods';
@@ -64,7 +64,7 @@ export default class CustomRpcMethodsPlugin extends Web3PluginBase {
 4. Final step is setting up module [augmentation](https://www.typescriptlang.org/docs/handbook/declaration-merging.html#module-augmentation), this will allow you to access plugin on web3 object.
 
 ```ts
-import { Web3PluginBase } from 'web3';
+import { Web3PluginBase } from '@theqrl/web3';
 
 export default class CustomRpcMethodsPlugin extends Web3PluginBase {
 	public pluginNamespace = 'customRpcMethods';
@@ -79,7 +79,7 @@ export default class CustomRpcMethodsPlugin extends Web3PluginBase {
 }
 
 // Module Augmentation
-declare module 'web3' {
+declare module '@theqrl/web3' {
 	// step 4
 
 	interface Web3Context {
@@ -99,8 +99,8 @@ After the plugin is ready, it is recommended to publish it on the NPM registry.
 Once plugin is registered its custom methods will be available to use.
 
 ```ts
-import { Web3 } from 'web3';
-import CustomRpcMethodsPlugin from 'web3-plugin-example';
+import { Web3 } from '@theqrl/web3';
+import CustomRpcMethodsPlugin from '@theqrl/web3-plugin-example';
 
 const web3 = new Web3('http://127.0.0.1:8545');
 web3.registerPlugin(new CustomRpcMethodsPlugin()); // step 5
@@ -112,6 +112,6 @@ web3.customRpcMethods.customRpcMethod();
 
 For more details follow :
 
--   [Example Plugin Code](https://github.com/web3/web3.js/tree/main/tools/web3-plugin-example)
+-   [Example Plugin Code](https://github.com/theqrl/web3.js/tree/main/tools/web3-plugin-example)
 -   [Web3 Plugin developers Guide](/guides/web3_plugin_guide/plugin_authors)
 -   [Web3 Plugin Users Guide](/guides/web3_plugin_guide/plugin_users)

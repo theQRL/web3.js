@@ -65,7 +65,7 @@ Note that we are installing the latest version of 4.x, at the time of this tutor
 Next, create a new file called `index.ts` in your project directory and add the following code to it:
 
 ```javascript
-const { Web3 } = require('@theqrl/web3'); //  web3.js has native ESM builds and (`import Web3 from 'web3'`)
+const { Web3 } = require('@theqrl/web3'); //  web3.js has native ESM builds and (`import Web3 from '@theqrl/web3'`)
 
 // Set up a connection to the Ganache network
 const web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:7545'));
@@ -99,7 +99,7 @@ In the first example, we are going to send a simple value transaction.
 Create a file named `transaction.ts` and fill it with the following code:
 
 ```typescript
-const { Web3 } = require('@theqrl/web3'); //  web3.js has native ESM builds and (`import Web3 from 'web3'`)
+const { Web3 } = require('@theqrl/web3'); //  web3.js has native ESM builds and (`import Web3 from '@theqrl/web3'`)
 const fs = require('fs');
 const path = require('path');
 
