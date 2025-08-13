@@ -78,29 +78,29 @@ This simple smart contract defines a `myNumber` variable that can be set by call
 TODO(now.youtrack.cloud/issue/web3js-12)
 
 :::tip
-📝 Alternatively, you can use something like `npm i hypc && npx hypcjs MyContract.hyp --bin --abi`. And then rename the files to `MyContractBytecode.bin` and `MyContractAbi.json`, in order to keep them the same as they will be used later in this tutorial.
+📝 Alternatively, you can use something like `npm i @theqrl/hypc && npx @theqrl/hypcjs MyContract.hyp --bin --abi`. And then rename the files to `MyContractBytecode.bin` and `MyContractAbi.json`, in order to keep them the same as they will be used later in this tutorial.
 More on hypc-js is at https://github.com/ethereum/solc-js 
 :::
 
-In this step, we will use the Hyperion Compiler (hypc) to compile the Hyperion code and generate the compiled code.
+In this step, we will use the Hyperion Compiler (@theqrl/hypc) to compile the Hyperion code and generate the compiled code.
 
-First, install the `hypc` package using npm.
+First, install the `@theqrl/hypc` package using npm.
 
 :::note
 📝 Specify a version for the compiler that is compatible with the version you specified in the .hyp file above (with `pragma hyperion ^0.8.0;`):
 :::
 
 ```
-npm install hypc@0.8.0
+npm install @theqrl/hypc@0.8.0
 ```
 
 Next, create a new file called `compile.js` in your project directory and add the following code to it:
 
 ```javascript
 // This code will compile smart contract and generate its ABI and bytecode
-// Alternatively, you can use something like `npm i hypc && npx hypcjs MyContract.hyp --bin --abi`
+// Alternatively, you can use something like `npm i @theqrl/hypc && npx @theqrl/hypcjs MyContract.hyp --bin --abi`
 
-import hypc from 'hypc';
+import hypc from '@theqrl/hypc';
 import path from 'path';
 import fs from 'fs';
 
@@ -171,7 +171,7 @@ Another way is to use Remix and check the _Compilation Details_ after compiling 
 
 In this step, we will set up the web3.js library and connect to the Ganache network. So, be sure to run Ganache if you did not already did.
 
-First, install the `web3` package using npm:
+First, install the `@theqrl/web3` package using npm:
 
 ```
 npm install @theqrl/web3@4.0.1-rc.1
