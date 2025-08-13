@@ -22,7 +22,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 const { promisify } = require('util');
 const { resolve } = require('path');
-const { compile } = require('hypc');
+const { compile } = require('@theqrl/hypc');
 const { rm, readdirSync, readFileSync, writeFileSync, mkdirSync, existsSync } = require('fs');
 
 const rmPromise = promisify(rm);
