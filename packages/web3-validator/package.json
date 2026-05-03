@@ -51,7 +51,7 @@
 		"@theqrl/web3-errors": "^0.4.0",
 		"@theqrl/web3-types": "^0.4.0",
 		"util": "^0.12.5",
-		"zod": "3.21.4"
+		"zod": "3.22.3"
 	},
 	"devDependencies": {
 		"@theqrl/eslint-config-base-web3": "^0.4.0",
