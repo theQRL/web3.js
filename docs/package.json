@@ -15,10 +15,10 @@
 		"typecheck": "tsc"
 	},
 	"dependencies": {
-		"@docusaurus/core": "3.10.0",
-		"@docusaurus/plugin-content-docs": "3.10.0",
-		"@docusaurus/preset-classic": "3.10.0",
-		"@docusaurus/theme-live-codeblock": "3.10.0",
+		"@docusaurus/core": "3.10.1",
+		"@docusaurus/plugin-content-docs": "3.10.1",
+		"@docusaurus/preset-classic": "3.10.1",
+		"@docusaurus/theme-live-codeblock": "3.10.1",
 		"@mdx-js/react": "^3.1.1",
 		"clsx": "^2.1.1",
 		"docusaurus-lunr-search": "^3.6.0",
@@ -27,14 +27,14 @@
 		"react-dom": "^18.3.1"
 	},
 	"devDependencies": {
-		"@docusaurus/module-type-aliases": "3.10.0",
+		"@docusaurus/module-type-aliases": "3.10.1",
 		"@tsconfig/docusaurus": "^2.0.9",
 		"docusaurus-plugin-typedoc": "^1.4.2",
 		"typedoc": "^0.28.19",
 		"typedoc-plugin-extras": "^4.0.1",
 		"typedoc-plugin-markdown": "^4.11.0",
 		"typedoc-plugin-mdn-links": "^5.1.1",
-		"typescript": "^5.9.3"
+		"typescript": "^6.0.3"
 	},
 	"browserslist": {
 		"production": [
