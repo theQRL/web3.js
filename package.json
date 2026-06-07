@@ -96,7 +96,7 @@
 		"conventional-changelog-conventionalcommits": "9.3.1",
 		"cypress-jest-adapter": "0.1.1",
 		"declaration-bundler-webpack-plugin": "1.0.3",
-		"eslint": "10.4.0",
+		"eslint": "10.4.1",
 		"globals": "17.6.0",
 		"http-browserify": "1.7.0",
 		"https-browserify": "1.0.0",
@@ -107,7 +107,7 @@
 		"process": "0.11.10",
 		"semantic-release": "25.0.3",
 		"ts-jest": "29.4.11",
-		"ts-loader": "9.5.7",
+		"ts-loader": "9.6.0",
 		"ts-node": "10.9.2",
 		"turbo": "2.8.16",
 		"typedoc": "0.28.19",
@@ -116,8 +116,8 @@
 		"typedoc-plugin-mdn-links": "5.1.1",
 		"typescript": "6.0.3",
 		"utf-8-validate": "6.0.6",
-		"webpack": "5.107.1",
-		"webpack-cli": "7.0.2"
+		"webpack": "5.107.2",
+		"webpack-cli": "7.0.3"
 	},
 	"packageManager": "pnpm@10.27.0",
 	"dependencies": {
