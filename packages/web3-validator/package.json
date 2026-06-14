@@ -55,14 +55,14 @@
 		"@theqrl/web3-errors": "workspace:^",
 		"@theqrl/web3-types": "workspace:^",
 		"util": "0.12.5",
-		"zod": "3.22.3"
+		"zod": "4.4.3"
 	},
 	"devDependencies": {
 		"@theqrl/eslint-config-base-web3": "workspace:^",
 		"@types/jest": "30.0.0",
-		"@typescript-eslint/eslint-plugin": "8.59.4",
-		"@typescript-eslint/parser": "8.59.4",
-		"eslint": "10.4.0",
+		"@typescript-eslint/eslint-plugin": "8.60.1",
+		"@typescript-eslint/parser": "8.60.1",
+		"eslint": "10.4.1",
 		"eslint-config-prettier": "10.1.8",
 		"jest": "30.4.2",
 		"jest-extended": "7.0.0",
