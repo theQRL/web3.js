@@ -50,7 +50,7 @@
 	"dependencies": {
 		"@ethersproject/bignumber": "5.8.0",
 		"@theqrl/abi": "workspace:^",
-		"@theqrl/wallet.js": "2.0.2",
+		"@theqrl/wallet.js": "6.2.3",
 		"@theqrl/web3-errors": "workspace:^",
 		"@theqrl/web3-types": "workspace:^",
 		"@theqrl/web3-utils": "workspace:^",
@@ -63,14 +63,14 @@
 		"@theqrl/eslint-config-base-web3": "workspace:^",
 		"@types/jest": "30.0.0",
 		"@types/jest-when": "3.5.5",
-		"@typescript-eslint/eslint-plugin": "8.59.4",
-		"@typescript-eslint/parser": "8.59.4",
-		"eslint": "10.4.0",
+		"@typescript-eslint/eslint-plugin": "8.61.0",
+		"@typescript-eslint/parser": "8.61.0",
+		"eslint": "10.5.0",
 		"eslint-config-prettier": "10.1.8",
 		"jest": "30.4.2",
 		"jest-extended": "7.0.0",
 		"jest-when": "4.0.3",
-		"prettier": "3.8.3",
+		"prettier": "3.8.4",
 		"ts-jest": "29.4.11",
 		"typescript": "6.0.3"
 	}
