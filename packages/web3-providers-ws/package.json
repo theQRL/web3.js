@@ -52,17 +52,17 @@
 		"@types/express": "5.0.6",
 		"@types/jest": "30.0.0",
 		"@types/morgan": "1.9.10",
-		"@typescript-eslint/eslint-plugin": "8.59.4",
-		"@typescript-eslint/parser": "8.59.4",
-		"eslint": "10.4.0",
+		"@typescript-eslint/eslint-plugin": "8.64.0",
+		"@typescript-eslint/parser": "8.64.0",
+		"eslint": "10.7.0",
 		"eslint-config-prettier": "10.1.8",
 		"express": "5.2.1",
 		"http-proxy-middleware": "4.2.0",
 		"jest": "30.4.2",
 		"jest-extended": "7.0.0",
-		"prettier": "3.8.3",
+		"prettier": "3.9.5",
 		"ts-jest": "29.4.11",
-		"typescript": "6.0.3"
+		"typescript": "7.0.2"
 	},
 	"dependencies": {
 		"@theqrl/web3-errors": "workspace:^",
@@ -70,6 +70,6 @@
 		"@theqrl/web3-utils": "workspace:^",
 		"@types/ws": "8.18.1",
 		"isomorphic-ws": "5.0.0",
-		"ws": "8.21.0"
+		"ws": "8.21.1"
 	}
 }
