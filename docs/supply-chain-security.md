@@ -106,12 +106,14 @@ one once every dependent has released a compatible fixed version.
 | Override | Resolves to | Reason |
 | --- | --- | --- |
 | `braces@<3.0.3` | `3.0.3` | Patched release for the `braces` redos advisory. |
-| `brace-expansion@<1.1.16` | `1.1.16` | CVE-2026-13149 ReDoS (high), brace-expansion 1 line. |
-| `brace-expansion@>=2.0.0 <2.1.2` | `2.1.2` | CVE-2026-13149 ReDoS (high), brace-expansion 2 line. |
-| `brace-expansion@>=5.0.0 <5.0.7` | `5.0.7` | CVE-2026-13149 ReDoS (high), brace-expansion 5 line. |
+| `brace-expansion@<1.1.18` | `1.1.18` | CVE-2026-69152 unbounded intermediate-array DoS (high), brace-expansion 1 line. |
+| `brace-expansion@>=2.0.0 <2.1.4` | `2.1.4` | CVE-2026-69152 unbounded intermediate-array DoS (high), brace-expansion 2 line. |
+| `brace-expansion@>=5.0.0 <5.0.9` | `5.0.9` | CVE-2026-69152 unbounded intermediate-array DoS (high), brace-expansion 5 line. |
 | `undici@<6.27.0` | `6.27.0` | Patch floor for the Undici 6 line. |
 | `undici@>=7.0.0 <7.28.0` | `7.28.0` | Patch floor for the Undici 7 line; also the version required for Node 20 compatibility in CI. |
-| `fast-uri@<3.1.2` | `3.1.2` | Patched release; also quarantine-excluded so the fix can land inside the seven-day window. |
+| `fast-uri@<3.1.4` | `3.1.4` | Patched release for CVE-2026-16221; also quarantine-excluded so the fix can land inside the seven-day window. |
+| `postcss@<8.5.18` | `8.5.18` | Patched release for GHSA-r28c-9q8g-f849; quarantine-excluded for the security update. |
+| `svgo@>=3.0.0 <3.3.4` | `3.3.4` | Patched 3.x release for GHSA-2p49-hgcm-8545; quarantine-excluded for the security update. |
 | `shell-quote@<1.8.4` | `1.9.0` | Newline-escaping advisory (critical). |
 | `ws@>=7.0.0 <7.5.11` | `7.5.11` | Memory-exhaustion DoS advisory (high), ws 7 line. |
 | `ws@>=8.0.0 <8.21.0` | `8.21.0` | Memory-exhaustion DoS advisory (high), ws 8 line. |
