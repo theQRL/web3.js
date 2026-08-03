@@ -111,7 +111,7 @@ one once every dependent has released a compatible fixed version.
 | `brace-expansion@>=5.0.0 <5.0.9` | `5.0.9` | CVE-2026-69152 unbounded intermediate-array DoS (high), brace-expansion 5 line. |
 | `undici@<6.27.0` | `6.27.0` | Patch floor for the Undici 6 line. |
 | `undici@>=7.0.0 <7.28.0` | `7.28.0` | Patch floor for the Undici 7 line; also the version required for Node 20 compatibility in CI. |
-| `fast-uri@<3.1.4` | `3.1.4` | Patched release for CVE-2026-16221; also quarantine-excluded so the fix can land inside the seven-day window. |
+| `fast-uri@<3.1.5` | `3.1.5` | Patched release for GHSA-7p8r-x3mc-p8w7; also quarantine-excluded so the fix can land inside the seven-day window. |
 | `postcss@<8.5.18` | `8.5.18` | Patched release for GHSA-r28c-9q8g-f849; quarantine-excluded for the security update. |
 | `svgo@>=3.0.0 <3.3.4` | `3.3.4` | Patched 3.x release for GHSA-2p49-hgcm-8545; quarantine-excluded for the security update. |
 | `shell-quote@<1.8.4` | `1.9.0` | Newline-escaping advisory (critical). |
