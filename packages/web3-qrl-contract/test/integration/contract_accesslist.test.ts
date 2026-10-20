@@ -67,7 +67,7 @@ describe('contract', () => {
 						],
 					},
 				],
-				gasUsed: '0xab49',
+				gasUsed: '0xa5bf',
 			};
 
 			expect(accessList).toStrictEqual(accessListResult);
@@ -93,7 +93,7 @@ describe('contract', () => {
 						],
 					},
 				],
-				gasUsed: '0x75e9',
+				gasUsed: '0x74b3',
 			};
 
 			expect(accessList).toStrictEqual(accessListResult);

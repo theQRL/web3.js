@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 
-# Requires `docker`, `kurtosis`, `yq`
+# Requires `docker`, `kurtosis`; CI mode also requires `yq`
 
 set -Eeuo pipefail
 
 SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 ENCLAVE_NAME=local-testnet
 NETWORK_PARAMS_FILE=$SCRIPT_DIR/network_params.yaml
-QRL_PKG=github.com/cyyber/qrl-package
+QRL_PKG=github.com/theQRL/qrl-package
 # Pinned so local runs and CI get the same network. Bump deliberately.
-QRL_PKG_VERSION=04fd3133a7107229531da425dc750129bb691514
+QRL_PKG_VERSION=25d3a1c53009294f06644c5b49c1011cf86ad0a5
 
 CI=false
 KEEP_ENCLAVE=false
@@ -57,12 +57,11 @@ if [ "$CI" = true ]; then
   echo "Running without additional services (CI mode)."
 fi
 
-
 if [ "$KEEP_ENCLAVE" = false ]; then
   # Stop local testnet
   kurtosis enclave rm -f $ENCLAVE_NAME 2>/dev/null || true
 fi
 
-kurtosis run --enclave $ENCLAVE_NAME $QRL_PKG@$QRL_PKG_VERSION --args-file $NETWORK_PARAMS_FILE
+kurtosis run --enclave "$ENCLAVE_NAME" "$QRL_PKG@$QRL_PKG_VERSION" --args-file "$NETWORK_PARAMS_FILE"
 
 echo "Started!"

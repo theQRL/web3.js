@@ -1,3 +1,4 @@
+# Published client/helper tags; this configuration targets Linux AMD64.
 participants:
   - el_type: gqrl
     el_image: qrledger/go-qrl:stable
@@ -14,15 +15,19 @@ participants:
     count: 1
     use_remote_signer: true
     remote_signer_type: clef
+    remote_signer_image: qrledger/go-qrl:alltools-stable
     remote_signer_auto_approve: true
+qrl_genesis_generator_params:
+  image: qrledger/qrysm:qrl-genesis-generator-latest
 network_params:
   seconds_per_slot: 3
-  slots_per_epoch: 6
+  # The package derives 64 epochs per voting period for qrysm's 512-slot limit.
+  slots_per_epoch: 8
   preset: "mainnet"
   light_kdf_enabled: True
 
 # The EL gets five consecutive host ports (discovery, engine, HTTP RPC, WS,
-# metrics): starting at 8543 puts the RPC on 8545 and the WS on 8546 (env.sh).
+# metrics): starting at 8543 puts the RPC on 8545 and the WS on 8546 (test-runner.sh).
 port_publisher:
   el:
     enabled: true

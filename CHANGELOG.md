@@ -11,10 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Updated the fixture compiler to `@theqrl/hypc` 0.2.0 and regenerated contract ABIs and bytecode with optimization enabled (200 runs), keeping PublicResolver within go-qrl's deployed code size limit.
 - Limited `compile:contracts` to generating and formatting contract fixtures.
+- Configured local testnet client and helper images using published tags, including a compatible AMD64 genesis generator.
 
 ### Fixed
 
 - Contract compilation now exits unsuccessfully on compiler errors, missing contract artifacts, and filesystem errors. Compilation failures preserve the existing fixtures; warnings do not prevent successful builds.
+- WebSocket integration tests now connect to the local testnet's WebSocket port (8546).
+- Updated the local testnet to the upstream QRL package with compatible Qrysm startup flags and epoch settings for its compiled state limits.
+- Updated revert and access-list gas expectations for the regenerated contract fixtures.
 
 <!-- EXAMPLE
 

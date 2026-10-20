@@ -35,6 +35,10 @@ if [[ ! " ${SUPPORTED_TEST_OPTIONS[*]} " =~ " ${TEST_OPTION} " ]]; then
 	helpFunction
 fi
 
+if [[ $MODE == "ws" ]]; then
+	export WEB3_SYSTEM_TEST_PORT=8546
+fi
+
 echo "Node software used for tests: " $BACKEND
 echo "Node running on: " "$MODE://127.0.0.1:$WEB3_SYSTEM_TEST_PORT"
 
