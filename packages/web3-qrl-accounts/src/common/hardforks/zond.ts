@@ -136,7 +136,7 @@ export default {
 		},
 		copy: {
 			v: 3,
-			d: 'Multiplied by the number of 32-byte words that are copied (round up) for any *COPY operation and added',
+			d: 'Multiplied by the number of 64-byte words that are copied (round up) for any *COPY operation and added',
 		},
 		depositroot: {
 			v: 18000,
@@ -500,7 +500,7 @@ export default {
 		},
 		initCodeWordCost: {
 			v: 2,
-			d: 'Gas to pay for each word (32 bytes) of initcode when creating a contract',
+			d: 'Gas to pay for each word (64 bytes) of initcode when creating a contract',
 		},
 	},
 	vm: {

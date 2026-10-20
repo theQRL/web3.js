@@ -203,8 +203,8 @@ export abstract class BaseTransaction<TransactionObject> {
 		}
 		// eslint-disable-next-line no-null/no-null
 		if (this.to === undefined || this.to === null) {
-			const dataLength = BigInt(Math.ceil(this.data.length / 32));
-			const initCodeCost = this.common.param('gasPrices', 'initCodeWordCost') * dataLength;
+			const initCodeWords = BigInt(Math.ceil(this.data.length / 64));
+			const initCodeCost = this.common.param('gasPrices', 'initCodeWordCost') * initCodeWords;
 			cost += initCodeCost;
 		}
 
