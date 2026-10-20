@@ -15,10 +15,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Resolved Jest types in ESLint's strict TypeScript project so valid test assertions no longer inflate warning counts, and lowered the warning budgets to match.
 - Contract compilation now exits unsuccessfully on compiler errors, missing contract artifacts, and filesystem errors. Compilation failures preserve the existing fixtures; warnings do not prevent successful builds.
 - WebSocket integration tests now connect to the local testnet's WebSocket port (8546).
 - Updated the local testnet to the upstream QRL package with compatible Qrysm startup flags and epoch settings for its compiled state limits.
 - Updated revert and access-list gas expectations for the regenerated contract fixtures.
+
+### Security
+
+- Updated vulnerable tooling dependencies and documented the temporary exception for the unfixed `braces` advisory, whose glob patterns are controlled by repository/tool configuration.
+- Upgraded `image-size` to the fixed release verified against its Codeberg source and removed its two advisory exceptions.
 
 <!-- EXAMPLE
 

@@ -8,11 +8,12 @@
 #
 #   CVE-0000-00000  # unreachable: <reason>; revisit by <date>
 
-# image-size 2.0.2 (dev-only, reached through the Docusaurus docs build, which
-# only reads images committed to this repository): DoS via crafted image
-# buffers. No source-backed fix: the advisories list no patched version, and
-# the 2.0.3/2.0.4 releases on npm have no matching tag or commit upstream, so
-# they are not adopted under the quarantine policy. Revisit by 2026-10-17 or
-# when a tagged release lands.
-CVE-2025-71329  # unreachable: docs-build only, repository-authored images; revisit by 2026-10-17
-CVE-2025-71330  # unreachable: docs-build only, repository-authored images; revisit by 2026-10-17
+# braces 3.0.3 has no patched release for deeply nested glob patterns.
+# It is used only by development tooling (Jest, webpack/Docusaurus, file
+# watchers and semantic-release). Glob patterns come from repository/tool
+# configuration; filenames, request paths and commit text are match subjects,
+# not patterns. The WebSocket integration proxy does not configure a glob
+# path filter. No shipped Web3 runtime dependency exposes braces to RPC input.
+# Upstream: https://github.com/micromatch/braces/issues/70
+# Remove this exception when a fix ships or the pattern input boundary changes.
+CVE-2026-93687  # unreachable: tooling-only, trusted glob patterns; revisit by 2026-11-04

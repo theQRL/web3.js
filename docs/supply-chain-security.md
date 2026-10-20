@@ -106,15 +106,15 @@ one once every dependent has released a compatible fixed version.
 | Override | Resolves to | Reason |
 | --- | --- | --- |
 | `braces@<3.0.3` | `3.0.3` | Patched release for the `braces` redos advisory. |
-| `brace-expansion@<1.1.18` | `1.1.18` | CVE-2026-69152 unbounded intermediate-array DoS (high), brace-expansion 1 line. |
-| `brace-expansion@>=2.0.0 <2.1.4` | `2.1.4` | CVE-2026-69152 unbounded intermediate-array DoS (high), brace-expansion 2 line. |
-| `brace-expansion@>=5.0.0 <5.0.9` | `5.0.9` | CVE-2026-69152 unbounded intermediate-array DoS (high), brace-expansion 5 line. |
+| `brace-expansion@<1.1.20` | `1.1.20` | CVE-2026-102276 / CVE-2026-102278 recursion DoS (high), brace-expansion 1 line. |
+| `brace-expansion@>=2.0.0 <2.1.6` | `2.1.6` | CVE-2026-102276 / CVE-2026-102278 recursion DoS (high), brace-expansion 2 line. |
+| `brace-expansion@>=5.0.0 <5.0.11` | `5.0.11` | CVE-2026-102276 / CVE-2026-102278 recursion DoS (high), brace-expansion 5 line. |
 | `undici@<6.27.0` | `6.27.0` | Patch floor for the Undici 6 line. |
 | `undici@>=7.0.0 <7.28.0` | `7.28.0` | Patch floor for the Undici 7 line; also the version required for Node 20 compatibility in CI. |
-| `fast-uri@<3.1.6` | `3.1.6` | Patched release for GHSA-fph4-wmhf-6fwf, GHSA-5jgf-p345-68v8, GHSA-f65p-4m7j-42xc and GHSA-jqff-g426-hqxp (SSRF and host confusion, high); also quarantine-excluded so a fix can land inside the seven-day window. |
+| `fast-uri@<3.1.7` | `3.1.7` | CVE-2026-84292 / CVE-2026-84394 authority injection and host confusion (high), plus the earlier URI parsing fixes; also quarantine-excluded so a fix can land inside the seven-day window. |
 | `postcss@<8.5.18` | `8.5.18` | Patched release for GHSA-r28c-9q8g-f849; quarantine-excluded for the security update. |
 | `svgo@>=3.0.0 <3.3.5` | `3.3.5` | Patched 3.x release for GHSA-2p49-hgcm-8545 and GHSA-w27v-7q3p-w38r (removeScripts executable links, high); quarantine-excluded for the security update. |
-| `shell-quote@<1.8.4` | `1.9.0` | Newline-escaping advisory (critical). |
+| `shell-quote@<1.11.0` | `1.11.0` | CVE-2026-102422 command injection through a line terminator after a comment token (critical). |
 | `ws@>=7.0.0 <7.5.11` | `7.5.11` | Memory-exhaustion DoS advisory (high), ws 7 line. |
 | `ws@>=8.0.0 <8.21.0` | `8.21.0` | Memory-exhaustion DoS advisory (high), ws 8 line. |
 | `path-to-regexp@<0.1.13` | `0.1.13` | Patched version for GHSA-37ch-88jc-xwx2. |
@@ -139,13 +139,21 @@ they execute on developer and CI machines, so they are remediated the same way.
 | `qs@>=6.11.1 <6.15.2` | `6.15.3` | Patch floor. |
 | `cookie@<0.7.0` | `0.7.2` | Patch floor. |
 | `markdown-it@<14.2.0` | `14.3.0` | Patch floor. |
-| `joi@<17.13.4` | `17.13.4` | Patch floor. |
+| `joi@<17.13.7` | `17.13.7` | CVE-2026-92599 validation DoS (high), retaining the Joi 17 line. |
 | `launch-editor@<2.14.1` | `2.14.1` | Patch floor. |
 | `webpack-dev-server@<5.2.5` | `5.2.6` | Patch floor. |
 | `uuid@<11.1.1` | `11.1.1` | Patch floor. |
 | `js-yaml@>=3.0.0 <3.15.2` | `3.15.2` | GHSA-2883-xcg3-v3hh and GHSA-5p4m-2wfm-xmqj parsing DoS (high), js-yaml 3 line. |
 | `js-yaml@>=4.0.0 <4.3.2` | `4.3.2` | GHSA-2883-xcg3-v3hh and GHSA-5p4m-2wfm-xmqj parsing DoS (high), js-yaml 4 line. |
 | `nanoid@<3.3.18` | `3.3.18` | GHSA-2v37-7h3g-55p8 and GHSA-28wg-ghj8-5hjv DoS (high); via the Docusaurus/webpack graph. |
+| `compression@<1.8.2` | `1.8.2` | CVE-2026-87776 memory leak on prematurely closed responses (high). |
+| `follow-redirects@<1.16.1` | `1.16.1` | CVE-2026-111755 / CVE-2026-111756 cross-origin credential disclosure (high). |
+| `http-cache-semantics@<4.3.0` | `4.3.0` | Source-backed upstream release fixing Vary handling (CVE-2026-93750); the separate max-stale report CVE-2026-93748 against 4.2.0 is [disputed by the maintainer](https://github.com/kornelski/http-cache-semantics/issues/56). |
+| `image-size@>=2.0.0 <2.0.4` | `2.0.4` | CVE-2025-71329 / CVE-2025-71330 image parser infinite loops (high), plus ICO/CUR validation. Verified against the [Codeberg fix](https://codeberg.org/image-size/image-size/commit/e6e83a5578961de81f6d5834d90fb7430d8f29a5) and [2.0.4 release commit](https://codeberg.org/image-size/image-size/commit/763bf4e92e36dd903e0f7d0b0d4d5a43d0e3d5cb); replaces the previous advisory exceptions. |
+| `proxy-addr@<2.0.8` | `2.0.8` | CVE-2026-90711 proxy address validation bypass (critical). |
+| `source-map-js@<1.2.2` | `1.2.2` | CVE-2026-93749 source map parsing DoS (high). |
+| `tinypool@<2.1.2` | `2.1.2` | CVE-2026-104848 / CVE-2026-104849 prototype pollution gadgets (critical). Docusaurus uses the default export and worker_threads API retained in 2.x; validate with the docs build. |
+| `webpack-dev-middleware@>=7.0.0 <7.4.6` | `7.4.6` | CVE-2026-76844 directory traversal (high), retaining the webpack middleware 7 line. |
 
 ### Resolution pins
 
