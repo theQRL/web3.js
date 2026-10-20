@@ -17,17 +17,28 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/* eslint-disable header/header */
-/* eslint-disable @typescript-eslint/no-var-requires */
-
-const { promisify } = require('util');
 const { resolve } = require('path');
-const { compile } = require('@theqrl/hypc');
-const { rm, readdirSync, readFileSync, writeFileSync, mkdirSync, existsSync } = require('fs');
+const { compile, version } = require('@theqrl/hypc');
+const { format } = require('prettier');
+const { rmSync, readdirSync, readFileSync, writeFileSync, mkdirSync, existsSync } = require('fs');
 
-const rmPromise = promisify(rm);
+const licenseHeader = `/*
+This file is part of web3.js.
 
-// Fetch path of build
+web3.js is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+web3.js is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License
+along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
+*/`;
+
 const buildPath = resolve(__dirname, '../fixtures/build');
 const contractsPath = resolve(__dirname, '../fixtures/contracts');
 const importDir = resolve(__dirname, '../node_modules');
@@ -45,73 +56,88 @@ function findImports(path) {
 }
 
 (async () => {
-	try {
-		await rmPromise(buildPath, { recursive: true });
-	} catch (error) {
-		// Ignore if directory does not exists
-		if (error.code !== 'ENOENT') {
-			throw error;
-		}
+	const fileNames = readdirSync(contractsPath, { withFileTypes: true })
+		.filter(entry => entry.isFile() && entry.name.endsWith('.hyp'))
+		.map(entry => entry.name)
+		.sort();
+
+	if (fileNames.length === 0) {
+		throw new Error(`No Hyperion contracts found in ${contractsPath}`);
 	}
 
-	// Fetch all Contract files in Contracts folder
-	const fileNames = readdirSync(contractsPath);
-
-	// Gets ABI of all contracts into variable input
-	const input = fileNames.reduce(
-		(previousValue, fileName) => {
-			const filePath = resolve(contractsPath, fileName);
-			const source = readFileSync(filePath, 'utf8');
-
-			return { sources: { ...previousValue.sources, [fileName]: { content: source } } };
-		},
-		{ sources: {} },
+	const sources = Object.fromEntries(
+		fileNames.map(fileName => [
+			fileName,
+			{ content: readFileSync(resolve(contractsPath, fileName), 'utf8') },
+		]),
 	);
 
 	const compileInput = {
-		...input,
+		sources,
 		language: 'Hyperion',
-		settings: { outputSelection: { '*': { '*': ['abi', 'qrvm.bytecode.object'] } } },
+		settings: {
+			// Keep the PublicResolver fixture below go-qrl's deployed code size limit.
+			optimizer: { enabled: true, runs: 200 },
+			outputSelection: {
+				'*': { '*': ['abi', 'qrvm.bytecode.object', 'qrvm.deployedBytecode.object'] },
+			},
+		},
 	};
 
 	const compileResult = JSON.parse(
 		compile(JSON.stringify(compileInput), { import: findImports }),
 	);
-	if (compileResult.errors) {
-		console.error(compileResult.errors);
-		console.log('Error while compiling');
+	const diagnostics = compileResult.errors ?? [];
+	for (const diagnostic of diagnostics) {
+		console.error(diagnostic.formattedMessage ?? diagnostic.message);
 	}
-	// Compile all contracts
-	const output = compileResult.contracts;
-
-	// Re-Create build folder for output files from each contract
-	mkdirSync(buildPath);
-
-	console.log(output);
-
-	// Output contains all objects from all contracts
-	// Write the contents of each to different files
-	for (let contract in output) {
-		const contractName = contract.replace('.hyp', '');
-		const contractBuild = output[contract][contractName];
-
-		if (!contractBuild || (contractBuild && !contractBuild['abi'])) {
-			continue;
-		}
-
-		const contractTsInterface = `export const ${contractName}Abi = ${JSON.stringify(
-			contractBuild['abi'],
-		)} as const; \n export const ${contractName}Bytecode = '0x${
-			contractBuild['qrvm']['bytecode']['object']
-		}';`;
-
-		writeFileSync(
-			resolve(buildPath, contractName + '.json'),
-			JSON.stringify(contractBuild, null, '\t'),
-		);
-		writeFileSync(resolve(buildPath, contractName + '.ts'), contractTsInterface);
+	if (diagnostics.some(diagnostic => diagnostic.severity === 'error')) {
+		throw new Error('Error while compiling contracts');
 	}
 
-	console.info('Compiled successfully');
-	process.exit(0);
-})().catch(console.error);
+	// Validate and format every fixture before replacing the previous build.
+	const artifacts = await Promise.all(
+		fileNames.map(async fileName => {
+			const contractName = fileName.slice(0, -4);
+			const contractBuild = compileResult.contracts?.[fileName]?.[contractName];
+			const bytecode = contractBuild?.qrvm?.bytecode?.object;
+			if (!Array.isArray(contractBuild?.abi) || !bytecode) {
+				throw new Error(
+					`Missing ABI or deployable bytecode for ${contractName} in ${fileName}`,
+				);
+			}
+
+			const typescript = await format(
+				`${licenseHeader}
+export const ${contractName}Abi = ${JSON.stringify(contractBuild.abi)} as const;
+export const ${contractName}Bytecode = '0x${bytecode}';`,
+				{
+					parser: 'typescript',
+					printWidth: 100,
+					singleQuote: true,
+					trailingComma: 'all',
+					useTabs: true,
+					tabWidth: 4,
+					arrowParens: 'avoid',
+				},
+			);
+			return {
+				contractName,
+				json: `${JSON.stringify(contractBuild, undefined, '\t')}\n`,
+				typescript,
+			};
+		}),
+	);
+
+	rmSync(buildPath, { recursive: true, force: true });
+	mkdirSync(buildPath, { recursive: true });
+	for (const { contractName, json, typescript } of artifacts) {
+		writeFileSync(resolve(buildPath, `${contractName}.json`), json);
+		writeFileSync(resolve(buildPath, `${contractName}.ts`), typescript);
+	}
+
+	console.info(`Compiled successfully: ${artifacts.length} contracts with Hyperion ${version()}`);
+})().catch(error => {
+	console.error(error);
+	process.exitCode = 1;
+});

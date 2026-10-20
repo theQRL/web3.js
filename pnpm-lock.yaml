@@ -99,8 +99,8 @@ importers:
         specifier: workspace:*
         version: link:tools/eslint-config-base-web3
       '@theqrl/hypc':
-        specifier: 0.0.2
-        version: 0.0.2
+        specifier: 0.2.0
+        version: 0.2.0
       '@theqrl/qrl-contracts':
         specifier: github:theQRL/qrl-contracts#d3c84eedac4e051f6e99892397c5e42f0f0a2266
         version: https://codeload.github.com/theQRL/qrl-contracts/tar.gz/d3c84eedac4e051f6e99892397c5e42f0f0a2266
@@ -3617,8 +3617,8 @@ packages:
     resolution: {integrity: sha512-+PmQX0PiAYPMeVYe237LJAYvOMYW1j2rH5YROyS3b4CTVJum34HfRvKvAzozHAQG0TnHNdUfY9nCeUyRAs//cw==}
     engines: {node: '>=14.16'}
 
-  '@theqrl/hypc@0.0.2':
-    resolution: {integrity: sha512-XsP7hETJdlmmdGtmp/K5ZtTcz3EzZaP+WhjuOTf4PmhE+6oijN271H10htYHvBo95ED2OYiuUCYucYNw7Q6mfQ==}
+  '@theqrl/hypc@0.2.0':
+    resolution: {integrity: sha512-Dqv5qdjrHm0Ohhp9Lkw9XCBePRtUQS4GdSd38i7kN7GA5WNVZERoazOmtTDeCCulEJNGV92yZSywrATmFR9U3A==}
     hasBin: true
 
   '@theqrl/mldsa87@2.2.0':
@@ -13782,7 +13782,7 @@ snapshots:
     dependencies:
       defer-to-connect: 2.0.1
 
-  '@theqrl/hypc@0.0.2':
+  '@theqrl/hypc@0.2.0':
     dependencies:
       command-exists: 1.2.9
       commander: 8.3.0
