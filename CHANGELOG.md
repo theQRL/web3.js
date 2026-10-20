@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Made the ESLint regression test use an on-disk fixture and exercise both CI and local parser modes.
 - Resolved Jest types in ESLint's strict TypeScript project so valid test assertions no longer inflate warning counts, and lowered the warning budgets to match.
 - Contract compilation now exits unsuccessfully on compiler errors, missing contract artifacts, and filesystem errors. Compilation failures preserve the existing fixtures; warnings do not prevent successful builds.
 - WebSocket integration tests now connect to the local testnet's WebSocket port (8546).

@@ -21,34 +21,36 @@ import { resolve } from 'path';
 const root = resolve(__dirname, '../../..');
 
 describe('Type-aware ESLint configuration', () => {
-	it('resolves Jest globals while still reporting an unsafe call', () => {
-		const result = spawnSync(
-			process.execPath,
-			[
-				'-e',
-				String.raw`
+	it.each(['false', 'true'])(
+		'resolves Jest globals while still reporting an unsafe call with CI=%s',
+		ci => {
+			const result = spawnSync(
+				process.execPath,
+				[
+					'-e',
+					String.raw`
 const { ESLint } = require('eslint');
-const source = [
-	"describe('types', () => { it('checks a value', () => { expect(1).toBe(1); }); });",
-	"const unsafe = JSON.parse('{}'); unsafe();",
-].join('\n');
-new ESLint().lintText(source, { filePath: 'scripts/test/unit/eslint_config.test.ts' })
+// CI's single-run TypeScript program reads from disk, so lint an actual fixture.
+new ESLint().lintFiles(['scripts/test/fixtures/eslint/jest-globals.ts'])
 	.then(results => console.log(JSON.stringify(results)))
 	.catch(error => { console.error(error); process.exitCode = 1; });
 `,
-			],
-			{ cwd: root, encoding: 'utf8', timeout: 30_000 },
-		);
+				],
+				{ cwd: root, encoding: 'utf8', timeout: 30_000, env: { ...process.env, CI: ci } },
+			);
 
-		expect(result.error).toBeUndefined();
-		expect(result.status).toBe(0);
-		const [lintResult] = JSON.parse(result.stdout);
-		expect(lintResult.errorCount).toBe(0);
-		expect(
-			lintResult.messages.filter(
-				(message: { ruleId: string }) =>
-					message.ruleId === '@typescript-eslint/no-unsafe-call',
-			),
-		).toEqual([expect.objectContaining({ line: 2, severity: 1 })]);
-	});
+			expect(result.error).toBeUndefined();
+			if (result.status !== 0) {
+				throw new Error(`ESLint exited with status ${result.status}: ${result.stderr}`);
+			}
+			const [lintResult] = JSON.parse(result.stdout);
+			expect(lintResult.errorCount).toBe(0);
+			expect(
+				lintResult.messages.filter(
+					(message: { ruleId: string }) =>
+						message.ruleId === '@typescript-eslint/no-unsafe-call',
+				),
+			).toEqual([expect.objectContaining({ line: 25, severity: 1 })]);
+		},
+	);
 });
