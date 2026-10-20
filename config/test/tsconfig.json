@@ -6,6 +6,7 @@
 		"declarationMap": false,
 		"noImplicitAny": false,
 		"strictNullChecks": false,
+		"resolveJsonModule": true,
 		"types": ["node", "jest"],
 		"baseUrl": "../..",
 		"paths": {

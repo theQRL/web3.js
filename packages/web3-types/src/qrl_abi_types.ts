@@ -218,6 +218,12 @@ export type PrimitiveBytesType<Type extends string> = Type extends `bytes${strin
 	? Bytes
 	: never;
 
+export type PrimitiveFunctionType<Type extends string> = Type extends `function[${infer Size}]`
+	? _TypedArray<Bytes, Size>
+	: Type extends 'function'
+	? Bytes
+	: never;
+
 export type PrimitiveTupleType<
 	Type extends string,
 	TypeComponents extends ReadonlyArray<AbiParameter> | undefined | unknown = [],
@@ -256,6 +262,7 @@ export type MatchPrimitiveType<
 	| PrimitiveBooleanType<Type>
 	| PrimitiveIntegerType<Type>
 	| PrimitiveBytesType<Type>
+	| PrimitiveFunctionType<Type>
 	| PrimitiveTupleType<Type, TypeComponents>
 	| never;
 

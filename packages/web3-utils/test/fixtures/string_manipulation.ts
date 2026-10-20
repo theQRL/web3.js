@@ -32,15 +32,15 @@ export const padLeftData: [[Numbers, number, string], HexString][] = [
 ];
 
 export const padInvalidData: [[any, number, string], string][] = [
-	[[9.5, 64, 'f'], 'value "9.5" at "/0" must pass "int" validation'],
+	[[9.5, 64, 'f'], 'value "9.5" at "/0" must pass "int512" validation'],
 	// Using "null" value intentionally for validation
 	[
 		// eslint-disable-next-line no-null/no-null
 		[null, 8, '0'],
-		'Web3 validator found 1 error[s]:\nvalue "null" at "/0" must pass "int" validation',
+		'Web3 validator found 1 error[s]:\nvalue "null" at "/0" must pass "int512" validation',
 	],
 	[[undefined, 8, '0'], 'Web3 validator found 1 error[s]:\nvalue at "/0" is required'],
-	[[{}, 3, 'f'], 'value "{}" at "/0" must pass "int" validation'],
+	[[{}, 3, 'f'], 'value "{}" at "/0" must pass "int512" validation'],
 ];
 
 export const padRightData: [[Numbers, number, string], HexString][] = [
@@ -69,10 +69,7 @@ export const toTwosComplementData: [[Numbers, number], HexString][] = [
 	[['13', 32], '0x0000000000000000000000000000000d'],
 	[['-13', 32], '0xfffffffffffffffffffffffffffffff3'],
 	[[-16, 2], '0xf0'],
-	[
-		[-(BigInt(1) << BigInt(511)), 128],
-		`0x8${'0'.repeat(127)}`,
-	],
+	[[-(BigInt(1) << BigInt(511)), 128], `0x8${'0'.repeat(127)}`],
 	[
 		['0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff00', 64],
 		'0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff00',
@@ -92,11 +89,11 @@ export const fromTwosComplementData: [[Numbers, number], number | bigint][] = [
 ];
 
 export const toTwosComplementInvalidData: [[Numbers, number], string][] = [
-	[['ab', 32], 'value "ab" at "/0" must pass "int" validation'],
-	[['-ab', 3], 'value "-ab" at "/0" must pass "int" validation'],
-	[['ab0x', 2], 'value "ab0x" at "/0" must pass "int" validation'],
-	[[25.5, 32], 'value "25.5" at "/0" must pass "int" validation'],
-	[['-120.0', 4], 'value "-120.0" at "/0" must pass "int" validation'],
+	[['ab', 32], 'value "ab" at "/0" must pass "int512" validation'],
+	[['-ab', 3], 'value "-ab" at "/0" must pass "int512" validation'],
+	[['ab0x', 2], 'value "ab0x" at "/0" must pass "int512" validation'],
+	[[25.5, 32], 'value "25.5" at "/0" must pass "int512" validation'],
+	[['-120.0', 4], 'value "-120.0" at "/0" must pass "int512" validation'],
 	[
 		[-256, 2],
 		'Invalid value given "value: -256, nibbleWidth: 2". Error: value greater than the nibble width.',
@@ -112,11 +109,11 @@ export const toTwosComplementInvalidData: [[Numbers, number], string][] = [
 ];
 
 export const fromTwosComplementInvalidData: [[Numbers, number], string][] = [
-	[['ab', 32], 'value "ab" at "/0" must pass "int" validation'],
-	[['-ab', 3], 'value "-ab" at "/0" must pass "int" validation'],
-	[['ab0x', 2], 'value "ab0x" at "/0" must pass "int" validation'],
-	[[25.5, 32], 'value "25.5" at "/0" must pass "int" validation'],
-	[['-120.0', 4], 'value "-120.0" at "/0" must pass "int" validation'],
+	[['ab', 32], 'value "ab" at "/0" must pass "int512" validation'],
+	[['-ab', 3], 'value "-ab" at "/0" must pass "int512" validation'],
+	[['ab0x', 2], 'value "ab0x" at "/0" must pass "int512" validation'],
+	[[25.5, 32], 'value "25.5" at "/0" must pass "int512" validation'],
+	[['-120.0', 4], 'value "-120.0" at "/0" must pass "int512" validation'],
 	[
 		[1000, 2],
 		'Invalid value given "value: 1000, nibbleWidth: 2". Error: value greater than the nibble width.',

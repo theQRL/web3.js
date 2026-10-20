@@ -67,6 +67,7 @@ export const isSimplifiedStructFormat = (
 	type: string | Partial<AbiParameter> | Partial<AbiInput>,
 ): type is Omit<AbiParameter, 'components' | 'name'> =>
 	typeof type === 'object' &&
+	typeof (type as { type: unknown }).type === 'undefined' &&
 	typeof (type as { components: unknown }).components === 'undefined' &&
 	typeof (type as { name: unknown }).name === 'undefined';
 
@@ -118,13 +119,6 @@ export const mapTypes = (
 			modifiedType = { ...type };
 		}
 
-		// A 64-byte QRL address plus a 4-byte selector is 68 bytes, which no
-		// longer fits in one VM word. Keep this unsupported until the chain and
-		// ABI spec define a QRL-specific function-pointer representation.
-		if (typeof type === 'object' && type.type === 'function') {
-			throw new AbiError('ABI function type is not supported for 64-byte QRL addresses.');
-		}
-
 		if (isSimplifiedStructFormat(modifiedType)) {
 			const structName = Object.keys(modifiedType)[0] as unknown as keyof typeof modifiedType;
 
@@ -158,6 +152,9 @@ export const formatOddHexstrings = (param: string): string =>
  * Handle some formatting of params for backwards compatibility with Ethers V4
  */
 export const formatParam = (type: string, _param: unknown): unknown => {
+	if (type === 'function') {
+		return _param;
+	}
 	// clone if _param is an object
 	const param = typeof _param === 'object' && !Array.isArray(_param) ? { ..._param } : _param;
 	const paramTypeBytes = /^bytes([0-9]*)$/;
@@ -178,7 +175,7 @@ export const formatParam = (type: string, _param: unknown): unknown => {
 	// Format correct width for u?int[0-9]*
 	let match = paramTypeNumber.exec(type);
 	if (match) {
-		const size = parseInt(match[2] ? match[2] : '512', 10);
+		const size = parseInt(match[2] ? match[2] : '256', 10);
 		if (size / 8 < (param as { length: number }).length) {
 			// pad to correct bit width
 			return leftPad(param as string, size);
@@ -263,11 +260,21 @@ export const flattenTypes = (
 				types.push(`(${result.join()})`);
 			}
 		} else {
-			types.push(param.type);
+			types.push(param.type.replace(/^(u?int)(?=$|\[)/, '$1256'));
 		}
 	});
 
 	return types;
+};
+
+/** Expand integer aliases in signature parameters, preserving the function/event/error name. */
+export const canonicalizeSignature = (signature: string): string => {
+	const paramsStart = signature.indexOf('(');
+	if (paramsStart < 0) return signature;
+	return (
+		signature.slice(0, paramsStart) +
+		signature.slice(paramsStart).replace(/\b(u?int)\b/g, '$1256')
+	);
 };
 
 /**
@@ -277,7 +284,7 @@ export const flattenTypes = (
 export const jsonInterfaceMethodToString = (json: AbiFragment): string => {
 	if (isAbiErrorFragment(json) || isAbiEventFragment(json) || isAbiFunctionFragment(json)) {
 		if (json.name?.includes('(')) {
-			return json.name;
+			return canonicalizeSignature(json.name);
 		}
 
 		return `${json.name ?? ''}(${flattenTypes(false, json.inputs ?? []).join(',')})`;

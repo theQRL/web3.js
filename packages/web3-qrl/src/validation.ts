@@ -183,16 +183,16 @@ export const validateHardfork = (transaction: InternalTransaction) => {
 
 export const validateFeeMarketGas = (transaction: InternalTransaction) => {
 	// This check is verifying gas isn't less than 0.
-	if (isNullish(transaction.gas) || !isUInt(transaction.gas))
+	if (isNullish(transaction.gas) || !isUInt(transaction.gas, { bitSize: 512 }))
 		throw new InvalidGas({
 			gas: transaction.gas,
 		});
 
 	if (
 		isNullish(transaction.maxFeePerGas) ||
-		!isUInt(transaction.maxFeePerGas) ||
+		!isUInt(transaction.maxFeePerGas, { bitSize: 512 }) ||
 		isNullish(transaction.maxPriorityFeePerGas) ||
-		!isUInt(transaction.maxPriorityFeePerGas)
+		!isUInt(transaction.maxPriorityFeePerGas, { bitSize: 512 })
 	)
 		throw new InvalidMaxPriorityFeePerGasOrMaxFeePerGas({
 			maxPriorityFeePerGas: transaction.maxPriorityFeePerGas,

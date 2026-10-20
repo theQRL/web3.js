@@ -33,7 +33,6 @@ import {
 // ethers-v5 code assumes that semantics). These suites assert the now-working
 // behaviour (finding C46).
 
-
 describe('Fragment dispatch', () => {
 	it('routes "error ..." to an ErrorFragment', () => {
 		const fragment = Fragment.from('error Unauthorized(address caller)');
@@ -74,19 +73,19 @@ describe('Fragment dispatch', () => {
 	});
 });
 
-	describe('checkForbidden', () => {
-		it('rejects the builtin error signatures', () => {
-			expect(() => ErrorFragment.from('Error(string)')).toThrow(/user defined/);
-			expect(() => ErrorFragment.from('Panic(uint512)')).toThrow(/user defined/);
-			expect(() => ErrorFragment.from('Panic(uint)')).toThrow(/user defined/);
-		});
-
-		it('accepts Panic(uint256), which is no longer the builtin spelling', () => {
-			expect(ErrorFragment.from('Panic(uint256)').format()).toBe('Panic(uint256)');
-		});
+describe('checkForbidden', () => {
+	it('rejects the builtin error signatures', () => {
+		expect(() => ErrorFragment.from('Error(string)')).toThrow(/user defined/);
+		expect(() => ErrorFragment.from('Panic(uint256)')).toThrow(/user defined/);
+		expect(() => ErrorFragment.from('Panic(uint)')).toThrow(/user defined/);
 	});
 
-	describe('ErrorFragment', () => {
+	it('accepts Panic(uint512) as a custom error', () => {
+		expect(ErrorFragment.from('Panic(uint512)').format()).toBe('Panic(uint512)');
+	});
+});
+
+describe('ErrorFragment', () => {
 	it('parses inputs', () => {
 		const fragment = ErrorFragment.from('InsufficientBalance(uint512 available)');
 		expect(fragment.type).toBe('error');

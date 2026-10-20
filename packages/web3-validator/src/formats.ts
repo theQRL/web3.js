@@ -34,6 +34,8 @@ const formats: { [key: string]: (data: unknown) => boolean } = {
 	blockNumberOrTag: (data: unknown) => isBlockNumberOrTag(data as string | number | bigint),
 	bool: (data: unknown) => isBoolean(data as ValidInputTypes),
 	bytes: (data: unknown) => isBytes(data as ValidInputTypes | Uint8Array | number[]),
+	function: (data: unknown) =>
+		isBytes(data as ValidInputTypes | Uint8Array | number[], { size: 68 }),
 	qrlTypedData: (data: unknown) => isQRLTypedData(data),
 	filter: (data: unknown) => isFilterObject(data as Filter),
 	hex: (data: unknown) => isHexStrict(data as ValidInputTypes),

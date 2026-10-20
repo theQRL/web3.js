@@ -220,7 +220,7 @@ export const toDecimal = hexToNumber;
  * ```
  */
 export const numberToHex = (value: Numbers, hexstrict?: boolean): HexString => {
-	if (typeof value !== 'bigint') validator.validate(['int'], [value]);
+	if (typeof value !== 'bigint') validator.validate(['int512'], [value]);
 	// To avoid duplicate code and circular dependency we will
 	// use `numberToHex` implementation from `web3-validator`
 	let updatedValue = validatorUtils.numberToHex(value);
@@ -404,7 +404,7 @@ export const toHex = (
 		if (isHexStrict(value)) {
 			return returnType ? 'bytes' : value;
 		}
-		if (isHex(value) && !isInt(value)) {
+		if (isHex(value) && !isInt(value, { bitSize: 512 })) {
 			return returnType ? 'bytes' : `0x${value}`;
 		}
 		if (isAddressString(value)) {

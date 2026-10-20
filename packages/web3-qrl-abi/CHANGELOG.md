@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **Breaking:** Bare `uint` and `int` now mean `uint256` and `int256`, matching Hyperion 0.2.0. They still occupy one 64-byte ABI word. Use explicit `uint512` or `int512` for wider values. Function, event, and error signatures also expand these aliases to 256 bits.
+
+### Added
+
+- ABI `function` values accept a 68-byte hex string or byte array containing a 64-byte address followed by a 4-byte selector. Encoding uses two 64-byte words, with the selector right-aligned in the second word. Arrays, tuples, and return values use the same layout.
+
+### Fixed
+
+- Decode compiler-generated `Error(string)` and `Panic(uint256)` even when absent from the supplied ABI. Explicit error definitions take precedence. Panic payloads use selector `0x4e487b71` followed by one 64-byte code word.
+
 <!-- EXAMPLE
 
 ## [1.0.0]

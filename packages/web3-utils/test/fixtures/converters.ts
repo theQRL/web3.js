@@ -117,14 +117,14 @@ export const numberToHexstrictValidData: [Numbers, HexString][] = [
 ];
 
 export const numberToHexInvalidData: [any, string][] = [
-	[12.2, 'value "12.2" at "/0" must pass "int" validation'],
-	['0xag', 'value "0xag" at "/0" must pass "int" validation'],
-	['122g', 'value "122g" at "/0" must pass "int" validation'],
+	[12.2, 'value "12.2" at "/0" must pass "int512" validation'],
+	['0xag', 'value "0xag" at "/0" must pass "int512" validation'],
+	['122g', 'value "122g" at "/0" must pass "int512" validation'],
 	// Using "null" value intentionally for validation
 	// eslint-disable-next-line no-null/no-null
-	[null, 'value "null" at "/0" must pass "int" validation'],
+	[null, 'value "null" at "/0" must pass "int512" validation'],
 	[undefined, 'Web3 validator found 1 error[s]:\nvalue at "/0" is required'],
-	[{}, 'value "{}" at "/0" must pass "int" validation'],
+	[{}, 'value "{}" at "/0" must pass "int512" validation'],
 ];
 
 export const hexToNumberValidData: [HexString, Numbers][] = [

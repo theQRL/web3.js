@@ -26,7 +26,7 @@ export const validUintData: any[] = [
 	'1',
 	1,
 	BigInt(12),
-	(BigInt(1) << BigInt(512)) - BigInt(1),
+	(BigInt(1) << BigInt(256)) - BigInt(1),
 ];
 
 export const invalidUintData: any[] = [
@@ -39,7 +39,7 @@ export const invalidUintData: any[] = [
 	// eslint-disable-next-line no-null/no-null
 	null,
 	'',
-	BigInt(1) << BigInt(512),
+	BigInt(1) << BigInt(256),
 ];
 
 export const validUintDataWithSize: [any, number][] = [
@@ -85,8 +85,8 @@ export const validIntData: any[] = [
 	'-1',
 	-1,
 	BigInt(-12),
-	(BigInt(1) << BigInt(511)) - BigInt(1),
-	-(BigInt(1) << BigInt(511)),
+	(BigInt(1) << BigInt(255)) - BigInt(1),
+	-(BigInt(1) << BigInt(255)),
 ];
 
 export const invalidIntData: any[] = [
@@ -95,8 +95,8 @@ export const invalidIntData: any[] = [
 	// Using "null" value intentionally for validation
 	// eslint-disable-next-line no-null/no-null
 	null,
-	BigInt(1) << BigInt(511),
-	-(BigInt(1) << BigInt(511)) - BigInt(1),
+	BigInt(1) << BigInt(255),
+	-(BigInt(1) << BigInt(255)) - BigInt(1),
 ];
 
 export const validIntDataWithSize: [any, number][] = [

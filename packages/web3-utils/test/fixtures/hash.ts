@@ -99,11 +99,11 @@ export const hyperionSha3Data: [TypedObject[] | TypedObjectAbbreviated[], string
 	],
 	[
 		[{ t: 'int', v: BigInt('234') }],
-		'0x9610fc0b0febb9a261336ba87c74bd15053dcf6fa632f94e946d8c2987eb84ff',
+		'0x61c831beab28d67d1bb40b5ae1a11e2757fa842f031a2d0bc94a7867bc5d26c2',
 	],
 	[
 		[{ type: 'uint', value: '234' }],
-		'0x9610fc0b0febb9a261336ba87c74bd15053dcf6fa632f94e946d8c2987eb84ff',
+		'0x61c831beab28d67d1bb40b5ae1a11e2757fa842f031a2d0bc94a7867bc5d26c2',
 	],
 	[
 		[{ type: 'bytes', value: '0x407D73d8a49eeb85D32Cf465507dd71d507100c1' }],
@@ -187,18 +187,9 @@ export const hyperionSha3InvalidData: [any, string][] = [
 
 export const encodePackData: [TypedObject[] | TypedObjectAbbreviated[], any][] = [
 	[[{ type: 'string', value: '31323334' }], '0x3331333233333334'],
-	[
-		[{ type: 'int[]', value: '01' }],
-		`0x${'0'.repeat(127)}1`,
-	],
-	[
-		[{ type: 'uint[]', value: '01' }],
-		`0x${'0'.repeat(127)}1`,
-	],
-	[
-		[{ type: 'int', value: 31323334 }],
-		`0x${'0'.repeat(121)}1ddf4c6`,
-	],
+	[[{ type: 'int[]', value: [1] }], `0x${'0'.repeat(127)}1`],
+	[[{ type: 'uint[]', value: [1] }], `0x${'0'.repeat(127)}1`],
+	[[{ type: 'int', value: 31323334 }], `0x${'0'.repeat(57)}1ddf4c6`],
 	[[{ type: 'string', value: '' }], '0x'],
 	[
 		[
@@ -244,7 +235,7 @@ export const encodePackData: [TypedObject[] | TypedObjectAbbreviated[], any][] =
 		[{ v: '0x407D73d8a49eeb85D32Cf465507dd71d507100c1', t: 'bytes' }],
 		'0x407d73d8a49eeb85d32cf465507dd71d507100c1',
 	],
-	[[{ t: 'int', v: '0' }], `0x${'0'.repeat(128)}`],
+	[[{ t: 'int', v: '0' }], `0x${'0'.repeat(64)}`],
 	[
 		[{ type: 'int256', value: '1234' }],
 		'0x00000000000000000000000000000000000000000000000000000000000004d2',
@@ -259,21 +250,15 @@ export const encodePackData: [TypedObject[] | TypedObjectAbbreviated[], any][] =
 	],
 	[[{ type: 'int8', value: -128 }], '0x80'],
 	[[{ type: 'int8', value: 127 }], '0x7f'],
-	[
-		[{ type: 'int512', value: -(BigInt(1) << BigInt(511)) }],
-		`0x8${'0'.repeat(127)}`,
-	],
-	[
-		[{ type: 'int512', value: (BigInt(1) << BigInt(511)) - BigInt(1) }],
-		`0x7${'f'.repeat(127)}`,
-	],
+	[[{ type: 'int512', value: -(BigInt(1) << BigInt(511)) }], `0x8${'0'.repeat(127)}`],
+	[[{ type: 'int512', value: (BigInt(1) << BigInt(511)) - BigInt(1) }], `0x7${'f'.repeat(127)}`],
 	[
 		[{ type: 'uint512', value: (BigInt(1) << BigInt(511)) + BigInt(1) }],
 		`0x8${'0'.repeat(126)}1`,
 	],
 	[
 		[{ type: 'int128[]', value: [12345, 324, 1, 2] }],
-		'0x00000000000000000000000000003039000000000000000000000000000001440000000000000000000000000000000100000000000000000000000000000002',
+		`0x${'3039'.padStart(128, '0')}${'144'.padStart(128, '0')}${'1'.padStart(128, '0')}${'2'.padStart(128, '0')}`,
 	],
 	[
 		[
@@ -311,10 +296,7 @@ export const encodePackedInvalidData: [any, string][] = [
 		{ type: 'int8', value: -129 },
 		'Invalid value given "-129". Error: value is larger than size.',
 	],
-	[
-		{ type: 'int8', value: 128 },
-		'Invalid value given "128". Error: value is larger than size.',
-	],
+	[{ type: 'int8', value: 128 }, 'Invalid value given "128". Error: value is larger than size.'],
 	[
 		{ type: 'int512', value: BigInt(1) << BigInt(511) },
 		`Invalid value given "${BigInt(1) << BigInt(511)}". Error: value is larger than size.`,
@@ -348,40 +330,40 @@ export const elementaryNameValidData: [any, string][] = [
 ];
 
 export const hyperionSha3BigIntValidData: [Sha3Input[], string][] = [
-	[[3434], '0xdb565a867770a9d66235cca8147e52aa3a49d038da0921f6aaee2cd5acc05147'],
-	[[BigInt(3434)], '0xdb565a867770a9d66235cca8147e52aa3a49d038da0921f6aaee2cd5acc05147'],
+	[[3434], '0xf219fa5590f999dc677e94dd9cf99cf14103d2f4323898edb31db982d5909687'],
+	[[BigInt(3434)], '0xf219fa5590f999dc677e94dd9cf99cf14103d2f4323898edb31db982d5909687'],
 	[
 		[{ t: 'bigint', v: BigInt(3434) }],
-		'0xdb565a867770a9d66235cca8147e52aa3a49d038da0921f6aaee2cd5acc05147',
+		'0xf219fa5590f999dc677e94dd9cf99cf14103d2f4323898edb31db982d5909687',
 	],
 
-	[[0], '0xad3228b676f7d3cd4284a5443f17f1962b36e491b30a40b2405849e597ba5fb5'],
-	[[BigInt(0)], '0xad3228b676f7d3cd4284a5443f17f1962b36e491b30a40b2405849e597ba5fb5'],
+	[[0], '0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563'],
+	[[BigInt(0)], '0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563'],
 	[
 		[{ t: 'bigint', v: BigInt(0) }],
-		'0xad3228b676f7d3cd4284a5443f17f1962b36e491b30a40b2405849e597ba5fb5',
+		'0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563',
 	],
 
-	[[90071992547409], '0x96e19c53757ecd4ad3f7136622fc7c6cf51a6a5471700a33f5033d3c01fdbaa1'],
+	[[90071992547409], '0x290998ceba657b344f8ee112246f32b20ecaad06d8d9ad09748de1821b9ef73e'],
 	[
 		[BigInt(90071992547409)],
-		'0x96e19c53757ecd4ad3f7136622fc7c6cf51a6a5471700a33f5033d3c01fdbaa1',
+		'0x290998ceba657b344f8ee112246f32b20ecaad06d8d9ad09748de1821b9ef73e',
 	],
 	[
 		[{ t: 'bigint', v: BigInt(90071992547409) }],
-		'0x96e19c53757ecd4ad3f7136622fc7c6cf51a6a5471700a33f5033d3c01fdbaa1',
+		'0x290998ceba657b344f8ee112246f32b20ecaad06d8d9ad09748de1821b9ef73e',
 	],
 
-	[['0x70696e67', 0], '0x484c78377b276a879fd1ffd74630d990862c4e1d38e621a1f3319e9704cd1e20'],
+	[['0x70696e67', 0], '0xe54a278c69f07b6b4f0736dc55c389cd2d3f31365b090c9f76a414fb51552c53'],
 	[
 		['0x70696e67', BigInt(0)],
-		'0x484c78377b276a879fd1ffd74630d990862c4e1d38e621a1f3319e9704cd1e20',
+		'0xe54a278c69f07b6b4f0736dc55c389cd2d3f31365b090c9f76a414fb51552c53',
 	],
 
-	[['0x70696e67', 10], '0x1ef6fe609620640a8c52e6ad0dbbdfc24500e50d5937f0be2d62185da9d19708'],
+	[['0x70696e67', 10], '0x418e921c5c859d5f560b89ad03a6672907d66de336392a5178ea69281feff40a'],
 	[
 		['0x70696e67', BigInt(10)],
-		'0x1ef6fe609620640a8c52e6ad0dbbdfc24500e50d5937f0be2d62185da9d19708',
+		'0x418e921c5c859d5f560b89ad03a6672907d66de336392a5178ea69281feff40a',
 	],
 
 	/*

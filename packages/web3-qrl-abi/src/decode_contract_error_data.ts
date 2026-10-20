@@ -22,6 +22,12 @@ import { encodeErrorSignature } from './api/errors_api.js';
 import { decodeParameters } from './api/parameters_api.js';
 import { jsonInterfaceMethodToString } from './utils.js';
 
+// These errors are emitted by the compiler and need not appear in a contract ABI.
+const builtinErrors: AbiErrorFragment[] = [
+	{ type: 'error', name: 'Error', inputs: [{ name: 'message', type: 'string' }] },
+	{ type: 'error', name: 'Panic', inputs: [{ name: 'code', type: 'uint256' }] },
+];
+
 export const decodeContractErrorData = (
 	errorsAbi: AbiErrorFragment[],
 	error: Eip838ExecutionError,
@@ -32,7 +38,9 @@ export const decodeContractErrorData = (
 		let errorArgs: { [K in string]: unknown } | undefined;
 		try {
 			const errorSha = error.data.slice(0, 10);
-			const errorAbi = errorsAbi.find(abi => encodeErrorSignature(abi).startsWith(errorSha));
+			const errorAbi = [...errorsAbi, ...builtinErrors].find(abi =>
+				encodeErrorSignature(abi).startsWith(errorSha),
+			);
 
 			if (errorAbi?.inputs) {
 				errorName = errorAbi.name;

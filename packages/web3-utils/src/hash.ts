@@ -168,6 +168,8 @@ const getType = (arg: Sha3Input): [string, EncodingTypes] => {
 	else {
 		type = toHex(arg, true);
 		value = toHex(arg);
+		// Numeric autodetection follows the same aliases as explicit ABI types.
+		type = type.replace(/^(u?int)512$/, '$1');
 
 		if (!type.startsWith('int') && !type.startsWith('uint')) {
 			type = 'bytes';
@@ -191,16 +193,16 @@ const getType = (arg: Sha3Input): [string, EncodingTypes] => {
  */
 const elementaryName = (name: string): string => {
 	if (name.startsWith('int[')) {
-		return `int512${name.slice(3)}`;
+		return `int256${name.slice(3)}`;
 	}
 	if (name === 'int') {
-		return 'int512';
+		return 'int256';
 	}
 	if (name.startsWith('uint[')) {
-		return `uint512${name.slice(4)}`;
+		return `uint256${name.slice(4)}`;
 	}
 	if (name === 'uint') {
-		return 'uint512';
+		return 'uint256';
 	}
 	return name;
 };
@@ -230,6 +232,13 @@ const bitLength = (value: bigint | number): number => {
  * @returns = the padded value
  */
 const hyperionPack = (type: string, val: EncodingTypes): string => {
+	if (type === 'function') {
+		const pointer = val instanceof Uint8Array ? bytesToHex(val) : val.toString();
+		if (!/^0x[0-9a-f]{136}$/i.test(pointer)) {
+			throw new InvalidBytesError(pointer);
+		}
+		return pointer;
+	}
 	const value = val.toString();
 	if (type === 'string') {
 		if (typeof val === 'string') return utf8ToHex(val);
@@ -314,8 +323,19 @@ export const processHyperionEncodePackedArgs = (arg: Sha3Input): string => {
 
 	// array case
 	if (Array.isArray(val)) {
-		// go through each element of the array and use map function to create new hexarg list
-		const hexArg = val.map((v: Numbers | boolean) => hyperionPack(type, v).replace('0x', ''));
+		const elementType = type.replace(/\[\d*\]$/, '');
+		const hexArg = val.map((v: Numbers | boolean) => {
+			const packed = hyperionPack(elementType, v).replace(/^0x/, '');
+			if (elementType === 'function') {
+				return packed.slice(0, 128) + packed.slice(128).padStart(128, '0');
+			}
+			if (/^u?int/.test(elementType)) {
+				const padding =
+					elementType.startsWith('int') && toNumber(v.toString()) < 0 ? 'f' : '0';
+				return packed.padStart(128, padding);
+			}
+			return packed;
+		});
 		return hexArg.join('');
 	}
 

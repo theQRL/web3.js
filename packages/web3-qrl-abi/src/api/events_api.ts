@@ -18,7 +18,11 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import { sha3Raw } from '@theqrl/web3-utils';
 import { AbiError } from '@theqrl/web3-errors';
 import { AbiEventFragment } from '@theqrl/web3-types';
-import { jsonInterfaceMethodToString, isAbiEventFragment } from '../utils.js';
+import {
+	canonicalizeSignature,
+	jsonInterfaceMethodToString,
+	isAbiEventFragment,
+} from '../utils.js';
 
 /**
  * Encodes the event name to its ABI signature, which are the sha3 hash of the event name including input types.
@@ -77,7 +81,7 @@ export const encodeEventSignature = (functionName: string | AbiEventFragment): s
 	let name: string;
 
 	if (typeof functionName === 'string') {
-		name = functionName;
+		name = canonicalizeSignature(functionName);
 	} else {
 		name = jsonInterfaceMethodToString(functionName);
 	}

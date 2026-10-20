@@ -22,8 +22,8 @@ import { toChecksumAddress } from '@theqrl/web3-utils';
 import { AbiCoder, defaultAbiCoder } from '../../src/abi-coder.js';
 import { ParamType } from '../../src/fragments.js';
 
-// One 64-byte word for every type. Heads are 64 bytes; offsets are measured in
-// bytes from the start of the head block; tails are 64-byte aligned.
+// Numeric values occupy 64-byte words. Offsets are measured in bytes from the
+// start of the head block; tails are 64-byte aligned.
 const WORD = 64;
 
 const zeros = (n: number) => '00'.repeat(n);
@@ -486,9 +486,9 @@ describe('AbiCoder', () => {
 			},
 		);
 
-		it('defaults a bare uint/int to 512 bits', () => {
-			expect(defaultAbiCoder._getCoder(ParamType.from('uint')).name).toBe('uint512');
-			expect(defaultAbiCoder._getCoder(ParamType.from('int')).name).toBe('int512');
+		it('defaults a bare uint/int to 256 bits', () => {
+			expect(defaultAbiCoder._getCoder(ParamType.from('uint')).name).toBe('uint256');
+			expect(defaultAbiCoder._getCoder(ParamType.from('int')).name).toBe('int256');
 		});
 
 		it.each(['bytes0', 'bytes65'])('rejects the invalid type %s', type => {

@@ -19,7 +19,15 @@ import { AbiParameter } from '@theqrl/web3-types';
 import { ZodIssueBase } from 'zod';
 
 export type ValidInputTypes = Uint8Array | bigint | string | number | boolean;
-export type QRLBaseTypes = 'bool' | 'bytes' | 'string' | 'uint' | 'int' | 'address' | 'tuple';
+export type QRLBaseTypes =
+	| 'bool'
+	| 'bytes'
+	| 'string'
+	| 'uint'
+	| 'int'
+	| 'address'
+	| 'tuple'
+	| 'function';
 export type QRLBaseTypesWithMeta =
 	| `string${string}`
 	| `string${string}[${number}]`
@@ -27,6 +35,8 @@ export type QRLBaseTypesWithMeta =
 	| `bytes${string}[${number}]`
 	| `address[${number}]`
 	| `bool[${number}]`
+	| `function[]`
+	| `function[${number}]`
 	| `int${string}`
 	| `int${string}[${number}]`
 	| `uint${string}`

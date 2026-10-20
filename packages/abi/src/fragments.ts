@@ -1021,7 +1021,7 @@ export class FunctionFragment extends ConstructorFragment {
 
 function checkForbidden(fragment: ErrorFragment): ErrorFragment {
 	const sig = fragment.format();
-	if (sig === 'Error(string)' || sig === 'Panic(uint512)') {
+	if (sig === 'Error(string)' || sig === 'Panic(uint256)') {
 		logger.throwArgumentError(`cannot specify user defined ${sig} error`, 'fragment', fragment);
 	}
 	return fragment;
@@ -1108,9 +1108,9 @@ export class ErrorFragment extends Fragment {
 function verifyType(type: string): string {
 	// These need to be transformed to their full description
 	if (type.match(/^uint($|[^1-9])/)) {
-		type = `uint512${type.substring(4)}`;
+		type = `uint256${type.substring(4)}`;
 	} else if (type.match(/^int($|[^1-9])/)) {
-		type = `int512${type.substring(3)}`;
+		type = `int256${type.substring(3)}`;
 	}
 
 	// @TODO: more verification

@@ -45,7 +45,7 @@ export const padLeft = (value: Numbers, characterAmount: number, sign = '0'): st
 		return validatorUtils.padLeft(value, characterAmount, sign);
 	}
 
-	validator.validate(['int'], [value]);
+	validator.validate(['int512'], [value]);
 
 	return validatorUtils.padLeft(value, characterAmount, sign);
 };
@@ -71,7 +71,7 @@ export const padRight = (value: Numbers, characterAmount: number, sign = '0'): s
 		return value.padEnd(characterAmount, sign);
 	}
 
-	validator.validate(['int'], [value]);
+	validator.validate(['int512'], [value]);
 
 	const hexString = typeof value === 'string' && isHexStrict(value) ? value : numberToHex(value);
 
@@ -109,7 +109,7 @@ export const leftPad = padLeft;
  * ```
  */
 export const toTwosComplement = (value: Numbers, nibbleWidth = 64): string => {
-	validator.validate(['int'], [value]);
+	validator.validate(['int512'], [value]);
 
 	const val = toNumber(value);
 
@@ -142,7 +142,7 @@ export const toTwosComplement = (value: Numbers, nibbleWidth = 64): string => {
  * ```
  */
 export const fromTwosComplement = (value: Numbers, nibbleWidth = 64): number | bigint => {
-	validator.validate(['int'], [value]);
+	validator.validate(['int512'], [value]);
 
 	const val = toNumber(value);
 

@@ -57,18 +57,18 @@ describe('utils', () => {
 		// to trigger the padding for every width tested below.
 		const digits = 'ab'.repeat(33);
 		const wideHex = `0x${digits}`;
-		const paddedTo512 = `0x${'0'.repeat(512 - 66)}${digits}`;
+		const paddedTo256 = `0x${'0'.repeat(256 - 66)}${digits}`;
 
-		it('pads a bare uint to 512 hex characters', () => {
-			expect(formatParam('uint', wideHex)).toBe(paddedTo512);
+		it('pads a bare uint to 256 hex characters', () => {
+			expect(formatParam('uint', wideHex)).toBe(paddedTo256);
 		});
 
-		it('pads a bare int to 512 hex characters', () => {
-			expect(formatParam('int', wideHex)).toBe(paddedTo512);
+		it('pads a bare int to 256 hex characters', () => {
+			expect(formatParam('int', wideHex)).toBe(paddedTo256);
 		});
 
-		it('pads bare uint array members to 512 hex characters', () => {
-			expect(formatParam('uint[]', [wideHex])).toEqual([paddedTo512]);
+		it('pads bare uint array members to 256 hex characters', () => {
+			expect(formatParam('uint[]', [wideHex])).toEqual([paddedTo256]);
 		});
 
 		it('uses an explicit width instead of the bare default', () => {

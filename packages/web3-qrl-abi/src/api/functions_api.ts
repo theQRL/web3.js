@@ -18,7 +18,11 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import { AbiError } from '@theqrl/web3-errors';
 import { sha3Raw } from '@theqrl/web3-utils';
 import { AbiFunctionFragment } from '@theqrl/web3-types';
-import { isAbiFunctionFragment, jsonInterfaceMethodToString } from '../utils.js';
+import {
+	canonicalizeSignature,
+	isAbiFunctionFragment,
+	jsonInterfaceMethodToString,
+} from '../utils.js';
 import { encodeParameters } from './parameters_api.js';
 
 // todo Add link to JSON interface documentation
@@ -63,7 +67,7 @@ export const encodeFunctionSignature = (functionName: string | AbiFunctionFragme
 	let name: string;
 
 	if (typeof functionName === 'string') {
-		name = functionName;
+		name = canonicalizeSignature(functionName);
 	} else {
 		name = jsonInterfaceMethodToString(functionName);
 	}

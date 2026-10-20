@@ -27,6 +27,7 @@ import {
 	isTransactionWithSender,
 	validateTransactionCall,
 	validateTransactionWithSender,
+	validateFeeMarketGas,
 } from '../../src/validation';
 import {
 	isAccessListEntryValidData,
@@ -40,6 +41,20 @@ import {
 } from '../fixtures/validation';
 
 describe('validation', () => {
+	it('keeps transaction fee validation independent of 256-bit ABI aliases', () => {
+		const wide = `0x${(BigInt(1) << BigInt(400)).toString(16)}`;
+		expect(() =>
+			validateFeeMarketGas({ gas: '0x5208', maxFeePerGas: wide, maxPriorityFeePerGas: wide }),
+		).not.toThrow();
+		expect(() =>
+			validateFeeMarketGas({
+				gas: '0x5208',
+				maxFeePerGas: `-${wide}`,
+				maxPriorityFeePerGas: wide,
+			}),
+		).toThrow();
+	});
+
 	describe('isBaseTransaction', () => {
 		it.each(isBaseTransactionValidData)('%s', (input, output) => {
 			expect(isBaseTransaction(input)).toEqual(output);

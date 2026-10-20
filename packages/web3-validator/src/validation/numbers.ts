@@ -49,7 +49,7 @@ export const isUInt = (
 		size = options.bitSize;
 	}
 
-	const maxSize = BigInt(2) ** BigInt(size ?? 512) - BigInt(1);
+	const maxSize = BigInt(2) ** BigInt(size ?? 256) - BigInt(1);
 
 	try {
 		const valueToCheck =
@@ -94,8 +94,8 @@ export const isInt = (
 		size = options.bitSize;
 	}
 
-	const maxSize = BigInt(2) ** BigInt((size ?? 512) - 1) - BigInt(1);
-	const minSize = BigInt(-1) * BigInt(2) ** BigInt((size ?? 512) - 1);
+	const maxSize = BigInt(2) ** BigInt((size ?? 256) - 1) - BigInt(1);
+	const minSize = BigInt(-1) * BigInt(2) ** BigInt((size ?? 256) - 1);
 
 	try {
 		const valueToCheck =
@@ -111,7 +111,7 @@ export const isInt = (
 };
 
 export const isNumber = (value: ValidInputTypes) => {
-	if (isInt(value)) {
+	if (isInt(value, { bitSize: 512 })) {
 		return true;
 	}
 

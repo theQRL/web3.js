@@ -29,6 +29,7 @@ import { ArrayCoder } from './coders/array.js';
 import { BooleanCoder } from './coders/boolean.js';
 import { BytesCoder } from './coders/bytes.js';
 import { FixedBytesCoder } from './coders/fixed-bytes.js';
+import { FunctionCoder } from './coders/function.js';
 import { NullCoder } from './coders/null.js';
 import { NumberCoder } from './coders/number.js';
 import { StringCoder } from './coders/string.js';
@@ -60,6 +61,8 @@ export class AbiCoder {
 				return new StringCoder(param.name);
 			case 'bytes':
 				return new BytesCoder(param.name);
+			case 'function':
+				return new FunctionCoder(param.name);
 			case 'array':
 				return new ArrayCoder(
 					this._getCoder(param.arrayChildren),
@@ -78,7 +81,7 @@ export class AbiCoder {
 		// u?int[0-9]*
 		let match = param.type.match(paramTypeNumber);
 		if (match) {
-			const size = parseInt(match[2] || '512');
+			const size = parseInt(match[2] || '256');
 			if (size === 0 || size > 512 || size % 8 !== 0) {
 				logger.throwArgumentError(`invalid ${match[1]} bit length`, 'param', param);
 			}
