@@ -17,7 +17,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 import { AbiError } from '@theqrl/web3-errors';
 import { AbiCoder, ParamType } from '@theqrl/abi';
-import { isNullish, leftPad, rightPad, toHex } from '@theqrl/web3-utils';
+import { bytesToHex, isNullish, leftPad, rightPad } from '@theqrl/web3-utils';
 import {
 	AbiInput,
 	AbiCoderStruct,
@@ -155,8 +155,12 @@ export const formatParam = (type: string, _param: unknown): unknown => {
 	if (type === 'function') {
 		return _param;
 	}
-	// clone if _param is an object
-	const param = typeof _param === 'object' && !Array.isArray(_param) ? { ..._param } : _param;
+	// Normalize binary values before cloning objects to preserve their bytes.
+	const normalizedParam = _param instanceof Uint8Array ? bytesToHex(_param) : _param;
+	const param =
+		typeof normalizedParam === 'object' && !Array.isArray(normalizedParam)
+			? { ...normalizedParam }
+			: normalizedParam;
 	const paramTypeBytes = /^bytes([0-9]*)$/;
 	const paramTypeBytesArray = /^bytes([0-9]*)\[\]$/;
 	const paramTypeNumber = /^(u?int)([0-9]*)$/;
@@ -185,8 +189,6 @@ export const formatParam = (type: string, _param: unknown): unknown => {
 	// Format correct length for bytes[0-9]+
 	match = paramTypeBytes.exec(type);
 	if (match) {
-		const hexParam = param instanceof Uint8Array ? toHex(param) : param;
-
 		// format to correct length
 		const size = parseInt(match[1], 10);
 		if (size) {
@@ -197,13 +199,11 @@ export const formatParam = (type: string, _param: unknown): unknown => {
 			}
 			// pad to correct length
 			const paddedParam =
-				(hexParam as string).length < maxSize
-					? rightPad(param as string, size * 2)
-					: hexParam;
+				(param as string).length < maxSize ? rightPad(param as string, size * 2) : param;
 			return formatOddHexstrings(paddedParam as string);
 		}
 
-		return formatOddHexstrings(hexParam as string);
+		return formatOddHexstrings(param as string);
 	}
 	return param;
 };
