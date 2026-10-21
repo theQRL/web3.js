@@ -793,6 +793,8 @@ export class Contract<Abi extends ContractAbi>
 							expected = keccak256(new TextEncoder().encode(value as string));
 						} else if (inputAbi?.indexed && inputAbi.type === 'bytes') {
 							expected = keccak256(formatOddHexstrings(value as string));
+						} else if (inputAbi?.indexed && inputAbi.type === 'function') {
+							expected = keccak256(value as Bytes);
 						}
 
 						return (
