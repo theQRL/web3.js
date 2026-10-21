@@ -463,7 +463,7 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 *  }
 	 *
 	 * web3.qrl.getTransaction(
-	 *     web3.utils.hexToBytes("0x30755ed65396facf86c53e6217c52b4daebe72aa4941d89635409de4c9c7f9466d4e9aaec7977f05e923889b33c0d0dd27d7226b6e6f56ce737465c5cfd04be400"),
+	 *     web3.utils.hexToBytes("0x3a2b…"),
 	 *     { number: FMT_NUMBER.NUMBER , bytes: FMT_BYTES.HEX }
 	 * ).then(console.log);
 	 * {
@@ -627,7 +627,7 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 *  }
 	 *
 	 * web3.qrl.getTransactionFromBlock(
-	 *     hexToBytes("0x30755ed65396facf86c53e6217c52b4daebe72aa4941d89635409de4c9c7f9466d4e9aaec7977f05e923889b33c0d0dd27d7226b6e6f56ce737465c5cfd04be400"),
+	 *     hexToBytes("0x3a2b…"),
 	 *     0,
 	 *     { number: FMT_NUMBER.NUMBER , bytes: FMT_BYTES.HEX }
 	 * ).then(console.log);
@@ -874,7 +874,9 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 * @param returnFormat ({@link DataFormat} defaults to {@link DEFAULT_RETURN_FORMAT}) Specifies how the return data should be formatted.
 	 * @returns If `await`ed or `.then`d (i.e. the promise resolves), the transaction hash is returned.
 	 * ```ts
-	 * const signedTransaction = "0xf86580843b9aca0182520894e899f0130fd099c0b896b2ce4e5e15a25b23139a0180820a95a03a42d53ca5b71f845e1cd4c65359b05446a85d16881372d3bfaab8980935cb04a0711497bc8dd3b541152e2fed14fe650a647f1f0edab0d386ad9506f0e642410f"
+	 * // A signed type-2 QRL transaction: 0x02 || rlp([..., descriptor, extraParams, signature, publicKey]),
+	 * // as produced by web3.qrl.accounts.signTransaction (the full string is several kilobytes).
+	 * const signedTransaction = "0x02f9…"
 	 *
 	 * const transactionHash = await web3.qrl.sendSignedTransaction(signedTransaction);
 	 * console.log(transactionHash);
@@ -892,12 +894,12 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 * - `sending`
 	 * ```ts
 	 * web3.qrl.sendSignedTransaction(signedTransaction).on('sending', transactionToBeSent => console.log(transactionToBeSent));
-	 * > "0xf86580843b9aca0182520894e899f0130fd099c0b896b2ce4e5e15a25b23139a0180820a95a03a42d53ca5b71f845e1cd4c65359b05446a85d16881372d3bfaab8980935cb04a0711497bc8dd3b541152e2fed14fe650a647f1f0edab0d386ad9506f0e642410f"
+	 * > "0x02f9…"
 	 * ```
 	 * - `sent`
 	 * ```ts
 	 * web3.qrl.sendSignedTransaction(signedTransaction).on('sent', sentTransaction => console.log(sentTransaction));
-	 * > "0xf86580843b9aca0182520894e899f0130fd099c0b896b2ce4e5e15a25b23139a0180820a95a03a42d53ca5b71f845e1cd4c65359b05446a85d16881372d3bfaab8980935cb04a0711497bc8dd3b541152e2fed14fe650a647f1f0edab0d386ad9506f0e642410f"
+	 * > "0x02f9…"
 	 * ```
 	 * - `transactionHash`
 	 * ```ts
@@ -969,23 +971,18 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 * ```ts
 	 * // Using an unlocked account managed by connected RPC client
 	 * web3.qrl.sign("0x48656c6c6f20776f726c64", "Q0B425Ed8E7399aF5dEFFE13a09e7F1776996a32466aa3c1BB1a34ad61760A2Eb72705C904aB988e3e089E55d1D8081DA21F20544E04CB5f0ac85aA6d5940e38D").then(console.log);
-	 * > "0x30755ed65396facf86c53e6217c52b4daebe72aa4941d89635409de4c9c7f9466d4e9aaec7977f05e923889b33c0d0dd27d7226b6e6f56ce737465c5cfd04be400"
+	 * > "0x3a2b…"
 	 *
 	 * // Using an unlocked account managed by connected RPC client
 	 * web3.qrl.sign("0x48656c6c6f20776f726c64", "Q0B425Ed8E7399aF5dEFFE13a09e7F1776996a32466aa3c1BB1a34ad61760A2Eb72705C904aB988e3e089E55d1D8081DA21F20544E04CB5f0ac85aA6d5940e38D", { number: FMT_NUMBER.NUMBER , bytes: FMT_BYTES.UINT8ARRAY }).then(console.log);
-	 * > Uint8Array(65) [
-	 *    48, 117,  94, 214,  83, 150, 250, 207, 134, 197,  62,
-	 *    98,  23, 197,  43,  77, 174, 190, 114, 170,  73,  65,
-	 *   216, 150,  53,  64, 157, 228, 201, 199, 249,  70, 109,
-	 *    78, 154, 174, 199, 151, 127,   5, 233,  35, 136, 155,
-	 *    51, 192, 208, 221,  39, 215,  34, 107, 110, 111,  86,
-	 *   206, 115, 116, 101, 197, 207, 208,  75, 228,   0
+	 * > Uint8Array(4627) [
+	 *    58,  43, ... // the 4627-byte ML-DSA-87 signature
 	 * ]
 	 * ```
 	 *
 	 * // Using an indexed account managed by local Web3 wallet
 	 * web3.qrl.sign("0x48656c6c6f20776f726c64", 0).then(console.log);
-	 * > "0x30755ed65396facf86c53e6217c52b4daebe72aa4941d89635409de4c9c7f9466d4e9aaec7977f05e923889b33c0d0dd27d7226b6e6f56ce737465c5cfd04be400"
+	 * > "0x3a2b…"
 	 */
 	public async sign<ReturnFormat extends DataFormat = typeof DEFAULT_RETURN_FORMAT>(
 		message: Bytes,

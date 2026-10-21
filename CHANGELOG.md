@@ -9,12 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Fixed-size ABI byte inputs (`bytesN`) must contain exactly N bytes; callers must pad deliberately instead of relying on implicit padding. Seed strings require a lowercase `0x` prefix.
 - Updated the fixture compiler to `@theqrl/hypc` 0.2.0 and regenerated contract ABIs and bytecode with optimization enabled (200 runs), keeping PublicResolver within go-qrl's deployed code size limit.
 - Limited `compile:contracts` to generating and formatting contract fixtures.
 - Configured local testnet client and helper images using published tags, including a compatible AMD64 genesis generator.
 
 ### Fixed
 
+- Socket providers (WebSocket, IPC) no longer crash the process on a `[null]` reply, no longer treat unparseable or non-object messages as a lost connection, reset their chunk parser on every (re)connection, and accept `0`/`""` as JSON-RPC ids. WebSocket frames are parsed independently, so one malformed frame can no longer poison every response that follows it.
+- IPC incomplete-message timeouts expire 15 seconds after the first chunk even under continuous traffic. Parser errors reject affected requests without detaching the live socket's listeners, allowing later replies to succeed.
+- `ResponseError`, `InvalidResponseError` and the JSON-RPC shape predicates tolerate `null` entries in batch responses instead of throwing a `TypeError`.
+- Setting `defaultCommon` on a context no longer makes local signing fail with `CommonOrChainAndHardforkError`, an explicit `chain`/`hardfork` pair takes precedence over it, the transaction `chainId` is taken from the adopted `common` instead of being left unset, and the context's `defaultCommon` object is no longer mutated during signing.
+- Removed unused runtime dependencies (`@theqrl/wallet.js` and `crc-32` from web3-qrl-abi, `util` from web3-validator, `@ethersproject/strings` from abi).
+- Replaced stale Ethereum-era examples (secp256k1 keys, 65-byte signatures, legacy raw transactions, 20-byte addresses) in the accounts and Web3QRL documentation and in the secrets template.
 - Made the ESLint regression test use an on-disk fixture and exercise both CI and local parser modes.
 - Resolved Jest types in ESLint's strict TypeScript project so valid test assertions no longer inflate warning counts, and lowered the warning budgets to match.
 - Contract compilation now exits unsuccessfully on compiler errors, missing contract artifacts, and filesystem errors. Compilation failures preserve the existing fixtures; warnings do not prevent successful builds.
@@ -24,6 +31,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- The HTTP provider refuses redirects by default (`redirect: 'error'`), so the JSON-RPC body and custom authentication headers are never re-sent to another host; callers can opt in through `providerOptions.redirect`.
+- Keystore decryption rejects any `crypto.cipher` other than `aes-256-gcm` with `InvalidCipherError`.
+- `seedToAccount` validates every seed through `parseAndValidateSeed`: exactly 51 bytes, as a `0x`-prefixed hex string or a byte array, with no whitespace or separators.
+- The ABI decoder rejects non-canonical words (non-zero high bits in integers, booleans other than 0 or 1, non-zero padding in fixed-size bytes) instead of decoding them silently, matching the on-chain decoder.
+- `sendSignedTransaction` only uses the sender embedded in a raw transaction for the pre-flight simulation when the transaction's signature verifies.
+- Raised the `launch-editor` patch floor to 2.14.2 (CVE-2026-112942, command injection) so the Trivy supply-chain gate passes again.
+- Pinned the `@theqrl/qrl-contracts` archive's SHA-512 integrity in the lockfile so pnpm rejects altered downloads. `pnpm run doctor` guards the archive pin and checks the installed tree against a reviewed digest.
 - Updated vulnerable tooling dependencies and documented the temporary exception for the unfixed `braces` advisory, whose glob patterns are controlled by repository/tool configuration.
 - Upgraded `image-size` to the fixed release verified against its Codeberg source and removed its two advisory exceptions.
 

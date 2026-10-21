@@ -16,6 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import WebSocket from 'isomorphic-ws';
 import { QRLExecutionAPI, Web3APIPayload } from '@theqrl/web3-types';
+import { ProviderError } from '@theqrl/web3-errors';
 import WebSocketProvider from '../../src/index';
 import {
 	invalidConnectionStrings,
@@ -100,6 +101,78 @@ describe('WebSocketProvider', () => {
 
 				expect(result).toEqual(jsonRpcResponse);
 			});
+		});
+	});
+
+	describe('malformed frames from the peer', () => {
+		const socket = () => wsProvider.SocketConnection as unknown as WebSocket;
+
+		it.each([
+			['[null]', 1],
+			['null', 1],
+			['0', 1],
+			['"text"', 1],
+			['{', 1],
+			['', 1],
+			['[1]', 1],
+		])('reports frame %p instead of throwing or reconnecting', (frame, expectedErrors) => {
+			const errors: unknown[] = [];
+			wsProvider.on('error', (error: unknown) => {
+				errors.push(error);
+			});
+			// @ts-expect-error protected member
+			const reconnect = jest.spyOn(wsProvider, '_reconnect');
+
+			expect(() => socket().emit('message', { data: frame })).not.toThrow();
+
+			expect(errors).toHaveLength(expectedErrors);
+			expect(reconnect).not.toHaveBeenCalled();
+		});
+
+		it('does not throw when no error listener is attached', () => {
+			expect(() => socket().emit('message', { data: '[null]' })).not.toThrow();
+			expect(() => socket().emit('message', { data: '{' })).not.toThrow();
+		});
+
+		it('does not throw on binary frames', () => {
+			wsProvider.on('error', () => undefined);
+
+			expect(() => socket().emit('message', { data: Buffer.from('[null]') })).not.toThrow();
+			expect(() => socket().emit('message', { data: new ArrayBuffer(4) })).not.toThrow();
+			expect(() =>
+				socket().emit('message', { data: [Buffer.from('nu'), Buffer.from('ll')] }),
+			).not.toThrow();
+		});
+
+		it('decodes a binary frame that carries a valid response', async () => {
+			const request = wsProvider.request(jsonRpcPayload);
+			// The mock answers after 100 ms; answer first, as a Buffer, with the same shape.
+			socket().emit('message', { data: Buffer.from(JSON.stringify(jsonRpcResponse)) });
+
+			await expect(request).resolves.toEqual(jsonRpcResponse);
+		});
+
+		it('reports an unsupported frame data type as a ProviderError', () => {
+			const errors: unknown[] = [];
+			wsProvider.on('error', (error: unknown) => {
+				errors.push(error);
+			});
+
+			expect(() => socket().emit('message', { data: 42 })).not.toThrow();
+			expect(() => socket().emit('message', { data: [Buffer.from('x'), 'y'] })).not.toThrow();
+
+			expect(errors).toHaveLength(2);
+			expect(errors[0]).toBeInstanceOf(ProviderError);
+			expect(errors[1]).toBeInstanceOf(ProviderError);
+		});
+
+		it('keeps answering requests after a malformed frame', async () => {
+			wsProvider.on('error', () => undefined);
+			socket().emit('message', { data: '{' });
+
+			const result = await wsProvider.request(jsonRpcPayload);
+
+			expect(result).toEqual(jsonRpcResponse);
 		});
 	});
 });

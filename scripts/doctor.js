@@ -4,6 +4,8 @@ const { execFileSync, spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 
+const { digestInstalledPackage, installedPackageRoot } = require('./git-dependency-digest');
+
 const root = path.resolve(__dirname, '..');
 const failures = [];
 const warnings = [];
@@ -252,6 +254,32 @@ for (const [name, args] of [
 checkCommand('git', ['--version'], 'git');
 checkCommand('bash', ['--version'], 'bash');
 checkCommand('curl', ['--version'], 'curl', false);
+
+// pnpm enforces a supplied integrity hash for GitHub tarballs, but does not generate
+// one automatically. Keep the reviewed archive checksum in the lockfile, in addition
+// to checking the installed tree. See docs/supply-chain-security.md for updates.
+const expectedGitDependencies = {
+	'@theqrl/qrl-contracts': {
+		tarball: 'https://codeload.github.com/theQRL/qrl-contracts/tar.gz/d3c84eedac4e051f6e99892397c5e42f0f0a2266',
+		integrity: 'sha512-l7G9mP4DJR1cF+8Vht3hN9Rk9KjY+/jz2C5BMUq5OaQ0IPcL1exO6Jcb4HgwFuZ3TuecSCVvWnZW2OATzQITAA==',
+		treeDigest: 'ba165d2f1305116539092a351a2c476a0cd3425336183ef6fd5b35f996f2d5b7',
+	},
+};
+
+const dependencyLockfile = readText('pnpm-lock.yaml');
+for (const [packageName, { tarball, integrity, treeDigest }] of Object.entries(expectedGitDependencies)) {
+	if (!dependencyLockfile.includes(`resolution: {integrity: ${integrity}, tarball: ${tarball}}`)) {
+		fail(`${packageName} must retain its reviewed archive integrity and URL in pnpm-lock.yaml`);
+	}
+	const actualDigest = digestInstalledPackage(installedPackageRoot(root, packageName));
+	if (actualDigest === null) {
+		fail(`${packageName} is not installed; run pnpm install --frozen-lockfile before pnpm run doctor`);
+	} else if (actualDigest !== treeDigest) {
+		fail(
+			`${packageName} installed tree digest ${actualDigest} does not match the reviewed digest ${treeDigest}; the installed content changed`,
+		);
+	}
+}
 
 // Advisory only. `pnpm run doctor` is a required step on every CI leg and on
 // machines that never run the supply-chain gate, so a missing scanner must not

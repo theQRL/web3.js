@@ -18,7 +18,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import { Address, KeyStore } from '@theqrl/web3-types';
 import { Web3ValidatorError, isAddressString } from '@theqrl/web3-validator';
 import { bytesToHex, hexToBytes } from '@theqrl/web3-utils';
-import { TransactionSigningError } from '@theqrl/web3-errors';
+import { InvalidCipherError, TransactionSigningError } from '@theqrl/web3-errors';
 import {
 	create,
 	decrypt,
@@ -275,6 +275,16 @@ describe('accounts', () => {
 	});
 
 	describe('decrypt', () => {
+		it('rejects a keystore whose cipher is not aes-256-gcm', async () => {
+			const account = create();
+			const keystore = await encrypt(account.seed, 'password', { m: 19456, t: 2, p: 1 });
+			const tampered = { ...keystore, crypto: { ...keystore.crypto, cipher: 'aes-128-ctr' } };
+
+			await expect(decrypt(tampered as unknown as KeyStore, 'password')).rejects.toThrow(
+				InvalidCipherError,
+			);
+		});
+
 		describe('valid cases', () => {
 			it.each(validDecryptData)('%s', async input => {
 				const keystore = await encrypt(input[0], input[1], input[2]).catch(err => {

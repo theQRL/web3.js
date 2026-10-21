@@ -61,5 +61,32 @@ describe('HttpProvider - implemented methods', () => {
 
 			await expect(httpProvider.request(jsonRpcPayload)).rejects.toThrow(ResponseError);
 		});
+
+		it('refuses redirects by default', async () => {
+			fetchMock.mockResponseOnce(JSON.stringify(mockGetBalanceResponse));
+
+			await httpProvider.request(jsonRpcPayload);
+
+			const [, init] = fetchMock.mock.calls[fetchMock.mock.calls.length - 1] as [
+				string,
+				RequestInit,
+			];
+			expect(init.redirect).toBe('error');
+		});
+
+		it('lets the caller opt in to following redirects', async () => {
+			const provider = new HttpProvider('http://localhost:8545', {
+				providerOptions: { redirect: 'follow' },
+			});
+			fetchMock.mockResponseOnce(JSON.stringify(mockGetBalanceResponse));
+
+			await provider.request(jsonRpcPayload);
+
+			const [, init] = fetchMock.mock.calls[fetchMock.mock.calls.length - 1] as [
+				string,
+				RequestInit,
+			];
+			expect(init.redirect).toBe('follow');
+		});
 	});
 });

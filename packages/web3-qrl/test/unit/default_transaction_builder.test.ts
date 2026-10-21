@@ -383,6 +383,8 @@ describe('defaultTransactionBuilder', () => {
 
 			const input = { ...transaction };
 			delete input.common;
+			delete input.chain;
+			delete input.hardfork;
 			delete input.maxPriorityFeePerGas;
 			delete input.maxFeePerGas;
 
@@ -392,6 +394,66 @@ describe('defaultTransactionBuilder', () => {
 				fillGasPrice: true,
 			});
 			expect(result.common).toStrictEqual(customCommon);
+			// `common` and the chain/hardfork pair are mutually exclusive signing options: the
+			// context defaults for the pair must not be filled in next to the adopted common.
+			expect(result.chain).toBeUndefined();
+			expect(result.hardfork).toBeUndefined();
+		});
+
+		it('should take chainId from web3Context.defaultCommon instead of asking the node', async () => {
+			web3Context = new Web3Context<QRLExecutionAPI>({
+				provider: new HttpProvider('http://127.0.0.1'),
+				config: {
+					defaultCommon: {
+						customChain: { name: 'custom', networkId: '0x3', chainId: '0x7' },
+						baseChain: 'mainnet',
+						hardfork: 'zond',
+					},
+				},
+			});
+
+			const input = { ...transaction };
+			delete input.common;
+			delete input.chain;
+			delete input.hardfork;
+			delete input.chainId;
+			delete input.maxPriorityFeePerGas;
+			delete input.maxFeePerGas;
+
+			const result = await defaultTransactionBuilder({
+				transaction: input,
+				web3Context,
+				fillGasPrice: true,
+			});
+			expect(result.chainId).toBe('0x7');
+			expect(qrlRpcMethods.getChainId).not.toHaveBeenCalled();
+		});
+
+		it('should prefer an explicit chain/hardfork pair over web3Context.defaultCommon', async () => {
+			web3Context = new Web3Context<QRLExecutionAPI>({
+				provider: new HttpProvider('http://127.0.0.1'),
+				config: {
+					defaultCommon: {
+						customChain: { name: 'custom', networkId: '0x3', chainId: '0x1' },
+						baseChain: 'mainnet',
+						hardfork: 'zond',
+					},
+				},
+			});
+
+			const input = { ...transaction };
+			delete input.common;
+			delete input.maxPriorityFeePerGas;
+			delete input.maxFeePerGas;
+
+			const result = await defaultTransactionBuilder({
+				transaction: input,
+				web3Context,
+				fillGasPrice: true,
+			});
+			expect(result.common).toBeUndefined();
+			expect(result.chain).toBe('mainnet');
+			expect(result.hardfork).toBe('zond');
 		});
 	});
 

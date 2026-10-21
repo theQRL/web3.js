@@ -27,6 +27,37 @@ explaining the reason in the pull request.
 Known install warnings and the current remediation plan are tracked in
 [`docs/dependency-warning-triage.md`](dependency-warning-triage.md).
 
+## Git-hosted Dependency Integrity
+
+`@theqrl/qrl-contracts`, the Hyperion contract library the test fixtures are
+compiled against, is a GitHub-hosted dependency pinned to a commit and a SHA-512
+archive checksum in `pnpm-lock.yaml`. pnpm 10.27.0 does not generate this integrity
+field automatically, but enforces it when supplied: an incorrect archive checksum
+fails installation with `ERR_PNPM_TARBALL_INTEGRITY`.
+`pnpm run doctor` checks that the lockfile retains the reviewed checksum and URL.
+It also hashes the installed package tree (`scripts/git-dependency-digest.js`)
+and compares it with the reviewed tree digest in `scripts/doctor.js`.
+
+When the pinned commit changes, download its codeload archive and review the
+source diff. Compute the archive's SHA-512 checksum, prefix the base64 output
+with `sha512-`, and record it as `resolution.integrity` alongside `tarball` in
+the lockfile and in `scripts/doctor.js`:
+
+```sh
+openssl dgst -sha512 -binary qrl-contracts.tar.gz | openssl base64 -A
+```
+
+Install with the updated lockfile, review the installed files, and record the
+new tree digest in `scripts/doctor.js`:
+
+```sh
+pnpm install --frozen-lockfile
+node scripts/git-dependency-digest.js @theqrl/qrl-contracts
+```
+
+Run `pnpm run doctor` after recording both digests. Do not remove the archive
+integrity field when refreshing the lockfile.
+
 ## Audit Gate
 
 The required local and CI audit command is:
@@ -140,7 +171,7 @@ they execute on developer and CI machines, so they are remediated the same way.
 | `cookie@<0.7.0` | `0.7.2` | Patch floor. |
 | `markdown-it@<14.2.0` | `14.3.0` | Patch floor. |
 | `joi@<17.13.7` | `17.13.7` | CVE-2026-92599 validation DoS (high), retaining the Joi 17 line. |
-| `launch-editor@<2.14.1` | `2.14.1` | Patch floor. |
+| `launch-editor@<2.14.2` | `2.14.2` | CVE-2026-112942 command injection through an unvalidated file path (high); patch floor. |
 | `webpack-dev-server@<5.2.5` | `5.2.6` | Patch floor. |
 | `uuid@<11.1.1` | `11.1.1` | Patch floor. |
 | `js-yaml@>=3.0.0 <3.15.2` | `3.15.2` | GHSA-2883-xcg3-v3hh and GHSA-5p4m-2wfm-xmqj parsing DoS (high), js-yaml 3 line. |

@@ -123,8 +123,31 @@ export const transactionsTestData: [FeeMarketEIP1559TxData][] = [
 ];
 
 export const invalidSeedtoAccountData: [any, Error][] = [
-	['', new Error('Unsupported extendedSeed input')],
-	[new Uint8Array([]), new Error('ExtendedSeed: expected 51 bytes, got 0')],
+	['', new InvalidSeedError()],
+	[new Uint8Array([]), new SeedLengthError()],
+	[
+		'0X010000034da61fe50c659a3285549dc395571e2bf6891c462c041e3c6b9061fc73eb3687d03f940e5e65d582019ef10ce1327f',
+		new InvalidSeedError(),
+	],
+	// Lenient spellings that the underlying wallet library would normalise are rejected at
+	// this entry point: surrounding whitespace, separators, a missing 0x prefix.
+	[
+		' 0x010000034da61fe50c659a3285549dc395571e2bf6891c462c041e3c6b9061fc73eb3687d03f940e5e65d582019ef10ce1327f',
+		new InvalidSeedError(),
+	],
+	[
+		'01:00:00:03:4d:a6:1f:e5:0c:65:9a:32:85:54:9d:c3:95:57:1e:2b:f6:89:1c:46:2c:04:1e:3c:6b:90:61:fc:73:eb:36:87:d0:3f:94:0e:5e:65:d5:82:01:9e:f1:0c:e1:32:7f',
+		new InvalidSeedError(),
+	],
+	[
+		'010000034da61fe50c659a3285549dc395571e2bf6891c462c041e3c6b9061fc73eb3687d03f940e5e65d582019ef10ce1327f',
+		new InvalidSeedError(),
+	],
+	[
+		'0x010000034da61fe50c659a3285549dc395571e2bf6891c462c041e3c6b9061fc73eb3687d03f940e5e65d582019ef10ce13',
+		new SeedLengthError(),
+	],
+	[new Uint8Array(52), new SeedLengthError()],
 ];
 
 export const validEncryptData: [[any, string | Uint8Array, CipherOptions], KeyStore][] = [

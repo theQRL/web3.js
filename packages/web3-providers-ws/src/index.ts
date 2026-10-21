@@ -29,8 +29,10 @@ import {
 	ReconnectOptions,
 	SocketProvider,
 	SocketProviderOptions,
+	toUtf8,
+	uint8ArrayConcat,
 } from '@theqrl/web3-utils';
-import { ConnectionNotOpenError } from '@theqrl/web3-errors';
+import { ConnectionNotOpenError, ProviderError } from '@theqrl/web3-errors';
 
 export { ClientRequestArgs } from 'http';
 
@@ -81,6 +83,12 @@ export default class WebSocketProvider<
 	// eslint-disable-next-line class-methods-use-this
 	protected _validateProviderPath(providerUrl: string): boolean {
 		return typeof providerUrl === 'string' ? /^ws(s)?:\/\//i.test(providerUrl) : false;
+	}
+
+	// A WebSocket frame is a whole message: nothing is carried over between frames.
+	// eslint-disable-next-line class-methods-use-this
+	protected _isFramedTransport(): boolean {
+		return true;
 	}
 
 	/**
@@ -155,7 +163,31 @@ export default class WebSocketProvider<
 	}
 
 	protected _parseResponses(event: WebSocket.MessageEvent) {
-		return this.chunkResponseParser.parseResponse(event.data as string);
+		return this.chunkResponseParser.parseResponse(
+			WebSocketProvider._messageEventDataToString(event.data),
+		);
+	}
+
+	/**
+	 * `ws` delivers text frames as strings and binary frames as a `Buffer`, an `ArrayBuffer` or
+	 * an array of `Buffer`s (fragmented). JSON-RPC is a text protocol, but a peer that sends a
+	 * binary frame must end up with a reported error, not with a `TypeError` thrown from inside
+	 * the socket callback.
+	 */
+	private static _messageEventDataToString(data: unknown): string {
+		if (typeof data === 'string') {
+			return data;
+		}
+		if (data instanceof ArrayBuffer) {
+			return toUtf8(new Uint8Array(data));
+		}
+		if (data instanceof Uint8Array) {
+			return toUtf8(data);
+		}
+		if (Array.isArray(data) && data.every(part => part instanceof Uint8Array)) {
+			return toUtf8(uint8ArrayConcat(...(data as Uint8Array[])));
+		}
+		throw new ProviderError(`Unsupported WebSocket message data type: ${typeof data}`);
 	}
 
 	protected _addSocketListeners(): void {

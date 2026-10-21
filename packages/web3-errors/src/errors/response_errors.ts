@@ -32,14 +32,24 @@ import {
 const isResponseWithError = <Error = unknown, Result = unknown>(
 	response: JsonRpcResponse<Result, Error>,
 ): response is JsonRpcResponseWithError<Error> =>
+	typeof response === 'object' &&
+	// eslint-disable-next-line no-null/no-null
+	response !== null &&
 	!Array.isArray(response) &&
 	response.jsonrpc === '2.0' &&
-	!!response &&
 	// eslint-disable-next-line no-null/no-null
 	(response.result === undefined || response.result === null) &&
 	// JSON RPC consider "null" as valid response
 	'error' in response &&
 	(typeof response.id === 'number' || typeof response.id === 'string');
+
+// A provider can hand back anything, `null` inside a batch array included; only an object can
+// carry an `error` member, so it is checked for before it is read.
+const errorOf = (value: unknown): JsonRpcError | undefined =>
+	// eslint-disable-next-line no-null/no-null
+	typeof value === 'object' && value !== null && 'error' in value
+		? (value as { error?: JsonRpcError }).error
+		: undefined;
 
 const buildErrorMessage = (response: JsonRpcResponse<unknown, unknown>): string =>
 	isResponseWithError(response) ? response.error.message : '';
@@ -65,17 +75,14 @@ export class ResponseError<ErrorType = unknown, RequestType = unknown> extends B
 
 		if (!message) {
 			this.data = Array.isArray(response)
-				? response.map(r => r.error?.data as ErrorType)
-				: response?.error?.data;
+				? response.map(r => errorOf(r)?.data as ErrorType)
+				: (errorOf(response)?.data as ErrorType);
 		}
 
 		this.request = request;
-		let errorOrErrors: JsonRpcError | JsonRpcError[] | undefined;
-		if (`error` in response) {
-			errorOrErrors = response.error as JsonRpcError;
-		} else if (response instanceof Array) {
-			errorOrErrors = response.map(r => r.error) as JsonRpcError[];
-		}
+		const errorOrErrors: JsonRpcError | JsonRpcError[] | undefined = Array.isArray(response)
+			? (response.map(r => errorOf(r)) as JsonRpcError[])
+			: errorOf(response);
 
 		this.innerError = errorOrErrors as unknown as Error | Error[] | undefined;
 	}
@@ -123,12 +130,9 @@ export class InvalidResponseError<ErrorType = unknown, RequestType = unknown> ex
 	) {
 		super(result, undefined, request);
 		this.code = ERR_INVALID_RESPONSE;
-		let errorOrErrors: JsonRpcError | JsonRpcError[] | undefined;
-		if (`error` in result) {
-			errorOrErrors = result.error as JsonRpcError;
-		} else if (result instanceof Array) {
-			errorOrErrors = result.map(r => r.error) as JsonRpcError[];
-		}
+		const errorOrErrors: JsonRpcError | JsonRpcError[] | undefined = Array.isArray(result)
+			? (result.map(r => errorOf(r)) as JsonRpcError[])
+			: errorOf(result);
 
 		this.innerError = errorOrErrors as unknown as Error | Error[] | undefined;
 	}

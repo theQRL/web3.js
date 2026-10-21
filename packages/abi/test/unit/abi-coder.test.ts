@@ -427,6 +427,43 @@ describe('AbiCoder', () => {
 			).toThrow(/insufficient data length/);
 		});
 
+		// Decoding errors are deferred by the coder: reading the slot throws.
+		const readFirst = (decoded: ReadonlyArray<unknown>) => () => decoded[0];
+
+		it('rejects a uint8 word with non-zero high bits', () => {
+			const decoded = defaultAbiCoder.decode(['uint8'], `0x${'ff'.repeat(WORD - 1)}05`);
+			expect(readFirst(decoded)).toThrow(/out-of-bounds/);
+		});
+
+		it('rejects an int8 word that is not sign-extended', () => {
+			// 0xff in the low byte with zero high bytes is 255, not a sign-extended -1.
+			const decoded = defaultAbiCoder.decode(['int8'], `0x${zeros(WORD - 1)}ff`);
+			expect(readFirst(decoded)).toThrow(/out-of-bounds/);
+		});
+
+		it('decodes a canonical negative int8', () => {
+			expect(defaultAbiCoder.decode(['int8'], `0x${'ff'.repeat(WORD)}`)[0]).toBe(-1);
+		});
+
+		it('rejects a bool word that is neither 0 nor 1', () => {
+			const decoded = defaultAbiCoder.decode(['bool'], `0x${word(2)}`);
+			expect(readFirst(decoded)).toThrow(/invalid boolean value/);
+		});
+
+		it('rejects a bytes4 word with non-zero padding', () => {
+			const decoded = defaultAbiCoder.decode(
+				['bytes4'],
+				`0x${bytesWord('deadbeef').slice(0, -2)}01`,
+			);
+			expect(readFirst(decoded)).toThrow(/non-zero padding/);
+		});
+
+		it('decodes canonical bytes4', () => {
+			expect(defaultAbiCoder.decode(['bytes4'], `0x${bytesWord('deadbeef')}`)[0]).toBe(
+				'0xdeadbeef',
+			);
+		});
+
 		it('accepts a Uint8Array as well as a hex string', () => {
 			const encoded = defaultAbiCoder.encode(['uint8'], [42]);
 			const bytes = Uint8Array.from(

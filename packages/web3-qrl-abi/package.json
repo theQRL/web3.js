@@ -50,12 +50,10 @@
 	"dependencies": {
 		"@ethersproject/bignumber": "5.8.0",
 		"@theqrl/abi": "workspace:^",
-		"@theqrl/wallet.js": "6.3.0",
 		"@theqrl/web3-errors": "workspace:^",
 		"@theqrl/web3-types": "workspace:^",
 		"@theqrl/web3-utils": "workspace:^",
-		"@theqrl/web3-validator": "workspace:^",
-		"crc-32": "1.2.2"
+		"@theqrl/web3-validator": "workspace:^"
 	},
 	"devDependencies": {
 		"@humeris/espresso-shot": "4.0.0",

@@ -17,7 +17,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 import { AbiError } from '@theqrl/web3-errors';
 import { AbiCoder, ParamType } from '@theqrl/abi';
-import { bytesToHex, isNullish, leftPad, rightPad } from '@theqrl/web3-utils';
+import { bytesToHex, isNullish, leftPad } from '@theqrl/web3-utils';
 import {
 	AbiInput,
 	AbiCoderStruct,
@@ -186,24 +186,11 @@ export const formatParam = (type: string, _param: unknown): unknown => {
 		}
 	}
 
-	// Format correct length for bytes[0-9]+
+	// Fixed bytes must already have their declared width. Let the coder validate
+	// them without padding or normalizing away a missing nibble.
 	match = paramTypeBytes.exec(type);
 	if (match) {
-		// format to correct length
-		const size = parseInt(match[1], 10);
-		if (size) {
-			let maxSize = size * 2;
-
-			if ((param as string).startsWith('0x')) {
-				maxSize += 2;
-			}
-			// pad to correct length
-			const paddedParam =
-				(param as string).length < maxSize ? rightPad(param as string, size * 2) : param;
-			return formatOddHexstrings(paddedParam as string);
-		}
-
-		return formatOddHexstrings(param as string);
+		return match[1] ? param : formatOddHexstrings(param as string);
 	}
 	return param;
 };

@@ -352,7 +352,7 @@ export default class HttpProvider<
 			...this.httpProviderOptions?.providerOptions,
 			...restRequestOptions,
 		};
-		const { signal: callerSignal, ...fetchInit } = providerOptionsCombined;
+		const { signal: callerSignal, redirect, ...fetchInit } = providerOptionsCombined;
 		const method = (payload as unknown as { method?: string }).method;
 
 		// Layer 1 bounds the whole request and folds in the caller's cancellation.
@@ -384,6 +384,11 @@ export default class HttpProvider<
 		try {
 			const response = await fetch(this.clientUrl, {
 				...fetchInit,
+				// A JSON-RPC endpoint has no legitimate reason to redirect. Following one would
+				// re-send the request body and every custom header (API keys included) to
+				// whatever host the endpoint names, so redirects are refused unless the caller
+				// opts in explicitly through `providerOptions.redirect`.
+				redirect: redirect ?? 'error',
 				method: 'POST',
 				headers: {
 					...providerOptionsCombined.headers,

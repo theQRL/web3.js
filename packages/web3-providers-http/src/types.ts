@@ -30,6 +30,10 @@ export interface HttpProviderOptions extends ProviderBoundsOptions {
 	 * Extra `fetch` options merged into every request. Note that `method`, `body` and
 	 * `Content-Type` are always set by the provider, and `signal` is composed with the
 	 * provider's own deadline rather than used directly.
+	 *
+	 * `redirect` defaults to `'error'`: a JSON-RPC endpoint that answers with a redirect is
+	 * refused rather than followed, so the request body and any custom authentication headers
+	 * are never re-sent to another host. Set `redirect: 'follow'` to opt in explicitly.
 	 */
 	providerOptions?: RequestInit;
 }

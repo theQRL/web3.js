@@ -31,18 +31,11 @@ describe.each([
 			decoded: '0x001280ff00',
 		},
 		{ type: 'bytes2', bytes: [0x12, 0x34], hex: '0x1234', decoded: '0x1234' },
-		{ type: 'bytes2', bytes: [0xab], hex: '0xab', decoded: '0xab00' },
 		{
 			type: 'bytes64',
 			bytes: new Array<number>(64).fill(0xff),
 			hex: `0x${'ff'.repeat(64)}`,
 			decoded: `0x${'ff'.repeat(64)}`,
-		},
-		{
-			type: 'bytes64',
-			bytes: [0xff],
-			hex: '0xff',
-			decoded: `0xff${'00'.repeat(63)}`,
 		},
 	])(
 		'encodes $type from $hex like the equivalent hex string',
@@ -96,6 +89,14 @@ describe.each([
 		expect(() => encodeParameter(`bytes${size}`, `0x${'12'.repeat(size + 1)}`)).toThrow(
 			AbiError,
 		);
+	});
+
+	it.each([2, 64])('rejects a binary value shorter than the bytes%i width', size => {
+		const input = createBytes([0xab]);
+
+		expect(() => encodeParameter(`bytes${size}`, input)).toThrow(AbiError);
+		expect(() => encodeParameter(`bytes${size}`, '0xab')).toThrow(AbiError);
+		expect(Array.from(input)).toEqual([0xab]);
 	});
 
 	it('rejects an empty fixed-byte value consistently with hex input', () => {

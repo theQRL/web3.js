@@ -367,6 +367,27 @@ describe('errors', () => {
 		});
 	});
 
+	describe('ResponseError with malformed batch entries', () => {
+		it('tolerates null entries instead of throwing', () => {
+			expect(
+				() =>
+					new responseErrors.ResponseError([
+						// eslint-disable-next-line no-null/no-null
+						null,
+						{ id: 1, jsonrpc: '2.0', error: { code: 1, message: 'm' } },
+					] as never),
+			).not.toThrow();
+
+			// eslint-disable-next-line no-null/no-null
+			const error = new responseErrors.ResponseError([null] as never, 'batch with null');
+			expect(error.innerError).toEqual([undefined]);
+			// eslint-disable-next-line no-null/no-null
+			expect(() => new responseErrors.InvalidResponseError([null] as never)).not.toThrow();
+			// eslint-disable-next-line no-null/no-null
+			expect(() => new responseErrors.ResponseError(null as never)).not.toThrow();
+		});
+	});
+
 	describe('InvalidResponseError', () => {
 		it('should have valid json structure', () => {
 			expect(

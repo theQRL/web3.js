@@ -24,6 +24,7 @@ import { qrlRpcMethods } from '@theqrl/web3-rpc-methods';
 
 import { bytesToHex, hexToBytes } from '@theqrl/web3-utils';
 import { TransactionSigningError } from '@theqrl/web3-errors';
+import { Common } from '@theqrl/web3-types';
 import { prepareTransactionForSigning } from '../../src/utils/prepare_transaction_for_signing';
 import { validTransactions } from '../fixtures/prepare_transaction_for_signing';
 
@@ -31,6 +32,46 @@ describe('prepareTransactionForSigning', () => {
 	const web3Context = new Web3Context<QRLExecutionAPI>({
 		provider: new HttpProvider('http://127.0.0.1'),
 		config: { defaultNetworkId: '0x1' },
+	});
+
+	describe('web3Context.defaultCommon', () => {
+		it('signs with a Common built from defaultCommon and never mutates it', async () => {
+			const [mockBlock, expectedTransaction, expectedSeed] = validTransactions[0];
+			const defaultCommon: Common = {
+				customChain: { name: 'custom', networkId: 1, chainId: 1 },
+			};
+			const snapshot = JSON.parse(JSON.stringify(defaultCommon)) as Common;
+			const context = new Web3Context<QRLExecutionAPI>({
+				provider: new HttpProvider('http://127.0.0.1'),
+				config: { defaultNetworkId: '0x1', defaultCommon },
+			});
+			jest.spyOn(qrlRpcMethods, 'estimateGas').mockImplementation(
+				// @ts-expect-error - Mocked implementation doesn't have correct method signature
+				() => expectedTransaction.gas,
+			);
+			// @ts-expect-error - Mocked implementation doesn't have correct method signature
+			jest.spyOn(qrlRpcMethods, 'getBlockByNumber').mockImplementation(() => mockBlock);
+
+			// The fixture carries its own `common` and `chainId`; drop both so the context
+			// default supplies the chain the transaction is signed for.
+			const transaction = { ...expectedTransaction };
+			delete transaction.common;
+			delete transaction.chainId;
+
+			const qrljsTx = await prepareTransactionForSigning(
+				transaction,
+				context,
+				expectedSeed,
+				true,
+			);
+
+			expect(qrljsTx instanceof FeeMarketEIP1559Transaction).toBeTruthy();
+			expect(qrljsTx.common.chainId()).toBe(BigInt(1));
+			expect(qrljsTx.chainId).toBe(BigInt(1));
+			expect(qrljsTx.common.hardfork()).toBe('zond');
+			expect(qrljsTx.sign(hexToBytes(expectedSeed)).verifySignature()).toBe(true);
+			expect(context.defaultCommon).toStrictEqual(snapshot);
+		});
 	});
 
 	describe('should return an web3-utils/tx instance with expected properties', () => {

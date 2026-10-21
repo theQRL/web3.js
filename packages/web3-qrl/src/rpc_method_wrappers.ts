@@ -618,7 +618,12 @@ export function sendSignedTransaction<
 								// of Gas error for a failed smart contract execution
 								// contract, because the sender, address(0), has no balance
 								// to pay for the gas of the transaction execution
-								from: unSerializedTransaction.getSenderAddress().toString(),
+								// The sender is derived from the public key embedded in the raw
+							// transaction, which is only meaningful once the signature over it
+							// verifies; an unverifiable transaction is simulated without one.
+							from: unSerializedTransaction.verifySignature()
+								? unSerializedTransaction.getSenderAddress().toString()
+								: undefined,
 							},
 						};
 					};

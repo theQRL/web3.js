@@ -66,12 +66,22 @@ const getQRLjsTransactionOptions = (
 	if (!hasTransactionSigningOptions) {
 		// if defaultcommon is specified, use that.
 		if (web3Context.defaultCommon) {
-			common = web3Context.defaultCommon;
-
-			if (isNullish(common.hardfork))
-				common.hardfork = transaction.hardfork ?? web3Context.defaultHardfork;
-			if (isNullish(common.baseChain))
-				common.baseChain = web3Context.defaultChain as ValidChains;
+			// `defaultCommon` is a plain configuration object owned by the context: build the
+			// `Common` instance the transaction classes expect from it, and never mutate it.
+			const defaultCommon = web3Context.defaultCommon;
+			const networkId = defaultCommon.customChain.networkId ?? transaction.networkId;
+			common = Common.custom(
+				{
+					name: defaultCommon.customChain.name ?? 'custom-network',
+					chainId: toNumber(defaultCommon.customChain.chainId) as number,
+					networkId: !isNullish(networkId) ? (toNumber(networkId) as number) : undefined,
+					defaultHardfork:
+						defaultCommon.hardfork ?? transaction.hardfork ?? web3Context.defaultHardfork,
+				},
+				{
+					baseChain: defaultCommon.baseChain ?? (web3Context.defaultChain as ValidChains),
+				},
+			);
 		} else {
 			common = Common.custom(
 				{

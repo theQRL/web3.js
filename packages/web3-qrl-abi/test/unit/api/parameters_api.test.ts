@@ -16,7 +16,11 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { AbiInput } from '@theqrl/web3-types';
-import { decodeParameters, encodeParameters } from '../../../src/api/parameters_api';
+import {
+	decodeParameters,
+	encodeParameters,
+	encodeParameter,
+} from '../../../src/api/parameters_api';
 import {
 	inValidDecodeParametersData,
 	inValidEncodeParametersData,
@@ -28,6 +32,35 @@ import {
 
 describe('parameters_api', () => {
 	describe('encodeParameters', () => {
+		it.each(['0x', '0xabc', '0xabcd', `0x${'ab'.repeat(33)}`])(
+			'rejects bytes32 values that are not exactly 32 bytes: %s',
+			value => {
+				expect(() => encodeParameter('bytes32', value)).toThrow('Parameter encoding error');
+			},
+		);
+
+		it.each(['bytes4[]', 'bytes4[1]'])('validates fixed-byte lengths inside %s', type => {
+			expect(() => encodeParameter(type, ['0xabcd'])).toThrow('Parameter encoding error');
+		});
+
+		it('validates fixed-byte lengths in tuples', () => {
+			expect(() =>
+				encodeParameter(
+					{ type: 'tuple', components: [{ name: 'value', type: 'bytes4' }] },
+					{ value: '0xabcd' },
+				),
+			).toThrow('Parameter encoding error');
+		});
+
+		it('accepts exact-width byte arrays and preserves their content', () => {
+			const value = Uint8Array.from([0xde, 0xad, 0xbe, 0xef]);
+			expect(encodeParameter('bytes4', value)).toBe(`0xdeadbeef${'00'.repeat(60)}`);
+			expect(value).toEqual(Uint8Array.from([0xde, 0xad, 0xbe, 0xef]));
+			expect(() => encodeParameter('bytes4', value.slice(0, 3))).toThrow(
+				'Parameter encoding error',
+			);
+		});
+
 		describe('valid data', () => {
 			it.each(validEncodeParametersData)(
 				'%#: should pass for valid values: %j',

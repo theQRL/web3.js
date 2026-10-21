@@ -225,16 +225,22 @@ export abstract class SocketProvider<
 		this._pendingRequestsQueue = new Map<JsonRpcId, SocketRequestItem<any, any, any>>();
 		this._sentRequestsQueue = new Map<JsonRpcId, SocketRequestItem<any, any, any>>();
 
-		this._init();
-		this.connect();
+		// Created before the first `connect()` so that every connection, including the first,
+		// starts from an empty parser.
 		this.chunkResponseParser = new ChunkResponseParser(
 			this._eventEmitter,
 			this._reconnectOptions.autoReconnect,
+			{ framed: this._isFramedTransport() },
 		);
-		this.chunkResponseParser.onError(() => {
-			this._clearQueues();
+		this.chunkResponseParser.onError(error => {
+			// A protocol error can fail requests without closing the live transport.
+			// Keep its listeners so replies received after the parser resets still work.
+			this._rejectAllRequests(error);
 		});
 		this.isReconnecting = false;
+
+		this._init();
+		this.connect();
 	}
 
 	protected _init() {
@@ -246,6 +252,9 @@ export abstract class SocketProvider<
 	 */
 	public connect(): void {
 		try {
+			// Bytes left over from a previous connection must never prefix the first message of
+			// this one.
+			this.chunkResponseParser.reset();
 			this._openSocketConnection();
 			this._connectionStatus = 'connecting';
 			this._armConnectionTimer();
@@ -323,6 +332,16 @@ export abstract class SocketProvider<
 	// eslint-disable-next-line class-methods-use-this
 	protected _validateProviderPath(path: string): boolean {
 		return !!path;
+	}
+
+	/**
+	 * Whether the transport delivers whole messages (WebSocket frames) rather than a byte
+	 * stream (IPC). A framed transport never keeps partial input between messages, so one
+	 * malformed frame cannot corrupt the parsing of every frame that follows it.
+	 */
+	// eslint-disable-next-line class-methods-use-this
+	protected _isFramedTransport(): boolean {
+		return false;
 	}
 
 	/**
@@ -461,6 +480,7 @@ export abstract class SocketProvider<
 	public disconnect(code?: number, data?: string): void {
 		const disconnectCode = code ?? NORMAL_CLOSE_CODE;
 		this._clearConnectionTimer();
+		this.chunkResponseParser.reset();
 		this._removeSocketListeners();
 		if (this.getStatus() !== 'disconnected') {
 			this._closeSocketConnection(disconnectCode, data);
@@ -595,6 +615,7 @@ export abstract class SocketProvider<
 	 */
 	public reset(): void {
 		this._clearConnectionTimer();
+		this.chunkResponseParser.reset();
 		// Previously these maps were simply cleared, which abandoned every caller's promise
 		// in `pending` forever. Reset cancels outstanding work; it does not forget it.
 		this._rejectAllRequests(
@@ -611,6 +632,7 @@ export abstract class SocketProvider<
 			return;
 		}
 		this.isReconnecting = true;
+		this.chunkResponseParser.reset();
 
 		if (this._sentRequestsQueue.size > 0) {
 			const error = new PendingRequestsOnReconnectingError();
@@ -652,7 +674,7 @@ export abstract class SocketProvider<
 		if (jsonRpc.isBatchRequest(request as unknown as JsonRpcBatchRequest)) {
 			const ids = (request as unknown as JsonRpcBatchRequest).map(entry => entry.id);
 
-			if (ids.length === 0 || ids.some(id => !id)) {
+			if (ids.length === 0 || ids.some(id => isNullish(id))) {
 				throw new Web3WSProviderError('Request Id not defined');
 			}
 			if (new Set(ids).size !== ids.length) {
@@ -664,7 +686,7 @@ export abstract class SocketProvider<
 
 		const id = (request as unknown as JsonRpcRequest).id;
 
-		if (!id) {
+		if (isNullish(id)) {
 			throw new Web3WSProviderError('Request Id not defined');
 		}
 
@@ -828,61 +850,103 @@ export abstract class SocketProvider<
 	}
 
 	protected _onMessage(event: MessageEvent): void {
-		const responses = this._parseResponses(event);
-		if (responses.length === 0) {
-			// no responses means lost connection, autoreconnect if possible
-			if (this._reconnectOptions.autoReconnect) {
-				this._reconnect();
-			}
+		let responses: JsonRpcResponse[];
+		try {
+			responses = this._parseResponses(event);
+		} catch (error) {
+			// Input the transport could not even hand to the parser (a binary frame on a text
+			// protocol, for example) is a protocol error from the peer. It is reported, never
+			// thrown: an exception escaping a socket callback terminates the process. Nor is it
+			// a sign that the connection was lost, so it does not trigger a reconnect.
+			this._emitError(error);
 			return;
 		}
+
+		// A message that yields nothing parseable (a partial IPC chunk, or garbage that was
+		// reported by the parser) is simply not a response. It is never treated as a lost
+		// connection: connection loss is signalled by the transport's close/error events.
 		for (const response of responses) {
-			if (
-				jsonRpc.isResponseWithNotification(response as JsonRpcNotification) &&
-				(response as JsonRpcNotification).method.endsWith('_subscription')
-			) {
-				// An established subscription's stream is exempt from the per-request
-				// deadline: notifications carry no request id, hold no queue slot and arm no
-				// timer. The `*_subscribe` call that established it was bounded like any
-				// other request; from here the stream is governed by heartbeat / reconnect /
-				// unsubscribe / disconnect semantics instead.
-				this._eventEmitter.emit('message', response);
-				continue;
+			try {
+				this._handleResponse(response);
+			} catch (error) {
+				this._emitError(error);
 			}
+		}
+	}
 
-			const requestId = jsonRpc.isBatchResponse(response)
-				? (response as unknown as JsonRpcBatchResponse)[0].id
-				: (response as unknown as JsonRpcResponseWithResult).id;
+	private _handleResponse(response: JsonRpcResponse): void {
+		// Only an object can be a response, a batch or a notification. Anything else (`null`
+		// inside a batch array, a number, ...) is malformed input from the peer and is reported
+		// instead of being dereferenced.
+		if (typeof response !== 'object' || isNullish(response)) {
+			this._emitError(
+				new ResponseError(
+					response as never,
+					'Invalid JSON-RPC response received from the node',
+				),
+			);
+			return;
+		}
 
-			// Unknown ids, and duplicate ids for an already-settled request, find nothing
-			// here and are dropped. A late response that lost the race against the deadline
-			// is exactly this case, so it cannot double-settle.
-			if (!this._sentRequestsQueue.has(requestId)) {
-				continue;
-			}
+		if (
+			jsonRpc.isResponseWithNotification(response as JsonRpcNotification) &&
+			typeof (response as JsonRpcNotification).method === 'string' &&
+			(response as JsonRpcNotification).method.endsWith('_subscription')
+		) {
+			// An established subscription's stream is exempt from the per-request
+			// deadline: notifications carry no request id, hold no queue slot and arm no
+			// timer. The `*_subscribe` call that established it was bounded like any
+			// other request; from here the stream is governed by heartbeat / reconnect /
+			// unsubscribe / disconnect semantics instead.
+			this._eventEmitter.emit('message', response);
+			return;
+		}
 
-			if (
-				jsonRpc.isBatchResponse(response) ||
-				jsonRpc.isResponseWithResult(response) ||
-				jsonRpc.isResponseWithError(response)
-			) {
-				this._eventEmitter.emit('message', response);
-				this._settleRequest(requestId, { resolve: response });
-			} else {
-				// Malformed but id-matching. This used to drop the map entry without
-				// settling, stranding the caller's promise permanently.
-				this._settleRequest(requestId, {
-					reject: new ResponseError(
-						response,
-						'Invalid JSON-RPC response received from the node',
-					),
-				});
-			}
+		if (Array.isArray(response) && !jsonRpc.isBatchResponse(response)) {
+			// An array whose entries are not all well-formed responses (`[null]`, for example)
+			// cannot be correlated with any request.
+			this._emitError(
+				new ResponseError(
+					response as never,
+					'Invalid JSON-RPC batch response received from the node',
+				),
+			);
+			return;
+		}
+
+		const requestId = jsonRpc.isBatchResponse(response)
+			? (response as unknown as JsonRpcBatchResponse)[0].id
+			: (response as unknown as JsonRpcResponseWithResult).id;
+
+		// Unknown ids, and duplicate ids for an already-settled request, find nothing
+		// here and are dropped. A late response that lost the race against the deadline
+		// is exactly this case, so it cannot double-settle.
+		if (!this._sentRequestsQueue.has(requestId)) {
+			return;
+		}
+
+		if (
+			jsonRpc.isBatchResponse(response) ||
+			jsonRpc.isResponseWithResult(response) ||
+			jsonRpc.isResponseWithError(response)
+		) {
+			this._eventEmitter.emit('message', response);
+			this._settleRequest(requestId, { resolve: response });
+		} else {
+			// Malformed but id-matching. This used to drop the map entry without
+			// settling, stranding the caller's promise permanently.
+			this._settleRequest(requestId, {
+				reject: new ResponseError(
+					response,
+					'Invalid JSON-RPC response received from the node',
+				),
+			});
 		}
 	}
 
 	protected _clearQueues(event?: ConnectionEvent) {
 		this._clearConnectionTimer();
+		this.chunkResponseParser.reset();
 		this._rejectAllRequests(new ConnectionNotOpenError(event));
 		this._removeSocketListeners();
 	}

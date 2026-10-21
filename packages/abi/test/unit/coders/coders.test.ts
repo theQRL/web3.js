@@ -151,9 +151,17 @@ describe('NumberCoder', () => {
 		expect(read(coder, write(coder, value))).toBe(value);
 	});
 
-	it('masks off bits above its own width when decoding', () => {
-		// uint8 reading a word whose value is 0x0100 must see 0, not 256.
-		expect(read(new NumberCoder(1, false, 'a'), `0x${word(0x100)}`)).toBe(0);
+	it('rejects a word with bits above its own width when decoding', () => {
+		// uint8 reading a word whose value is 0x0100 is not a canonical uint8 encoding; the
+		// on-chain decoder rejects it, and so must this one rather than quietly seeing 0.
+		expect(() => {
+			read(new NumberCoder(1, false, 'a'), `0x${word(0x100)}`);
+		}).toThrow(/out-of-bounds/);
+		// A signed value must be sign-extended across the whole word.
+		expect(() => {
+			read(new NumberCoder(1, true, 'a'), `0x${word(0xff)}`);
+		}).toThrow(/out-of-bounds/);
+		expect(read(new NumberCoder(1, true, 'a'), `0x${'ff'.repeat(WORD)}`)).toBe(-1);
 	});
 });
 
@@ -174,11 +182,15 @@ describe('BooleanCoder', () => {
 		expect(write(new BooleanCoder('flag'), false)).toBe(`0x${word(0)}`);
 	});
 
-	it('decodes zero as false and anything non-zero as true', () => {
+	it('decodes zero as false and one as true, and rejects any other word', () => {
 		expect(read(new BooleanCoder('flag'), `0x${word(0)}`)).toBe(false);
 		expect(read(new BooleanCoder('flag'), `0x${word(1)}`)).toBe(true);
-		expect(read(new BooleanCoder('flag'), `0x${word(2)}`)).toBe(true);
-		expect(read(new BooleanCoder('flag'), `0x${'ff'.repeat(WORD)}`)).toBe(true);
+		expect(() => {
+			read(new BooleanCoder('flag'), `0x${word(2)}`);
+		}).toThrow(/invalid boolean value/);
+		expect(() => {
+			read(new BooleanCoder('flag'), `0x${'ff'.repeat(WORD)}`);
+		}).toThrow(/invalid boolean value/);
 	});
 
 	it('round-trips', () => {

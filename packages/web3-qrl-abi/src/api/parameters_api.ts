@@ -23,6 +23,7 @@ import { formatParam, isAbiFragment, mapTypes, modifyParams } from '../utils.js'
 
 /**
  * Encodes a parameter based on its type to its ABI representation.
+ * Fixed-size `bytesN` values must contain exactly N bytes; padding is never added to the input.
  * @param abi - An array of {@link AbiInput}. See [Hyperion's documentation](https://solidity.readthedocs.io/en/v0.5.3/abi-spec.html#json) for more details.
  * @param params - The actual parameters to encode.
  * @returns - The ABI encoded parameters
@@ -88,7 +89,7 @@ export const encodeParameters = (abi: ReadonlyArray<AbiInput>, params: unknown[]
  *  console.log(res);
  *  >0x000000000000000000000000000000000000000000000000000000008bd02b7b
  *
- *    const res = web3.qrl.abi.encodeParameter("bytes32", "0xdf3234");
+ *    const res = web3.qrl.abi.encodeParameter("bytes32", "0xdf3234".padEnd(66, "0"));
  *
  *  console.log(res);
  *  >0xdf32340000000000000000000000000000000000000000000000000000000000
@@ -98,7 +99,7 @@ export const encodeParameters = (abi: ReadonlyArray<AbiInput>, params: unknown[]
  *  console.log(res);
  *  > 0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000003df32340000000000000000000000000000000000000000000000000000000000
  *
- *   const res = web3.qrl.abi.encodeParameter("bytes32[]", ["0xdf3234", "0xfdfd"]);
+ *   const res = web3.qrl.abi.encodeParameter("bytes32[]", ["0xdf3234".padEnd(66, "0"), "0xfdfd".padEnd(66, "0")]);
  *
  *  console.log(res);
  *  > 0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002df32340000000000000000000000000000000000000000000000000000000000fdfd000000000000000000000000000000000000000000000000000000000000

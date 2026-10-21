@@ -62,10 +62,19 @@ export class NumberCoder extends Coder {
 	}
 
 	decode(reader: Reader): any {
-		let value = reader.readValue().mask(this.size * 8);
+		const word = reader.readValue();
+		let value = word.mask(this.size * 8);
 
 		if (this.signed) {
 			value = value.fromTwos(this.size * 8);
+		}
+
+		// A canonical word carries the value zero-extended (unsigned) or sign-extended
+		// (signed) to the full word, which is also what the on-chain decoder validates.
+		// Any other word is not an encoding of this type and must not decode silently.
+		const canonical = this.signed ? value.toTwos(reader.wordSize * 8) : value;
+		if (!canonical.eq(word)) {
+			this._throwError('value out-of-bounds', word);
 		}
 
 		return reader.coerce(this.name, value);

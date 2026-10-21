@@ -179,7 +179,13 @@ export async function defaultTransactionBuilder<ReturnType = Transaction>(option
 	}
 
 	if (isNullish(populatedTransaction.common)) {
-		if (options.web3Context.defaultCommon) {
+		// `common` and the `chain`/`hardfork` pair are mutually exclusive signing options (see
+		// `validateChainInfo`): the context's `defaultCommon` is only adopted when the caller
+		// left the pair unset, and the pair's defaults are only applied when no `common` is used.
+		const hasChainOrHardfork =
+			!isNullish(populatedTransaction.chain) || !isNullish(populatedTransaction.hardfork);
+
+		if (options.web3Context.defaultCommon && !hasChainOrHardfork) {
 			const common = options.web3Context.defaultCommon as unknown as Common;
 			const chainId = common.customChain.chainId as string;
 			const networkId = common.customChain.networkId as string;
@@ -188,21 +194,24 @@ export async function defaultTransactionBuilder<ReturnType = Transaction>(option
 				...common,
 				customChain: { chainId, networkId, name },
 			};
-		}
-
-		if (isNullish(populatedTransaction.chain)) {
-			populatedTransaction.chain = options.web3Context.defaultChain as ValidChains;
-		}
-		if (isNullish(populatedTransaction.hardfork)) {
-			populatedTransaction.hardfork = options.web3Context.defaultHardfork as Hardfork;
+		} else {
+			if (isNullish(populatedTransaction.chain)) {
+				populatedTransaction.chain = options.web3Context.defaultChain as ValidChains;
+			}
+			if (isNullish(populatedTransaction.hardfork)) {
+				populatedTransaction.hardfork = options.web3Context.defaultHardfork as Hardfork;
+			}
 		}
 	}
 
-	if (
-		isNullish(populatedTransaction.chainId) &&
-		isNullish(populatedTransaction.common?.customChain.chainId)
-	) {
-		populatedTransaction.chainId = await getChainId(options.web3Context, QRL_DATA_FORMAT);
+	if (isNullish(populatedTransaction.chainId)) {
+		// A `common` (explicit or adopted from `defaultCommon`) names the chain the caller
+		// intends to sign for, so its chain id is used before the node is asked for one;
+		// signing validation requires `chainId` itself to be set either way.
+		const commonChainId = populatedTransaction.common?.customChain.chainId;
+		populatedTransaction.chainId = isNullish(commonChainId)
+			? await getChainId(options.web3Context, QRL_DATA_FORMAT)
+			: format({ format: 'uint' }, commonChainId as Numbers, QRL_DATA_FORMAT);
 	}
 
 	if (isNullish(populatedTransaction.networkId)) {

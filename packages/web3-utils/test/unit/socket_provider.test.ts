@@ -102,24 +102,97 @@ describe('SocketProvider', () => {
 				expect(provider.SocketConnection).toEqual(dummySocketConnection);
 			});
 		});
-		describe('testing _reconnect() method', () => {
-			it('should not be called when { autoReconnect: false }', () => {
-				const reconnectOptions = { autoReconnect: false };
-				const provider = new TestProvider(socketPath, socketOption, reconnectOptions);
+		describe('malformed input from the peer', () => {
+			it.each([{ autoReconnect: false }, { autoReconnect: true }])(
+				'never triggers a reconnect when nothing parseable arrives (%p)',
+				reconnectOptions => {
+					const provider = new TestProvider(socketPath, socketOption, reconnectOptions);
+					// @ts-expect-error run protected method
+					jest.spyOn(provider, '_reconnect').mockReturnValue('');
+					provider.message('');
+					// @ts-expect-error run protected method
+					expect(provider._reconnect).not.toHaveBeenCalled();
+				},
+			);
+
+			it('reports, rather than throws, a null entry in a response batch', () => {
+				const provider = new TestProvider(socketPath, socketOption, { autoReconnect: true });
+				const errors: unknown[] = [];
+				provider.on('error', (error: unknown) => {
+					errors.push(error);
+				});
 				// @ts-expect-error run protected method
 				jest.spyOn(provider, '_reconnect').mockReturnValue('');
-				provider.message('');
+
+				// eslint-disable-next-line no-null/no-null
+				expect(() => provider.message([null])).not.toThrow();
+
+				expect(errors).toHaveLength(1);
+				expect(errors[0]).toBeInstanceOf(ResponseError);
 				// @ts-expect-error run protected method
 				expect(provider._reconnect).not.toHaveBeenCalled();
 			});
-			it('should be called when { autoReconnect: true }', () => {
-				const reconnectOptions = { autoReconnect: true };
-				const provider = new TestProvider(socketPath, socketOption, reconnectOptions);
+
+			it('does not throw on malformed entries when no error listener is attached', () => {
+				const provider = new TestProvider(socketPath, socketOption, { autoReconnect: false });
+				// eslint-disable-next-line no-null/no-null
+				expect(() => provider.message([null, 1, 'x', true, [null]])).not.toThrow();
+			});
+
+			it('reports, rather than throws, when the transport cannot parse the event', () => {
+				const provider = new TestProvider(socketPath, socketOption, { autoReconnect: true });
+				const errors: unknown[] = [];
+				provider.on('error', (error: unknown) => {
+					errors.push(error);
+				});
 				// @ts-expect-error run protected method
 				jest.spyOn(provider, '_reconnect').mockReturnValue('');
-				provider.message('');
 				// @ts-expect-error run protected method
-				expect(provider._reconnect).toHaveBeenCalled();
+				jest.spyOn(provider, '_parseResponses').mockImplementation(() => {
+					throw new Error('binary frame');
+				});
+
+				expect(() => provider.message('anything')).not.toThrow();
+
+				expect(errors).toHaveLength(1);
+				expect((errors[0] as Error).message).toBe('binary frame');
+				// @ts-expect-error run protected method
+				expect(provider._reconnect).not.toHaveBeenCalled();
+			});
+
+			it('still settles the matching request after a malformed entry in the same event', async () => {
+				const provider = new TestProvider(socketPath, socketOption, { autoReconnect: false });
+				provider.on('error', () => undefined);
+				provider.setStatus('connected');
+				const payload = {
+					jsonrpc: '2.0',
+					id: 7,
+					method: 'qrl_blockNumber',
+					params: [],
+				} as Web3APIPayload<QRLExecutionAPI, 'qrl_blockNumber'>;
+				const response = { jsonrpc: '2.0', id: 7, result: '0x1' };
+
+				const request = provider.request(payload);
+				// eslint-disable-next-line no-null/no-null
+				provider.message([null, response]);
+
+				await expect(request).resolves.toEqual(response);
+			});
+
+			it('accepts 0 as a request id', () => {
+				const provider = new TestProvider(socketPath, socketOption, { autoReconnect: false });
+				provider.setStatus('connected');
+				const payload = {
+					jsonrpc: '2.0',
+					id: 0,
+					method: 'qrl_blockNumber',
+					params: [],
+				} as Web3APIPayload<QRLExecutionAPI, 'qrl_blockNumber'>;
+
+				expect(() => {
+					void provider.request(payload);
+				}).not.toThrow();
+				expect(provider.sentPayloads).toEqual([payload]);
 			});
 		});
 

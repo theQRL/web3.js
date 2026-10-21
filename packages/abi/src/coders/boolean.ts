@@ -31,6 +31,11 @@ export class BooleanCoder extends Coder {
 	}
 
 	decode(reader: Reader): any {
-		return reader.coerce(this.type, !reader.readValue().isZero());
+		const word = reader.readValue();
+		// Only 0 and 1 encode a boolean; the on-chain decoder rejects anything else.
+		if (!word.isZero() && !word.eq(1)) {
+			this._throwError('invalid boolean value', word);
+		}
+		return reader.coerce(this.type, !word.isZero());
 	}
 }

@@ -84,10 +84,9 @@ describe('utils', () => {
 			expect(formatParam('uint', 1234)).toBe(1234);
 		});
 
-		it('right-pads a short fixed bytes value to its declared width', () => {
-			expect(formatParam('bytes48', `0x${'ab'.repeat(4)}`)).toBe(
-				`0x${'ab'.repeat(4)}${'0'.repeat(88)}`,
-			);
+		it('leaves fixed bytes unchanged for the coder to validate their length', () => {
+			expect(formatParam('bytes48', '0xabababab')).toBe('0xabababab');
+			expect(formatParam('bytes32', '0xabc')).toBe('0xabc');
 		});
 
 		it('leaves a full-width bytes64 value untouched', () => {
