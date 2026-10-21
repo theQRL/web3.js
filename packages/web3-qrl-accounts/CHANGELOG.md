@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Calculate contract creation's initcode gas surcharge using 64-byte words, matching go-qrl. This avoids overcharging intrinsic gas and rejecting deployments with a valid gas limit.
+- Keep account message signing tied to the imported seed snapshot when the caller mutates the original seed buffer.
 
 <!-- EXAMPLE
 

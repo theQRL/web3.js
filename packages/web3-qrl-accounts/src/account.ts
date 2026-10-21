@@ -444,7 +444,7 @@ export const seedToAccount = (seed: Bytes): Web3Account => {
 			throw new TransactionSigningError('Do not have network access to sign the transaction');
 		},
 		sign: (data: Record<string, unknown> | string) =>
-			sign(typeof data === 'string' ? data : JSON.stringify(data), seed),
+			sign(typeof data === 'string' ? data : JSON.stringify(data), seedHex),
 		encrypt: async (password: string, options?: Record<string, unknown>) =>
 			encrypt(acc.getExtendedSeed().toBytes(), password, options),
 	} as unknown as Web3Account;

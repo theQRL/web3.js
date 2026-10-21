@@ -43,6 +43,7 @@ import {
 } from '../fixtures/account';
 import { TransactionFactory } from '../../src/tx/transactionFactory';
 import { TxData } from '../../src/tx/types';
+import { newMLDSA87WalletFromExtendedSeed, verifyMLDSA87Signature } from '../../src/qrl_wallet';
 
 describe('accounts', () => {
 	describe('create', () => {
@@ -75,6 +76,44 @@ describe('accounts', () => {
 				expect(Object.keys(account)).not.toContain('seed');
 				expect(JSON.stringify(account)).not.toContain(account.seed);
 				expect(JSON.stringify(account)).toContain('<redacted>');
+			});
+
+			it.each([
+				{ name: 'Uint8Array', makeSeed: (hex: string) => hexToBytes(hex) },
+				{ name: 'Buffer', makeSeed: (hex: string) => Buffer.from(hexToBytes(hex)) },
+			])('keeps the signing key when the imported $name is mutated', ({ makeSeed }) => {
+				const seedHex = `0x010000${'01'.repeat(48)}`;
+				const seed = makeSeed(seedHex);
+				const originalWallet = newMLDSA87WalletFromExtendedSeed(seedHex);
+				const account = seedToAccount(seed);
+				const originalAddress = account.address;
+
+				seed[seed.length - 1] ^= 1;
+				const mutatedWallet = newMLDSA87WalletFromExtendedSeed(seed);
+				const message = 'The signing key must remain the imported key';
+				const result = account.sign(message);
+				const signature = hexToBytes(result.signature);
+				const messageHash = hexToBytes(hashMessage(message));
+
+				expect(account.address).toBe(originalAddress);
+				expect(account.seed).toBe(seedHex);
+				expect(result.messageHash).toBe(hashMessage(message));
+				expect(
+					verifyMLDSA87Signature(
+						signature,
+						messageHash,
+						originalWallet.getPK(),
+						originalWallet.getDescriptor(),
+					),
+				).toBe(true);
+				expect(
+					verifyMLDSA87Signature(
+						signature,
+						messageHash,
+						mutatedWallet.getPK(),
+						mutatedWallet.getDescriptor(),
+					),
+				).toBe(false);
 			});
 		});
 
