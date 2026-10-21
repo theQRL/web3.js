@@ -20,6 +20,7 @@ const mockFetch = jest.fn();
 
 jest.setMock('cross-fetch', mockFetch);
 
+import { Readable } from 'stream';
 import { Web3APIPayload, QRLExecutionAPI } from '@theqrl/web3-types';
 import {
 	ConnectionTimeoutError,
@@ -165,19 +166,129 @@ describe('HttpProvider - request lifecycle bounds', () => {
 			expect(state.cancelled).toBe(true);
 		});
 
-		it('rejects early on an oversized content-length without reading the body at all', async () => {
-			const { stream, state } = countingStream([new Uint8Array(8).fill(0x61)]);
-			mockFetch.mockResolvedValueOnce(
-				fakeResponse({ headers: { 'content-length': '99999' }, body: stream }),
-			);
+		it.each([200, 413])(
+			'cancels an HTTP %i body rejected by content-length without reading it',
+			async status => {
+				jest.useFakeTimers();
+				const { stream, state } = countingStream([new Uint8Array(8).fill(0x61)]);
+				mockFetch.mockResolvedValueOnce(
+					fakeResponse({ status, headers: { 'content-length': '99999' }, body: stream }),
+				);
 
-			const provider = new HttpProvider('http://localhost:8545', {
-				maxResponseBytes: 2048,
+				const provider = new HttpProvider('http://localhost:8545', {
+					maxResponseBytes: 2048,
+				});
+				const controller = new AbortController();
+				const request = provider.request(payload, { signal: controller.signal });
+
+				await expect(request).rejects.toThrow(ResponseTooLargeError);
+				await expect(request).rejects.toMatchObject({
+					maxResponseBytes: 2048,
+					receivedBytes: 99999,
+				});
+				// Rejected on the header alone: the body was never even opened for reading.
+				expect(state.readerRequested).toBe(false);
+				expect(state.cancelled).toBe(true);
+				const { signal } = mockFetch.mock.calls[0][1] as RequestInit;
+				expect(signal?.aborted).toBe(true);
+				expect(controller.signal.aborted).toBe(false);
+				expect(jest.getTimerCount()).toBe(0);
+			},
+		);
+
+		it.each([200, 413])(
+			'destroys an HTTP %i Node body rejected by content-length',
+			async status => {
+				const read = jest.fn();
+				const body = new Readable({ read });
+				mockFetch.mockResolvedValueOnce(
+					fakeResponse({ status, headers: { 'content-length': '99999' }, body }),
+				);
+				const provider = new HttpProvider('http://localhost:8545', {
+					maxResponseBytes: 2048,
+				});
+
+				await expect(provider.request(payload)).rejects.toThrow(ResponseTooLargeError);
+				expect(body.destroyed).toBe(true);
+				expect(read).not.toHaveBeenCalled();
+				const { signal } = mockFetch.mock.calls[0][1] as RequestInit;
+				expect(signal?.aborted).toBe(true);
+			},
+		);
+
+		it.each(['throw', 'reject'])(
+			'preserves the size error when body cancellation fails: %s',
+			async failure => {
+				const body = new ReadableStream<Uint8Array>();
+				const cancel = jest.spyOn(body, 'cancel');
+				if (failure === 'throw') {
+					cancel.mockImplementation(() => {
+						throw new Error('cancel failed');
+					});
+				} else {
+					cancel.mockRejectedValue(new Error('cancel failed'));
+				}
+				mockFetch.mockResolvedValueOnce(
+					fakeResponse({ headers: { 'content-length': '99999' }, body }),
+				);
+				const provider = new HttpProvider('http://localhost:8545', {
+					maxResponseBytes: 2048,
+				});
+
+				await expect(provider.request(payload)).rejects.toThrow(ResponseTooLargeError);
+				expect(cancel).toHaveBeenCalledTimes(1);
+				const { signal } = mockFetch.mock.calls[0][1] as RequestInit;
+				expect(signal?.aborted).toBe(true);
+			},
+		);
+
+		it('rejects promptly when body cancellation never settles', async () => {
+			jest.useFakeTimers();
+			const cancel = jest.fn(async () => new Promise<void>(() => undefined));
+			const body = new ReadableStream<Uint8Array>({ cancel });
+			mockFetch.mockResolvedValueOnce(
+				fakeResponse({ headers: { 'content-length': '99999' }, body }),
+			);
+			const provider = new HttpProvider('http://localhost:8545', { maxResponseBytes: 2048 });
+			const rejected = jest.fn();
+			const request = provider.request(payload).catch(rejected);
+
+			await jest.advanceTimersByTimeAsync(0);
+			expect(cancel).toHaveBeenCalledTimes(1);
+			expect(rejected).toHaveBeenCalledWith(expect.any(ResponseTooLargeError));
+			await request;
+			expect(jest.getTimerCount()).toBe(0);
+		});
+
+		it('preserves the size error and aborts transport when Node destruction throws', async () => {
+			const body = new Readable({ read: jest.fn() });
+			const destroy = jest.spyOn(body, 'destroy').mockImplementation(() => {
+				throw new Error('destroy failed');
 			});
+			mockFetch.mockResolvedValueOnce(
+				fakeResponse({ headers: { 'content-length': '99999' }, body }),
+			);
+			const provider = new HttpProvider('http://localhost:8545', { maxResponseBytes: 2048 });
 
 			await expect(provider.request(payload)).rejects.toThrow(ResponseTooLargeError);
-			// Rejected on the header alone: the body was never even opened for reading.
-			expect(state.readerRequested).toBe(false);
+			expect(destroy).toHaveBeenCalledTimes(1);
+			const { signal } = mockFetch.mock.calls[0][1] as RequestInit;
+			expect(signal?.aborted).toBe(true);
+		});
+
+		it.each([
+			['absent', undefined],
+			['buffered', new Uint8Array(8)],
+			['unsupported', { unreadable: true }],
+		])('preserves the size error when the body is %s', async (_label, body) => {
+			mockFetch.mockResolvedValueOnce(
+				fakeResponse({ headers: { 'content-length': '99999' }, body }),
+			);
+			const provider = new HttpProvider('http://localhost:8545', { maxResponseBytes: 2048 });
+
+			await expect(provider.request(payload)).rejects.toThrow(ResponseTooLargeError);
+			const { signal } = mockFetch.mock.calls[0][1] as RequestInit;
+			expect(signal?.aborted).toBe(true);
 		});
 
 		it('counts bytes, not string characters, for multi-byte content', async () => {

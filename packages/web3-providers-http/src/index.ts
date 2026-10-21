@@ -127,15 +127,24 @@ export default class HttpProvider<
 	 */
 	private async readBoundedText(response: Response, signal: AbortSignal): Promise<string> {
 		const { maxResponseBytes } = this.bounds;
+		// `??` normalizes a null body (the spec shape) and an absent one to undefined.
+		const body: unknown = (response as { body?: unknown }).body ?? undefined;
 
 		// Cheap early rejection. Not authoritative -- see declaredContentLength.
 		const declared = HttpProvider.declaredContentLength(response);
 		if (declared !== undefined && declared > maxResponseBytes) {
+			try {
+				if (isWhatwgStream(body)) {
+					// A failing or stalled cancellation must not mask the size error.
+					void body.cancel().catch(() => undefined);
+				} else if (isAsyncIterable(body)) {
+					(body as { destroy?: () => void }).destroy?.();
+				}
+			} catch {
+				// Preserve the size error; request() also aborts the underlying transport.
+			}
 			throw new ResponseTooLargeError(maxResponseBytes, declared);
 		}
-
-		// `??` normalizes a null body (the spec shape) and an absent one to undefined.
-		const body: unknown = (response as { body?: unknown }).body ?? undefined;
 
 		if (body === undefined) {
 			// A genuinely empty body has no stream to read, and that is fine.
@@ -358,6 +367,15 @@ export default class HttpProvider<
 			signal: requestComposition.signal,
 			timeoutReason: () => new ConnectionTimeoutError(connectionTimeout),
 		});
+		// Keep an explicit transport abort after the header deadline is retired. Destroying
+		// node-fetch's exposed body alone does not close its underlying HTTP connection.
+		const fetchController = new AbortController();
+		const abortFetch = () => fetchController.abort(headerComposition.signal.reason);
+		if (headerComposition.signal.aborted) {
+			abortFetch();
+		} else {
+			headerComposition.signal.addEventListener('abort', abortFetch, { once: true });
+		}
 
 		try {
 			const response = await fetch(this.clientUrl, {
@@ -368,7 +386,7 @@ export default class HttpProvider<
 					'Content-Type': 'application/json',
 				},
 				body: JSON.stringify(payload),
-				signal: headerComposition.signal,
+				signal: fetchController.signal,
 			});
 
 			// Headers are in: the connect deadline has been met, so retire it. From here the
@@ -387,9 +405,11 @@ export default class HttpProvider<
 			);
 		} catch (error) {
 			// Bound violations are already precise; never relabel them as timeouts.
-			if (error instanceof ResponseTooLargeError || error instanceof ProviderCapabilityError) {
+			if (error instanceof ResponseTooLargeError) {
+				fetchController.abort(error);
 				throw error;
 			}
+			if (error instanceof ProviderCapabilityError) throw error;
 			// `timedOut` is what distinguishes our deadline from the caller's cancellation:
 			// an abort reason alone cannot tell them apart reliably.
 			if (headerComposition.timedOut) throw new ConnectionTimeoutError(connectionTimeout);
@@ -398,6 +418,7 @@ export default class HttpProvider<
 			throw error;
 		} finally {
 			// Idempotent, and reached on every terminal path: success, error, timeout, abort.
+			headerComposition.signal.removeEventListener('abort', abortFetch);
 			headerComposition.dispose();
 			requestComposition.dispose();
 		}
