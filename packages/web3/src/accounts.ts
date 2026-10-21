@@ -16,7 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { QRLExecutionAPI, Bytes, Transaction, KeyStore, QRL_DATA_FORMAT } from '@theqrl/web3-types';
-import { format } from '@theqrl/web3-utils';
+import { bytesToHex, format } from '@theqrl/web3-utils';
 import { Web3Context } from '@theqrl/web3-core';
 import { prepareTransactionForSigning } from '@theqrl/web3-qrl';
 import {
@@ -40,9 +40,11 @@ import {
  */
 export const initAccountsForContext = (context: Web3Context<QRLExecutionAPI>) => {
 	const signTransactionWithContext = async (transaction: Transaction, seed: Bytes) => {
-		const tx = await prepareTransactionForSigning(transaction, context, seed);
+		// Snapshot mutable seeds so sender validation, nonce lookup, and signing use the same key.
+		const signingSeed = seed instanceof Uint8Array ? bytesToHex(seed) : seed;
+		const tx = await prepareTransactionForSigning(transaction, context, signingSeed);
 
-		const seedBytes = format({ format: 'bytes' }, seed, QRL_DATA_FORMAT);
+		const seedBytes = format({ format: 'bytes' }, signingSeed, QRL_DATA_FORMAT);
 
 		return signTransaction(tx, seedBytes);
 	};

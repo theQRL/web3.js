@@ -22,8 +22,9 @@ import { hexToBytes } from '@theqrl/web3-utils';
 import { Web3 } from '../../src';
 
 const seed = `0x010000${'01'.repeat(48)}`;
+const otherSeed = `0x010000${'02'.repeat(48)}`;
 const signerAddress = seedToAccount(seed).address;
-const otherAddress = seedToAccount(`0x010000${'02'.repeat(48)}`).address;
+const otherAddress = seedToAccount(otherSeed).address;
 const transaction: Transaction = {
 	to: otherAddress,
 	value: 1,
@@ -104,5 +105,46 @@ describe.each([
 		expect(decoded.getSenderAddress().toString().toLowerCase()).toBe(
 			signerAddress.toLowerCase(),
 		);
+	});
+});
+
+describe.each([
+	{ name: 'Uint8Array', createSeed: (value: string) => hexToBytes(value) },
+	{ name: 'Buffer', createSeed: (value: string) => Buffer.from(hexToBytes(value)) },
+])('accounts.signTransaction with a mutable $name seed', ({ createSeed }) => {
+	it.each([
+		{ name: 'an explicit sender', from: signerAddress },
+		{ name: 'an inferred sender', from: undefined },
+	])('preserves $name when the seed changes during nonce lookup', async ({ from }) => {
+		const seedBytes = createSeed(seed);
+		let resolveNonce!: (nonce: string) => void;
+		const nonce = new Promise<string>(resolve => {
+			resolveNonce = resolve;
+		});
+		const request = jest.fn().mockReturnValue(nonce);
+		const web3 = new Web3({ provider: { request } });
+		web3.defaultAccount = otherAddress;
+
+		const pending = web3.qrl.accounts.signTransaction({ ...transaction, from }, seedBytes);
+
+		expect(request).toHaveBeenCalledTimes(1);
+		expect(request.mock.calls[0][0]).toMatchObject({
+			method: 'qrl_getTransactionCount',
+			params: [signerAddress, 'latest'],
+		});
+
+		seedBytes.set(hexToBytes(otherSeed));
+		resolveNonce('0x7');
+
+		const signed = await pending;
+		const decoded = FeeMarketEIP1559Transaction.fromSerializedTx(
+			hexToBytes(signed.rawTransaction),
+		);
+		expect(decoded.nonce).toBe(BigInt(7));
+		expect(decoded.verifySignature()).toBe(true);
+		expect(decoded.getSenderAddress().toString().toLowerCase()).toBe(
+			signerAddress.toLowerCase(),
+		);
+		expect(seedBytes).toEqual(createSeed(otherSeed));
 	});
 });

@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Account transaction signing now checks `from` against the signing seed and derives the sender from that seed when populating a missing nonce.
+- Snapshot mutable transaction signing seeds before asynchronous preparation so buffer changes cannot switch the signing account.
 
 <!-- EXAMPLE
 
