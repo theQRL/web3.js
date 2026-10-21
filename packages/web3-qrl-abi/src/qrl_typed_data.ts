@@ -24,17 +24,16 @@ const TYPE_REGEX = /^\w+/;
 const ARRAY_REGEX = /^(.*)\[([0-9]*?)]$/;
 
 /**
- * Get the dependencies of a struct type. If a struct has the same dependency multiple times, it's only included once
- * in the resulting array.
+ * Get the dependencies of a struct type, visiting each type once to handle recursive schemas.
  */
 const getDependencies = (
 	typedData: QRLTypedData,
 	type: string,
-	dependencies: string[] = [],
-): string[] => {
+	dependencies: Set<string> = new Set(),
+): Set<string> => {
 	const match = type.match(TYPE_REGEX)!;
 	const actualType = match[0];
-	if (dependencies.includes(actualType)) {
+	if (dependencies.has(actualType)) {
 		return dependencies;
 	}
 
@@ -42,18 +41,11 @@ const getDependencies = (
 		return dependencies;
 	}
 
-	return [
-		actualType,
-		...typedData.types[actualType].reduce<string[]>(
-			(previous, _type) => [
-				...previous,
-				...getDependencies(typedData, _type.type, previous).filter(
-					dependency => !previous.includes(dependency),
-				),
-			],
-			[],
-		),
-	];
+	dependencies.add(actualType);
+	for (const field of typedData.types[actualType]) {
+		getDependencies(typedData, field.type, dependencies);
+	}
+	return dependencies;
 };
 
 /**
