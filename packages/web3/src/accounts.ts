@@ -15,13 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import {
-	QRLExecutionAPI,
-	Bytes,
-	Transaction,
-	KeyStore,
-	QRL_DATA_FORMAT,
-} from '@theqrl/web3-types';
+import { QRLExecutionAPI, Bytes, Transaction, KeyStore, QRL_DATA_FORMAT } from '@theqrl/web3-types';
 import { format } from '@theqrl/web3-utils';
 import { Web3Context } from '@theqrl/web3-core';
 import { prepareTransactionForSigning } from '@theqrl/web3-qrl';
@@ -46,7 +40,7 @@ import {
  */
 export const initAccountsForContext = (context: Web3Context<QRLExecutionAPI>) => {
 	const signTransactionWithContext = async (transaction: Transaction, seed: Bytes) => {
-		const tx = await prepareTransactionForSigning(transaction, context);
+		const tx = await prepareTransactionForSigning(transaction, context, seed);
 
 		const seedBytes = format({ format: 'bytes' }, seed, QRL_DATA_FORMAT);
 
