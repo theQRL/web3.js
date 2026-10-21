@@ -15,7 +15,12 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { JsonRpcBatchResponse, JsonRpcOptionalRequest, JsonRpcRequest } from '@theqrl/web3-types';
+import {
+	JsonRpcBatchResponse,
+	JsonRpcId,
+	JsonRpcOptionalRequest,
+	JsonRpcRequest,
+} from '@theqrl/web3-types';
 import { jsonRpc, Web3DeferredPromise } from '@theqrl/web3-utils';
 import { OperationAbortError, OperationTimeoutError, ResponseError } from '@theqrl/web3-errors';
 import { Web3RequestManager } from './web3_request_manager.js';
@@ -25,7 +30,7 @@ export const DEFAULT_BATCH_REQUEST_TIMEOUT = 1000;
 export class Web3BatchRequest {
 	private readonly _requestManager: Web3RequestManager;
 	private readonly _requests: Map<
-		number,
+		JsonRpcId,
 		{ payload: JsonRpcRequest; promise: Web3DeferredPromise<unknown> }
 	>;
 
@@ -43,7 +48,7 @@ export class Web3BatchRequest {
 		const promise = new Web3DeferredPromise<ResponseType>();
 
 		// Batch entries are heterogeneous; the returned promise keeps the caller's response type.
-		this._requests.set(payload.id as number, {
+		this._requests.set(payload.id, {
 			payload,
 			promise: promise as unknown as Web3DeferredPromise<unknown>,
 		});
@@ -66,12 +71,12 @@ export class Web3BatchRequest {
 
 		this._processBatchRequest(request).catch(err => request.reject(err));
 
-		request.catch((err: Error) => {
-			if (err instanceof OperationTimeoutError) {
-				this._abortAllRequests('Batch request timeout');
-			}
-
-			request.reject(err);
+		void request.catch((err: unknown) => {
+			this._abortAllRequests(
+				err instanceof OperationTimeoutError
+					? new OperationAbortError('Batch request timeout')
+					: err,
+			);
 		});
 
 		return request;
@@ -83,9 +88,11 @@ export class Web3BatchRequest {
 		const response = await this._requestManager.sendBatch(
 			[...this._requests.values()].map(r => r.payload),
 		);
+		// A late reply must not change entries that were already rejected on timeout.
+		if (promise.state !== 'pending') return;
 
 		if (response.length !== this._requests.size) {
-			this._abortAllRequests('Invalid batch response');
+			this._abortAllRequests(new OperationAbortError('Invalid batch response'));
 
 			throw new ResponseError(
 				response,
@@ -93,39 +100,35 @@ export class Web3BatchRequest {
 			);
 		}
 
-		const requestIds = this.requests
-			.map(r => r.id)
-			.map(Number)
-			.sort((a, b) => a - b);
-
-		const responseIds = response
-			.map(r => r.id)
-			.map(Number)
-			.sort((a, b) => a - b);
-
-		if (JSON.stringify(requestIds) !== JSON.stringify(responseIds)) {
-			this._abortAllRequests('Invalid batch response');
+		const remainingIds = new Set(this._requests.keys());
+		const responseIds = response.map(r => r.id);
+		// Deleting each ID checks both membership and uniqueness without coercing UUIDs
+		// or treating a numeric ID as equal to a string containing the same digits.
+		if (!responseIds.every(id => remainingIds.delete(id))) {
+			this._abortAllRequests(new OperationAbortError('Invalid batch response'));
+			const requestIdLabels = [...this._requests.keys()].map(String).sort();
+			const responseIdLabels = responseIds.map(String).sort();
 
 			throw new ResponseError(
 				response,
-				`Batch request mismatch the results. Requests: [${requestIds.join()}], Responses: [${responseIds.join()}]`,
+				`Batch request mismatch the results. Requests: [${requestIdLabels.join()}], Responses: [${responseIdLabels.join()}]`,
 			);
 		}
 
 		for (const res of response) {
 			if (jsonRpc.isResponseWithResult(res)) {
-				this._requests.get(res.id as number)?.promise.resolve(res.result);
+				this._requests.get(res.id)?.promise.resolve(res.result);
 			} else if (jsonRpc.isResponseWithError(res)) {
-				this._requests.get(res.id as number)?.promise.reject(res.error);
+				this._requests.get(res.id)?.promise.reject(res.error);
 			}
 		}
 
 		promise.resolve(response);
 	}
 
-	private _abortAllRequests(msg: string) {
+	private _abortAllRequests(error: unknown) {
 		for (const { promise } of this._requests.values()) {
-			promise.reject(new OperationAbortError(msg));
+			if (promise.state === 'pending') promise.reject(error);
 		}
 	}
 }

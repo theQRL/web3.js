@@ -424,10 +424,14 @@ describe('HttpProvider - request lifecycle bounds', () => {
 			await Promise.resolve();
 			jest.advanceTimersByTime(DEFAULT_CONNECTION_TIMEOUT + 1);
 			await Promise.resolve();
+			const { signal } = mockFetch.mock.calls[0][1] as RequestInit;
+			expect(signal?.aborted).toBe(false);
 
 			jest.advanceTimersByTime(DEFAULT_REQUEST_TIMEOUT);
 			await assertion;
 			expect(state.cancelled).toBe(true);
+			expect(signal?.aborted).toBe(true);
+			expect(signal?.reason).toBeInstanceOf(RequestTimeoutError);
 		});
 
 		it('honours a shorter per-request requestTimeout override', async () => {
@@ -478,6 +482,33 @@ describe('HttpProvider - request lifecycle bounds', () => {
 	});
 
 	describe('caller cancellation', () => {
+		it('aborts transport after headers and preserves the caller reason if the stream errors', async () => {
+			const controller = new AbortController();
+			const reason = new Error('caller cancelled the body read');
+			let streamController!: ReadableStreamDefaultController<Uint8Array>;
+			const stream = new ReadableStream<Uint8Array>({
+				start(value) {
+					streamController = value;
+				},
+			});
+			mockFetch.mockImplementationOnce(async (_url: string, init: RequestInit) => {
+				init.signal?.addEventListener('abort', () =>
+					streamController.error(new Error('transport aborted')),
+				);
+				return Promise.resolve(fakeResponse({ body: stream }));
+			});
+			const provider = new HttpProvider('http://localhost:8545');
+			const promise = provider.request(payload, { signal: controller.signal });
+			const assertion = expect(promise).rejects.toBe(reason);
+			await new Promise<void>(resolve => setImmediate(resolve));
+			expect(stream.locked).toBe(true);
+			controller.abort(reason);
+			await assertion;
+			const { signal } = mockFetch.mock.calls[0][1] as RequestInit;
+			expect(signal?.aborted).toBe(true);
+			expect(signal?.reason).toBe(reason);
+		});
+
 		it('propagates a caller abort and does not mislabel it as a timeout', async () => {
 			const controller = new AbortController();
 			const reason = new Error('caller changed their mind');
@@ -567,6 +598,18 @@ describe('HttpProvider - request lifecycle bounds', () => {
 
 			// Both the connect and request deadlines must be disposed.
 			expect(jest.getTimerCount()).toBe(0);
+		});
+
+		it('does not abort a completed transport when the caller cancels later', async () => {
+			const controller = new AbortController();
+			mockFetch.mockResolvedValueOnce(
+				fakeResponse({ body: jsonStream({ jsonrpc: '2.0', id: 42, result: '0x1' }) }),
+			);
+			const provider = new HttpProvider('http://localhost:8545');
+			await provider.request(payload, { signal: controller.signal });
+			controller.abort();
+			const { signal } = mockFetch.mock.calls[0][1] as RequestInit;
+			expect(signal?.aborted).toBe(false);
 		});
 
 		it('leaves no pending timers after a failed request', async () => {

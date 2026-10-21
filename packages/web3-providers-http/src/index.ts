@@ -203,7 +203,8 @@ export default class HttpProvider<
 		// The header-phase signal is disposed once headers land, so the in-flight body is
 		// bounded by cancelling the reader when the request deadline (or the caller) fires.
 		const onAbort = () => {
-			void reader.cancel();
+			// Aborting fetch may have already errored the stream.
+			void reader.cancel().catch(() => undefined);
 		};
 		signal.addEventListener('abort', onAbort, { once: true });
 
@@ -371,10 +372,13 @@ export default class HttpProvider<
 		// node-fetch's exposed body alone does not close its underlying HTTP connection.
 		const fetchController = new AbortController();
 		const abortFetch = () => fetchController.abort(headerComposition.signal.reason);
+		const abortRequest = () => fetchController.abort(requestComposition.signal.reason);
 		if (headerComposition.signal.aborted) {
 			abortFetch();
 		} else {
 			headerComposition.signal.addEventListener('abort', abortFetch, { once: true });
+			// This listener survives disposal of the header deadline during body reads.
+			requestComposition.signal.addEventListener('abort', abortRequest, { once: true });
 		}
 
 		try {
@@ -415,10 +419,12 @@ export default class HttpProvider<
 			if (headerComposition.timedOut) throw new ConnectionTimeoutError(connectionTimeout);
 			if (requestComposition.timedOut) throw new RequestTimeoutError(requestTimeout, method);
 			// A caller-initiated abort propagates untouched.
+			if (requestComposition.signal.aborted) throw requestComposition.signal.reason;
 			throw error;
 		} finally {
 			// Idempotent, and reached on every terminal path: success, error, timeout, abort.
 			headerComposition.signal.removeEventListener('abort', abortFetch);
+			requestComposition.signal.removeEventListener('abort', abortRequest);
 			headerComposition.dispose();
 			requestComposition.dispose();
 		}

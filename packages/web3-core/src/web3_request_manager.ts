@@ -263,11 +263,17 @@ export class Web3RequestManager<
 					payload,
 					// a callback that is expected to be called after getting the response:
 					(err, response) => {
-						if (err) {
-							return rejectWithError(err);
-						}
+						try {
+							if (err) {
+								return rejectWithError(err);
+							}
 
-						return resolveWithResponse(response);
+							return resolveWithResponse(response);
+						} catch (processingError) {
+							// An asynchronous callback runs outside the Promise executor.
+							// eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors -- Preserve JSON-RPC batch rejection values.
+							return reject(processingError);
+						}
 					},
 				);
 				// Some providers, that follow a previous drafted version of EIP1193, has a `request` function
@@ -307,34 +313,39 @@ export class Web3RequestManager<
 		if (isLegacySendProvider(provider)) {
 			return new Promise<JsonRpcResponse<ResponseType>>((resolve, reject): void => {
 				provider.send<ResponseType>(payload, (err, response) => {
-					if (err) {
-						if (!Web3RequestManager._isJsonRpcResponse<ResponseType>(err)) {
-							return reject(Web3RequestManager._buildNonJsonRpcError(err));
+					try {
+						if (err) {
+							if (!Web3RequestManager._isJsonRpcResponse<ResponseType>(err)) {
+								return reject(Web3RequestManager._buildNonJsonRpcError(err));
+							}
+
+							return reject(
+								this._processJsonRpcResponse(payload, err, {
+									legacy: true,
+									error: true,
+								}),
+							);
 						}
 
-						return reject(
-							this._processJsonRpcResponse(payload, err, {
+						if (isNullish(response)) {
+							return reject(
+								new ResponseError(
+									{} as never,
+									'Got a "nullish" response from provider.',
+								),
+							);
+						}
+
+						return resolve(
+							this._processJsonRpcResponse(payload, response, {
 								legacy: true,
-								error: true,
+								error: false,
 							}),
 						);
+					} catch (processingError) {
+						// eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors -- Preserve JSON-RPC batch rejection values.
+						return reject(processingError);
 					}
-
-					if (isNullish(response)) {
-						return reject(
-							new ResponseError(
-								{} as never,
-								'Got a "nullish" response from provider.',
-							),
-						);
-					}
-
-					return resolve(
-						this._processJsonRpcResponse(payload, response, {
-							legacy: true,
-							error: false,
-						}),
-					);
 				});
 			});
 		}
@@ -438,6 +449,16 @@ export class Web3RequestManager<
 			);
 		}
 
+		// Check correlation before returning a result or interpreting a remote error.
+		// IDs retain their type, and zero and the empty string are valid IDs.
+		if (
+			!jsonRpc.isBatchRequest(payload) &&
+			(jsonRpc.isResponseWithResult(response) || jsonRpc.isResponseWithError(response)) &&
+			payload.id !== response.id
+		) {
+			throw new InvalidResponseError<ErrorType, RequestType>(response, payload);
+		}
+
 		// This is the majority of the cases so check these first
 		// A valid JSON-RPC response with error object
 		if (jsonRpc.isResponseWithError<ErrorType>(response)) {
@@ -497,15 +518,6 @@ export class Web3RequestManager<
 
 		if (!jsonRpc.isBatchRequest(payload) && Array.isArray(response)) {
 			throw new ResponseError(response, 'Got batch response for a normal request.');
-		}
-
-		if (
-			(jsonRpc.isResponseWithError(response) || jsonRpc.isResponseWithResult(response)) &&
-			!jsonRpc.isBatchRequest(payload)
-		) {
-			if (response.id && payload.id !== response.id) {
-				throw new InvalidResponseError<ErrorType>(response);
-			}
 		}
 
 		throw new ResponseError(response, 'Invalid response');
