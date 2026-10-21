@@ -113,6 +113,41 @@ describe('hash', () => {
 				expect(encodePacked(...input)).toEqual(output);
 			});
 		});
+		describe.each(['[]', '[2]'])('array padding for %s', suffix => {
+			it.each(['bool', 'boolean'])('left-pads %s elements to 64 bytes', type => {
+				const arg = { type: `${type}${suffix}`, value: [true, false] };
+				const expected = `0x${'00'.repeat(63)}01${'00'.repeat(64)}`;
+
+				expect(encodePacked(arg)).toBe(expected);
+				expect(hyperionSha3(arg)).toBe(web3keccak256(expected));
+				expect(hyperionSha3Raw(arg)).toBe(web3keccak256(expected));
+				expect(encodePacked({ type, value: true }, { type, value: false })).toBe('0x0100');
+			});
+
+			it.each([1, 2, 4, 32, 63, 64])('right-pads bytes%i elements to 64 bytes', size => {
+				const first = '12'.repeat(size);
+				const second = '34'.repeat(size);
+				const type = `bytes${size}`;
+				const arg = { type: `${type}${suffix}`, value: [`0x${first}`, `0x${second}`] };
+				const expected = `0x${first}${'00'.repeat(64 - size)}${second}${'00'.repeat(64 - size)}`;
+
+				expect(encodePacked(arg)).toBe(expected);
+				expect(hyperionSha3(arg)).toBe(web3keccak256(expected));
+				expect(hyperionSha3Raw(arg)).toBe(web3keccak256(expected));
+				expect(
+					encodePacked({ type, value: `0x${first}` }, { type, value: `0x${second}` }),
+				).toBe(`0x${first}${second}`);
+			});
+		});
+		it.each(['bool[]', 'boolean[]', 'bytes1[]', 'bytes64[]'])(
+			'keeps empty %s arrays empty',
+			type => {
+				const arg = { type, value: [] };
+				expect(encodePacked(arg)).toBe('0x');
+				expect(hyperionSha3(arg)).toBeUndefined();
+				expect(hyperionSha3Raw(arg)).toBe(web3keccak256('0x'));
+			},
+		);
 		describe('invalid cases', () => {
 			it.each(encodePackedInvalidData)('%s', (input, output) => {
 				expect(() => encodePacked(input)).toThrow(output);

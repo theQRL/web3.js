@@ -334,6 +334,12 @@ export const processHyperionEncodePackedArgs = (arg: Sha3Input): string => {
 					elementType.startsWith('int') && toNumber(v.toString()) < 0 ? 'f' : '0';
 				return packed.padStart(128, padding);
 			}
+			if (elementType === 'bool' || elementType === 'boolean') {
+				return packed.padStart(128, '0');
+			}
+			if (/^bytes\d+$/.test(elementType)) {
+				return packed.padEnd(128, '0');
+			}
 			return packed;
 		});
 		return hexArg.join('');

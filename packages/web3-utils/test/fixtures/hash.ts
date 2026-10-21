@@ -270,9 +270,12 @@ export const encodePackData: [TypedObject[] | TypedObjectAbbreviated[], any][] =
 				],
 			},
 		],
-		'0x12480000000000000000000000000000000000000000000000000000000000003c69a194aaf415ba5d6afca734660d0a3d45acdc05d54cd1ca89a8988e7625b4',
+		`0x1248${'00'.repeat(62)}3c69a194aaf415ba5d6afca734660d0a3d45acdc05d54cd1ca89a8988e7625b4${'00'.repeat(32)}`,
 	],
-	[[{ type: 'bytes4[]', value: ['0x11223344', '0x22334455'] }], '0x1122334422334455'],
+	[
+		[{ type: 'bytes4[]', value: ['0x11223344', '0x22334455'] }],
+		`0x11223344${'00'.repeat(60)}22334455${'00'.repeat(60)}`,
+	],
 ];
 
 export const encodePackedInvalidData: [any, string][] = [

@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Packed `function` values use the compact 68-byte address-plus-selector representation. Function array elements occupy two 64-byte words, matching Hyperion.
 
+### Fixed
+
+- Pad boolean and fixed-size byte array elements to 64-byte words in packed encoding, matching Hyperion. This corrects the output of `encodePacked`, `hyperionSha3`, and `hyperionSha3Raw` for affected arrays.
+
 <!-- EXAMPLE
 
 ## [1.0.0]
