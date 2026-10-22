@@ -509,6 +509,13 @@ export class Web3RequestManager<
 			!jsonRpc.isResponseWithError(response) &&
 			!jsonRpc.isResponseWithResult(response)
 		) {
+			// A legacy provider may hand back a bare result, which is wrapped into an envelope
+			// here. A reply that already is an envelope (`jsonrpc` and `id` present) but carries
+			// neither a result nor an error object, such as `"error": null`, is malformed and
+			// must not be returned to the caller as data.
+			if (!error && Web3RequestManager._isJsonRpcEnvelope(response)) {
+				throw new ResponseError(response, 'Invalid response');
+			}
 			return this._buildResponse(payload, response, error);
 		}
 
@@ -521,6 +528,16 @@ export class Web3RequestManager<
 		}
 
 		throw new ResponseError(response, 'Invalid response');
+	}
+
+	private static _isJsonRpcEnvelope(response: unknown): boolean {
+		return (
+			typeof response === 'object' &&
+			!isNullish(response) &&
+			!Array.isArray(response) &&
+			(response as { jsonrpc?: unknown }).jsonrpc === '2.0' &&
+			'id' in response
+		);
 	}
 
 	private static _isReverted<ResultType, ErrorType>(
@@ -557,10 +574,10 @@ export class Web3RequestManager<
 			id: jsonRpc.isBatchRequest(payload)
 				? payload[0].id
 				: 'id' in payload
-				? payload.id
-				: // Have to use the null here explicitly
-				  // eslint-disable-next-line no-null/no-null
-				  null,
+					? payload.id
+					: // Have to use the null here explicitly
+						// eslint-disable-next-line no-null/no-null
+						null,
 		};
 
 		if (error) {

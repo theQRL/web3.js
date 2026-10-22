@@ -27,6 +27,7 @@ import {
 	ERR_SEED_LENGTH,
 	ERR_UNSUPPORTED_CIPHER,
 	ERR_INVALID_KEYSTORE,
+	ERR_KEYSTORE_DECRYPTION,
 } from '../error_codes.js';
 import { BaseWeb3Error } from '../web3_error_base.js';
 
@@ -60,8 +61,8 @@ export class InvalidSignatureError extends BaseWeb3Error {
 
 export class InvalidKdfError extends BaseWeb3Error {
 	public code = ERR_UNSUPPORTED_KDF;
-	public constructor() {
-		super(`Invalid key derivation function`);
+	public constructor(details?: string) {
+		super(`Invalid key derivation function${details ? `: ${details}` : ''}`);
 	}
 }
 
@@ -98,6 +99,16 @@ export class InvalidCipherError extends BaseWeb3Error {
 	public constructor(cipher?: unknown) {
 		super(
 			`Unsupported keystore cipher ${JSON.stringify(cipher ?? '')}. Only "aes-256-gcm" is supported`,
+		);
+	}
+}
+
+export class KeyStoreDecryptionError extends BaseWeb3Error {
+	public code = ERR_KEYSTORE_DECRYPTION;
+
+	public constructor() {
+		super(
+			'Keystore decryption failed: wrong password, or the ciphertext or IV was tampered with (AES-GCM cannot tell these apart)',
 		);
 	}
 }

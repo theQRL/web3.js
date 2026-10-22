@@ -168,10 +168,13 @@ export const decodeEventABI = (
 	let modifiedEvent = { ...event };
 
 	const result = format(logSchema, data, returnFormat);
+	// `topics` is node supplied and may be missing on a malformed log; treat that as no topics
+	// instead of dereferencing `undefined`.
+	const topics: string[] = Array.isArray(data.topics) ? data.topics : [];
 
 	// if allEvents get the right event
 	if (modifiedEvent.name === 'ALLEVENTS') {
-		const matchedEvent = jsonInterface.find(j => rightPad(j.signature, 128) === data.topics[0]);
+		const matchedEvent = jsonInterface.find(j => rightPad(j.signature, 128) === topics[0]);
 		if (matchedEvent) {
 			modifiedEvent = matchedEvent as AbiEventFragment & { signature: string };
 		} else {
@@ -194,7 +197,7 @@ export const decodeEventABI = (
 			}
 		});
 
-		if (indexedInputs > 0 && data?.topics && data?.topics.length !== indexedInputs + 1) {
+		if (indexedInputs > 0 && topics.length !== indexedInputs + 1) {
 			// checks if event is anonymous
 			modifiedEvent = {
 				...modifiedEvent,
@@ -204,15 +207,15 @@ export const decodeEventABI = (
 		}
 	}
 
-	const argTopics = modifiedEvent.anonymous ? data.topics : (data.topics ?? []).slice(1);
+	const argTopics = modifiedEvent.anonymous ? topics : topics.slice(1);
 	return {
 		...result,
 		returnValues: decodeLog([...(modifiedEvent.inputs ?? [])], data.data, argTopics),
 		event: modifiedEvent.name,
 		signature:
-			modifiedEvent.anonymous || !data.topics || data.topics.length === 0 || !data.topics[0]
+			modifiedEvent.anonymous || topics.length === 0 || !topics[0]
 				? undefined
-				: data.topics[0].slice(0, 66),
+				: topics[0].slice(0, 66),
 
 		raw: {
 			data: data.data,

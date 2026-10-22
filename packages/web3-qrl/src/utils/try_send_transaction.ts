@@ -19,7 +19,7 @@ import { QRLExecutionAPI, Bytes } from '@theqrl/web3-types';
 import { AsyncFunction, rejectIfTimeout } from '@theqrl/web3-utils';
 import { TransactionSendTimeoutError } from '@theqrl/web3-errors';
 
-import { rejectIfBlockTimeout } from './reject_if_block_timeout.js';
+import { rejectIfBlockTimeout, ResourceCleaner } from './reject_if_block_timeout.js';
 
 /**
  * An internal function to send a transaction or throws if sending did not finish during the timeout during the blocks-timeout.
@@ -41,20 +41,30 @@ export async function trySendTransaction(
 		}),
 	);
 
-	const [rejectOnBlockTimeout, blockTimeoutResourceCleaner] = await rejectIfBlockTimeout(
-		web3Context,
-		transactionHash,
-	);
+	let blockTimeoutResourceCleaner: ResourceCleaner | undefined;
+	let waiting = true;
 
 	try {
-		// If an error happened here, do not catch it, just clear the resources before raising it to the caller function.
-		return await Promise.race([
-			sendTransactionFunc(), // this is the function that will send the transaction
-			rejectOnTimeout, // this will throw an error on Transaction Send Timeout
-			rejectOnBlockTimeout, // this will throw an error on Transaction Block Timeout
-		]);
+		// The send timeout covers setup as well as sending. Keep the send behind successful
+		// setup, and observe the setup promise even if the timeout wins first.
+		const sendWhenReady = rejectIfBlockTimeout(web3Context, transactionHash).then(
+			async ([rejectOnBlockTimeout, resourceCleaner]) => {
+				if (!waiting) {
+					// A late watcher must be cleaned up without submitting the transaction.
+					resourceCleaner.clean();
+					return rejectOnBlockTimeout;
+				}
+				blockTimeoutResourceCleaner = resourceCleaner;
+				return Promise.race([
+					Promise.resolve().then(sendTransactionFunc),
+					rejectOnBlockTimeout,
+				]);
+			},
+		);
+		return await Promise.race([sendWhenReady, rejectOnTimeout]);
 	} finally {
+		waiting = false;
 		clearTimeout(timeoutId);
-		blockTimeoutResourceCleaner.clean();
+		blockTimeoutResourceCleaner?.clean();
 	}
 }

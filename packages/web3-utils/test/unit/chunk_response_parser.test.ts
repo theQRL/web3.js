@@ -176,4 +176,109 @@ describe('ChunkResponseParser', () => {
 			expect(parser.parseResponse(JSON.stringify(response(1)))).toEqual([response(1)]);
 		});
 	});
+
+	describe('stream mode boundary detection and cost', () => {
+		const tricky = { ...response(1), result: 'a}{b"}{"c\\"]{ }][{ |--| \\' };
+
+		it('keeps delimiter-like text and escaped quotes inside string values', () => {
+			const parser = new ChunkResponseParser(new EventEmitter(), false);
+			const text = JSON.stringify(tricky) + JSON.stringify(response(2));
+			expect(parser.parseResponse(text)).toEqual([tricky, response(2)]);
+		});
+
+		it('reassembles messages cut at every possible position', () => {
+			const text = `${JSON.stringify(tricky)}\n${JSON.stringify(response(2))}`;
+			for (let cut = 1; cut < text.length; cut += 1) {
+				const parser = new ChunkResponseParser(new EventEmitter(), false);
+				const results = [
+					...parser.parseResponse(text.slice(0, cut)),
+					...parser.parseResponse(text.slice(cut)),
+				];
+				expect(results).toEqual([tricky, response(2)]);
+			}
+		});
+
+		it('accepts whitespace between messages and batch arrays next to objects', () => {
+			const parser = new ChunkResponseParser(new EventEmitter(), false);
+			const batch = [response(1), response(2)];
+			const text = `\n${JSON.stringify(batch)}\r\n${JSON.stringify(response(3))}\n`;
+			expect(parser.parseResponse(text)).toEqual([batch, response(3)]);
+		});
+
+		it('skips garbage between messages, reports it once and keeps the messages', () => {
+			const emitter = new EventEmitter();
+			const errors = collectErrors(emitter);
+			const parser = new ChunkResponseParser(emitter, false);
+			const text = `null${JSON.stringify(response(1))} 42 }]${JSON.stringify(response(2))}`;
+			expect(parser.parseResponse(text)).toEqual([response(1), response(2)]);
+			expect(errors).toHaveLength(1);
+			expect(errors[0]).toBeInstanceOf(InvalidResponseError);
+		});
+
+		it('drops a balanced segment that is not JSON and reports it once', () => {
+			const emitter = new EventEmitter();
+			const errors = collectErrors(emitter);
+			const parser = new ChunkResponseParser(emitter, false);
+			const text = `${'{]'.repeat(1000)}${JSON.stringify(response(1))}`;
+			expect(parser.parseResponse(text)).toEqual([response(1)]);
+			expect(errors).toHaveLength(1);
+		});
+
+		it('does work linear in the input on a stream of unparseable fragments', () => {
+			const emitter = new EventEmitter();
+			const errors = collectErrors(emitter);
+			const parser = new ChunkResponseParser(emitter, false);
+			const fragments = 20_000;
+			const data = '}{'.repeat(fragments);
+			const parse = jest.spyOn(JSON, 'parse');
+			try {
+				// `}` garbage, then `{}` empty objects, then a trailing `{` that stays pending.
+				expect(parser.parseResponse(data)).toHaveLength(fragments - 1);
+				const parsedBytes = parse.mock.calls.reduce(
+					(total, [text]) => total + String(text).length,
+					0,
+				);
+				// Every byte is handed to JSON.parse at most once; the old parser re-parsed a
+				// growing prefix for every fragment (quadratic).
+				expect(parsedBytes).toBeLessThanOrEqual(data.length);
+				expect(parse.mock.calls.length).toBe(fragments - 1);
+			} finally {
+				parse.mockRestore();
+				parser.reset();
+			}
+			expect(errors).toHaveLength(1);
+		});
+
+		it('rejects a complete message above the size bound and clears queues', () => {
+			const emitter = new EventEmitter();
+			const errors = collectErrors(emitter);
+			const cleared = jest.fn();
+			const parser = new ChunkResponseParser(emitter, false);
+			parser.onError(cleared);
+			const text = `{"a":"${'x'.repeat(10 * 1024 * 1024)}"}${JSON.stringify(response(1))}`;
+			expect(parser.parseResponse(text)).toEqual([response(1)]);
+			expect(cleared).toHaveBeenCalledTimes(1);
+			expect(errors).toHaveLength(1);
+			expect(errors[0]).toBeInstanceOf(InvalidResponseError);
+		});
+
+		it('gives a message that opens after another completed a fresh deadline', () => {
+			jest.useFakeTimers();
+			try {
+				const emitter = new EventEmitter();
+				const errors = collectErrors(emitter);
+				const parser = new ChunkResponseParser(emitter, false);
+				expect(parser.parseResponse('{"jsonrpc":"2.0",')).toEqual([]);
+				jest.advanceTimersByTime(14_000);
+				const rest = `"id":1,"result":"0x1"}${JSON.stringify(response(2)).slice(0, 5)}`;
+				expect(parser.parseResponse(rest)).toEqual([response(1)]);
+				jest.advanceTimersByTime(14_000);
+				expect(errors).toHaveLength(0);
+				jest.advanceTimersByTime(1_000);
+				expect(errors).toHaveLength(1);
+			} finally {
+				jest.useRealTimers();
+			}
+		});
+	});
 });

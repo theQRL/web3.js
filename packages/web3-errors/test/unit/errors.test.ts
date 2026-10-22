@@ -37,6 +37,17 @@ describe('errors', () => {
 		});
 	});
 
+	it('preserves the default KDF error and includes optional validation details', () => {
+		expect(new accountErrors.InvalidKdfError().message).toBe('Invalid key derivation function');
+		expect(
+			new accountErrors.InvalidKdfError('Argon2id salt is too short').toJSON(),
+		).toMatchObject({
+			name: 'InvalidKdfError',
+			code: new accountErrors.InvalidKdfError().code,
+			message: 'Invalid key derivation function: Argon2id salt is too short',
+		});
+	});
+
 	it('should have unique codes for each error', () => {
 		const errorCodes: number[] = [];
 
@@ -398,5 +409,43 @@ describe('errors', () => {
 				}).toJSON(),
 			).toMatchSnapshot();
 		});
+	});
+
+	describe('null members inside error replies', () => {
+		/* eslint-disable no-null/no-null */
+		it.each([
+			['data: null', { code: 3, message: 'execution reverted', data: null }],
+			[
+				'data.originalError: null',
+				{ code: 3, message: 'execution reverted', data: { originalError: null } },
+			],
+			['data: {}', { code: 3, message: 'execution reverted', data: {} }],
+		])('Eip838ExecutionError does not throw for %s', (_, error) => {
+			const instance = new contractErrors.Eip838ExecutionError(
+				error as unknown as JsonRpcError<contractErrors.ProviderErrorData>,
+			);
+			expect(instance.message).toBe('execution reverted');
+			expect(instance.data).toBeUndefined();
+			expect(instance.toJSON()).toMatchObject({ name: 'Eip838ExecutionError', code: 3 });
+		});
+
+		it('ContractExecutionError wraps a revert whose data is null', () => {
+			const instance = new contractErrors.ContractExecutionError({
+				code: 3,
+				message: 'execution reverted',
+				data: null,
+			} as unknown as JsonRpcError<contractErrors.ProviderErrorData>);
+			expect(instance.innerError).toBeInstanceOf(contractErrors.Eip838ExecutionError);
+			expect(instance.innerError.data).toBeUndefined();
+		});
+
+		it('ResponseError and InvalidResponseError accept an error member that is null', () => {
+			const reply = { jsonrpc: '2.0', id: 1, error: null } as never;
+			expect(new responseErrors.ResponseError(reply).message).toContain('Returned error');
+			expect(new responseErrors.InvalidResponseError(reply).message).toContain(
+				'Returned error',
+			);
+		});
+		/* eslint-enable no-null/no-null */
 	});
 });

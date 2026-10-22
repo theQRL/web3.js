@@ -28,6 +28,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - WebSocket integration tests now connect to the local testnet's WebSocket port (8546).
 - Updated the local testnet to the upstream QRL package with compatible Qrysm startup flags and epoch settings for its compiled state limits.
 - Updated revert and access-list gas expectations for the regenerated contract fixtures.
+- `encodeParameter`/`encodeParameters` accept negative decimal strings for signed integer types narrower than 256 bits (for example `'-57'` for `int8`); decimal strings are no longer zero-padded before encoding, only hex strings are width-normalised.
+- `waitForTransactionReceipt` (and therefore `sendTransaction`/`sendSignedTransaction`) stops polling `qrl_getTransactionReceipt` once the polling or block timeout has rejected, including when the initial block-number request fails or stalls. Late block-watcher setup is cleaned up, and cancelled subscription watchers cannot restart polling through their fallback timer or late error events.
+- `trySendTransaction` handles failed or stalled block-watcher setup within the send timeout and cleans up its timer, preventing a later unhandled `TransactionSendTimeoutError` from terminating Node. Setup that finishes after the timeout is cleaned up without sending the transaction.
+- Replies whose `error` member is `null`, or whose revert `data` / `data.originalError` is `null`, surface as `ResponseError` / `ContractExecutionError` instead of a raw `TypeError`. `isResponseWithError` requires `error` to be an object, as JSON-RPC 2.0 defines it, and the request manager no longer returns such a malformed envelope from a legacy or EIP-1193 provider as if it were a result.
+- Event logs delivered without `topics` no longer throw a `TypeError` on the `allEvents` path; a declared anonymous event with more indexed inputs than topics reports an `AbiError`; a subscription that cannot decode a notification reports it on its own `error` event instead of only the provider's.
+- Keystore decryption reports a wrong password or tampered ciphertext as `KeyStoreDecryptionError` (new, code 715), a wrong-length IV as `IVLengthError`, and a non-bytes salt as a validation error, instead of leaking a WebCrypto `DOMException` or a library `TypeError`. Encryption and decryption report out-of-range Argon2id parameters and salts shorter than 8 bytes as `InvalidKdfError`, preserving the validation reason; accepted salt byte arrays are normalized before key derivation.
 
 ### Security
 
@@ -40,6 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Pinned the `@theqrl/qrl-contracts` archive's SHA-512 integrity in the lockfile so pnpm rejects altered downloads. `pnpm run doctor` guards the archive pin and checks the installed tree against a reviewed digest.
 - Updated vulnerable tooling dependencies and documented the temporary exception for the unfixed `braces` advisory, whose glob patterns are controlled by repository/tool configuration.
 - Upgraded `image-size` to the fixed release verified against its Codeberg source and removed its two advisory exceptions.
+- The IPC chunk parser finds message boundaries with one linear scan (string and escape aware bracket depth) instead of re-parsing an ever-growing prefix after every unparseable fragment, so a peer can no longer block the event loop for tens of seconds per 15-second window with a few hundred KB of garbage. Garbage and malformed segments are reported once per `data` event.
 
 <!-- EXAMPLE
 

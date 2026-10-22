@@ -33,8 +33,13 @@ import { uuidV4 } from './uuid.js';
 
 // check if code is a valid rpc server error code
 export const isResponseRpcError = (rpcError: JsonRpcResponseWithError) => {
-	const errorCode = rpcError.error.code;
-	return rpcErrorsMap.has(errorCode) || (errorCode >= -32099 && errorCode <= -32000);
+	// `error` and `code` are provider supplied; a missing or non-numeric code is not an RPC
+	// error code, it is a malformed reply.
+	const errorCode = (rpcError as { error?: { code?: unknown } } | undefined)?.error?.code;
+	return (
+		typeof errorCode === 'number' &&
+		(rpcErrorsMap.has(errorCode) || (errorCode >= -32099 && errorCode <= -32000))
+	);
 };
 
 /**
@@ -62,8 +67,9 @@ export const isResponseWithError = <Error = unknown, Result = unknown>(
 	isJsonRpcObject(response) &&
 	response.jsonrpc === '2.0' &&
 	isNullish(response.result) &&
-	// JSON RPC consider "null" as valid response
-	'error' in response &&
+	// JSON-RPC 2.0 defines `error` as an object; `"error": null` next to a missing result is
+	// a malformed reply, not an error reply, and must not be dereferenced as one.
+	isJsonRpcObject(response.error) &&
 	(typeof response.id === 'number' || typeof response.id === 'string');
 
 export const isResponseWithNotification = <Result>(

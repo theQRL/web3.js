@@ -15,7 +15,6 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
 import { JsonRpcError, TransactionReceipt, HexString } from '@theqrl/web3-types';
 import {
 	ERR_CONTRACT,
@@ -46,7 +45,10 @@ export class Web3ContractError extends BaseWeb3Error {
 export class ResolverMethodMissingError extends BaseWeb3Error {
 	public code = ERR_CONTRACT_RESOLVER_MISSING;
 
-	public constructor(public address: string, public name: string) {
+	public constructor(
+		public address: string,
+		public name: string,
+	) {
 		super(`The resolver at ${address} does not implement requested method: "${name}".`);
 	}
 
@@ -155,18 +157,25 @@ export class Eip838ExecutionError extends Web3ContractError {
 		// and set this.data from the inner error data for easier read.
 		// note: the data is a hex string inside either:
 		//	 error.data, error.data.data or error.data.originalError.data (https://github.com/web3/web3.js/issues/4454#issuecomment-1485953455)
+		// `data` is provider supplied. `typeof null` is `'object'`, so `null` is excluded
+		// explicitly, and a `null` `originalError` member counts as absent: otherwise a reply
+		// such as `{"code":3,"message":"execution reverted","data":null}` ends in a `TypeError`
+		// instead of this error.
 		if (typeof error.data === 'object') {
-			let originalError: { data: string };
-			if ('originalError' in error.data) {
-				originalError = error.data.originalError;
+			// eslint-disable-next-line no-null/no-null
+			if (error.data === null) {
+				this.data = undefined;
 			} else {
+				const nested = (error.data as { originalError?: unknown }).originalError;
 				// Some provider implementations have no `originalError` sub-object.
-				originalError = error.data;
+				// eslint-disable-next-line no-null/no-null
+				const hasNested = typeof nested === 'object' && nested !== null;
+				const originalError = (hasNested ? nested : error.data) as { data: string };
+				this.data = originalError.data;
+				this.innerError = new Eip838ExecutionError(
+					originalError as JsonRpcError<ProviderErrorData>,
+				);
 			}
-			this.data = originalError.data;
-			this.innerError = new Eip838ExecutionError(
-				originalError as JsonRpcError<ProviderErrorData>,
-			);
 		} else {
 			this.data = error.data;
 		}

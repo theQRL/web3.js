@@ -19,8 +19,8 @@ import { Web3Context } from '@theqrl/web3-core';
 import { TransactionPollingTimeoutError } from '@theqrl/web3-errors';
 import { QRLExecutionAPI, Bytes, TransactionReceipt, DataFormat } from '@theqrl/web3-types';
 
-import { pollTillDefined, rejectIfTimeout } from '@theqrl/web3-utils';
-import { rejectIfBlockTimeout } from './reject_if_block_timeout.js';
+import { pollTillDefinedAndReturnIntervalId, rejectIfTimeout } from '@theqrl/web3-utils';
+import { rejectIfBlockTimeout, ResourceCleaner } from './reject_if_block_timeout.js';
 import { getTransactionReceipt } from './rpc_method_wrappers_readers.js';
 
 export async function waitForTransactionReceipt<ReturnFormat extends DataFormat>(
@@ -31,14 +31,15 @@ export async function waitForTransactionReceipt<ReturnFormat extends DataFormat>
 	const pollingInterval =
 		web3Context.transactionReceiptPollingInterval ?? web3Context.transactionPollingInterval;
 
-	const awaitableTransactionReceipt: Promise<TransactionReceipt> = pollTillDefined(async () => {
-		try {
-			return getTransactionReceipt(web3Context, transactionHash, returnFormat);
-		} catch (error) {
-			console.warn('An error happen while trying to get the transaction receipt', error);
-			return undefined;
-		}
-	}, pollingInterval);
+	const [awaitableTransactionReceipt, receiptPollingIntervalId] =
+		pollTillDefinedAndReturnIntervalId(async () => {
+			try {
+				return getTransactionReceipt(web3Context, transactionHash, returnFormat);
+			} catch (error) {
+				console.warn('An error happen while trying to get the transaction receipt', error);
+				return undefined;
+			}
+		}, pollingInterval);
 
 	const [timeoutId, rejectOnTimeout] = rejectIfTimeout(
 		web3Context.transactionPollingTimeout,
@@ -48,20 +49,36 @@ export async function waitForTransactionReceipt<ReturnFormat extends DataFormat>
 		}),
 	);
 
-	const [rejectOnBlockTimeout, blockTimeoutResourceCleaner] = await rejectIfBlockTimeout(
-		web3Context,
-		transactionHash,
-	);
+	let blockTimeoutResourceCleaner: ResourceCleaner | undefined;
+	let waiting = true;
 
 	try {
-		// If an error happened here, do not catch it, just clear the resources before raising it to the caller function.
+		// Setup performs an RPC call too. Race it against the receipt and polling timeout so
+		// a failed or stalled setup cannot bypass cleanup or leave the timeout unhandled.
+		const rejectOnBlockTimeout = rejectIfBlockTimeout(web3Context, transactionHash).then(
+			async ([blockTimeout, resourceCleaner]) => {
+				if (waiting) {
+					blockTimeoutResourceCleaner = resourceCleaner;
+				} else {
+					// Setup can finish after this function has already returned or timed out.
+					resourceCleaner.clean();
+				}
+				return blockTimeout;
+			},
+		);
+
 		return await Promise.race([
 			awaitableTransactionReceipt,
 			rejectOnTimeout, // this will throw an error on Transaction Polling Timeout
 			rejectOnBlockTimeout, // this will throw an error on Transaction Block Timeout
 		]);
 	} finally {
+		waiting = false;
 		clearTimeout(timeoutId);
-		blockTimeoutResourceCleaner.clean();
+		// The receipt poller is independent of the timers above: without this it kept calling
+		// `qrl_getTransactionReceipt` after the timeout had rejected the race, forever for a
+		// transaction that never mines.
+		clearInterval(receiptPollingIntervalId);
+		blockTimeoutResourceCleaner?.clean();
 	}
 }

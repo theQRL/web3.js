@@ -106,4 +106,37 @@ describe('Web3Subscription', () => {
 			expect(sub.id).toBeUndefined();
 		});
 	});
+
+	describe('formatting failures', () => {
+		it('reports a notification it cannot format on its own error event', () => {
+			class ThrowingSubscription extends ExampleSubscription {
+				// eslint-disable-next-line class-methods-use-this
+				protected formatSubscriptionResult(): never {
+					throw new Error('undecodable');
+				}
+			}
+			const subscription = new ThrowingSubscription(
+				{ param1: 'value' },
+				{ subscriptionManager },
+			);
+			const errors: unknown[] = [];
+			const data: unknown[] = [];
+			subscription.on('error', error => {
+				errors.push(error);
+			});
+			subscription.on('data', item => {
+				data.push(item);
+			});
+
+			subscription.processSubscriptionData({
+				jsonrpc: '2.0',
+				method: 'qrl_subscription',
+				params: { subscription: 'sub-id', result: { foo: 1 } },
+			} as never);
+
+			expect(data).toEqual([]);
+			expect(errors).toHaveLength(1);
+			expect((errors[0] as Error).message).toBe('undecodable');
+		});
+	});
 });

@@ -158,7 +158,18 @@ export abstract class Web3Subscription<
 	}
 
 	public _processSubscriptionResult(data: CombinedEventMap['data'] | unknown) {
-		this.emit('data', this.formatSubscriptionResult(data));
+		let formatted: CombinedEventMap['data'];
+		try {
+			formatted = this.formatSubscriptionResult(data as CombinedEventMap['data']);
+		} catch (error) {
+			// A notification the subclass cannot decode (a malformed log, for example) is this
+			// subscription's problem: report it on the subscription's `error` event so the
+			// subscriber learns that an item was dropped. Without an `error` listener the
+			// emit throws and the provider reports it, as before.
+			this._processSubscriptionError(error as Error);
+			return;
+		}
+		this.emit('data', formatted);
 	}
 
 	public _processSubscriptionError(error: Error) {

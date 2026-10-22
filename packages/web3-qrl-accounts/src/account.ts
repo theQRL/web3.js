@@ -26,6 +26,8 @@ import {
 	InvalidPasswordError,
 	InvalidPublicKeyError,
 	InvalidSeedError,
+	IVLengthError,
+	KeyStoreDecryptionError,
 	KeyStoreMismatchError,
 	KeyStoreVersionError,
 	PublicKeyLengthError,
@@ -57,7 +59,7 @@ import {
 
 import { isHexStrict, isNullish, isString, validator } from '@theqrl/web3-validator';
 import { keyStoreSchema } from './schemas.js';
-import { validateArgon2idParams } from './kdf_policy.js';
+import { validateArgon2idParams, validateArgon2idSalt } from './kdf_policy.js';
 import { CryptoPublicKeyBytes } from './qrl_crypto.js';
 import {
 	addressFromPublicKeyAndDescriptor,
@@ -207,7 +209,9 @@ export const signTransaction = async (
 
 	const rawTx = bytesToHex(signedTx.serialize());
 	const txHash = sha3Raw(rawTx); // using keccak in web3-utils.sha3Raw instead of SHA3 (NIST Standard) as both are different
-	const extraParams = isNullish(signedTx.extraParams) ? Uint8Array.from([]) : signedTx.extraParams;
+	const extraParams = isNullish(signedTx.extraParams)
+		? Uint8Array.from([])
+		: signedTx.extraParams;
 
 	return {
 		messageHash: bytesToHex(signedTx.getMessageToSign(signedTx.descriptor, extraParams, true)),
@@ -315,7 +319,10 @@ export const encrypt = async (
 	// if given salt is a string, convert it to a Uint8Array
 	let salt;
 	if (options?.salt) {
-		salt = typeof options.salt === 'string' ? hexToBytes(options.salt) : options.salt;
+		salt =
+			typeof options.salt === 'string'
+				? hexToBytes(options.salt)
+				: bytesToUint8Array(options.salt);
 	} else {
 		salt = randomBytes(32);
 	}
@@ -340,6 +347,7 @@ export const encrypt = async (
 
 	// derive key from key derivation function
 	if (kdf === 'argon2id') {
+		validateArgon2idSalt(salt);
 		kdfparams = {
 			m: options?.m ?? 262144,
 			t: options?.t ?? 8,
@@ -362,11 +370,7 @@ export const encrypt = async (
 		throw new InvalidKdfError();
 	}
 
-	const cipher = await createCipheriv(
-		seedUint8Array,
-		derivedKey,
-		initializationVector,
-	);
+	const cipher = await createCipheriv(seedUint8Array, derivedKey, initializationVector);
 	const ciphertext = bytesToHex(cipher).slice(2);
 	// eslint-disable-next-line no-use-before-define
 	const acc = seedToAccount(seedUint8Array);
@@ -574,8 +578,12 @@ export const decrypt = async (
 		// Bound the untrusted KDF parameters from the keystore JSON before
 		// deriving the key, to prevent maliciously large memory/time costs.
 		validateArgon2idParams(kdfparams);
+		// Normalize every accepted byte representation before handing it to Argon2.
 		const uint8ArraySalt =
-			typeof kdfparams.salt === 'string' ? hexToBytes(kdfparams.salt) : kdfparams.salt;
+			typeof kdfparams.salt === 'string'
+				? hexToBytes(kdfparams.salt)
+				: bytesToUint8Array(kdfparams.salt);
+		validateArgon2idSalt(uint8ArraySalt);
 		derivedKey = argon2idSync(
 			uint8ArrayPassword,
 			uint8ArraySalt,
@@ -588,11 +596,19 @@ export const decrypt = async (
 		throw new InvalidKdfError();
 	}
 
-	const seed = await createDecipheriv(
-		hexToBytes(json.crypto.ciphertext),
-		derivedKey,
-		hexToBytes(json.crypto.cipherparams.iv),
-	);
+	const initializationVector = hexToBytes(json.crypto.cipherparams.iv);
+	if (initializationVector.length !== 12) throw new IVLengthError();
+	const ciphertext = hexToBytes(json.crypto.ciphertext);
+
+	let seed: Uint8Array;
+	try {
+		seed = await createDecipheriv(ciphertext, derivedKey, initializationVector);
+	} catch {
+		// AES-GCM authentication failed. A wrong password and a tampered ciphertext or IV are
+		// indistinguishable by construction, so one typed error covers both instead of the
+		// WebCrypto `DOMException` leaking out.
+		throw new KeyStoreDecryptionError();
+	}
 
 	const account = seedToAccount(seed);
 

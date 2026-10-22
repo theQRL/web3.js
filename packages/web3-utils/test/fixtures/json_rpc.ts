@@ -46,6 +46,10 @@ export const isResponseWithErrorValidTest: [any, boolean][] = [
 	[responseWithResult, false],
 	[responseWithError, true],
 	[[responseWithError], false],
+	// JSON-RPC 2.0 defines `error` as an object: these are malformed replies, not errors.
+	[{ jsonrpc: '2.0', id: 1, error: null }, false],
+	[{ jsonrpc: '2.0', id: 1, error: 'boom' }, false],
+	[{ jsonrpc: '2.0', id: 1, error: [{ code: 1, message: 'boom' }] }, false],
 	...nonObjects,
 ];
 

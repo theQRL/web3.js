@@ -15,6 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+import { AbiError } from '@theqrl/web3-errors';
 import { HexString, AbiParameter, DecodedParams } from '@theqrl/web3-types';
 import { decodeParameter, decodeParametersWith } from './parameters_api.js';
 
@@ -75,7 +76,15 @@ export const decodeLog = <ReturnType extends DecodedParams>(
 	data: HexString,
 	topics: string | string[],
 ) => {
-	const clonedTopics = Array.isArray(topics) ? topics : [topics];
+	// `topics` comes from the node: it may be absent on a malformed log.
+	let clonedTopics: string[];
+	if (Array.isArray(topics)) {
+		clonedTopics = topics;
+	} else if (typeof topics === 'string') {
+		clonedTopics = [topics];
+	} else {
+		clonedTopics = [];
+	}
 
 	const indexedInputs: Record<number, AbiParameter> = {};
 	const nonIndexedInputs: Record<number, AbiParameter> = {};
@@ -95,11 +104,17 @@ export const decodeLog = <ReturnType extends DecodedParams>(
 	// If topics are more than indexed inputs, that means first topic is the event signature
 	const offset = clonedTopics.length - Object.keys(indexedInputs).length;
 
-	const decodedIndexedInputs = Object.values(indexedInputs).map((input, index) =>
-		isIndexedHash(input.type)
-			? clonedTopics[index + offset].slice(0, 66)
-			: decodeParameter(input.type, clonedTopics[index + offset]),
-	);
+	const decodedIndexedInputs = Object.values(indexedInputs).map((input, index) => {
+		const topic = clonedTopics[index + offset];
+		if (typeof topic !== 'string') {
+			throw new AbiError(
+				`Log has fewer topics than the event has indexed inputs (missing topic for "${
+					input.name ?? input.type
+				}")`,
+			);
+		}
+		return isIndexedHash(input.type) ? topic.slice(0, 66) : decodeParameter(input.type, topic);
+	});
 
 	const returnValues: DecodedParams = { __length__: 0 };
 

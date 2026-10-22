@@ -18,7 +18,13 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import { Address, KeyStore } from '@theqrl/web3-types';
 import { Web3ValidatorError, isAddressString } from '@theqrl/web3-validator';
 import { bytesToHex, hexToBytes } from '@theqrl/web3-utils';
-import { InvalidCipherError, TransactionSigningError } from '@theqrl/web3-errors';
+import {
+	InvalidCipherError,
+	InvalidKdfError,
+	IVLengthError,
+	KeyStoreDecryptionError,
+	TransactionSigningError,
+} from '@theqrl/web3-errors';
 import {
 	create,
 	decrypt,
@@ -216,8 +222,7 @@ describe('accounts', () => {
 				expect(typeof result.id).toBe('string');
 				// ...and prove correctness by round-tripping through decrypt.
 				const recovered = await decrypt(result, input[1]);
-				const expectedSeed =
-					typeof input[0] === 'string' ? input[0] : bytesToHex(input[0]);
+				const expectedSeed = typeof input[0] === 'string' ? input[0] : bytesToHex(input[0]);
 				expect(recovered.seed).toBe(expectedSeed);
 				// recovered.address is checksum-cased; the stored keystore
 				// address is lower-cased, so compare case-insensitively.
@@ -255,15 +260,11 @@ describe('accounts', () => {
 				const second = await encrypt(seed, password, options);
 
 				// Different random IVs => different ciphertext.
-				expect(first.crypto.cipherparams.iv).not.toBe(
-					second.crypto.cipherparams.iv,
-				);
+				expect(first.crypto.cipherparams.iv).not.toBe(second.crypto.cipherparams.iv);
 				expect(first.crypto.ciphertext).not.toBe(second.crypto.ciphertext);
 				// The caller-supplied iv must have been ignored.
 				expect(first.crypto.cipherparams.iv).not.toBe('f59185068e4cbe729dd0000c');
-				expect(second.crypto.cipherparams.iv).not.toBe(
-					'f59185068e4cbe729dd0000c',
-				);
+				expect(second.crypto.cipherparams.iv).not.toBe('f59185068e4cbe729dd0000c');
 
 				// Both keystores still decrypt back to the same seed.
 				const recoveredFirst = await decrypt(first, password);
@@ -294,9 +295,7 @@ describe('accounts', () => {
 				// make sure decrypt does not throw invalid password error
 				const result = await decrypt(keystore, input[1]);
 
-				expect(JSON.stringify(result)).toEqual(
-					JSON.stringify(seedToAccount(input[3])),
-				);
+				expect(JSON.stringify(result)).toEqual(JSON.stringify(seedToAccount(input[3])));
 
 				const keystoreString = JSON.stringify(keystore);
 
@@ -377,6 +376,95 @@ describe('accounts', () => {
 					decrypt(keystore as unknown as KeyStore, '1234567890'),
 				).rejects.toThrow(/Argon2id m out of range/);
 			});
+		});
+	});
+
+	describe('decrypt error types', () => {
+		const argon2 = { m: 19456, t: 2, p: 1 };
+		const withCrypto = (keystore: KeyStore, crypto: Record<string, unknown>) =>
+			({ ...keystore, crypto: { ...keystore.crypto, ...crypto } }) as unknown as KeyStore;
+		// These failures must be detected before key derivation or ciphertext authentication.
+		const invalidKeystore: KeyStore = {
+			version: 1,
+			id: 'invalid-kdf-test',
+			address: `Q${'00'.repeat(64)}`,
+			crypto: {
+				cipher: 'aes-256-gcm',
+				ciphertext: '00'.repeat(67),
+				cipherparams: { iv: '00'.repeat(12) },
+				kdf: 'argon2id',
+				kdfparams: { ...argon2, dklen: 32, salt: '00'.repeat(32) },
+			},
+		};
+
+		it.each([
+			['m', 1],
+			['t', 0],
+			['p', 0],
+			['dklen', 0],
+		])('reports an out-of-range %s as InvalidKdfError', async (field, value) => {
+			const kdfparams = { ...invalidKeystore.crypto.kdfparams, [field]: value };
+			await expect(
+				decrypt(withCrypto(invalidKeystore, { kdfparams }), 'password'),
+			).rejects.toThrow(InvalidKdfError);
+		});
+
+		it.each([new Uint8Array(), [], '00', '00'.repeat(7)])(
+			'reports a short salt %s as InvalidKdfError',
+			async salt => {
+				const kdfparams = { ...invalidKeystore.crypto.kdfparams, salt };
+				await expect(
+					decrypt(withCrypto(invalidKeystore, { kdfparams }), 'password'),
+				).rejects.toThrow(InvalidKdfError);
+			},
+		);
+
+		it('rejects a short encryption salt with the same typed KDF error', async () => {
+			const seed = `0x010000${'00'.repeat(48)}`;
+			await expect(encrypt(seed, 'password', { ...argon2, salt: '00' })).rejects.toThrow(
+				InvalidKdfError,
+			);
+		});
+
+		it('reports a wrong password as KeyStoreDecryptionError', async () => {
+			const keystore = await encrypt(create().seed, 'password', argon2);
+			await expect(decrypt(keystore, 'not the password')).rejects.toThrow(
+				KeyStoreDecryptionError,
+			);
+		});
+
+		it('reports a tampered ciphertext as KeyStoreDecryptionError', async () => {
+			const keystore = await encrypt(create().seed, 'password', argon2);
+			const { ciphertext } = keystore.crypto;
+			const flipped = `${ciphertext.slice(0, -2)}${ciphertext.endsWith('00') ? '01' : '00'}`;
+			await expect(
+				decrypt(withCrypto(keystore, { ciphertext: flipped }), 'password'),
+			).rejects.toThrow(KeyStoreDecryptionError);
+		});
+
+		it('rejects an IV that is not 12 bytes with IVLengthError', async () => {
+			const keystore = await encrypt(create().seed, 'password', argon2);
+			await expect(
+				decrypt(withCrypto(keystore, { cipherparams: { iv: '00'.repeat(8) } }), 'password'),
+			).rejects.toThrow(IVLengthError);
+		});
+
+		it('rejects a salt that is not bytes with a typed validation error', async () => {
+			const keystore = await encrypt(create().seed, 'password', argon2);
+			const kdfparams = { ...keystore.crypto.kdfparams, salt: true };
+			await expect(decrypt(withCrypto(keystore, { kdfparams }), 'password')).rejects.toThrow(
+				Web3ValidatorError,
+			);
+		});
+
+		it('normalizes a byte-array salt before calling Argon2', async () => {
+			const account = create();
+			const keystore = await encrypt(account.seed, 'password', argon2);
+			const salt = Array.from(hexToBytes(keystore.crypto.kdfparams.salt as string));
+			const kdfparams = { ...keystore.crypto.kdfparams, salt };
+			await expect(
+				decrypt(withCrypto(keystore, { kdfparams }), 'password'),
+			).resolves.toMatchObject({ seed: account.seed, address: account.address });
 		});
 	});
 });

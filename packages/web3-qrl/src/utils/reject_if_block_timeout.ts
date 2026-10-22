@@ -67,6 +67,8 @@ async function resolveBySubscription(
 	// The following variable will stay true except if the data arrived,
 	//	or if watching started after an error had occurred.
 	let needToWatchLater = true;
+	let subscriptionStopped = false;
+	let blockHeaderTimeoutId: ReturnType<typeof setTimeout> | undefined;
 
 	let subscription: NewHeadsSubscription;
 	let resourceCleaner: ResourceCleaner;
@@ -75,6 +77,7 @@ async function resolveBySubscription(
 		reject: (value: Error | PromiseLike<Error>) => void,
 		previousError?: Error,
 	) {
+		if (subscriptionStopped) return;
 		if (previousError) {
 			console.warn('error happened at subscription. So revert to polling...', previousError);
 		}
@@ -95,6 +98,10 @@ async function resolveBySubscription(
 		)) as unknown as NewHeadsSubscription;
 		resourceCleaner = {
 			clean: () => {
+				if (subscriptionStopped) return;
+				subscriptionStopped = true;
+				needToWatchLater = false;
+				clearTimeout(blockHeaderTimeoutId);
 				// Remove the subscription, if it was not removed somewhere
 				// 	else by calling, for example, subscriptionManager.clear()
 				if (subscription.id) {
@@ -109,12 +116,21 @@ async function resolveBySubscription(
 				}
 			},
 		};
-	} catch (error) {
+	} catch {
 		return resolveByPolling(web3Context, starterBlockNumber, transactionHash);
 	}
 	const promiseToError: Promise<never> = new Promise((_, reject) => {
+		// Cleanup must also cancel this fallback; otherwise it can start a new poller
+		// after the receipt wait has already finished.
+		blockHeaderTimeoutId = setTimeout(() => {
+			if (needToWatchLater) {
+				revertToPolling(reject);
+			}
+		}, web3Context.blockHeaderTimeout * 1000);
+
 		try {
 			subscription.on('data', (lastBlockHeader: BlockHeaderOutput) => {
+				if (subscriptionStopped) return;
 				needToWatchLater = false;
 				if (!lastBlockHeader?.number) {
 					return;
@@ -140,13 +156,6 @@ async function resolveBySubscription(
 		} catch (error) {
 			revertToPolling(reject, error as Error);
 		}
-
-		// Fallback to polling if tx receipt didn't arrived in "blockHeaderTimeout" [10 seconds]
-		setTimeout(() => {
-			if (needToWatchLater) {
-				revertToPolling(reject);
-			}
-		}, web3Context.blockHeaderTimeout * 1000);
 	});
 
 	return [promiseToError, resourceCleaner];

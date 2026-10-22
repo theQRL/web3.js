@@ -148,4 +148,25 @@ describe('parameters_api', () => {
 			);
 		});
 	});
+
+	describe('decimal strings for signed integers narrower than 256 bits', () => {
+		it.each([
+			['int8', '-57'],
+			['int8', '-128'],
+			['int8', '-1'],
+			['int16', '-300'],
+			['int128', '-1'],
+			['int8', '127'],
+			['uint8', '200'],
+		])('encodes %s %s exactly like the bigint and round-trips', (type, value) => {
+			const encoded = encodeParameter(type, value);
+			expect(encoded).toBe(encodeParameter(type, BigInt(value)));
+			expect(decodeParameters([type], encoded)[0]).toBe(BigInt(value));
+		});
+
+		it('still normalises the width of hex strings', () => {
+			expect(encodeParameter('int8', '-0x39')).toBe(encodeParameter('int8', -57));
+			expect(encodeParameter('uint8', '0xff')).toBe(encodeParameter('uint8', 255));
+		});
+	});
 });

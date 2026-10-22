@@ -1153,4 +1153,46 @@ describe('Web3RequestManager', () => {
 			});
 		});
 	});
+
+	describe('malformed error replies', () => {
+		/* eslint-disable no-null/no-null */
+		const settle = async (manager: Web3RequestManager) =>
+			manager.send({ method: 'my_method', params: [] }).then(
+				() => undefined,
+				(error: unknown) => error,
+			);
+
+		it('rejects a reply whose error member is null with a typed error', async () => {
+			const manager = new Web3RequestManager(undefined, undefined);
+			const myProvider = {
+				// An `AsyncFunction` is what marks an EIP-1193 provider for the request manager.
+				// eslint-disable-next-line @typescript-eslint/require-await
+				request: async () => ({ id: 1, jsonrpc: '2.0', error: null }),
+			} as any;
+			jest.spyOn(manager, 'provider', 'get').mockReturnValue(myProvider);
+
+			const error = await settle(manager);
+			expect(error).toBeInstanceOf(ResponseError);
+			expect(error).not.toBeInstanceOf(TypeError);
+		});
+
+		it.each([
+			['data: null', { code: 3, message: 'execution reverted', data: null }],
+			[
+				'data.originalError: null',
+				{ code: 3, message: 'execution reverted', data: { originalError: null } },
+			],
+		])('maps a revert with %s to ContractExecutionError', async (_, rpcError) => {
+			const manager = new Web3RequestManager(undefined, undefined);
+			const myProvider = {
+				// eslint-disable-next-line @typescript-eslint/require-await
+				request: async () => ({ id: 1, jsonrpc: '2.0', error: rpcError }),
+			} as any;
+			jest.spyOn(manager, 'provider', 'get').mockReturnValue(myProvider);
+
+			const error = await settle(manager);
+			expect(error).toBeInstanceOf(ContractExecutionError);
+		});
+		/* eslint-enable no-null/no-null */
+	});
 });

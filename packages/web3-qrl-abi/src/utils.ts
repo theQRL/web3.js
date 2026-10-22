@@ -151,6 +151,8 @@ export const formatOddHexstrings = (param: string): string =>
 /**
  * Handle some formatting of params for backwards compatibility with Ethers V4
  */
+const STRICT_HEX = /^-?0x[0-9a-f]+$/i;
+
 export const formatParam = (type: string, _param: unknown): unknown => {
 	if (type === 'function') {
 		return _param;
@@ -180,9 +182,12 @@ export const formatParam = (type: string, _param: unknown): unknown => {
 	let match = paramTypeNumber.exec(type);
 	if (match) {
 		const size = parseInt(match[2] ? match[2] : '256', 10);
-		if (size / 8 < (param as { length: number }).length) {
+		// Only a hex string carries a width worth normalising. A decimal string is a plain
+		// number to the coder, and left-padding it with zeros turned '-57' into '00000-57',
+		// which no longer parsed as a number for any `intN` narrower than 256 bits.
+		if (typeof param === 'string' && STRICT_HEX.test(param) && size / 8 < param.length) {
 			// pad to correct bit width
-			return leftPad(param as string, size);
+			return leftPad(param, size);
 		}
 	}
 

@@ -22,11 +22,7 @@ import {
 	JsonRpcResponseWithError,
 } from '@theqrl/web3-types';
 import { BaseWeb3Error } from '../web3_error_base.js';
-import {
-	ERR_INVALID_RESPONSE,
-	ERR_RESPONSE,
-	ERR_RESPONSE_TOO_LARGE,
-} from '../error_codes.js';
+import { ERR_INVALID_RESPONSE, ERR_RESPONSE, ERR_RESPONSE_TOO_LARGE } from '../error_codes.js';
 
 // To avoid circular package dependency, copied to code here. If you update this please update same function in `json_rpc.ts`
 const isResponseWithError = <Error = unknown, Result = unknown>(
@@ -39,8 +35,11 @@ const isResponseWithError = <Error = unknown, Result = unknown>(
 	response.jsonrpc === '2.0' &&
 	// eslint-disable-next-line no-null/no-null
 	(response.result === undefined || response.result === null) &&
-	// JSON RPC consider "null" as valid response
-	'error' in response &&
+	// JSON-RPC 2.0 defines `error` as an object; `"error": null` is a malformed reply.
+	typeof response.error === 'object' &&
+	// eslint-disable-next-line no-null/no-null
+	response.error !== null &&
+	!Array.isArray(response.error) &&
 	(typeof response.id === 'number' || typeof response.id === 'string');
 
 // A provider can hand back anything, `null` inside a batch array included; only an object can
@@ -52,7 +51,9 @@ const errorOf = (value: unknown): JsonRpcError | undefined =>
 		: undefined;
 
 const buildErrorMessage = (response: JsonRpcResponse<unknown, unknown>): string =>
-	isResponseWithError(response) ? response.error.message : '';
+	isResponseWithError(response) && typeof response.error.message === 'string'
+		? response.error.message
+		: '';
 
 export class ResponseError<ErrorType = unknown, RequestType = unknown> extends BaseWeb3Error {
 	public code = ERR_RESPONSE;
@@ -103,7 +104,10 @@ export class ResponseError<ErrorType = unknown, RequestType = unknown> extends B
 export class ResponseTooLargeError extends BaseWeb3Error {
 	public code = ERR_RESPONSE_TOO_LARGE;
 
-	public constructor(public maxResponseBytes: number, public receivedBytes?: number) {
+	public constructor(
+		public maxResponseBytes: number,
+		public receivedBytes?: number,
+	) {
 		super(
 			`RESPONSE TOO LARGE: response ${
 				receivedBytes === undefined ? '' : `of ${receivedBytes} bytes `

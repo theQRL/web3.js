@@ -119,6 +119,7 @@ export const ERR_PUBLIC_KEY_LENGTH = 711;
 export const ERR_INVALID_PUBLIC_KEY = 712;
 export const ERR_SEED_LENGTH = 713;
 export const ERR_UNSUPPORTED_CIPHER = 714;
+export const ERR_KEYSTORE_DECRYPTION = 715;
 
 // Signature error codes
 export const ERR_SIGNATURE_FAILED = 801;

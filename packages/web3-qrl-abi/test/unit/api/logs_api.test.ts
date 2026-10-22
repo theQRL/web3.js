@@ -15,7 +15,9 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+import { AbiError } from '@theqrl/web3-errors';
 import { decodeLog } from '../../../src/api/logs_api';
+import { encodeParameters } from '../../../src/api/parameters_api';
 import { validDecodeLogsData } from '../../fixtures/data';
 
 describe('logs_api', () => {
@@ -49,6 +51,27 @@ describe('logs_api', () => {
 					expect(JSON.parse(JSON.stringify(expected))).toEqual(output);
 				},
 			);
+		});
+	});
+
+	describe('missing topics', () => {
+		const indexed = [{ indexed: true, name: 'from', type: 'address' }];
+
+		it('throws an AbiError when the log has fewer topics than the event has indexed inputs', () => {
+			expect(() => decodeLog(indexed, '0x', undefined as unknown as string[])).toThrow(
+				AbiError,
+			);
+			expect(() => decodeLog(indexed, '0x', [])).toThrow(AbiError);
+		});
+
+		it('decodes non-indexed inputs when topics are absent', () => {
+			const encoded = encodeParameters(['uint256'], [7]);
+			const decoded = decodeLog(
+				[{ indexed: false, name: 'value', type: 'uint256' }],
+				encoded,
+				undefined as unknown as string[],
+			);
+			expect(decoded.value).toBe(BigInt(7));
 		});
 	});
 });
