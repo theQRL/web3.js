@@ -73,8 +73,10 @@ must keep `contents: read`.
 
 ## npm Trusted Publishing
 
-Each publishable `@theqrl/*` npm package must be configured for trusted
-publishing with:
+Each publishable `@theqrl/*` npm package (the list printed by
+`node scripts/release/packages.js list`; private workspace tools such as
+`@theqrl/eslint-config-base-web3` are not published) must be configured for
+trusted publishing with:
 
 - GitHub owner: `theQRL`
 - GitHub repository: `web3.js`

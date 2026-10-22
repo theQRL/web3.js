@@ -22,7 +22,17 @@ import { QRLExecutionAPI, Bytes, TransactionReceipt, DataFormat } from '@theqrl/
 import { pollTillDefinedAndReturnIntervalId, rejectIfTimeout } from '@theqrl/web3-utils';
 import { rejectIfBlockTimeout, ResourceCleaner } from './reject_if_block_timeout.js';
 import { getTransactionReceipt } from './rpc_method_wrappers_readers.js';
+import { MAX_CONSECUTIVE_POLLING_ERRORS } from '../constants.js';
 
+/**
+ * Polls for the receipt of a broadcast transaction until it is available, the polling timeout
+ * fires or `transactionBlockTimeout` blocks have passed.
+ *
+ * A failed `qrl_getTransactionReceipt` is retried on the next tick: the transaction is already
+ * broadcast, so a transient error (a load balancer hiccup, a node restart) must not turn the
+ * wait into a rejection that makes a caller re-send with a fresh nonce. After
+ * {@link MAX_CONSECUTIVE_POLLING_ERRORS} failures in a row the last error is thrown (L-49).
+ */
 export async function waitForTransactionReceipt<ReturnFormat extends DataFormat>(
 	web3Context: Web3Context<QRLExecutionAPI>,
 	transactionHash: Bytes,
@@ -31,12 +41,24 @@ export async function waitForTransactionReceipt<ReturnFormat extends DataFormat>
 	const pollingInterval =
 		web3Context.transactionReceiptPollingInterval ?? web3Context.transactionPollingInterval;
 
+	let consecutiveErrors = 0;
 	const [awaitableTransactionReceipt, receiptPollingIntervalId] =
 		pollTillDefinedAndReturnIntervalId(async () => {
 			try {
-				return getTransactionReceipt(web3Context, transactionHash, returnFormat);
+				const receipt = await getTransactionReceipt(
+					web3Context,
+					transactionHash,
+					returnFormat,
+				);
+				consecutiveErrors = 0;
+				return receipt;
 			} catch (error) {
-				console.warn('An error happen while trying to get the transaction receipt', error);
+				consecutiveErrors += 1;
+				if (consecutiveErrors >= MAX_CONSECUTIVE_POLLING_ERRORS) throw error;
+				console.warn(
+					`An error happened while trying to get the transaction receipt (attempt ${consecutiveErrors} of ${MAX_CONSECUTIVE_POLLING_ERRORS}); retrying`,
+					error,
+				);
 				return undefined;
 			}
 		}, pollingInterval);

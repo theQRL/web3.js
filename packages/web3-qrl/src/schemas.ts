@@ -45,6 +45,11 @@ export const accessListResultSchema = {
 		gasUsed: {
 			type: 'string',
 		},
+		// Set by go-qrl when the simulated call failed; without it a reverted simulation was
+		// indistinguishable from a successful one (L-73).
+		error: {
+			type: 'string',
+		},
 	},
 };
 
@@ -217,6 +222,29 @@ export const transactionInfoSchema = {
 		publicKey: {
 			format: 'bytes',
 		},
+		// The effective gas price go-qrl reports for a mined transaction (L-73). It is an output
+		// field only: a `gasPrice` given as input is rejected (L-50).
+		gasPrice: {
+			format: 'uint',
+		},
+	},
+};
+
+export const withdrawalsSchema = {
+	type: 'object',
+	properties: {
+		index: {
+			format: 'uint',
+		},
+		validatorIndex: {
+			format: 'uint',
+		},
+		address: {
+			format: 'address',
+		},
+		amount: {
+			format: 'uint',
+		},
 	},
 };
 
@@ -284,23 +312,14 @@ export const blockSchema = {
 		hash: {
 			format: 'bytes32',
 		},
-	},
-};
-
-export const withdrawalsSchema = {
-	type: 'object',
-	properties: {
-		index: {
-			format: 'uint',
-		},
-		validatorIndex: {
-			format: 'uint',
-		},
-		address: {
+		withdrawalsRoot: {
 			format: 'bytes32',
 		},
-		amount: {
-			format: 'uint',
+		withdrawals: {
+			type: 'array',
+			items: {
+				...withdrawalsSchema,
+			},
 		},
 	},
 };
@@ -321,7 +340,7 @@ export const blockHeaderSchema = {
 			format: 'bytes32',
 		},
 		miner: {
-			format: 'bytes',
+			format: 'address',
 		},
 		stateRoot: {
 			format: 'bytes32',
@@ -412,6 +431,8 @@ export const logSchema = {
 		},
 	},
 };
+// The fields of go-qrl's `qrl_syncing` reply (`internal/qrlapi/api.go`); Ethereum's
+// `knownStates`/`pulledStates`, which go-qrl never sends, are no longer declared (L-73).
 export const syncSchema = {
 	type: 'object',
 	properties: {
@@ -424,10 +445,40 @@ export const syncSchema = {
 		highestBlock: {
 			format: 'string',
 		},
-		knownStates: {
+		syncedAccounts: {
 			format: 'string',
 		},
-		pulledStates: {
+		syncedAccountBytes: {
+			format: 'string',
+		},
+		syncedBytecodes: {
+			format: 'string',
+		},
+		syncedBytecodeBytes: {
+			format: 'string',
+		},
+		syncedStorage: {
+			format: 'string',
+		},
+		syncedStorageBytes: {
+			format: 'string',
+		},
+		healedTrienodes: {
+			format: 'string',
+		},
+		healedTrienodeBytes: {
+			format: 'string',
+		},
+		healedBytecodes: {
+			format: 'string',
+		},
+		healedBytecodeBytes: {
+			format: 'string',
+		},
+		healingTrienodes: {
+			format: 'string',
+		},
+		healingBytecode: {
 			format: 'string',
 		},
 	},
@@ -549,6 +600,9 @@ export const storageProofSchema = {
 export const accountSchema = {
 	type: 'object',
 	properties: {
+		address: {
+			format: 'address',
+		},
 		balance: {
 			format: 'uint',
 		},

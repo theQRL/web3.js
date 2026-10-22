@@ -20,6 +20,7 @@ import { TransactionBlockTimeoutError, TransactionPollingTimeoutError } from '@t
 import { DEFAULT_RETURN_FORMAT, QRLExecutionAPI, Web3BaseProvider } from '@theqrl/web3-types';
 import * as rpcMethodWrappersReaders from '../../../src/utils/rpc_method_wrappers_readers';
 import { waitForTransactionReceipt } from '../../../src/utils/wait_for_transaction_receipt';
+import { MAX_CONSECUTIVE_POLLING_ERRORS } from '../../../src/constants';
 
 jest.mock('../../../src/utils/rpc_method_wrappers_readers');
 
@@ -239,5 +240,46 @@ describe('waitForTransactionReceipt', () => {
 		await jest.advanceTimersByTimeAsync(5_000);
 		expect(rpcMethodWrappersReaders.getBlockNumber).toHaveBeenCalledTimes(2);
 		expect(jest.getTimerCount()).toBe(0);
+	});
+
+	describe('transient receipt errors (L-49)', () => {
+		it('retries a failed receipt poll and resolves with the receipt', async () => {
+			const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+			const receipt = { transactionHash, blockNumber: BigInt(1), status: BigInt(1) };
+			(rpcMethodWrappersReaders.getTransactionReceipt as jest.Mock)
+				.mockRejectedValueOnce(new Error('temporarily unavailable'))
+				.mockResolvedValue(receipt);
+
+			const outcome = waitForTransactionReceipt(
+				web3Context,
+				transactionHash,
+				DEFAULT_RETURN_FORMAT,
+			);
+			await jest.advanceTimersByTimeAsync(300);
+
+			await expect(outcome).resolves.toEqual(receipt);
+			expect(warn).toHaveBeenCalledTimes(1);
+			expect(rpcMethodWrappersReaders.getTransactionReceipt).toHaveBeenCalledTimes(2);
+			expect(jest.getTimerCount()).toBe(0);
+		});
+
+		it('gives up with the last error after MAX_CONSECUTIVE_POLLING_ERRORS failures in a row', async () => {
+			jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+			const error = new Error('persistent failure');
+			(rpcMethodWrappersReaders.getTransactionReceipt as jest.Mock).mockRejectedValue(error);
+
+			const outcome = waitForTransactionReceipt(
+				web3Context,
+				transactionHash,
+				DEFAULT_RETURN_FORMAT,
+			).catch((reason: unknown) => reason);
+			await jest.advanceTimersByTimeAsync(MAX_CONSECUTIVE_POLLING_ERRORS * 100 + 50);
+
+			await expect(outcome).resolves.toBe(error);
+			expect(rpcMethodWrappersReaders.getTransactionReceipt).toHaveBeenCalledTimes(
+				MAX_CONSECUTIVE_POLLING_ERRORS,
+			);
+			expect(jest.getTimerCount()).toBe(0);
+		});
 	});
 });

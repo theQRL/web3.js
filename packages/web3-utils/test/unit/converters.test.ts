@@ -15,7 +15,11 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+import { InvalidAddressError, InvalidNumberError } from '@theqrl/web3-errors';
+import { Numbers } from '@theqrl/web3-types';
+import { Web3ValidatorError } from '@theqrl/web3-validator';
 import {
+	QRLUnits,
 	asciiToHex,
 	bytesToHex,
 	fromAscii,
@@ -451,6 +455,182 @@ describe('converters', () => {
 			it.each(toBigIntInvalidData)('%s', (input, output) => {
 				expect(() => toBigInt(input)).toThrow(output);
 			});
+		});
+	});
+
+	describe('toPlanck precision (H-2)', () => {
+		const units: [QRLUnits, number][] = [
+			['planck', 0],
+			['kplanck', 3],
+			['shor', 9],
+			['quanta', 18],
+			['tquanta', 30],
+		];
+
+		it.each(units)('accepts exactly as many decimals as %s has (%i)', (unit, zeros) => {
+			const amount = zeros === 0 ? '1' : `1.${'0'.repeat(zeros - 1)}1`;
+			const expected = (BigInt(10) ** BigInt(zeros) + BigInt(zeros === 0 ? 0 : 1)).toString();
+			expect(toPlanck(amount, unit)).toBe(expected);
+		});
+
+		it.each(units)('rejects one decimal more than %s has (%i) instead of inflating', (unit, zeros) => {
+			expect(() => toPlanck(`0.${'0'.repeat(zeros)}1`, unit)).toThrow(InvalidNumberError);
+			expect(() => toPlanck(`1.${'0'.repeat(zeros)}1`, unit)).toThrow(InvalidNumberError);
+		});
+
+		it.each(units)('ignores trailing zeros beyond the precision of %s (%i)', (unit, zeros) => {
+			expect(toPlanck(`1.${'0'.repeat(zeros + 3)}`, unit)).toBe((BigInt(10) ** BigInt(zeros)).toString());
+		});
+
+		it.each([
+			['1.0000000000000000001', 'quanta'],
+			['0.0000000000000000001', 'quanta'],
+			['1.5', 'planck'],
+			['1.0000000001', 'shor'],
+			['0.123456789012345678901234', 'quanta'],
+		] as [string, QRLUnits][])('rejects the audit case %s %s', (amount, unit) => {
+			expect(() => toPlanck(amount, unit)).toThrow(InvalidNumberError);
+		});
+
+		it('converts string, number and bigint inputs exactly', () => {
+			expect(toPlanck('1.25', 'shor')).toBe('1250000000');
+			expect(toPlanck('.5', 'quanta')).toBe('500000000000000000');
+			expect(toPlanck('1.', 'quanta')).toBe('1000000000000000000');
+			expect(toPlanck('-0.5', 'quanta')).toBe('-500000000000000000');
+			expect(toPlanck('-1', 'quanta')).toBe('-1000000000000000000');
+			expect(toPlanck('0x10', 'quanta')).toBe('16000000000000000000');
+			expect(toPlanck(1.5, 'shor')).toBe('1500000000');
+			expect(toPlanck(0.1, 'quanta')).toBe('100000000000000000');
+			expect(toPlanck(2 ** 60, 'planck')).toBe('1152921504606846976');
+			expect(toPlanck(BigInt(2), 'quanta')).toBe('2000000000000000000');
+		});
+
+		it.each([
+			[1.5, 'planck'],
+			[1.0000000001, 'planck'],
+			[1.0000000001, 'shor'],
+			[0.1234567891, 'shor'],
+		] as [number, QRLUnits][])(
+			'rejects the JavaScript number %s when it carries more decimals than %s has',
+			(amount, unit) => {
+				expect(() => toPlanck(amount, unit)).toThrow(InvalidNumberError);
+			},
+		);
+
+		it.each([NaN, Infinity, -Infinity, 1e-7])(
+			'rejects the number %s with InvalidNumberError (L-26)',
+			amount => {
+				expect(() => toPlanck(amount, 'quanta')).toThrow(InvalidNumberError);
+			},
+		);
+
+		it.each(['', '.', '+1', ' 1 ', '0b11', '1e3', '1.5.5', 'Q1'])(
+			'rejects the lenient spelling %j with a typed validation error (L-28)',
+			amount => {
+				expect(() => toPlanck(amount, 'quanta')).toThrow(Web3ValidatorError);
+			},
+		);
+	});
+
+	describe('fromPlanck (L-19)', () => {
+		it.each([
+			[-1, 'quanta', '-0.000000000000000001'],
+			[BigInt('-1500000000000000000'), 'quanta', '-1.5'],
+			[2 ** 60, 'planck', '1152921504606846976'],
+			[1e21, 'quanta', '1000'],
+			['0xff', 'planck', '255'],
+			['-0x1', 'planck', '-1'],
+		] as [Numbers, QRLUnits, string][])('converts %s %s exactly', (amount, unit, expected) => {
+			expect(fromPlanck(amount, unit)).toBe(expected);
+		});
+
+		it.each([1.5, '', '1e21', ' 1 ', NaN, Infinity, '1.5', true, []])(
+			'rejects the non-integer amount %j with InvalidNumberError',
+			amount => {
+				expect(() => fromPlanck(amount as never, 'quanta')).toThrow(InvalidNumberError);
+			},
+		);
+	});
+
+	describe('typed number parsing (L-26, L-28)', () => {
+		// Using "null" value intentionally for validation
+		// eslint-disable-next-line no-null/no-null
+		it.each(['', ' ', ' 1 ', '+1', '0b101', '0x', '-0x', '1e3', '1.5', 'abc', true, [], [7], {}, undefined, null, NaN, Infinity])(
+			'toNumber rejects %j with InvalidNumberError',
+			value => {
+				expect(() => toNumber(value as never)).toThrow(InvalidNumberError);
+			},
+		);
+
+		it('toNumber does not return negative zero', () => {
+			expect(Object.is(toNumber('-0x0'), 0)).toBe(true);
+		});
+
+		it.each([
+			['-0x1', BigInt(-1)],
+			['0X10', BigInt(16)],
+			['-0X10', BigInt(-16)],
+			['007', BigInt(7)],
+			['-7', BigInt(-7)],
+			[2 ** 60, BigInt(2) ** BigInt(60)],
+		])('toBigInt parses %s', (value, expected) => {
+			expect(toBigInt(value)).toBe(expected);
+		});
+
+		// Using "null" value intentionally for validation
+		// eslint-disable-next-line no-null/no-null
+		it.each(['abc', 'ff', '0x', '-0x', '', ' 1 ', '+1', '0b11', '1e3', '1.5', 1.5, NaN, Infinity, true, [], {}, undefined, null])(
+			'toBigInt rejects %j with InvalidNumberError instead of a raw error',
+			value => {
+				expect(() => toBigInt(value)).toThrow(InvalidNumberError);
+			},
+		);
+
+		it.each([
+			['0x', InvalidNumberError],
+			['0X', InvalidNumberError],
+			// `-0x` is not even strict hex, so the `hex` validation rejects it first.
+			['-0x', Web3ValidatorError],
+		])('hexToNumber rejects the digitless quantity %s with a typed error', (value, error) => {
+			expect(() => hexToNumber(value)).toThrow(error);
+			expect(() => hexToNumberString(value)).toThrow(error);
+		});
+	});
+
+	describe('numberToHex keeps one zero digit (L-27)', () => {
+		it.each([
+			['0x0', '0x0'],
+			['0x00', '0x0'],
+			['-0x0', '-0x0'],
+			['0x0001', '0x1'],
+		])('%s -> %s', (value, expected) => {
+			expect(numberToHex(value)).toBe(expected);
+		});
+
+		it('pads 0x0 to a full byte in strict mode', () => {
+			expect(numberToHex('0x0', true)).toBe('0x00');
+		});
+
+		it.each(['', ' 1 ', '+1', '0b11', '0x'])('rejects the lenient spelling %j (L-28)', value => {
+			expect(() => numberToHex(value)).toThrow(Web3ValidatorError);
+		});
+	});
+
+	describe('toHex (L-30)', () => {
+		it('encodes a byte array as bytes, not as JSON text', () => {
+			expect(toHex(new Uint8Array([1, 2]))).toBe('0x0102');
+			expect(toHex(new Uint8Array([1, 2]), true)).toBe('bytes');
+			expect(toHex(new Uint8Array([]))).toBe('0x');
+		});
+
+		it('keeps the zero digit of -0x0 (L-27)', () => {
+			expect(toHex('-0x0')).toBe('-0x0');
+		});
+	});
+
+	describe('hexToAddress (L-32)', () => {
+		it('rejects negative hex instead of returning an unparseable address', () => {
+			expect(() => hexToAddress('-0x1')).toThrow(InvalidAddressError);
 		});
 	});
 });

@@ -76,7 +76,26 @@ const convertToZod = (schema: JsonSchema): ZodType => {
 	}
 
 	if (schema?.format) {
-		return z.any().refine(formats[schema.format], (value: unknown) => ({
+		// Only the registered formats are callable: a schema naming an unknown format (or an
+		// `Object.prototype` member such as `constructor`) must fail as a validation error,
+		// never as `check is not a function` or by silently passing (L-26, I-11).
+		const check = Object.prototype.hasOwnProperty.call(formats, schema.format)
+			? formats[schema.format]
+			: undefined;
+
+		if (typeof check !== 'function') {
+			throw new Web3ValidatorError([
+				{
+					keyword: 'format',
+					message: `Unknown format "${schema.format}"`,
+					params: { format: schema.format },
+					instancePath: '',
+					schemaPath: '',
+				},
+			]);
+		}
+
+		return z.any().refine(check, (value: unknown) => ({
 			params: { value, format: schema.format },
 		}));
 	}

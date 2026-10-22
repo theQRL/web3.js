@@ -16,10 +16,22 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import { Web3Context } from '@theqrl/web3-core';
 import { format } from '@theqrl/web3-utils';
-import { DEFAULT_RETURN_FORMAT, Web3QRLExecutionAPI } from '@theqrl/web3-types';
+import {
+	DataFormat,
+	DEFAULT_RETURN_FORMAT,
+	FMT_BYTES,
+	FMT_NUMBER,
+	QRL_DATA_FORMAT,
+	Web3QRLExecutionAPI,
+} from '@theqrl/web3-types';
 import { qrlRpcMethods } from '@theqrl/web3-rpc-methods';
 import { TransactionFactory } from '@theqrl/web3-qrl-accounts';
-import { InvalidResponseError } from '@theqrl/web3-errors';
+import {
+	BaseWeb3Error,
+	InvalidResponseError,
+	TransactionError,
+	TransactionRevertedWithoutReasonError,
+} from '@theqrl/web3-errors';
 
 import { sendSignedTransaction } from '../../../src/rpc_method_wrappers';
 import * as WaitForTransactionReceipt from '../../../src/utils/wait_for_transaction_receipt';
@@ -150,10 +162,11 @@ describe('sendTransaction', () => {
 			).mockResolvedValueOnce(expectedTransactionReceipt);
 
 			await sendSignedTransaction(web3Context, inputSignedTransaction, DEFAULT_RETURN_FORMAT);
+			// The receipt is always awaited in the wire format (H-1).
 			expect(WaitForTransactionReceipt.waitForTransactionReceipt).toHaveBeenCalledWith(
 				web3Context,
 				expectedTransactionHash,
-				DEFAULT_RETURN_FORMAT,
+				QRL_DATA_FORMAT,
 			);
 		},
 	);
@@ -174,7 +187,7 @@ describe('sendTransaction', () => {
 			expect(waitForTransactionReceiptSpy).toHaveBeenCalledWith(
 				web3Context,
 				expectedTransactionHash,
-				DEFAULT_RETURN_FORMAT,
+				QRL_DATA_FORMAT,
 			);
 		},
 	);
@@ -254,10 +267,11 @@ describe('sendTransaction', () => {
 
 			await promiEvent;
 
+			// The receipt is always awaited in the wire format (H-1).
 			expect(WaitForTransactionReceipt.waitForTransactionReceipt).toHaveBeenCalledWith(
 				web3Context,
 				expectedTransactionHash,
-				DEFAULT_RETURN_FORMAT,
+				QRL_DATA_FORMAT,
 			);
 			expect(watchTransactionForConfirmationsSpy).toHaveBeenCalledWith(
 				web3Context,
@@ -360,16 +374,16 @@ describe('sendTransaction', () => {
 			expect((outcome as { reason: unknown }).reason).toBeInstanceOf(Error);
 		});
 
-		it('rejects without emitting error for an unclassified deserialization failure', async () => {
-			// The Promise rejection is authoritative; the error event is supplementary
-			// and gated on the same typed-error classification used elsewhere.
+		it('emits a wrapped typed error for an unclassified deserialization failure when subscribed (M-7b)', async () => {
+			// Every failure reaches an attached listener; one that is not a web3 error is
+			// wrapped in a TransactionError. The Promise still rejects with the original.
 			const promiEvent = sendSignedTransaction(
 				web3Context,
 				undeserializableTransaction,
 				DEFAULT_RETURN_FORMAT,
 			);
 			const emitSpy = jest.spyOn(promiEvent, 'emit');
-			const errorListener = jest.fn();
+			const errorListener = jest.fn<void, [BaseWeb3Error]>();
 			promiEvent.on('error', errorListener);
 
 			const outcome = await settleWithin(async () => promiEvent);
@@ -377,8 +391,13 @@ describe('sendTransaction', () => {
 
 			expect(outcome).not.toBe(NOT_SETTLED);
 			expect(outcome).toMatchObject({ status: 'rejected' });
-			expect(errorListener).not.toHaveBeenCalled();
-			expect(countErrorEmits(emitSpy)).toBe(0);
+			expect(errorListener).toHaveBeenCalledTimes(1);
+			expect(errorListener.mock.calls[0][0]).toBeInstanceOf(TransactionError);
+			expect(errorListener.mock.calls[0][0].innerError).toBe(
+				(outcome as { reason: unknown }).reason,
+			);
+			expect(countErrorEmits(emitSpy)).toBe(1);
+			expect(unhandledRejections).toStrictEqual([]);
 		});
 
 		it('emits exactly one error event for a classified deserialization failure when subscribed', async () => {
@@ -447,6 +466,73 @@ describe('sendTransaction', () => {
 			await flushMacrotasks();
 
 			expect(unhandledRejections).toStrictEqual([]);
+		});
+	});
+
+	describe('receipt status (H-1)', () => {
+		const signedTransaction = testData[0][1];
+		const options = { checkRevertBeforeSending: false };
+		const formats: [string, DataFormat][] = [
+			['BIGINT/HEX', { number: FMT_NUMBER.BIGINT, bytes: FMT_BYTES.HEX }],
+			['HEX/HEX', { number: FMT_NUMBER.HEX, bytes: FMT_BYTES.HEX }],
+			['NUMBER/HEX', { number: FMT_NUMBER.NUMBER, bytes: FMT_BYTES.HEX }],
+			['STR/HEX', { number: FMT_NUMBER.STR, bytes: FMT_BYTES.HEX }],
+			['BIGINT/UINT8ARRAY', { number: FMT_NUMBER.BIGINT, bytes: FMT_BYTES.UINT8ARRAY }],
+		];
+		const failing: [string, unknown][] = [
+			["'0x0'", '0x0'],
+			["'0'", '0'],
+			['0 (number)', 0],
+			['missing', undefined],
+			// eslint-disable-next-line no-null/no-null
+			['null', null],
+			['true', true],
+			["'0x'", '0x'],
+			["'abc'", 'abc'],
+		];
+		const succeeding: [string, unknown][] = [
+			["'0x1'", '0x1'],
+			["'0x01'", '0x01'],
+			['1 (number)', 1],
+		];
+
+		const receiptWithStatus = (status: unknown) => {
+			const receipt: Record<string, unknown> = { ...expectedTransactionReceipt, status };
+			if (status === undefined) delete receipt.status;
+			return receipt;
+		};
+
+		describe.each(formats)('with returnFormat %s', (_, returnFormat) => {
+			it.each(failing)('rejects a receipt whose status is %s', async (__, status) => {
+				(
+					WaitForTransactionReceipt.waitForTransactionReceipt as jest.Mock
+				).mockResolvedValueOnce(receiptWithStatus(status));
+
+				await expect(
+					sendSignedTransaction(web3Context, signedTransaction, returnFormat, options),
+				).rejects.toThrow(TransactionRevertedWithoutReasonError);
+			});
+
+			it.each(succeeding)('resolves a receipt whose status is %s', async (__, status) => {
+				(
+					WaitForTransactionReceipt.waitForTransactionReceipt as jest.Mock
+				).mockResolvedValueOnce(receiptWithStatus(status));
+
+				const receipt = await sendSignedTransaction(
+					web3Context,
+					signedTransaction,
+					returnFormat,
+					options,
+				);
+				expect(receipt.transactionHash).toStrictEqual(
+					format(
+						{ format: 'bytes32' },
+						expectedTransactionReceipt.transactionHash,
+						returnFormat,
+					),
+				);
+				expect(receipt.status).toStrictEqual(format({ format: 'uint' }, 1, returnFormat));
+			});
 		});
 	});
 });

@@ -16,7 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import WebSocket from 'isomorphic-ws';
 import { QRLExecutionAPI, Web3APIPayload } from '@theqrl/web3-types';
-import { ProviderError } from '@theqrl/web3-errors';
+import { ProviderError, RequestSerializationError } from '@theqrl/web3-errors';
 import WebSocketProvider from '../../src/index';
 import {
 	invalidConnectionStrings,
@@ -173,6 +173,93 @@ describe('WebSocketProvider', () => {
 			const result = await wsProvider.request(jsonRpcPayload);
 
 			expect(result).toEqual(jsonRpcResponse);
+		});
+	});
+
+	describe('cleartext warning (I-15)', () => {
+		it('names the parsed hostname only and skips loopback hosts', () => {
+			const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+			new WebSocketProvider('ws://user:pw@127.0.0.1:8546/path');
+			new WebSocketProvider('ws://[::1]:8546');
+			new WebSocketProvider('ws://localhost:8546');
+			// Unparseable: left to the WebSocket client to report, nothing to warn about.
+			expect(() => new WebSocketProvider('ws://[::1')).not.toThrow();
+			expect(warn).not.toHaveBeenCalled();
+
+			new WebSocketProvider('ws://user:pw@node.example:8546/v3/KEY');
+			new WebSocketProvider('ws://localhost@evil.example/');
+			expect(warn).toHaveBeenCalledTimes(2);
+			expect(warn.mock.calls[0][0]).toBe(
+				'web3-providers-ws: cleartext ws:// URL to non-loopback host "node.example". Use wss:// for production.',
+			);
+			expect(warn.mock.calls[1][0]).toContain('"evil.example"');
+			expect(JSON.stringify(warn.mock.calls)).not.toContain('pw');
+			expect(JSON.stringify(warn.mock.calls)).not.toContain('KEY');
+		});
+
+		it('redacts credentials and the path from InvalidClientError', () => {
+			expect(() => new WebSocketProvider('http://user:pw@node.example/v3/KEY')).toThrow(
+				'Client URL "http://***@node.example/[redacted]" is invalid.',
+			);
+		});
+	});
+
+	describe('payload serialisation (I-15)', () => {
+		it('rejects a bigint param with RequestSerializationError and sends nothing', async () => {
+			await expect(
+				wsProvider.request({ ...jsonRpcPayload, id: 43, params: [BigInt(1)] } as never),
+			).rejects.toThrow(RequestSerializationError);
+			expect(WebSocket.prototype.send).not.toHaveBeenCalled();
+		});
+
+		it('rejects a payload whose toJSON yields no JSON text', async () => {
+			await expect(
+				wsProvider.request({ ...jsonRpcPayload, id: 44, toJSON: () => undefined } as never),
+			).rejects.toThrow('payload serialised to undefined');
+			expect(WebSocket.prototype.send).not.toHaveBeenCalled();
+		});
+	});
+
+	describe('socket replacement (L-44)', () => {
+		type MockSocket = {
+			readyState: number;
+			CLOSING?: number;
+			CLOSED?: number;
+			close?: jest.Mock;
+		};
+		const current = () => wsProvider.SocketConnection as unknown as MockSocket;
+
+		it('closes an open previous socket and leaves a closing or unclosable one alone', () => {
+			// The manual mock has no close(): nothing to do.
+			const unclosable = current();
+			expect(() => wsProvider.connect()).not.toThrow();
+			expect(current()).not.toBe(unclosable);
+
+			const closing = current();
+			closing.CLOSING = 2;
+			closing.CLOSED = 3;
+			closing.readyState = 2;
+			closing.close = jest.fn();
+			wsProvider.connect();
+			expect(closing.close).not.toHaveBeenCalled();
+
+			const open = current();
+			open.close = jest.fn();
+			wsProvider.connect();
+			expect(open.close).toHaveBeenCalledTimes(1);
+			expect(current()).not.toBe(open);
+		});
+	});
+
+	describe('status (M-8)', () => {
+		it('reports disconnected once the base class marked it so, even while CONNECTING', () => {
+			const socket = wsProvider.SocketConnection as unknown as { readyState: number };
+			socket.readyState = 0;
+			expect(wsProvider.getStatus()).toBe('connecting');
+			// @ts-expect-error protected member
+			wsProvider._connectionStatus = 'disconnected';
+			expect(wsProvider.getStatus()).toBe('disconnected');
 		});
 	});
 });

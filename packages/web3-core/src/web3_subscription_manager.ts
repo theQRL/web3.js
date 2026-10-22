@@ -1,4 +1,4 @@
-﻿/*
+/*
 This file is part of web3.js.
 
 web3.js is free software: you can redistribute it and/or modify
@@ -18,17 +18,16 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import {
 	DataFormat,
 	DEFAULT_RETURN_FORMAT,
-	EIP1193Provider,
 	JsonRpcNotification,
 	JsonRpcSubscriptionResult,
 	JsonRpcSubscriptionResultOld,
 	Log,
 	Web3APISpec,
-	Web3BaseProvider,
 } from '@theqrl/web3-types';
-import { ProviderError, SubscriptionError } from '@theqrl/web3-errors';
-import { isNullish } from '@theqrl/web3-utils';
+import { BaseWeb3Error, ProviderError, SubscriptionError } from '@theqrl/web3-errors';
+import { isNullish, waitWithTimeout } from '@theqrl/web3-utils';
 import { isSupportSubscriptions } from './utils.js';
+import { Web3EventEmitter } from './web3_event_emitter.js';
 import { Web3RequestManager, Web3RequestManagerEvent } from './web3_request_manager.js';
 import { Web3SubscriptionConstructor } from './web3_subscriptions.js';
 
@@ -40,16 +39,72 @@ type ShouldUnsubscribeCondition = ({
 	sub: unknown;
 }) => boolean | undefined;
 
+/**
+ * How long a provider change waits for the provider being replaced to acknowledge
+ * `qrl_unsubscribe` before the attempt is abandoned and reported through the `error` event
+ * (M-7f). The local bookkeeping does not wait for it: every subscription is dropped locally the
+ * moment the provider changes.
+ */
+export const UNSUBSCRIBE_ON_PROVIDER_CHANGE_TIMEOUT = 5000;
+
+type ProviderNotification =
+	| JsonRpcSubscriptionResult
+	| JsonRpcSubscriptionResultOld<Log>
+	| JsonRpcNotification<Log>;
+
+type ProviderListener = (data: ProviderNotification) => void;
+
+/**
+ * The part of a provider's event API the manager uses. EIP-1193 providers and the socket
+ * providers expose `removeListener`; Node-style emitters used as providers may only have `off`.
+ */
+interface ListenableProvider {
+	on(eventName: string, listener: ProviderListener): unknown;
+	removeListener?(eventName: string, listener: ProviderListener): unknown;
+	off?(eventName: string, listener: ProviderListener): unknown;
+	request?: unknown;
+	supportsSubscriptions?: () => boolean;
+}
+
+/** The members of a registered subscription the manager relies on. */
+interface ManagedSubscription {
+	id?: string;
+	sendSubscriptionRequest(): Promise<string>;
+	sendUnsubscribeRequest(): Promise<void>;
+	_markUnsubscribed(): void;
+	listenerCount(eventName: 'error'): number;
+	emit(eventName: 'error', error: Error): void;
+}
+
+export type Web3SubscriptionManagerEvents = {
+	/**
+	 * A failure that has no caller to report to: a `qrl_unsubscribe` that the provider being
+	 * replaced refused or did not answer within {@link UNSUBSCRIBE_ON_PROVIDER_CHANGE_TIMEOUT}.
+	 * It is delivered to the subscription's own `error` listeners when it has any and to the
+	 * manager's otherwise; without either listener it is dropped (M-7f).
+	 */
+	error: Error;
+};
+
 export class Web3SubscriptionManager<
 	API extends Web3APISpec = Web3APISpec,
 	RegisteredSubs extends { [key: string]: Web3SubscriptionConstructor<API> } = {
 		[key: string]: Web3SubscriptionConstructor<API>;
 	},
-> {
+> extends Web3EventEmitter<Web3SubscriptionManagerEvents> {
 	private readonly _subscriptions: Map<
 		string,
 		InstanceType<RegisteredSubs[keyof RegisteredSubs]>
 	> = new Map();
+
+	private _providerListener?: {
+		provider: ListenableProvider;
+		eventName: 'message' | 'data';
+		listener: ProviderListener;
+	};
+
+	private readonly _beforeProviderChangeListener: () => void;
+	private readonly _providerChangedListener: () => void;
 
 	/**
 	 *
@@ -70,53 +125,86 @@ export class Web3SubscriptionManager<
 		public readonly requestManager: Web3RequestManager<API>,
 		public readonly registeredSubscriptions: RegisteredSubs,
 	) {
-		this.requestManager.on(Web3RequestManagerEvent.BEFORE_PROVIDER_CHANGE, async () => {
-			await this.unsubscribe();
-		});
+		super();
 
-		this.requestManager.on(Web3RequestManagerEvent.PROVIDER_CHANGED, () => {
+		this._beforeProviderChangeListener = () => {
+			// Every failure is reported from inside; the promise can never reject (M-7f).
+			void this._unsubscribeAllForProviderChange();
+		};
+		this._providerChangedListener = () => {
 			this.clear();
-			this.listenToProviderEvents();
-		});
+		};
 
-		this.listenToProviderEvents();
+		this.requestManager.on(
+			Web3RequestManagerEvent.BEFORE_PROVIDER_CHANGE,
+			this._beforeProviderChangeListener,
+		);
+		this.requestManager.on(
+			Web3RequestManagerEvent.PROVIDER_CHANGED,
+			this._providerChangedListener,
+		);
 	}
 
-	private listenToProviderEvents() {
-		const providerAsWebProvider = this.requestManager.provider as Web3BaseProvider;
+	/**
+	 * Attaches the manager's single `message`/`data` listener to the current provider. It is
+	 * attached on demand, when the first subscription is added, and never twice: a context
+	 * that never subscribes leaves nothing behind on a shared provider (L-37), and a provider
+	 * change moves the one listener instead of adding another (L-36).
+	 */
+	private _attachProviderListener(): void {
+		const provider = this.requestManager.provider as unknown as
+			| ListenableProvider
+			| undefined;
+
 		if (
-			!this.requestManager.provider ||
-			(typeof providerAsWebProvider?.supportsSubscriptions === 'function' &&
-				!providerAsWebProvider?.supportsSubscriptions())
+			isNullish(provider) ||
+			(typeof provider.supportsSubscriptions === 'function' &&
+				!provider.supportsSubscriptions()) ||
+			typeof provider.on !== 'function'
 		) {
 			return;
 		}
 
-		if (typeof (this.requestManager.provider as EIP1193Provider<API>).on === 'function') {
-			if (
-				typeof (this.requestManager.provider as EIP1193Provider<API>).request === 'function'
-			) {
-				// Listen to provider messages and data
-				(this.requestManager.provider as EIP1193Provider<API>).on(
-					'message',
-					// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
-					(message: any) => this.messageListener(message),
-				);
-			} else {
-				// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
-				providerAsWebProvider.on<Log>('data', (data: any) => this.messageListener(data));
-			}
+		if (this._providerListener?.provider === provider) {
+			return;
+		}
+		this._detachProviderListener();
+
+		// EIP-1193 providers notify through `message`; the older socket providers through `data`.
+		const eventName = typeof provider.request === 'function' ? 'message' : 'data';
+		const listener: ProviderListener = data => {
+			this.messageListener(data);
+		};
+		provider.on(eventName, listener);
+		this._providerListener = { provider, eventName, listener };
+	}
+
+	private _detachProviderListener(): void {
+		const attached = this._providerListener;
+		if (!attached) {
+			return;
+		}
+		this._providerListener = undefined;
+
+		const { provider, eventName, listener } = attached;
+		if (typeof provider.removeListener === 'function') {
+			provider.removeListener(eventName, listener);
+		} else if (typeof provider.off === 'function') {
+			provider.off(eventName, listener);
 		}
 	}
 
-	protected messageListener(
-		data?:
-			| JsonRpcSubscriptionResult
-			| JsonRpcSubscriptionResultOld<Log>
-			| JsonRpcNotification<Log>,
-	) {
-		if (!data) {
-			throw new SubscriptionError('Should not call messageListener with no data. Type was');
+	private _detachProviderListenerWhenIdle(): void {
+		if (this._subscriptions.size === 0) {
+			this._detachProviderListener();
+		}
+	}
+
+	protected messageListener(data?: ProviderNotification) {
+		// A provider may emit a `message` without a payload; there is nothing to dispatch and
+		// throwing into the provider's `emit` would only break the provider (I-14).
+		if (isNullish(data)) {
+			return;
 		}
 		const subscriptionId =
 			(data as JsonRpcNotification).params?.subscription ||
@@ -124,7 +212,7 @@ export class Web3SubscriptionManager<
 			(data as JsonRpcSubscriptionResult).id?.toString(16);
 
 		// Process if the received data is related to a subscription
-		if (subscriptionId) {
+		if (typeof subscriptionId === 'string') {
 			const sub = this._subscriptions.get(subscriptionId);
 			sub?.processSubscriptionData(data);
 		}
@@ -171,6 +259,11 @@ export class Web3SubscriptionManager<
 	 *
 	 * Adds an instance of {@link Web3Subscription} and subscribes to it
 	 *
+	 * The provider `message` listener is attached with the first subscription. A node that
+	 * answers `qrl_subscribe` with an id that is already in use would silently replace the
+	 * earlier subscription; such a reply rejects with a {@link SubscriptionError} and the new
+	 * subscription stays unsubscribed (I-14).
+	 *
 	 * @param sub - A {@link Web3Subscription} object
 	 */
 	public async addSubscription(sub: InstanceType<RegisteredSubs[keyof RegisteredSubs]>) {
@@ -186,10 +279,28 @@ export class Web3SubscriptionManager<
 			throw new SubscriptionError(`Subscription with id "${sub.id}" already exists`);
 		}
 
-		await sub.sendSubscriptionRequest();
+		const managed = sub as unknown as ManagedSubscription;
+		this._attachProviderListener();
+
+		try {
+			await managed.sendSubscriptionRequest();
+		} catch (error) {
+			this._detachProviderListenerWhenIdle();
+			throw error;
+		}
 
 		if (isNullish(sub.id)) {
+			this._detachProviderListenerWhenIdle();
 			throw new SubscriptionError('Subscription is not subscribed yet.');
+		}
+
+		if (this._subscriptions.has(sub.id)) {
+			const duplicateId = sub.id;
+			managed._markUnsubscribed();
+			this._detachProviderListenerWhenIdle();
+			throw new SubscriptionError(
+				`Subscription with id "${duplicateId}" already exists: the node handed out an id that is in use`,
+			);
 		}
 
 		this._subscriptions.set(sub.id, sub);
@@ -199,6 +310,9 @@ export class Web3SubscriptionManager<
 
 	/**
 	 * Will clear a subscription
+	 *
+	 * The subscription is dropped locally (its entry removed, its id cleared) whether or not
+	 * the node accepted `qrl_unsubscribe`; a refusal is still thrown to the caller (M-7f).
 	 *
 	 * @param id - The subscription of type {@link Web3Subscription}  to remove
 	 */
@@ -215,8 +329,16 @@ export class Web3SubscriptionManager<
 			throw new SubscriptionError(`Subscription with id "${id.toString()}" does not exists`);
 		}
 
-		await sub.sendUnsubscribeRequest();
-		this._subscriptions.delete(id);
+		const managed = sub as unknown as ManagedSubscription;
+		try {
+			await managed.sendUnsubscribeRequest();
+		} finally {
+			// A stale entry would keep dispatching notifications to a subscription its owner has
+			// let go of, and `sub.id` would claim it is still live (M-7f).
+			this._subscriptions.delete(id);
+			managed._markUnsubscribed();
+			this._detachProviderListenerWhenIdle();
+		}
 		return id;
 	}
 	/**
@@ -237,10 +359,96 @@ export class Web3SubscriptionManager<
 	}
 
 	/**
-	 * Clears all subscriptions
+	 * Drops every subscription locally and asks the provider being replaced to release each of
+	 * them, bounded by {@link UNSUBSCRIBE_ON_PROVIDER_CHANGE_TIMEOUT}. A refusal, a transport
+	 * failure or a timeout is reported through the `error` event of the subscription (when
+	 * listened) or of the manager (when listened), never thrown: the listener of a
+	 * synchronous `BEFORE_PROVIDER_CHANGE` event has nobody to throw to and an unhandled
+	 * rejection would terminate the process (M-7f).
+	 */
+	private async _unsubscribeAllForProviderChange(): Promise<void> {
+		const pending: Promise<void>[] = [];
+
+		for (const [id, sub] of this._subscriptions.entries()) {
+			const managed = sub as unknown as ManagedSubscription;
+			// The request reads the id synchronously and goes to the provider that is still
+			// current at this point, i.e. the one being replaced; a synchronous throw becomes a
+			// rejection like any other failure.
+			const request: Promise<void> = (async () => managed.sendUnsubscribeRequest())();
+			this._subscriptions.delete(id);
+			managed._markUnsubscribed();
+
+			pending.push(
+				waitWithTimeout(
+					request,
+					UNSUBSCRIBE_ON_PROVIDER_CHANGE_TIMEOUT,
+					new SubscriptionError(
+						`Timed out after ${UNSUBSCRIBE_ON_PROVIDER_CHANGE_TIMEOUT}ms waiting for the previous provider to unsubscribe "${id}"`,
+					),
+				).then(
+					() => undefined,
+					(error: unknown) => {
+						this._reportSubscriptionError(managed, id, error);
+					},
+				),
+			);
+		}
+
+		this._detachProviderListener();
+		await Promise.all(pending);
+	}
+
+	private _reportSubscriptionError(sub: ManagedSubscription, id: string, error: unknown): void {
+		const reason =
+			error instanceof Error
+				? error
+				: new SubscriptionError(
+						`Failed to unsubscribe "${id}": ${BaseWeb3Error.convertToString(error)}`,
+					);
+
+		if (sub.listenerCount('error') > 0) {
+			sub.emit('error', reason);
+			return;
+		}
+
+		if (this.listenerCount('error') > 0) {
+			this.emit('error', reason);
+		}
+	}
+
+	/**
+	 * Clears all subscriptions locally (no `qrl_unsubscribe` is sent) and detaches the
+	 * provider listener.
 	 */
 	public clear() {
 		this._subscriptions.clear();
+		this._detachProviderListener();
+	}
+
+	/**
+	 * Releases everything the manager holds on other objects: the `message`/`data` listener on
+	 * the provider and the provider-change listeners on the request manager. The subscriptions
+	 * are dropped locally with their ids cleared; call {@link unsubscribe} first to also release
+	 * them on the node. The manager must not be used afterwards (L-37).
+	 */
+	public dispose(): void {
+		for (const sub of this._subscriptions.values()) {
+			(sub as unknown as ManagedSubscription)._markUnsubscribed();
+		}
+		this._subscriptions.clear();
+		this._detachProviderListener();
+
+		if (typeof this.requestManager.off === 'function') {
+			this.requestManager.off(
+				Web3RequestManagerEvent.BEFORE_PROVIDER_CHANGE,
+				this._beforeProviderChangeListener,
+			);
+			this.requestManager.off(
+				Web3RequestManagerEvent.PROVIDER_CHANGED,
+				this._providerChangedListener,
+			);
+		}
+		this.removeAllListeners();
 	}
 
 	/**

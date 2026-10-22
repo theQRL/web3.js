@@ -312,4 +312,67 @@ describe('ParamType', () => {
 			},
 		);
 	});
+
+	describe('untrusted type strings and ABI JSON (L-35, M-10, I-10)', () => {
+		it('rejects whitespace inside array brackets instead of parsing a dynamic array named by the digits (L-35)', () => {
+			expect(ParamType.from('uint256[2]').arrayLength).toBe(2);
+			expect(ParamType.from('uint256[2]').name).toBeNull();
+			expect(() => ParamType.from('uint256[ 2]')).toThrow(/unexpected character/);
+			expect(() => ParamType.from('uint256[2 ]')).toThrow(/unexpected character/);
+			expect(() => ParamType.from('uint256[\t2]')).toThrow(/unexpected character/);
+			expect(() => ParamType.from('uint256[ ]')).toThrow(/unexpected character/);
+			expect(() => ParamType.from('tuple(uint256[ 2] a)')).toThrow(/unexpected character/);
+			expect(() => ParamType.from('uint256[2][ 3]')).toThrow(/unexpected character/);
+		});
+
+		it('still accepts whitespace around names and before a bracket', () => {
+			expect(ParamType.from('uint256[2] values').name).toBe('values');
+			expect(ParamType.from('uint256 [2]').arrayLength).toBe(2);
+		});
+
+		it('rejects a fixed length that is not a safe integer below 2^32 (M-10)', () => {
+			expect(() => ParamType.from('uint256[99999999999999999999]')).toThrow(
+				/array length out-of-bounds/,
+			);
+			expect(() => ParamType.from('uint256[4294967296]')).toThrow(
+				/array length out-of-bounds/,
+			);
+			expect(() => ParamType.fromObject({ type: 'uint8[9007199254740993]' })).toThrow(
+				/array length out-of-bounds/,
+			);
+			expect(() => ParamType.from('uint8[4294967296][]')).toThrow(
+				/array length out-of-bounds/,
+			);
+			expect(ParamType.from('uint256[4294967295]').arrayLength).toBe(4294967295);
+			expect(ParamType.from('uint256[]').arrayLength).toBe(-1);
+		});
+
+		it('rejects a zero-length static array, which Hyperion cannot produce and whose elements consume no data (M-10)', () => {
+			expect(() => ParamType.from('uint8[0]')).toThrow(/array length out-of-bounds/);
+			expect(() => ParamType.from('uint8[0][]')).toThrow(/array length out-of-bounds/);
+			expect(() => ParamType.fromObject({ type: 'tuple[0]', components: [] })).toThrow(
+				/array length out-of-bounds/,
+			);
+			expect(ParamType.from('uint8[1]').arrayLength).toBe(1);
+		});
+
+		it.each([
+			['a null type', JSON.parse('{"type":null}')],
+			['a numeric type', { type: 5 }],
+			['a missing type', { name: 'x' }],
+			['a non-array components list', { type: 'tuple', components: 'x' }],
+			['a null object', JSON.parse('null')],
+			['an undefined object', undefined],
+			['a string instead of an object', 'uint256'],
+		])('rejects %s from ABI JSON with an argument error, not a TypeError (I-10)', (_, value) => {
+			let caught: { code?: string } | undefined;
+			try {
+				ParamType.fromObject(value as any);
+			} catch (error) {
+				caught = error as { code?: string };
+			}
+			expect(caught).not.toBeInstanceOf(TypeError);
+			expect(caught?.code).toBe('INVALID_ARGUMENT');
+		});
+	});
 });

@@ -15,18 +15,46 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import { format } from '@theqrl/web3-utils';
+import { isBlockTag, isNullish, isObject } from '@theqrl/web3-validator';
+import { BaseWeb3Error, SubscriptionError } from '@theqrl/web3-errors';
 
 import {
 	SyncOutput,
 	Address,
 	BlockNumberOrTag,
 	HexString,
+	Numbers,
 	Topic,
 	BlockHeaderOutput,
 	LogsOutput,
+	QRL_DATA_FORMAT,
 } from '@theqrl/web3-types';
 import { Web3Subscription } from '@theqrl/web3-core';
 import { blockHeaderSchema, logSchema, syncSchema } from './schemas.js';
+
+/**
+ * Base of the QRL subscriptions: a subscription error (a notification the subscription cannot
+ * decode, a failed backfill of past logs) is emitted on the `error` event when a listener is
+ * attached and logged otherwise, so that it stays observable without ever throwing out of a
+ * provider callback or a promise chain (M-7d, L-53).
+ */
+abstract class QRLSubscription<
+	EventMap extends Record<string, unknown>,
+	// Same default as the base class, so that `Web3QRL.subscribe()` keeps its argument typing.
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	ArgsType = any,
+> extends Web3Subscription<EventMap, ArgsType> {
+	public _processSubscriptionError(error: Error) {
+		if (this.listenerCount('error') > 0) {
+			super._processSubscriptionError(error);
+			return;
+		}
+		console.warn(
+			`An error happened in a subscription; attach an "error" listener to the subscription to receive it`,
+			error,
+		);
+	}
+}
 
 /**
  * ## subscribe('logs')
@@ -38,7 +66,7 @@ import { blockHeaderSchema, logSchema, syncSchema } from './schemas.js';
  * - `topics`: (optional) Array of 32 Bytes DATA topics. Topics are order-dependent. Each topic can also be an array of DATA with `or` options.
  *
  */
-export class LogsSubscription extends Web3Subscription<
+export class LogsSubscription extends QRLSubscription<
 	{
 		data: LogsOutput;
 	},
@@ -49,7 +77,17 @@ export class LogsSubscription extends Web3Subscription<
 	}
 > {
 	protected _buildSubscriptionParams() {
-		return ['logs', this.args];
+		const fromBlock = this.args?.fromBlock;
+		// A numeric `fromBlock` (number, bigint or decimal string) is sent as a hex quantity, as
+		// the JSON-RPC quantity encoding requires; block tags and hex strings pass through (I-12).
+		const args =
+			isNullish(fromBlock) || isBlockTag(fromBlock as string)
+				? this.args
+				: {
+						...this.args,
+						fromBlock: format({ format: 'uint' }, fromBlock as Numbers, QRL_DATA_FORMAT),
+				  };
+		return ['logs', args];
 	}
 
 	protected formatSubscriptionResult(data: LogsOutput) {
@@ -67,7 +105,7 @@ export class LogsSubscription extends Web3Subscription<
  * (await web3.qrl.subscribe('pendingTransactions')).on('data', console.log);
  * ```
  */
-export class NewPendingTransactionsSubscription extends Web3Subscription<{
+export class NewPendingTransactionsSubscription extends QRLSubscription<{
 	data: HexString;
 }> {
 	// eslint-disable-next-line
@@ -106,7 +144,7 @@ export class NewPendingTransactionsSubscription extends Web3Subscription<{
  * }
  * ```
  */
-export class NewHeadsSubscription extends Web3Subscription<{
+export class NewHeadsSubscription extends QRLSubscription<{
 	data: BlockHeaderOutput;
 }> {
 	// eslint-disable-next-line
@@ -130,15 +168,25 @@ export class NewHeadsSubscription extends Web3Subscription<{
  *
  * (await web3.qrl.subscribe('syncing')).on('data', console.log);
  * > {
- *      startingBlock: 0,
- *      currentBlock: 0,
- *      highestBlock: 0,
- *      pulledStates: 0,
- *      knownStates: 0
+ *      startingBlock: '0x0',
+ *      currentBlock: '0x1a0',
+ *      highestBlock: '0x2d0',
+ *      syncedAccounts: '0x0',
+ *      syncedAccountBytes: '0x0',
+ *      syncedBytecodes: '0x0',
+ *      syncedBytecodeBytes: '0x0',
+ *      syncedStorage: '0x0',
+ *      syncedStorageBytes: '0x0',
+ *      healedTrienodes: '0x0',
+ *      healedTrienodeBytes: '0x0',
+ *      healedBytecodes: '0x0',
+ *      healedBytecodeBytes: '0x0',
+ *      healingTrienodes: '0x0',
+ *      healingBytecode: '0x0'
  *   }
  * ```
  */
-export class SyncingSubscription extends Web3Subscription<{
+export class SyncingSubscription extends QRLSubscription<{
 	data: SyncOutput;
 	changed: boolean;
 }> {
@@ -147,26 +195,42 @@ export class SyncingSubscription extends Web3Subscription<{
 		return ['syncing'];
 	}
 
-	public _processSubscriptionResult(
-		data:
-			| {
-					syncing: boolean;
-					status: SyncOutput;
-			  }
-			| boolean,
-	) {
+	/**
+	 * A `syncing` notification is either a boolean (the `changed` event) or an object
+	 * `{ syncing: boolean, status: { ... } }`. Anything else is node supplied garbage: it used to
+	 * throw a raw `TypeError` out of the provider's message listener and was dropped without any
+	 * event; it is now reported through the guarded `error` path (L-53).
+	 */
+	public _processSubscriptionResult(data: unknown) {
 		if (typeof data === 'boolean') {
 			this.emit('changed', data);
-		} else {
-			const mappedData: SyncOutput = Object.fromEntries(
+			return;
+		}
+
+		if (!isObject(data) || typeof data.syncing !== 'boolean' || !isObject(data.status)) {
+			this._processSubscriptionError(
+				new SubscriptionError(
+					`Malformed syncing notification: ${BaseWeb3Error.convertToString(data)}`,
+				),
+			);
+			return;
+		}
+
+		let formatted: SyncOutput;
+		try {
+			const mappedData = Object.fromEntries(
 				Object.entries(data.status).map(([key, value]) => [
 					key.charAt(0).toLowerCase() + key.substring(1),
 					value,
 				]),
-			) as SyncOutput;
-
-			this.emit('changed', data.syncing);
-			this.emit('data', format(syncSchema, mappedData, super.returnFormat));
+			) as unknown as SyncOutput;
+			formatted = format(syncSchema, mappedData, super.returnFormat);
+		} catch (error) {
+			this._processSubscriptionError(error as Error);
+			return;
 		}
+
+		this.emit('changed', data.syncing);
+		this.emit('data', formatted);
 	}
 }

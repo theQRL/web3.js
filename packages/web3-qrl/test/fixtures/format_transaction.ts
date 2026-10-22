@@ -296,6 +296,88 @@ export const invalidGetTransactionFromOrToAttrData: { input: any; output: any }[
 		},
 		output: 'Invalid value given "LocalWalletNotAvailableError". Error: Attempted to index account in local wallet, but no wallet is available.',
 	},
+	// Strings that are not QRL addresses are never wallet indexes (L-51).
+	{
+		input: {
+			role: 'from',
+			transaction: {
+				...dummyTransaction,
+				from: '0x1',
+			},
+		},
+		output: 'Invalid value given "0x1". Error: invalid transaction with invalid sender',
+	},
+	{
+		input: {
+			role: 'to',
+			transaction: {
+				...dummyTransaction,
+				to: '0x1',
+			},
+		},
+		output: 'Invalid value given "0x1". Error: invalid transaction with invalid receiver',
+	},
+	{
+		input: {
+			role: 'to',
+			transaction: {
+				...dummyTransaction,
+				to: '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045',
+			},
+		},
+		output: 'Invalid value given "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045". Error: invalid transaction with invalid receiver',
+	},
+	{
+		input: {
+			role: 'from',
+			transaction: {
+				...dummyTransaction,
+				from: '1',
+			},
+		},
+		output: 'Invalid value given "1". Error: invalid transaction with invalid sender',
+	},
+	// Only non-negative safe integers of type number are wallet indexes (L-51).
+	{
+		input: {
+			role: 'from',
+			transaction: {
+				...dummyTransaction,
+				from: 1.5,
+			},
+		},
+		output: 'Invalid value given "1.5". Error: invalid transaction with invalid sender',
+	},
+	{
+		input: {
+			role: 'from',
+			transaction: {
+				...dummyTransaction,
+				from: -1,
+			},
+		},
+		output: 'Invalid value given "-1". Error: invalid transaction with invalid sender',
+	},
+	{
+		input: {
+			role: 'to',
+			transaction: {
+				...dummyTransaction,
+				to: 2 ** 53,
+			},
+		},
+		output: 'Invalid value given "9007199254740992". Error: invalid transaction with invalid receiver',
+	},
+	{
+		input: {
+			role: 'from',
+			transaction: {
+				...dummyTransaction,
+				from: BigInt(1),
+			},
+		},
+		output: 'Invalid value given "1". Error: invalid transaction with invalid sender',
+	},
 ];
 
 export const invalidGetTransactionFromOrToAttrDataForWallet: { input: any; output: any }[] = [

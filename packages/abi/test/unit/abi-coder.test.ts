@@ -541,3 +541,157 @@ describe('AbiCoder', () => {
 		});
 	});
 });
+
+describe('decode: untrusted node data (M-9, M-10)', () => {
+	// The audit's PoC: a `bytes[]` whose element offsets all point at the offset table itself,
+	// where the first word is 0 -> every element is a valid empty `bytes`. Each element used to
+	// copy the rest of the buffer, so the decode was O(len^2).
+	const pointAtSelf = (elements: number) =>
+		`0x${word(WORD)}${word(elements)}${word(0).repeat(elements)}`;
+
+	// Bytes copied by `Uint8Array.prototype.slice` while `fn` runs.
+	const bytesCopiedBy = (fn: () => void) => {
+		const original = Uint8Array.prototype.slice;
+		let copied = 0;
+		const spy = jest
+			.spyOn(Uint8Array.prototype, 'slice')
+			.mockImplementation(function slice(this: Uint8Array, start?: number, end?: number) {
+				const result = original.call(this, start, end);
+				copied += result.length;
+				return result;
+			});
+		try {
+			fn();
+		} finally {
+			spy.mockRestore();
+		}
+		return copied;
+	};
+
+	it('decodes a dynamic array whose elements all point at the same bytes without copying the buffer per element (M-9)', () => {
+		const elements = 16382; // 1 MiB of data, as in the audit PoC
+		const data = pointAtSelf(elements);
+		const dataLength = (data.length - 2) / 2;
+		let decoded: ReadonlyArray<any> = [];
+		const copied = bytesCopiedBy(() => {
+			decoded = defaultAbiCoder.decode(['bytes[]'], data);
+		});
+		expect(decoded[0]).toHaveLength(elements);
+		expect(decoded[0][0]).toBe('0x');
+		expect(decoded[0][elements - 1]).toBe('0x');
+		// Only the words actually read are copied: a few words per element, not the whole
+		// buffer (which would be elements * dataLength = 16 GiB here).
+		expect(copied).toBeLessThan(8 * dataLength);
+	});
+
+	it('rejects a result whose elements share one large payload once the read budget is exhausted (M-9)', () => {
+		// 64 `bytes` elements that all point at a single 4 KiB payload: 64 x 4 KiB would be read
+		// from 8.3 KiB of data (31x), which no canonical encoding comes near.
+		const elements = 64;
+		const payload = 4096;
+		const data = `0x${word(WORD)}${word(elements)}${word(elements * WORD).repeat(
+			elements,
+		)}${word(payload)}${'ab'.repeat(payload)}`;
+		expect(() => defaultAbiCoder.decode(['bytes[]'], data)).toThrow(/inflation ratio/);
+	});
+
+	it('still decodes a large bytes result and a long uint256[] (M-9)', () => {
+		const size = 1 << 20; // 1 MiB
+		const payload = 'ab'.repeat(size);
+		const bytes = defaultAbiCoder.decode(['bytes'], `0x${word(WORD)}${word(size)}${payload}`);
+		expect(bytes[0]).toBe(`0x${payload}`);
+
+		const count = 20000;
+		const numbers = defaultAbiCoder.decode(
+			['uint256[]'],
+			`0x${word(WORD)}${word(count)}${word(7).repeat(count)}`,
+		);
+		expect(numbers[0]).toHaveLength(count);
+		expect(numbers[0][count - 1]).toEqual(BigNumber.from(7));
+	});
+
+	it('still decodes nested dynamic values that reference distinct bytes', () => {
+		const inner = (hex: string) => `${word(hex.length / 2)}${bytesWord(hex)}`;
+		// tuple(bytes,string)[] with two elements.
+		const elementA = `${word(2 * WORD)}${word(4 * WORD)}${inner('deadbeef')}${inner('6869')}`;
+		const elementB = `${word(2 * WORD)}${word(4 * WORD)}${inner('ab')}${inner('')}`;
+		const data = `0x${word(WORD)}${word(2)}${word(2 * WORD)}${word(
+			2 * WORD + 6 * WORD,
+		)}${elementA}${elementB}`;
+		const decoded = defaultAbiCoder.decode(['tuple(bytes,string)[]'], data);
+		expect(decoded[0]).toHaveLength(2);
+		expect(decoded[0][0][0]).toBe('0xdeadbeef');
+		expect(decoded[0][0][1]).toBe('hi');
+		expect(decoded[0][1][0]).toBe('0xab');
+		expect(decoded[0][1][1]).toBe('');
+	});
+
+	it('rejects a fixed-length array that cannot fit in the data before allocating anything (M-10)', () => {
+		// 10^8 elements on one word of data used to allocate 10^8 coders and die with a V8 OOM.
+		expect(() => defaultAbiCoder.decode(['uint8[100000000]'], `0x${word(1)}`)).toThrow(
+			/insufficient data length/,
+		);
+		expect(() =>
+			defaultAbiCoder.decode([ParamType.fromObject({ type: 'uint8[100000000]' })], `0x${word(1)}`),
+		).toThrow(/insufficient data length/);
+		// Nested inside a tuple and as the element of a dynamic array as well.
+		expect(() =>
+			defaultAbiCoder.decode(['tuple(uint8[100000000])'], `0x${word(1)}`),
+		).toThrow(/insufficient data length/);
+		expect(() =>
+			defaultAbiCoder.decode(['uint8[100000000][]'], `0x${word(WORD)}${word(1)}`),
+		).toThrow(/insufficient data length/);
+	});
+
+	it('still decodes fixed-length arrays that fit (M-10)', () => {
+		expect(
+			Array.from(defaultAbiCoder.decode(['uint8[2]'], `0x${word(1)}${word(2)}`)[0]),
+		).toEqual([1, 2]);
+		expect(
+			defaultAbiCoder.decode(['uint8[2]', 'uint8'], `0x${word(1)}${word(2)}${word(3)}`)[1],
+		).toBe(3);
+	});
+
+	it('bounds the number of decoded elements, so nested arrays of zero-size elements cannot exhaust memory (M-10)', () => {
+		// 125 KiB of `tuple()[][]`: every outer offset points at one inner array of n zero-size
+		// elements followed by n words of padding, which satisfies the data-length check at both
+		// levels while reading nothing; it used to decode n^2 result objects (56 MiB at n = 1000).
+		const n = 1000;
+		const data = `0x${word(WORD)}${word(n)}${word(n * WORD).repeat(n)}${word(n)}${zeros(
+			WORD,
+		).repeat(n)}`;
+		expect(() => defaultAbiCoder.decode(['tuple()[][]'], data)).toThrow(
+			/decoded array elements exceed the budget/,
+		);
+		// A legitimate array spends at least one word per element and stays far below the budget.
+		const flat = `0x${word(WORD)}${word(n)}${Array.from({ length: n }, (_, i) => word(i)).join(
+			'',
+		)}`;
+		expect(defaultAbiCoder.decode(['uint256[]'], flat)[0]).toHaveLength(n);
+		// Nested legitimate arrays as well: n inner arrays of one element each.
+		const nested = `0x${word(WORD)}${word(n)}${Array.from({ length: n }, (_, i) =>
+			word(n * WORD + i * 2 * WORD),
+		).join('')}${`${word(1)}${word(7)}`.repeat(n)}`;
+		expect(defaultAbiCoder.decode(['uint256[][]'], nested)[0]).toHaveLength(n);
+	});
+});
+
+describe('string encoding input (pass-3 residual)', () => {
+	it('rejects a non-string and an unpaired surrogate instead of encoding a different string', () => {
+		expect(() => defaultAbiCoder.encode(['string'], [5])).toThrow(/expected string value/);
+		expect(() => defaultAbiCoder.encode(['string'], ['\ud800'])).toThrow(/unpaired surrogate/);
+		expect(() => defaultAbiCoder.encode(['string'], ['a\udc00b'])).toThrow(/unpaired surrogate/);
+		expect(
+			defaultAbiCoder.decode(['string'], defaultAbiCoder.encode(['string'], ['\ud83d\ude00 ok']))[0],
+		).toBe('\ud83d\ude00 ok');
+	});
+});
+
+describe('getDefaultValue bound (M-10)', () => {
+	it('refuses to materialise an absurd fixed-length array', () => {
+		expect(() => defaultAbiCoder.getDefaultValue(['uint8[4294967295]'])).toThrow(
+			/too large for a default value/,
+		);
+		expect(Array.from(defaultAbiCoder.getDefaultValue(['uint8[65536]'])[0])).toHaveLength(65536);
+	});
+});

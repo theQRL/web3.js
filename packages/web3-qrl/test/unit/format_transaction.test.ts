@@ -15,7 +15,8 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import { DEFAULT_RETURN_FORMAT, FMT_BYTES, FMT_NUMBER, Transaction } from '@theqrl/web3-types';
-import { TransactionDataAndInputError } from '@theqrl/web3-errors';
+import { InvalidNumberError, TransactionDataAndInputError } from '@theqrl/web3-errors';
+import { Web3ValidatorError } from '@theqrl/web3-validator';
 
 import { formatTransaction } from '../../src/utils/format_transaction';
 import {
@@ -115,5 +116,50 @@ describe('formatTransaction', () => {
 				input: transaction.input as string,
 			}),
 		);
+	});
+
+	describe('gas and gasLimit (L-50)', () => {
+		it('rejects a gas/gasLimit pair that disagrees instead of letting gasLimit win', () => {
+			expect(() => formatTransaction({ gas: 21000, gasLimit: 1000000 })).toThrow(
+				Web3ValidatorError,
+			);
+			expect(() => formatTransaction({ gas: '0x5208', gasLimit: '0xf4240' })).toThrow(
+				'gasLimit',
+			);
+		});
+
+		it('folds an agreeing gasLimit into gas', () => {
+			expect(formatTransaction({ gas: 21000, gasLimit: '0x5208' })).toStrictEqual({
+				gas: BigInt(21000),
+			});
+			expect(formatTransaction({ gasLimit: 21000 })).toStrictEqual({ gas: BigInt(21000) });
+		});
+	});
+
+	describe('unsafe JavaScript numbers (L-55)', () => {
+		it.each([
+			['value', 2 ** 53 + 1],
+			['value', 1e21],
+			['gas', 1.5],
+			['nonce', NaN],
+			['maxFeePerGas', Infinity],
+			['chainId', 2 ** 53],
+		])('rejects %s given as %p instead of rounding it', (field, value) => {
+			expect(() => formatTransaction({ [field]: value })).toThrow(InvalidNumberError);
+		});
+
+		it('still accepts safe integers, bigints and strings', () => {
+			expect(
+				formatTransaction({
+					value: 2 ** 53 - 1,
+					gas: BigInt(2) ** BigInt(64),
+					nonce: '9007199254740993',
+				}),
+			).toStrictEqual({
+				value: BigInt(2 ** 53 - 1),
+				gas: BigInt(2) ** BigInt(64),
+				nonce: BigInt('9007199254740993'),
+			});
+		});
 	});
 });

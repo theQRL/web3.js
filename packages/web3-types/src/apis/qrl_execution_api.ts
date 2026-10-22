@@ -130,6 +130,15 @@ export type FeeHistoryResultAPI = FeeHistoryBase<Uint>;
 // https://github.com/ethereum/execution-apis/blob/main/src/schemas/filter.yaml#L2
 export type FilterResultsAPI = HexString32Bytes[] | LogAPI[];
 
+// The reply of `qrl_createAccessList` (go-qrl `internal/qrlapi` `accessListResult`): the
+// access list the call touched, the gas it used with that list, and the revert reason when
+// the simulated call failed.
+export interface AccessListResultAPI {
+	readonly accessList: AccessList;
+	readonly gasUsed: Uint;
+	readonly error?: string;
+}
+
 export type QRLExecutionAPI = {
 	// https://github.com/ethereum/execution-apis/blob/main/src/eth/block.yaml
 	qrl_getBlockByHash: (blockHash: HexString32Bytes, hydrated: boolean) => BlockAPI;
@@ -164,9 +173,14 @@ export type QRLExecutionAPI = {
 		transaction: Partial<TransactionWithSenderAPI>,
 		blockNumber: BlockNumberOrTag,
 	) => Uint;
+	qrl_createAccessList: (
+		transaction: TransactionWithSenderAPI | Partial<TransactionWithSenderAPI>,
+		blockNumber: BlockNumberOrTag,
+	) => AccessListResultAPI;
 
 	// https://github.com/ethereum/execution-apis/blob/main/src/eth/fee_market.yaml
 	qrl_gasPrice: () => Uint;
+	qrl_maxPriorityFeePerGas: () => Uint;
 	qrl_feeHistory: (
 		blockCount: Uint,
 		newestBlock: BlockNumberOrTag,
@@ -213,5 +227,6 @@ export type QRLExecutionAPI = {
 			| ['logs', { address?: HexString; topics?: HexString[] }]
 	) => HexString;
 	qrl_unsubscribe: (subscriptionId: HexString) => HexString;
-	qrl_clearSubscriptions: (keepSyncing?: boolean) => void;
+	// `qrl_clearSubscriptions` is a client-side helper of the subscription manager, not a
+	// JSON-RPC method served by any node, so it is not part of this API surface.
 };

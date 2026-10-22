@@ -18,6 +18,13 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import { keccak256 as qrlKeccak256 } from '@theqrl/qrl-cryptography/keccak.js';
 import { bytesToHex, utf8ToBytes } from '@theqrl/qrl-cryptography/utils.js';
 import {
+	InvalidBytesError,
+	InvalidNumberError,
+	InvalidSizeError,
+	InvalidTypeError,
+} from '@theqrl/web3-errors';
+import { Web3ValidatorError } from '@theqrl/web3-validator';
+import {
 	sha3,
 	sha3Raw,
 	hyperionSha3,
@@ -208,6 +215,72 @@ describe('hash', () => {
 		describe('BigInt hyperionSha3', () => {
 			it.each(hyperionSha3BigIntValidData)('%s', (input, output) => {
 				expect(hyperionSha3(...input)).toEqual(output);
+			});
+		});
+	});
+
+	describe('third audit pass regressions', () => {
+		it('packs a bytes64 word with the top bit set (L-29)', () => {
+			const word = `0x80${'00'.repeat(63)}`;
+			expect(encodePacked({ t: 'bytes64', v: word })).toBe(word);
+			expect(hyperionSha3({ t: 'bytes64', v: word })).toBe(web3keccak256(word));
+			expect(encodePacked({ t: 'bytes64', v: `0x${'ff'.repeat(64)}` })).toBe(`0x${'ff'.repeat(64)}`);
+		});
+
+		it('rejects non-hex dynamic bytes instead of packing them verbatim (L-29)', () => {
+			expect(() => encodePacked({ t: 'bytes', v: 'zz' })).toThrow(InvalidBytesError);
+			expect(() => encodePacked({ t: 'bytes32', v: '0xzz' })).toThrow(InvalidBytesError);
+		});
+
+		it('accepts an uppercase prefix and byte arrays for bytes', () => {
+			expect(encodePacked({ t: 'bytes', v: '0X12' })).toBe('0x12');
+			expect(encodePacked({ t: 'bytes', v: new Uint8Array([1, 2]) as never })).toBe('0x0102');
+		});
+
+		it('rejects an unknown type instead of packing nothing (L-29)', () => {
+			expect(() => encodePacked({ t: 'foo', v: 1 })).toThrow(InvalidTypeError);
+		});
+
+		it('enforces a declared array size (L-29)', () => {
+			expect(() => encodePacked({ t: 'uint8[2]', v: [1, 2, 3] })).toThrow(InvalidSizeError);
+			expect(encodePacked({ t: 'uint8[2]', v: [1, 2] })).toHaveLength(2 + 2 * 128);
+			expect(() => encodePacked({ t: 'uint8[]', v: 5 })).toThrow(InvalidTypeError);
+		});
+
+		it('hashes a 0x-prefixed storage slot as a number (L-29)', () => {
+			expect(getStorageSlotNumForLongString('0x1')).toBe(getStorageSlotNumForLongString(1));
+			expect(getStorageSlotNumForLongString('0xff')).toBe(getStorageSlotNumForLongString(255));
+			expect(() => getStorageSlotNumForLongString('zz')).toThrow(InvalidNumberError);
+			expect(() => getStorageSlotNumForLongString(-1)).toThrow(InvalidNumberError);
+			expect(() => getStorageSlotNumForLongString(1.5)).toThrow(InvalidNumberError);
+		});
+
+		it('throws typed errors for a non-bytes input to sha3 and a digitless uint (L-26)', () => {
+			expect(() => sha3(123 as never)).toThrow(Web3ValidatorError);
+			expect(() => hyperionSha3({ t: 'uint', v: '0x' })).toThrow(InvalidNumberError);
+			expect(() => encodePacked({ t: 'uint', v: 'abc' })).toThrow(InvalidNumberError);
+		});
+
+		describe('string hashing rule shared by sha3, sha3Raw and keccak256 (M-11, I-11)', () => {
+			it('decodes a 0x/0X-prefixed hex string as bytes', () => {
+				const asBytes = web3keccak256(new Uint8Array([0x12, 0x34]));
+				expect(sha3('0x1234')).toBe(asBytes);
+				expect(sha3('0X1234')).toBe(asBytes);
+				expect(sha3Raw('0X1234')).toBe(asBytes);
+				expect(web3keccak256('0X1234')).toBe(asBytes);
+			});
+
+			it('hashes a signed hex string and hex-looking text as UTF-8 text', () => {
+				const signed = web3keccak256(utf8ToBytes('-0x12'));
+				expect(sha3('-0x12')).toBe(signed);
+				expect(sha3Raw('-0x12')).toBe(signed);
+				expect(web3keccak256('-0x12')).toBe(signed);
+				expect(sha3('0xzz')).toBe(web3keccak256(utf8ToBytes('0xzz')));
+			});
+
+			it('documents the collision the rule implies for hex-looking labels', () => {
+				expect(sha3Raw('0x6162')).toBe(sha3Raw('ab'));
+				expect(sha3Raw(utf8ToBytes('0x6162'))).not.toBe(sha3Raw('ab'));
 			});
 		});
 	});

@@ -17,8 +17,37 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 import { Numbers } from '@theqrl/web3-types';
 import { NibbleWidthError } from '@theqrl/web3-errors';
-import { isHexStrict, validator, utils as validatorUtils } from '@theqrl/web3-validator';
-import { numberToHex, toHex, toNumber } from './converters.js';
+import {
+	isHexStrict,
+	isInt,
+	isUInt,
+	validator,
+	utils as validatorUtils,
+} from '@theqrl/web3-validator';
+import { numberToHex, toBigInt, toNumber } from './converters.js';
+
+const NIBBLE_BITS = BigInt(4);
+
+/**
+ * The integer value of a two's complement operand. Any 512-bit word is accepted, signed or
+ * unsigned: a `uint512`-range value is a valid word at the QRL native width (L-18). Anything
+ * else fails `int512` validation.
+ */
+const toWordValue = (value: Numbers): bigint => {
+	if (!isInt(value, { bitSize: 512 }) && !isUInt(value, { bitSize: 512 })) {
+		validator.validate(['int512'], [value]);
+	}
+
+	return toBigInt(value);
+};
+
+const toBitWidth = (value: Numbers, nibbleWidth: number): bigint => {
+	if (!Number.isInteger(nibbleWidth) || nibbleWidth <= 0) {
+		throw new NibbleWidthError(`value: ${String(value)}, nibbleWidth: ${String(nibbleWidth)}`);
+	}
+
+	return BigInt(nibbleWidth) * NIBBLE_BITS;
+};
 
 /**
  * Adds a padding on the left of a string, if value is a integer or bigInt will be converted to a hex string.
@@ -67,13 +96,23 @@ export const padLeft = (value: Numbers, characterAmount: number, sign = '0'): st
  * ```
  */
 export const padRight = (value: Numbers, characterAmount: number, sign = '0'): string => {
-	if (typeof value === 'string' && !isHexStrict(value)) {
-		return value.padEnd(characterAmount, sign);
+	if (typeof value === 'string') {
+		if (!isHexStrict(value)) {
+			return value.padEnd(characterAmount, sign);
+		}
+
+		// A hex string is padded as hex digits, exactly like `padLeft`. It is not range-checked
+		// as an `int512`: that rejected every 64-byte word with the top bit set (L-29).
+		const [prefix, hexValue] = value.startsWith('-')
+			? ['-0x', value.slice(3)]
+			: ['0x', value.slice(2)];
+
+		return `${prefix}${hexValue.padEnd(characterAmount, sign)}`;
 	}
 
 	validator.validate(['int512'], [value]);
 
-	const hexString = typeof value === 'string' && isHexStrict(value) ? value : numberToHex(value);
+	const hexString = numberToHex(value);
 
 	const prefixLength = hexString.startsWith('-') ? 3 : 2;
 	return hexString.padEnd(characterAmount + prefixLength, sign);
@@ -91,6 +130,12 @@ export const leftPad = padLeft;
 
 /**
  * Converts a negative number into the two’s complement and return a hexstring of 64 nibbles.
+ *
+ * A non-negative value is returned as is (padded), so an already encoded word passes through;
+ * it must fit in `nibbleWidth` nibbles. A negative value must be at least `-2^(bits - 1)`.
+ * Either violation throws a {@link NibbleWidthError}; the previous code wrapped `-129` into
+ * `0x7f` at 8 bits and let `2^40` overflow 32 bits without an error (L-18).
+ *
  * @param value - The value to be converted.
  * @param nibbleWidth - The nibble width of the hex string (default is 64).
  *
@@ -109,25 +154,31 @@ export const leftPad = padLeft;
  * ```
  */
 export const toTwosComplement = (value: Numbers, nibbleWidth = 64): string => {
-	validator.validate(['int512'], [value]);
+	const val = toWordValue(value);
+	const modulus = BigInt(1) << toBitWidth(value, nibbleWidth);
 
-	const val = toNumber(value);
-
-	if (val >= 0) return padLeft(toHex(val), nibbleWidth);
-
-	const largestBit = BigInt(2) ** BigInt(nibbleWidth * 4);
-	if (-val >= largestBit) {
-		throw new NibbleWidthError(`value: ${value}, nibbleWidth: ${nibbleWidth}`);
+	if (val >= 0) {
+		if (val >= modulus) {
+			throw new NibbleWidthError(`value: ${String(value)}, nibbleWidth: ${nibbleWidth}`);
+		}
+		return padLeft(numberToHex(val), nibbleWidth);
 	}
-	const updatedVal = BigInt(val);
 
-	const complement = updatedVal + largestBit;
+	if (-val > modulus >> BigInt(1)) {
+		throw new NibbleWidthError(`value: ${String(value)}, nibbleWidth: ${nibbleWidth}`);
+	}
 
-	return padLeft(numberToHex(complement), nibbleWidth);
+	return padLeft(numberToHex(val + modulus), nibbleWidth);
 };
 
 /**
  * Converts the twos complement into a decimal number or big int.
+ *
+ * The word is decoded with integer arithmetic: a value with the top bit of the width set is
+ * negative. The sign used to be derived from a floating point logarithm, which decoded
+ * `0x80`, `INT256_MIN` and a band of values above `2^(bits - 1)` as positive (L-18). Any
+ * 512-bit word is accepted, so the function works at the QRL native width of 128 nibbles.
+ *
  * @param value - The value to be converted.
  * @param nibbleWidth - The nibble width of the hex string (default is 64).
  * @returns The decimal number or big int.
@@ -142,21 +193,15 @@ export const toTwosComplement = (value: Numbers, nibbleWidth = 64): string => {
  * ```
  */
 export const fromTwosComplement = (value: Numbers, nibbleWidth = 64): number | bigint => {
-	validator.validate(['int512'], [value]);
+	const val = toWordValue(value);
+	const modulus = BigInt(1) << toBitWidth(value, nibbleWidth);
 
-	const val = toNumber(value);
+	// A negative input is already a signed value.
+	if (val < 0) return toNumber(val);
 
-	if (val < 0) return val;
+	if (val >= modulus) {
+		throw new NibbleWidthError(`value: ${String(value)}, nibbleWidth: ${nibbleWidth}`);
+	}
 
-	const largestBit = Math.ceil(Math.log(Number(val)) / Math.log(2));
-
-	if (largestBit > nibbleWidth * 4)
-		throw new NibbleWidthError(`value: "${value}", nibbleWidth: "${nibbleWidth}"`);
-
-	// check the largest bit to see if negative
-	if (nibbleWidth * 4 !== largestBit) return val;
-
-	const complement = BigInt(2) ** (BigInt(nibbleWidth) * BigInt(4));
-
-	return toNumber(BigInt(val) - complement);
+	return toNumber(val >= modulus >> BigInt(1) ? val - modulus : val);
 };

@@ -292,3 +292,78 @@ describe('FunctionFragment', () => {
 		);
 	});
 });
+
+describe('untrusted ABI JSON (I-10)', () => {
+	const codeOf = (fn: () => unknown) => {
+		try {
+			fn();
+		} catch (error) {
+			expect(error).not.toBeInstanceOf(TypeError);
+			return (error as { code?: string }).code;
+		}
+		return undefined;
+	};
+
+	it('rejects a null or non-object fragment with an argument error instead of a TypeError', () => {
+		expect(() => Fragment.fromObject(JSON.parse('null'))).toThrow(/invalid fragment object/);
+		expect(codeOf(() => Fragment.fromObject(JSON.parse('null')))).toBe('INVALID_ARGUMENT');
+		expect(() => Fragment.fromObject(undefined as any)).toThrow(/invalid fragment object/);
+		expect(() => Fragment.fromObject('function f()' as any)).toThrow(
+			/invalid fragment object/,
+		);
+		expect(() => EventFragment.fromObject(JSON.parse('null'))).toThrow(/invalid event object/);
+		expect(() => FunctionFragment.fromObject(JSON.parse('null'))).toThrow(
+			/invalid function object/,
+		);
+		expect(() => ConstructorFragment.fromObject(JSON.parse('null'))).toThrow(
+			/invalid constructor object/,
+		);
+		expect(() => ErrorFragment.fromObject(JSON.parse('null'))).toThrow(/invalid error object/);
+	});
+
+	it('rejects inputs and outputs that are not arrays', () => {
+		expect(() =>
+			EventFragment.fromObject({ type: 'event', name: 'E', inputs: 'x' as any }),
+		).toThrow(/invalid inputs/);
+		expect(codeOf(() => EventFragment.fromObject({ type: 'event', name: 'E', inputs: 'x' as any }))).toBe(
+			'INVALID_ARGUMENT',
+		);
+		expect(() =>
+			FunctionFragment.fromObject({
+				type: 'function',
+				name: 'f',
+				stateMutability: 'view',
+				inputs: [],
+				outputs: {} as any,
+			}),
+		).toThrow(/invalid outputs/);
+		expect(() =>
+			FunctionFragment.fromObject({
+				type: 'function',
+				name: 'f',
+				stateMutability: 'view',
+				inputs: 5 as any,
+			}),
+		).toThrow(/invalid inputs/);
+		expect(() => ErrorFragment.fromObject({ type: 'error', name: 'E', inputs: 5 as any })).toThrow(
+			/invalid inputs/,
+		);
+		expect(() =>
+			ConstructorFragment.fromObject({ type: 'constructor', inputs: 'x' as any }),
+		).toThrow(/invalid inputs/);
+	});
+
+	it('rejects an input whose type is not a string', () => {
+		expect(() =>
+			EventFragment.fromObject({ type: 'event', name: 'E', inputs: [JSON.parse('{"type":null}')] }),
+		).toThrow(/invalid type/);
+	});
+
+	it('still treats absent inputs and outputs as none', () => {
+		expect(EventFragment.fromObject({ type: 'event', name: 'E' }).inputs).toEqual([]);
+		const fn = FunctionFragment.fromObject({ type: 'function', name: 'f', stateMutability: 'view' });
+		expect(fn.inputs).toEqual([]);
+		expect(fn.outputs).toEqual([]);
+		expect(ErrorFragment.fromObject({ type: 'error', name: 'E' }).inputs).toEqual([]);
+	});
+});

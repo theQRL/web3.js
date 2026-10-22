@@ -28,7 +28,7 @@ import {
 	Uint256,
 	Web3QRLExecutionAPI,
 } from '@theqrl/web3-types';
-import { validator } from '@theqrl/web3-validator';
+import { validator, Web3ValidatorError } from '@theqrl/web3-validator';
 
 export async function getSyncing(requestManager: Web3RequestManager) {
 	return requestManager.send({
@@ -390,6 +390,12 @@ export async function getLogs(requestManager: Web3RequestManager, filter: Filter
 	});
 }
 
+/**
+ * Requests the fee history of `blockCount` blocks ending at `newestBlock`.
+ *
+ * `rewardPercentiles` must be an array of numbers; `null`, `undefined` or any non-array value
+ * throws a {@link Web3ValidatorError} instead of a raw `TypeError` (L-26).
+ */
 export async function getFeeHistory(
 	requestManager: Web3RequestManager,
 	blockCount: Uint,
@@ -397,6 +403,18 @@ export async function getFeeHistory(
 	rewardPercentiles: number[],
 ) {
 	validator.validate(['hex', 'blockNumberOrTag'], [blockCount, newestBlock]);
+
+	if (!Array.isArray(rewardPercentiles)) {
+		throw new Web3ValidatorError([
+			{
+				keyword: 'type',
+				instancePath: '/2',
+				schemaPath: '#/items/2/type',
+				params: { value: rewardPercentiles },
+				message: 'value at "/2" (rewardPercentiles) must be an array of numbers',
+			},
+		]);
+	}
 
 	for (const rewardPercentile of rewardPercentiles) {
 		validator.validate(['number'], [rewardPercentile]);
@@ -431,6 +449,13 @@ export async function getChainId(requestManager: Web3RequestManager<Web3QRLExecu
 	});
 }
 
+/**
+ * Requests the account and storage proofs for `address`.
+ *
+ * Every storage key must be a 32-byte hex string: the `bytes32[]` schema only checks the array
+ * shape, so each element is validated on its own and a short or long key throws a
+ * {@link Web3ValidatorError} (L-26).
+ */
 export async function getProof(
 	requestManager: Web3RequestManager<Web3QRLExecutionAPI>,
 	address: Address,
@@ -441,6 +466,10 @@ export async function getProof(
 		['address', 'bytes32[]', 'blockNumberOrTag'],
 		[address, storageKeys, blockNumber],
 	);
+
+	for (const storageKey of storageKeys) {
+		validator.validate(['bytes32'], [storageKey]);
+	}
 
 	return requestManager.send({
 		method: 'qrl_getProof',

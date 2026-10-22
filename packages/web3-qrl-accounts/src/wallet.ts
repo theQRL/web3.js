@@ -1,4 +1,4 @@
-﻿/*
+/*
 This file is part of web3.js.
 
 web3.js is free software: you can redistribute it and/or modify
@@ -17,6 +17,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 import { Web3BaseWallet, Web3BaseWalletAccount, KeyStore } from '@theqrl/web3-types';
 import { isNullish } from '@theqrl/web3-validator';
+import { keystoreContainerError } from './keystore_utils.js';
 import { WebStorage } from './types.js';
 
 type BrowserError = { code: number; name: string };
@@ -24,6 +25,9 @@ type BrowserError = { code: number; name: string };
 /**
  * Wallet is an in memory `wallet` that can hold multiple accounts.
  * These accounts can be used when using web3.qrl.sendTransaction().
+ *
+ * Account objects carry their seed as a non-enumerable `seed` property, so it is readable as
+ * `wallet[0].seed` but never shows up in `console.log`, spreads or `JSON.stringify` output.
  *
  * ### Parameters
  *  Web3AccountProvider - AccountProvider for the wallet
@@ -34,9 +38,9 @@ type BrowserError = { code: number; name: string };
  * web3.qrl.accounts.wallet
  * > Wallet(0) [
  *   _accountProvider: {
- *     create: [Function: create],
- *     publicKeyToAccount: [Function: publicKeyToAccount],
- *     decrypt: [Function: decrypt]
+ *     create: [Function: createWithContext],
+ *     seedToAccount: [Function: seedToAccountWithContext],
+ *     decrypt: [Function: decryptWithContext]
  *   },
  *   _addressMap: Map(0) {},
  *   _defaultKeyName: 'web3js_wallet'
@@ -92,22 +96,20 @@ export class Wallet<
 	 * > Wallet(2) [
 	 *   {
 	 *     address: 'QA467d314BBB1E36687FfC9B277d3E163787E59641390075162BDd080E28Ddf6Ca810e1eA17308d3bec9300f85dF4F3dE54C647b4f7F02e0c9821478ac20491A1',
-	 *     seed: '0x010000034da61fe50c659a3285549dc395571e2bf6891c462c041e3c6b9061fc73eb3687d03f940e5e65d582019ef10ce1327f',
-	 *     signTransaction: [Function: signTransaction],
+	 *     signTransaction: [AsyncFunction (anonymous)],
 	 *     sign: [Function: sign],
-	 *     encrypt: [Function: encrypt]
+	 *     encrypt: [AsyncFunction: encrypt]
 	 *   },
 	 *   {
 	 *     address: 'Q50d1766d3113D213131A20d97CcC89190Ef68ea3e34F6E797A402c2E18119f718f05898f2F47100b37375795f56b6F16b7a1F358f833c49DC4dDD64c3FDdb052',
-	 *     seed: '0x0100007fc43a2ccb557f900d4ca924c187b4438a7f8185b8edbfbabdd26b87f125594495268f55ceac9c9eb23efaab76b0d4c5',
-	 *     signTransaction: [Function: signTransaction],
+	 *     signTransaction: [AsyncFunction (anonymous)],
 	 *     sign: [Function: sign],
-	 *     encrypt: [Function: encrypt]
+	 *     encrypt: [AsyncFunction: encrypt]
 	 *   },
 	 *   _accountProvider: {
-	 *     create: [Function: create],
-	 *     publicKeyToAccount: [Function: publicKeyToAccount],
-	 *     decrypt: [Function: decrypt]
+	 *     create: [Function: createWithContext],
+	 *     seedToAccount: [Function: seedToAccountWithContext],
+	 *     decrypt: [Function: decryptWithContext]
 	 *   },
 	 *   _addressMap: Map(2) {
 	 *     'Qa467d314bbb1e36687ffc9b277d3e163787e59641390075162bdd080e28ddf6ca810e1ea17308d3bec9300f85df4f3de54c647b4f7f02e0c9821478ac20491a1' => 0,
@@ -130,7 +132,7 @@ export class Wallet<
 	/**
 	 * Adds an account using a seed or account object to the wallet.
 	 *
-	 * @param account - A private key or account object
+	 * @param account - A 51-byte extended seed (`0x`-prefixed hex string) or account object
 	 * @returns The wallet
 	 *
 	 * ```ts
@@ -138,15 +140,14 @@ export class Wallet<
 	 * > Wallet(1) [
 	 *   {
 	 *     address: 'Q68eD7F1481bb2CDA83A0A0D55F1f54c3a6eaef4e45c93D7925b42537c61057B7A0F42E1627beafC0A2DE9d1437183e49c47fA79274cc640D051adBaE9d9aDa12',
-	 *     seed: '0x010000c902ea9bbf1dd51aaa2ee9bed126aba921f6a6afac9cf09a21f3d915b057bace6787a894a71d1d103992aca0a6a4250c',
-	 *     signTransaction: [Function: signTransaction],
+	 *     signTransaction: [AsyncFunction (anonymous)],
 	 *     sign: [Function: sign],
-	 *     encrypt: [Function: encrypt]
+	 *     encrypt: [AsyncFunction: encrypt]
 	 *   },
 	 *   _accountProvider: {
-	 *     create: [Function: create],
-	 *     publicKeyToAccount: [Function: publicKeyToAccount],
-	 *     decrypt: [Function: decrypt]
+	 *     create: [Function: createWithContext],
+	 *     seedToAccount: [Function: seedToAccountWithContext],
+	 *     decrypt: [Function: decryptWithContext]
 	 *   },
 	 *   _addressMap: Map(1) { 'Q68ed7f1481bb2cda83a0a0d55f1f54c3a6eaef4e45c93d7925b42537c61057b7a0f42e1627beafc0a2de9d1437183e49c47fa79274cc640d051adbae9d9ada12' => 0 },
 	 *   _defaultKeyName: 'web3js_wallet'
@@ -202,9 +203,9 @@ export class Wallet<
 	 * web3.qrl.accounts.wallet
 	 * > Wallet(0) [
 	 * _accountProvider: {
-	 *   create: [Function: create],
-	 *   publicKeyToAccount: [Function: publicKeyToAccount],
-	 *   decrypt: [Function: decrypt]
+	 *   create: [Function: createWithContext],
+	 *   seedToAccount: [Function: seedToAccountWithContext],
+	 *   decrypt: [Function: decryptWithContext]
 	 * },
 	 * _addressMap: Map(0) {},
 	 * _defaultKeyName: 'web3js_wallet'
@@ -257,9 +258,9 @@ export class Wallet<
 	 * web3.qrl.accounts.wallet.clear();
 	 * > Wallet(0) [
 	 * _accountProvider: {
-	 *   create: [Function: create],
-	 *   publicKeyToAccount: [Function: publicKeyToAccount],
-	 *   decrypt: [Function: decrypt]
+	 *   create: [Function: createWithContext],
+	 *   seedToAccount: [Function: seedToAccountWithContext],
+	 *   decrypt: [Function: decryptWithContext]
 	 * },
 	 * _addressMap: Map(0) {},
 	 * _defaultKeyName: 'web3js_wallet'
@@ -283,17 +284,17 @@ export class Wallet<
 	 * @returns An array of the encrypted keystore v1.
 	 *
 	 * ```ts
-	 * web3.qrl.accounts.wallet.create(1)
-	 * web3.qrl.accounts.wallet.encrypt("abc").then((res) => console.log(util.inspect(res, { depth: null })));
+	 * web3.qrl.accounts.wallet.add('0x010000cea755979937e2dc6137c0e51ba0d1eb2a44920cefffb1a860cf194ea7d23d694045fd2c8a72ec5aecf1e7e5bb591ff2');
+	 * web3.qrl.accounts.wallet.encrypt("123").then((res) => console.log(util.inspect(res, { depth: null })));
 	 * >
 	 * [
 	 *   {
 	 *     version: 1,
-	 *     id: 'ccb92c3f-94c3-4ca0-86a9-1becdb1855b4',
-	 *     address: 'Q0c2d8355005433f1c0bfca0ffc9d9ba1be6503dbaa3396cec0187794fe1e5dced7647a6036a18d42300e69758a15a06bcd5b1d00213a135ea529bc3569b90bc7',
+	 *     id: '039e0135-b74c-4b6b-8be7-398a52a70030',
+	 *     address: 'Qcfec0cbee560cbd6ed89580204af71448f1fb8c577e60e9afc6e697019e2312cf3b24b98eb763627a1c38c96ecd7e7c20ba9774cb6c0a810b78e8ea529ccdc40',
 	 *     crypto: {
-	 *       ciphertext: '9171df3615b852a8c899c0a86885fa2d932db27c17b212ee346cdad1be896736c32e48f6d8d9d2b6ff210d2454d2cc9c736147293dd47d4be0e104105599b11c',
-	 *       cipherparams: { iv: '259d7d6b79c11d3f2e4b88da' },
+	 *       ciphertext: 'ef6a98e4915b6138affa96055bdbd6b2a0edcfe8a12fcaf6ae77853604d22c1f975323c36e57fea929cef736977a58274eab20b7355d536be9119dbdc7bc2108befdf5',
+	 *       cipherparams: { iv: 'f8eaaf8c815653b05091ec99' },
 	 *       cipher: 'aes-256-gcm',
 	 *       kdf: 'argon2id',
 	 *       kdfparams: {
@@ -301,7 +302,7 @@ export class Wallet<
 	 *         t: 8,
 	 *         p: 1,
 	 *         dklen: 32,
-	 *         salt: '5741148953f0489db3035cb1a4981763e17a0446f684054a5ad3e06d53ca0fe3'
+	 *         salt: '210d0ec956787d865358ac45716e6dd42e68d48e346d795746509523aeb477dd'
 	 *       }
 	 *     }
 	 *   }
@@ -323,15 +324,18 @@ export class Wallet<
 	 * @param options - decrypt options for the wallets
 	 * @returns The decrypted wallet object
 	 *
+	 * Anything other than an array is rejected with a `Web3ValidatorError` before any keystore is
+	 * touched.
+	 *
 	 * ```ts
 	 * web3.qrl.accounts.wallet.decrypt([
 	 *   {
 	 *     version: 1,
-	 *     id: 'ccb92c3f-94c3-4ca0-86a9-1becdb1855b4',
-	 *     address: 'Q0c2d8355005433f1c0bfca0ffc9d9ba1be6503dbaa3396cec0187794fe1e5dced7647a6036a18d42300e69758a15a06bcd5b1d00213a135ea529bc3569b90bc7',
+	 *     id: '039e0135-b74c-4b6b-8be7-398a52a70030',
+	 *     address: 'Qcfec0cbee560cbd6ed89580204af71448f1fb8c577e60e9afc6e697019e2312cf3b24b98eb763627a1c38c96ecd7e7c20ba9774cb6c0a810b78e8ea529ccdc40',
 	 *     crypto: {
-	 *       ciphertext: '9171df3615b852a8c899c0a86885fa2d932db27c17b212ee346cdad1be896736c32e48f6d8d9d2b6ff210d2454d2cc9c736147293dd47d4be0e104105599b11c',
-	 *       cipherparams: { iv: '259d7d6b79c11d3f2e4b88da' },
+	 *       ciphertext: 'ef6a98e4915b6138affa96055bdbd6b2a0edcfe8a12fcaf6ae77853604d22c1f975323c36e57fea929cef736977a58274eab20b7355d536be9119dbdc7bc2108befdf5',
+	 *       cipherparams: { iv: 'f8eaaf8c815653b05091ec99' },
 	 *       cipher: 'aes-256-gcm',
 	 *       kdf: 'argon2id',
 	 *       kdfparams: {
@@ -339,26 +343,25 @@ export class Wallet<
 	 *         t: 8,
 	 *         p: 1,
 	 *         dklen: 32,
-	 *         salt: '5741148953f0489db3035cb1a4981763e17a0446f684054a5ad3e06d53ca0fe3'
+	 *         salt: '210d0ec956787d865358ac45716e6dd42e68d48e346d795746509523aeb477dd'
 	 *       }
 	 *     }
 	 *   }
-	 * ], "abc").then((res) => console.log(util.inspect(res, { depth: null })));
+	 * ], "123").then((res) => console.log(util.inspect(res, { depth: null })));
 	 * >
 	 * Wallet(1) [
 	 *   {
-	 *     address: 'Q0c2d8355005433f1C0bFCA0FFC9d9BA1BE6503dbaa3396ceC0187794Fe1e5dCeD7647A6036A18d42300e69758A15A06bcD5B1D00213a135Ea529bc3569B90bc7',
-	 *     seed: '0x1a3bbb0aa289420ef915059a093cfed7e92990043b01ba8b5407a56aafae5507576781603015f6db7d33920a4947a261',
-	 *     signTransaction: [Function: signTransaction],
+	 *     address: 'QCfeC0cbeE560cbD6ed89580204AF71448f1fB8c577e60e9afC6E697019E2312cF3B24B98Eb763627a1C38c96ecd7E7c20BA9774cb6c0a810B78E8ea529ccdc40',
+	 *     signTransaction: [AsyncFunction (anonymous)],
 	 *     sign: [Function: sign],
-	 *     encrypt: [Function: encrypt]
+	 *     encrypt: [AsyncFunction: encrypt]
 	 *   },
 	 *   _accountProvider: {
 	 *     create: [Function: createWithContext],
 	 *     seedToAccount: [Function: seedToAccountWithContext],
 	 *     decrypt: [Function: decryptWithContext]
 	 *   },
-	 *   _addressMap: Map(1) { 'Q0c2d8355005433f1c0bfca0ffc9d9ba1be6503dbaa3396cec0187794fe1e5dced7647a6036a18d42300e69758a15a06bcd5b1d00213a135ea529bc3569b90bc7' => 0 },
+	 *   _addressMap: Map(1) { 'Qcfec0cbee560cbd6ed89580204af71448f1fb8c577e60e9afc6e697019e2312cf3b24b98eb763627a1c38c96ecd7e7c20ba9774cb6c0a810b78e8ea529ccdc40' => 0 },
 	 *   _defaultKeyName: 'web3js_wallet'
 	 * ]
 	 * ```
@@ -368,6 +371,9 @@ export class Wallet<
 		password: string,
 		options?: Record<string, unknown> | undefined,
 	) {
+		if (!Array.isArray(encryptedWallets)) {
+			throw keystoreContainerError('encrypted wallets must be an array of keystore objects');
+		}
 		const results = await Promise.all(
 			encryptedWallets.map(async (wallet: KeyStore) =>
 				this._accountProvider.decrypt(wallet, password, options),
@@ -415,6 +421,10 @@ export class Wallet<
 	 * Loads a wallet from local storage and decrypts it.
 	 * **__NOTE:__** Browser only
 	 *
+	 * The stored value must be the JSON array of keystores written by {@link Wallet.save}. A value
+	 * that is not valid JSON, or that is not an array, is rejected with a `Web3ValidatorError`
+	 * (the stored content is not included in the message); a stored `null` loads an empty wallet.
+	 *
 	 * @param password - The password to decrypt the wallet.
 	 * @param keyName - (optional)The key used for local storage position, defaults to `web3js_wallet"`
 	 * @returns Returns the wallet object
@@ -423,11 +433,21 @@ export class Wallet<
 	 * web3.qrl.accounts.wallet.save('test#!$');
 	 * > true
 	 * web3.qrl.accounts.wallet.load('test#!$');
-	 * { defaultKeyName: "web3js_wallet",
-	 *   length: 0,
-	 *   _accounts: Accounts {_requestManager: RequestManager, givenProvider: Proxy, providers: {…}, _provider: WebsocketProvider, …},
-	 *   [[Prototype]]: Object
-	 * }
+	 * > Wallet(1) [
+	 *   {
+	 *     address: 'QCfeC0cbeE560cbD6ed89580204AF71448f1fB8c577e60e9afC6E697019E2312cF3B24B98Eb763627a1C38c96ecd7E7c20BA9774cb6c0a810B78E8ea529ccdc40',
+	 *     signTransaction: [AsyncFunction (anonymous)],
+	 *     sign: [Function: sign],
+	 *     encrypt: [AsyncFunction: encrypt]
+	 *   },
+	 *   _accountProvider: {
+	 *     create: [Function: createWithContext],
+	 *     seedToAccount: [Function: seedToAccountWithContext],
+	 *     decrypt: [Function: decryptWithContext]
+	 *   },
+	 *   _addressMap: Map(1) { 'Qcfec0cbee560cbd6ed89580204af71448f1fb8c577e60e9afc6e697019e2312cf3b24b98eb763627a1c38c96ecd7e7c20ba9774cb6c0a810b78e8ea529ccdc40' => 0 },
+	 *   _defaultKeyName: 'web3js_wallet'
+	 * ]
 	 * ```
 	 */
 	public async load(password: string, keyName?: string) {
@@ -437,10 +457,26 @@ export class Wallet<
 			throw new Error('Local storage not available.');
 		}
 
-		const keystore = storage.getItem(keyName ?? this._defaultKeyName);
+		const key = keyName ?? this._defaultKeyName;
+		const keystore = storage.getItem(key);
 
 		if (keystore) {
-			await this.decrypt((JSON.parse(keystore) as KeyStore[]) || [], password);
+			let parsed: unknown;
+			try {
+				parsed = JSON.parse(keystore);
+			} catch (error) {
+				throw keystoreContainerError(`stored wallet "${key}" is not valid JSON`, error);
+			}
+			// A stored `null` is an empty slot. Anything else must be the array written by
+			// `save`; `decrypt` rejects other shapes with a typed error instead of a `TypeError`.
+			if (!isNullish(parsed)) {
+				if (!Array.isArray(parsed)) {
+					throw keystoreContainerError(
+						`stored wallet "${key}" must be a JSON array of keystore objects`,
+					);
+				}
+				await this.decrypt(parsed as KeyStore[], password);
+			}
 		}
 
 		return this;

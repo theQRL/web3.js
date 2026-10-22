@@ -30,9 +30,11 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'theQRL/web3.js' && vars.RELEASES_ENABLED == 'true'
     environment: npm-publish
     permissions:
-      contents: write # create GitHub Releases via @semantic-release/github
-      issues: write # semantic-release opens issues for release failures
-      pull-requests: write # semantic-release comments on released PRs
+      # Push release tags and create *draft* GitHub Releases via
+      # @semantic-release/github; the drafts are published by the publish job
+      # once every tarball is on npm. Issue and PR commenting is disabled in
+      # .releaserc.json, so no issues/pull-requests permission is needed.
+      contents: write
     outputs:
       released: ${{ steps.released.outputs.released }}
       count: ${{ steps.released.outputs.count }}
@@ -193,12 +195,12 @@ jobs:
           name: release-candidate-tarballs
           path: dist
 
+      # Idempotent: a package whose exact version is already on the registry is
+      # skipped and one failed publish does not stop the loop, so a failed run
+      # is re-driven by re-running this job while the release-candidate
+      # artefact exists. See RELEASE.md, "Recovering from a failed release run".
       - name: Publish tarballs with trusted publishing
-        run: |
-          while IFS=$'\t' read -r _package_path package_name package_version _release_tag tarball_name; do
-            echo "Publishing ${package_name}@${package_version}"
-            npm publish "dist/tarballs/${tarball_name}" --access public
-          done < dist/released-packages.tsv
+        run: node scripts/release/publish-tarballs.js dist/released-packages.tsv dist/tarballs
 
       - name: Generate SBOM SPDX
         uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
@@ -247,6 +249,17 @@ jobs:
               dist/sbom-cyclonedx.json \
               --clobber \
               --repo "${GITHUB_REPOSITORY}"
+          done < dist/released-packages.tsv
+
+      # The releases exist as drafts since the prepare job; they become public
+      # only now, after every tarball was published and its artefacts attached.
+      # `gh release edit` is idempotent, so re-running this job is safe.
+      - name: Publish GitHub releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          while IFS=$'\t' read -r _package_path _package_name _package_version release_tag _tarball_name; do
+            gh release edit "${release_tag}" --draft=false --repo "${GITHUB_REPOSITORY}"
           done < dist/released-packages.tsv
 
   slsa-subjects:

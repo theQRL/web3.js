@@ -52,11 +52,7 @@
 		"@theqrl/web3-providers-http": "workspace:^",
 		"@theqrl/web3-providers-ws": "workspace:^",
 		"@theqrl/web3-types": "workspace:^",
-		"@theqrl/web3-utils": "workspace:^",
-		"@theqrl/web3-validator": "workspace:^"
-	},
-	"optionalDependencies": {
-		"@theqrl/web3-providers-ipc": "workspace:^"
+		"@theqrl/web3-utils": "workspace:^"
 	},
 	"devDependencies": {
 		"@theqrl/eslint-config-base-web3": "workspace:^",

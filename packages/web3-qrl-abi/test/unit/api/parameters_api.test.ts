@@ -15,8 +15,10 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+import { AbiError } from '@theqrl/web3-errors';
 import { AbiInput } from '@theqrl/web3-types';
 import {
+	decodeParameter,
 	decodeParameters,
 	encodeParameters,
 	encodeParameter,
@@ -78,6 +80,76 @@ describe('parameters_api', () => {
 					expect(() => encodeParameters(abi, params)).toThrow(output);
 				},
 			);
+		});
+
+		describe('bool parameters (H-3)', () => {
+			const word = (bit: number) => `0x${'0'.repeat(127)}${bit}`;
+
+			// Exactly the forms web3-validator's `bool` format accepts, mapped by value.
+			it.each([
+				['0', false],
+				['0x0', false],
+				[0, false],
+				[BigInt(0), false],
+				[false, false],
+				['1', true],
+				['0x1', true],
+				[1, true],
+				[BigInt(1), true],
+				[true, true],
+			])('encodes %p by value as %p', (value, expected) => {
+				const encoded = encodeParameter('bool', value);
+				expect(encoded).toBe(word(expected ? 1 : 0));
+				expect(decodeParameter('bool', encoded)).toBe(expected);
+				expect(encodeParameters(['bool'], [value])).toBe(encoded);
+			});
+
+			it.each(['false', 'true', 'False', 2, '2', '0x00', '0X0', '', 'yes', {}, [], undefined, NaN])(
+				'rejects %p with an AbiError instead of encoding it as true',
+				value => {
+					expect(() => encodeParameter('bool', value)).toThrow(AbiError);
+					expect(() => encodeParameter('bool', value)).toThrow('invalid boolean value');
+					expect(() => encodeParameters(['bool'], [value])).toThrow(AbiError);
+				},
+			);
+
+			it('applies the same rule inside arrays and tuples', () => {
+				const offset = `${'0'.repeat(126)}40`;
+				const count = `${'0'.repeat(127)}2`;
+				expect(encodeParameters(['bool[]'], [['0', '0x1']])).toBe(
+					`0x${offset}${count}${'0'.repeat(128)}${'0'.repeat(127)}1`,
+				);
+				expect(encodeParameters(['bool[2]'], [['0x0', true]])).toBe(
+					`0x${'0'.repeat(128)}${'0'.repeat(127)}1`,
+				);
+				expect(
+					encodeParameter(
+						{ type: 'tuple', components: [{ name: 'flag', type: 'bool' }] },
+						{ flag: '0' },
+					),
+				).toBe(word(0));
+				expect(() => encodeParameters(['bool[]'], [['false']])).toThrow(
+					'invalid boolean value',
+				);
+				expect(() =>
+					encodeParameter(
+						{ type: 'tuple', components: [{ name: 'flag', type: 'bool' }] },
+						{ flag: 'false' },
+					),
+				).toThrow('invalid boolean value');
+			});
+		});
+
+		it('includes the coder reason in the AbiError message and keeps the cause (I-10)', () => {
+			let caught: AbiError | undefined;
+			try {
+				encodeParameter('uint8', 256);
+			} catch (error) {
+				caught = error as AbiError;
+			}
+			expect(caught).toBeInstanceOf(AbiError);
+			expect(caught?.message).toMatch(/^Parameter encoding error: value out-of-bounds/);
+			expect(caught?.innerError).toBeInstanceOf(Error);
 		});
 	});
 

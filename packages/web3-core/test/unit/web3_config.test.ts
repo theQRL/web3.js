@@ -45,9 +45,36 @@ const defaultConfig = {
 	defaultTransactionType: '0x2',
 	defaultMaxPriorityFeePerGas: toHex(2500000000),
 };
-const setValue = {
-	string: 'newValue',
-	number: 99,
+// A valid, non-default value per option: the setters validate their input now (L-39), so the
+// former "any string / any number" values are rejected for the typed options.
+const newValues: Record<string, unknown> = {
+	blockHeaderTimeout: 99,
+	defaultAccount: `Q${'ab'.repeat(64)}`,
+	defaultBlock: 'pending',
+	defaultChain: 'newValue',
+	defaultNetworkId: 99,
+	defaultCommon: {
+		customChain: { name: 'custom', networkId: 99, chainId: 99 },
+		baseChain: 'mainnet',
+		hardfork: 'zond',
+	},
+	defaultHardfork: 'newValue',
+	enableExperimentalFeatures: {
+		useSubscriptionWhenCheckingBlockTimeout: true,
+		useRpcCallSpecification: true,
+	},
+	handleRevert: true,
+	contractDataInputFill: 'both',
+	maxListenersWarningThreshold: 99,
+	transactionBlockTimeout: 99,
+	transactionConfirmationBlocks: 99,
+	transactionPollingInterval: 99,
+	transactionPollingTimeout: 99,
+	transactionReceiptPollingInterval: 99,
+	transactionSendTimeout: 99,
+	transactionConfirmationPollingInterval: 99,
+	defaultTransactionType: '0x0',
+	defaultMaxPriorityFeePerGas: '0x1',
 };
 
 describe('Web3Config', () => {
@@ -77,9 +104,8 @@ describe('Web3Config', () => {
 	it.each(Object.keys(defaultConfig))('should set new config for "%s"', key => {
 		const obj = new MyConfigObject();
 
-		const valueType = typeof obj[key as never];
-		const newValue = setValue[valueType as never];
-		obj[key as never] = newValue;
+		const newValue = newValues[key];
+		obj[key as never] = newValue as never;
 		const result = obj[key as never];
 
 		expect(result).toBe(newValue);
@@ -91,9 +117,8 @@ describe('Web3Config', () => {
 			const obj = new MyConfigObject();
 			const configChange = jest.fn();
 			obj.on(Web3ConfigEvent.CONFIG_CHANGE, configChange);
-			const valueType = typeof obj[key as never];
-			const newValue = setValue[valueType as never];
-			obj[key as never] = newValue;
+			const newValue = newValues[key];
+			obj[key as never] = newValue as never;
 			if (key === 'transactionPollingInterval') return;
 
 			expect(configChange).toHaveBeenCalledTimes(1);

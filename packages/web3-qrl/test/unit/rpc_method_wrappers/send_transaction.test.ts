@@ -16,10 +16,27 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import { Web3Context } from '@theqrl/web3-core';
 import { format } from '@theqrl/web3-utils';
-import { DEFAULT_RETURN_FORMAT, QRL_DATA_FORMAT, Web3QRLExecutionAPI } from '@theqrl/web3-types';
+import {
+	DataFormat,
+	DEFAULT_RETURN_FORMAT,
+	FMT_BYTES,
+	FMT_NUMBER,
+	QRL_DATA_FORMAT,
+	Web3QRLExecutionAPI,
+} from '@theqrl/web3-types';
 import { isNullish } from '@theqrl/web3-validator';
 import { qrlRpcMethods } from '@theqrl/web3-rpc-methods';
-import { ContractExecutionError, InvalidResponseError } from '@theqrl/web3-errors';
+import {
+	BaseWeb3Error,
+	ContractExecutionError,
+	InvalidNumberError,
+	InvalidPropertiesForTransactionTypeError,
+	InvalidResponseError,
+	InvalidTransactionWithReceiver,
+	TransactionError,
+	TransactionReceiptMissingBlockNumberError,
+	TransactionRevertedWithoutReasonError,
+} from '@theqrl/web3-errors';
 
 import { sendTransaction } from '../../../src/rpc_method_wrappers';
 import { formatTransaction } from '../../../src';
@@ -179,10 +196,11 @@ describe('sendTransaction', () => {
 				DEFAULT_RETURN_FORMAT,
 				sendTransactionOptions,
 			);
+			// The receipt is always awaited in the wire format (H-1).
 			expect(WaitForTransactionReceipt.waitForTransactionReceipt).toHaveBeenCalledWith(
 				web3Context,
 				expectedTransactionHash,
-				DEFAULT_RETURN_FORMAT,
+				QRL_DATA_FORMAT,
 			);
 		},
 	);
@@ -208,7 +226,7 @@ describe('sendTransaction', () => {
 			expect(waitForTransactionReceiptSpy).toHaveBeenCalledWith(
 				web3Context,
 				expectedTransactionHash,
-				DEFAULT_RETURN_FORMAT,
+				QRL_DATA_FORMAT,
 			);
 		},
 	);
@@ -289,10 +307,11 @@ describe('sendTransaction', () => {
 
 			await promiEvent;
 
+			// The receipt is always awaited in the wire format (H-1).
 			expect(WaitForTransactionReceipt.waitForTransactionReceipt).toHaveBeenCalledWith(
 				web3Context,
 				expectedTransactionHash,
-				DEFAULT_RETURN_FORMAT,
+				QRL_DATA_FORMAT,
 			);
 			expect(watchTransactionForConfirmationsSpy).toHaveBeenCalledWith(
 				web3Context,
@@ -445,9 +464,9 @@ describe('sendTransaction', () => {
 			expect(countErrorEmits(emitSpy)).toBe(0);
 		});
 
-		it('rejects without emitting error for an unclassified gas pricing failure', async () => {
-			// The Promise rejection is authoritative; the error event is supplementary
-			// and gated on the same typed-error classification used elsewhere.
+		it('emits a wrapped typed error for an unclassified gas pricing failure when subscribed (M-7b)', async () => {
+			// Every failure reaches an attached listener; one that is not a web3 error is
+			// wrapped in a TransactionError. The Promise still rejects with the original.
 			const error = new Error('boom');
 			jest.spyOn(GetTransactionGasPricing, 'getTransactionGasPricing').mockRejectedValue(
 				error,
@@ -460,7 +479,7 @@ describe('sendTransaction', () => {
 				sendOptions,
 			);
 			const emitSpy = jest.spyOn(promiEvent, 'emit');
-			const errorListener = jest.fn();
+			const errorListener = jest.fn<void, [BaseWeb3Error]>();
 			promiEvent.on('error', errorListener);
 
 			const outcome = await settleWithin(async () => promiEvent);
@@ -468,8 +487,10 @@ describe('sendTransaction', () => {
 
 			expect(outcome).not.toBe(NOT_SETTLED);
 			expect((outcome as { reason: unknown }).reason).toBe(error);
-			expect(errorListener).not.toHaveBeenCalled();
-			expect(countErrorEmits(emitSpy)).toBe(0);
+			expect(errorListener).toHaveBeenCalledTimes(1);
+			expect(errorListener.mock.calls[0][0]).toBeInstanceOf(TransactionError);
+			expect(errorListener.mock.calls[0][0].innerError).toBe(error);
+			expect(countErrorEmits(emitSpy)).toBe(1);
 		});
 
 		it('settles exactly once when the error normalization itself throws', async () => {
@@ -500,8 +521,10 @@ describe('sendTransaction', () => {
 
 			expect(outcome).not.toBe(NOT_SETTLED);
 			expect((outcome as { reason: unknown }).reason).toBe(normalizationError);
-			expect(countErrorEmits(emitSpy)).toBe(0);
-			expect(errorListener).not.toHaveBeenCalled();
+			// The last-resort guard reports the failure once, wrapped as a typed error (M-7b).
+			expect(countErrorEmits(emitSpy)).toBe(1);
+			expect(errorListener).toHaveBeenCalledTimes(1);
+			expect(errorListener.mock.calls[0][0]).toBeInstanceOf(TransactionError);
 		});
 
 		it('reports no unhandledRejection for a gas pricing failure', async () => {
@@ -520,6 +543,259 @@ describe('sendTransaction', () => {
 			await flushMacrotasks();
 
 			expect(unhandledRejections).toStrictEqual([]);
+		});
+	});
+
+	describe('receipt status (H-1)', () => {
+		const inputTransaction = testData[0][1];
+		const options = { ignoreGasPricing: true, checkRevertBeforeSending: false };
+		const formats: [string, DataFormat][] = [
+			['BIGINT/HEX', { number: FMT_NUMBER.BIGINT, bytes: FMT_BYTES.HEX }],
+			['HEX/HEX', { number: FMT_NUMBER.HEX, bytes: FMT_BYTES.HEX }],
+			['NUMBER/HEX', { number: FMT_NUMBER.NUMBER, bytes: FMT_BYTES.HEX }],
+			['STR/HEX', { number: FMT_NUMBER.STR, bytes: FMT_BYTES.HEX }],
+			['BIGINT/UINT8ARRAY', { number: FMT_NUMBER.BIGINT, bytes: FMT_BYTES.UINT8ARRAY }],
+		];
+		const failing: [string, unknown][] = [
+			["'0x0'", '0x0'],
+			["'0x00'", '0x00'],
+			["'0'", '0'],
+			['0 (number)', 0],
+			["'0x2'", '0x2'],
+			['missing', undefined],
+			// eslint-disable-next-line no-null/no-null
+			['null', null],
+			['true', true],
+			["'0x'", '0x'],
+			["'abc'", 'abc'],
+		];
+		const succeeding: [string, unknown][] = [
+			["'0x1'", '0x1'],
+			["'0x01'", '0x01'],
+			['1 (number)', 1],
+			["'1'", '1'],
+		];
+
+		const receiptWithStatus = (status: unknown) => {
+			const receipt: Record<string, unknown> = { ...expectedTransactionReceipt, status };
+			if (status === undefined) delete receipt.status;
+			return receipt;
+		};
+
+		describe.each(formats)('with returnFormat %s', (_, returnFormat) => {
+			it.each(failing)('rejects a receipt whose status is %s', async (__, status) => {
+				(
+					WaitForTransactionReceipt.waitForTransactionReceipt as jest.Mock
+				).mockResolvedValueOnce(receiptWithStatus(status));
+
+				await expect(
+					sendTransaction(web3Context, inputTransaction, returnFormat, options),
+				).rejects.toThrow(TransactionRevertedWithoutReasonError);
+			});
+
+			it.each(succeeding)('resolves a receipt whose status is %s', async (__, status) => {
+				(
+					WaitForTransactionReceipt.waitForTransactionReceipt as jest.Mock
+				).mockResolvedValueOnce(receiptWithStatus(status));
+
+				const receipt = await sendTransaction(
+					web3Context,
+					inputTransaction,
+					returnFormat,
+					options,
+				);
+				expect(receipt.transactionHash).toStrictEqual(
+					format(
+						{ format: 'bytes32' },
+						expectedTransactionReceipt.transactionHash,
+						returnFormat,
+					),
+				);
+				expect(receipt.status).toStrictEqual(format({ format: 'uint' }, 1, returnFormat));
+			});
+		});
+	});
+
+	describe('error event and input checks (M-7b, L-50, L-51, L-52, L-54, L-55)', () => {
+		const inputTransaction = testData[0][1];
+		const options = { ignoreGasPricing: true, checkRevertBeforeSending: false };
+
+		const flushMacrotasks = async () => {
+			for (let i = 0; i < 3; i += 1) {
+				// eslint-disable-next-line no-await-in-loop
+				await new Promise(resolve => {
+					setImmediate(resolve);
+				});
+			}
+		};
+
+		let unhandledRejections: unknown[];
+		const onUnhandledRejection = (reason: unknown) => unhandledRejections.push(reason);
+
+		beforeEach(() => {
+			unhandledRejections = [];
+			process.on('unhandledRejection', onUnhandledRejection);
+		});
+
+		afterEach(() => {
+			process.off('unhandledRejection', onUnhandledRejection);
+		});
+
+		it('reports any failure to an attached error listener as a typed error and marks the rejection handled (M-7b)', async () => {
+			const failure = new TypeError('malformed reply');
+			(WaitForTransactionReceipt.waitForTransactionReceipt as jest.Mock).mockRejectedValueOnce(
+				failure,
+			);
+
+			// Event-only consumer, as documented: nothing awaits or catches the PromiEvent.
+			const promiEvent = sendTransaction(
+				web3Context,
+				inputTransaction,
+				DEFAULT_RETURN_FORMAT,
+				options,
+			);
+			const errorListener = jest.fn<void, [BaseWeb3Error]>();
+			promiEvent.on('error', errorListener);
+			await flushMacrotasks();
+
+			expect(errorListener).toHaveBeenCalledTimes(1);
+			expect(errorListener.mock.calls[0][0]).toBeInstanceOf(TransactionError);
+			expect(errorListener.mock.calls[0][0].innerError).toBe(failure);
+			expect(unhandledRejections).toStrictEqual([]);
+			// A caller that does await still gets the original error.
+			await expect(promiEvent).rejects.toBe(failure);
+		});
+
+		it('passes a web3 error to the listener unchanged (M-7b)', async () => {
+			const failure = new InvalidResponseError({
+				jsonrpc: '2.0',
+				id: 1,
+				error: { code: -32000, message: 'nonce too low' },
+			});
+			(qrlRpcMethods.sendTransaction as jest.Mock).mockRejectedValueOnce(failure);
+
+			const promiEvent = sendTransaction(
+				web3Context,
+				inputTransaction,
+				DEFAULT_RETURN_FORMAT,
+				options,
+			);
+			const errorListener = jest.fn<void, [BaseWeb3Error]>();
+			promiEvent.on('error', errorListener);
+			await flushMacrotasks();
+
+			expect(errorListener).toHaveBeenCalledWith(failure);
+			expect(unhandledRejections).toStrictEqual([]);
+			await expect(promiEvent).rejects.toBe(failure);
+		});
+
+		it('rejects a legacy gasPrice with a typed error (L-50)', async () => {
+			await expect(
+				sendTransaction(
+					web3Context,
+					{ ...inputTransaction, gasPrice: '0x1' } as never,
+					DEFAULT_RETURN_FORMAT,
+					options,
+				),
+			).rejects.toThrow(InvalidPropertiesForTransactionTypeError);
+			expect(qrlRpcMethods.sendTransaction).not.toHaveBeenCalled();
+		});
+
+		it('rejects a value above Number.MAX_SAFE_INTEGER given as a number (L-55)', async () => {
+			await expect(
+				sendTransaction(
+					web3Context,
+					{ ...inputTransaction, value: 2 ** 53 + 1 },
+					DEFAULT_RETURN_FORMAT,
+					options,
+				),
+			).rejects.toThrow(InvalidNumberError);
+			expect(qrlRpcMethods.sendTransaction).not.toHaveBeenCalled();
+		});
+
+		it('rejects a hex string in `to` instead of reading it as a wallet index (L-51)', async () => {
+			await expect(
+				sendTransaction(
+					web3Context,
+					{ ...inputTransaction, to: '0x1' },
+					DEFAULT_RETURN_FORMAT,
+					options,
+				),
+			).rejects.toThrow(InvalidTransactionWithReceiver);
+		});
+
+		it('rejects with the node error when the pre-flight call fails for a reason other than a revert (L-52)', async () => {
+			const nodeError = new InvalidResponseError({
+				jsonrpc: '2.0',
+				id: 1,
+				error: { code: -32000, message: 'insufficient funds for gas * price + value' },
+			});
+			(qrlRpcMethods.call as jest.Mock).mockRejectedValueOnce(nodeError);
+
+			await expect(
+				sendTransaction(web3Context, inputTransaction, DEFAULT_RETURN_FORMAT, {
+					ignoreGasPricing: true,
+				}),
+			).rejects.toBe(nodeError);
+			expect(qrlRpcMethods.sendTransaction).not.toHaveBeenCalled();
+		});
+
+		describe('confirmation watcher failures (L-54)', () => {
+			const receiptWithoutBlockNumber = () => {
+				const receipt: Record<string, unknown> = { ...expectedTransactionReceipt };
+				delete receipt.blockNumber;
+				return receipt;
+			};
+
+			it('reports a receipt the watcher cannot use to the error listener after resolving', async () => {
+				const receipt = receiptWithoutBlockNumber();
+				const watcherError = new TransactionReceiptMissingBlockNumberError({
+					receipt: receipt as never,
+				});
+				(
+					WaitForTransactionReceipt.waitForTransactionReceipt as jest.Mock
+				).mockResolvedValueOnce(receipt);
+				(
+					WatchTransactionForConfirmations.watchTransactionForConfirmations as jest.Mock
+				).mockImplementationOnce(() => {
+					throw watcherError;
+				});
+
+				const promiEvent = sendTransaction(
+					web3Context,
+					inputTransaction,
+					DEFAULT_RETURN_FORMAT,
+					options,
+				).on('confirmation', () => undefined);
+				const errorListener = jest.fn<void, [BaseWeb3Error]>();
+				promiEvent.on('error', errorListener);
+
+				await expect(promiEvent).resolves.toBeDefined();
+				expect(errorListener).toHaveBeenCalledWith(watcherError);
+			});
+
+			it('warns about a receipt the watcher cannot use when no error listener is attached', async () => {
+				const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+				const receipt = receiptWithoutBlockNumber();
+				(
+					WaitForTransactionReceipt.waitForTransactionReceipt as jest.Mock
+				).mockResolvedValueOnce(receipt);
+				(
+					WatchTransactionForConfirmations.watchTransactionForConfirmations as jest.Mock
+				).mockImplementationOnce(() => {
+					throw new TransactionReceiptMissingBlockNumberError({ receipt: receipt as never });
+				});
+
+				const promiEvent = sendTransaction(
+					web3Context,
+					inputTransaction,
+					DEFAULT_RETURN_FORMAT,
+					options,
+				).on('confirmation', () => undefined);
+
+				await expect(promiEvent).resolves.toBeDefined();
+				expect(warn).toHaveBeenCalledTimes(1);
+			});
 		});
 	});
 });

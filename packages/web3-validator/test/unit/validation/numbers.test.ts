@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { isBigInt, isInt, isUInt } from '../../../src/validation/numbers';
+import { isBigInt, isInt, isNumber, isUInt } from '../../../src/validation/numbers';
 import {
 	validBigIntData,
 	invalidBigIntData,
@@ -91,6 +91,59 @@ describe('validation', () => {
 					});
 				});
 			});
+		});
+
+		describe('strict spellings (L-28)', () => {
+			it.each(['', ' ', ' 12 ', '+1', '0b11', '0o7', '1e3', '1.5', '0x', '-0x', '1_000'])(
+				'isInt and isUInt reject %j',
+				value => {
+					expect(isInt(value)).toBe(false);
+					expect(isUInt(value)).toBe(false);
+				},
+			);
+
+			it.each(['12', '-12', '0x0c', '-0x0c', '0X0C'])('isInt accepts %j', value => {
+				expect(isInt(value)).toBe(true);
+			});
+		});
+
+		describe('safe integer symmetry (I-11)', () => {
+			it.each([2 ** 53, 2 ** 60, -(2 ** 53), -(2 ** 60), 1.5, NaN, Infinity])(
+				'isInt and isUInt both reject the JavaScript number %s',
+				value => {
+					expect(isInt(value)).toBe(false);
+					expect(isUInt(value)).toBe(false);
+				},
+			);
+
+			it('accepts the safe integer bounds as numbers and anything exact as bigint', () => {
+				expect(isInt(Number.MAX_SAFE_INTEGER)).toBe(true);
+				expect(isInt(Number.MIN_SAFE_INTEGER)).toBe(true);
+				expect(isUInt(Number.MAX_SAFE_INTEGER)).toBe(true);
+				expect(isUInt(BigInt(2) ** BigInt(60))).toBe(true);
+				expect(isInt(-(BigInt(2) ** BigInt(60)))).toBe(true);
+			});
+
+			it('isUInt rejects an abi type that is not uint', () => {
+				expect(isUInt(1, { abiType: 'int8' })).toBe(false);
+				expect(isUInt(1, { abiType: 'uint8x' })).toBe(false);
+			});
+		});
+
+		describe('isNumber (L-28)', () => {
+			it.each([1, 1.5, -1.5, 0, BigInt(1), '1', '1.5', '-0.5', '.5', '1.', '-1', '0x10', '-0x10'])(
+				'accepts %s',
+				value => {
+					expect(isNumber(value)).toBe(true);
+				},
+			);
+
+			it.each(['', ' ', '.', '+1', ' 1 ', '0b11', '1e3', '1.5.5', 'Q1', '0x', NaN, Infinity, -Infinity, true, [], {}])(
+				'rejects %s',
+				value => {
+					expect(isNumber(value as never)).toBe(false);
+				},
+			);
 		});
 
 		describe('isInt', () => {

@@ -121,7 +121,8 @@ const path = require('path');
 
 // Set up a connection to the QRL network
 const web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:8545'));
-web3.qrl.Contract.handleRevert = true;
+// Context option, inherited by `web3.qrl` and by contracts created from `web3`.
+web3.handleRevert = true;
 
 async function interact() {
 	//fetch all the available accounts
@@ -303,8 +304,12 @@ In the next example we are going to sign a transaction and use `sendSignedTransa
 import Web3 from '@theqrl/web3';
 const web3 = new Web3('http://localhost:8545');
 
-// Replace this with a private key for a local development account only.
-const privateKey = '0x...';
+// Replace this with the extended seed of a local development account only.
+// A QRL account is identified by a 51-byte extended seed (hex string of 102
+// characters after `0x`): a 3-byte descriptor followed by the 48-byte seed from
+// which the ML-DSA-87 key pair is derived. `web3.qrl.accounts.create().seed`
+// returns one; there is no separate "private key" value.
+const seed = '0x010000...';
 const value = web3.utils.toPlanck('1', 'quanta');
 
 async function sendSigned() {
@@ -322,8 +327,8 @@ async function sendSigned() {
 		nonce: await web3.qrl.getTransactionCount(fromAddress),
 	};
 
-	// Sign the transaction with the private key
-	const signedTx = await web3.qrl.accounts.signTransaction(tx, privateKey);
+	// Sign the transaction with the account seed
+	const signedTx = await web3.qrl.accounts.signTransaction(tx, seed);
 
 	// Send the signed transaction to the network
 	const receipt = await web3.qrl.sendSignedTransaction(signedTx.rawTransaction);

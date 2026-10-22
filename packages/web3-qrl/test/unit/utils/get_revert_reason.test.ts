@@ -15,6 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import { Web3Context } from '@theqrl/web3-core';
+import { ContractExecutionError, InvalidResponseError } from '@theqrl/web3-errors';
 import { DEFAULT_RETURN_FORMAT } from '@theqrl/web3-types';
 
 // `call` now lives in the leaf reader module (get_revert_reason imports it from there), so the
@@ -91,6 +92,54 @@ describe('getRevertReason', () => {
 		await GetRevertReason.getRevertReason(web3Context, transaction);
 
 		expect(parseTransactionErrorSpy).toHaveBeenCalledWith(expectedError, undefined);
+	});
+
+	describe('non-revert call failures (L-52)', () => {
+		const transaction = {
+			from: 'Q2CCeCC72b4C8C0d943bEcFb1E67c4d8996D2F24d138E62dd19Dde2dA366C4faFff063A86501141d64AC7f273CCAE5053fD059722A4E9453170cb40F569872A02',
+			to: 'Q224D6a535f8991Cf611b3447F8DfE1059dbEd07c540A53e9E36D37b2ecEEA19013F66E973b207B0467a5A793203b27456B7aa1CEE00dF1e385D1eC5272718eb7',
+			data: '0x819f48fe',
+		};
+
+		it.each([
+			[-32000, 'insufficient funds for gas * price + value'],
+			[-32601, 'the method qrl_call does not exist'],
+		])('rethrows an error reply with code %i instead of reporting a revert', async (code, message) => {
+			const callError = new InvalidResponseError({
+				jsonrpc: '2.0',
+				id: 1,
+				error: { code, message },
+			});
+			jest.spyOn(RpcMethodWrappersReaders, 'call').mockRejectedValueOnce(callError);
+
+			await expect(GetRevertReason.getRevertReason(web3Context, transaction)).rejects.toBe(
+				callError,
+			);
+		});
+
+		it('returns the message of an execution error (code 3) reply as the reason', async () => {
+			jest.spyOn(RpcMethodWrappersReaders, 'call').mockRejectedValueOnce(
+				new InvalidResponseError({
+					jsonrpc: '2.0',
+					id: 1,
+					error: { code: 3, message: 'execution failed' },
+				}),
+			);
+
+			await expect(GetRevertReason.getRevertReason(web3Context, transaction)).resolves.toBe(
+				'execution failed',
+			);
+		});
+
+		it('returns a revert reason object for a ContractExecutionError', async () => {
+			jest.spyOn(RpcMethodWrappersReaders, 'call').mockRejectedValueOnce(
+				new ContractExecutionError({ code: 3, message: 'execution reverted: boom' }),
+			);
+
+			await expect(GetRevertReason.getRevertReason(web3Context, transaction)).resolves.toMatchObject({
+				reason: 'execution reverted: boom',
+			});
+		});
 	});
 
 	it('should call parseTransactionError with contractAbi', async () => {

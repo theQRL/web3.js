@@ -18,6 +18,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import { InvalidKdfError } from '@theqrl/web3-errors';
 import {
 	ARGON2ID_BOUNDS,
+	ARGON2ID_DECRYPT_MEMORY_MIN,
 	validateArgon2idParams,
 	validateArgon2idSalt,
 } from '../../src/kdf_policy';
@@ -67,6 +68,47 @@ describe('kdf_policy', () => {
 			expect(() =>
 				validateArgon2idParams({ m: 19456, t: 2, p: 1, dklen: 32, [field]: value }),
 			).toThrow(InvalidKdfError);
+		});
+
+		it('pins dklen to the AES-256-GCM key length (L-12)', () => {
+			expect(ARGON2ID_BOUNDS.dklen).toEqual({ min: 32, max: 32 });
+			for (const dklen of [16, 24, 31, 33, 48, 64]) {
+				expect(() => validateArgon2idParams({ m: 19456, t: 2, p: 1, dklen })).toThrow(
+					/Argon2id dklen must be 32/,
+				);
+				expect(() =>
+					validateArgon2idParams({ m: 19456, t: 2, p: 1, dklen }, 'decrypt'),
+				).toThrow(InvalidKdfError);
+			}
+		});
+
+		describe('decrypt purpose (L-72)', () => {
+			it('accepts the go-qrl --lightkdf memory parameter on decrypt only', () => {
+				expect(ARGON2ID_DECRYPT_MEMORY_MIN).toBe(4096);
+				const light = { m: 4096, t: 8, p: 1, dklen: 32 };
+				expect(() => validateArgon2idParams(light, 'decrypt')).not.toThrow();
+				expect(() => validateArgon2idParams(light, 'encrypt')).toThrow(InvalidKdfError);
+				expect(() => validateArgon2idParams(light)).toThrow(InvalidKdfError);
+			});
+
+			it('keeps every other bound on decrypt', () => {
+				const valid = { m: 4096, t: 8, p: 1, dklen: 32 };
+				expect(() => validateArgon2idParams({ ...valid, m: 4095 }, 'decrypt')).toThrow(
+					/Argon2id m out of range \[4096, 1048576\]/,
+				);
+				expect(() => validateArgon2idParams({ ...valid, m: 1_048_577 }, 'decrypt')).toThrow(
+					InvalidKdfError,
+				);
+				expect(() => validateArgon2idParams({ ...valid, t: 1 }, 'decrypt')).toThrow(
+					InvalidKdfError,
+				);
+				expect(() => validateArgon2idParams({ ...valid, p: 17 }, 'decrypt')).toThrow(
+					InvalidKdfError,
+				);
+				expect(() => validateArgon2idParams({ ...valid, dklen: 16 }, 'decrypt')).toThrow(
+					InvalidKdfError,
+				);
+			});
 		});
 	});
 

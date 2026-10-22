@@ -22,8 +22,10 @@ import {
 	InvalidBooleanError,
 	InvalidBytesError,
 	InvalidLargeValueError,
+	InvalidNumberError,
 	InvalidSizeError,
 	InvalidStringError,
+	InvalidTypeError,
 	InvalidUnsignedIntegerError,
 } from '@theqrl/web3-errors';
 import {
@@ -45,14 +47,35 @@ import {
 	utf8ToHex,
 	addressToHex,
 } from './converters.js';
-import { leftPad, rightPad, toTwosComplement } from './string_manipulation.js';
+import { leftPad, toTwosComplement } from './string_manipulation.js';
 
 const SHA3_EMPTY_BYTES = '0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470';
 
 /**
+ * Whether a string input is hashed as hex bytes rather than as UTF-8 text.
+ *
+ * This is the one rule shared by {@link sha3}, {@link sha3Raw} and {@link keccak256}: a string
+ * that starts with `0x` or `0X` and is valid hex is decoded as bytes; a string with a sign
+ * (`-0x…`) or anything else is text. The three used to disagree on `0X…` and `-0x…` (I-11).
+ */
+const isHexBytesInput = (data: string): boolean => /^0x/i.test(data) && isHexStrict(data);
+
+/**
  * computes the Keccak-256 hash of the input and returns a hexstring
+ *
+ * A string input is interpreted by its spelling, which matters whenever the text to hash can
+ * itself look like hex (QRNS labels, user-supplied names, M-11):
+ * - a string starting with `0x`/`0X` that is valid hex is decoded as **bytes**, so
+ *   `sha3('0x6162') === sha3(new Uint8Array([0x61, 0x62]))`, and an odd-length or malformed
+ *   `0x…` string throws;
+ * - every other string, including `-0x…`, is hashed as **UTF-8 text**.
+ *
+ * To hash hex-looking text as text, encode it yourself: `sha3(utf8ToBytes('0x6162'))`.
+ * Non-string input must be a byte array (or a number array); anything else throws a typed
+ * error instead of a raw `TypeError` (L-26).
+ *
  * @param data - the input to hash
- * @returns - the Keccak-256 hash of the input
+ * @returns - the Keccak-256 hash of the input, or `undefined` for empty input
  *
  * @example
  * ```ts
@@ -67,13 +90,9 @@ export const sha3 = (data: Bytes): string | undefined => {
 	let updatedData: Uint8Array;
 
 	if (typeof data === 'string') {
-		if (data.startsWith('0x') && isHexStrict(data)) {
-			updatedData = hexToBytes(data);
-		} else {
-			updatedData = utf8ToBytes(data);
-		}
+		updatedData = isHexBytesInput(data) ? hexToBytes(data) : utf8ToBytes(data);
 	} else {
-		updatedData = data;
+		updatedData = bytesToUint8Array(data);
 	}
 	const hash = bytesToHex(keccak256(updatedData));
 
@@ -83,6 +102,10 @@ export const sha3 = (data: Bytes): string | undefined => {
 
 /**
  * Will calculate the sha3 of the input but does return the hash value instead of null if for example a empty string is passed.
+ *
+ * Strings follow the {@link sha3} rule: `0x`-prefixed valid hex is hashed as bytes, anything
+ * else as UTF-8 text. Hash hex-looking text with `sha3Raw(utf8ToBytes(text))`.
+ *
  * @param data - the input to hash
  * @returns - the Keccak-256 hash of the input
  *
@@ -106,6 +129,10 @@ export const sha3Raw = (data: Bytes): string => {
 
 /**
  * A wrapper for qrl-cryptography/keccak256 to allow hashing a `string` and a `bigint` in addition to `UInt8Array`
+ *
+ * Numbers and bigints are hashed as their decimal text. Strings follow the {@link sha3} rule:
+ * `0x`-prefixed valid hex is hashed as bytes, anything else (including `-0x…`) as UTF-8 text.
+ *
  * @param data - the input to hash
  * @returns - the Keccak-256 hash of the input
  *
@@ -129,7 +156,7 @@ export const keccak256Wrapper = (
 		processedData = utf8ToBytes(data.toString());
 	} else if (Array.isArray(data)) {
 		processedData = new Uint8Array(data);
-	} else if (typeof data === 'string' && !isHexStrict(data)) {
+	} else if (typeof data === 'string' && !isHexBytesInput(data)) {
 		processedData = utf8ToBytes(data);
 	} else {
 		processedData = bytesToUint8Array(data as Bytes);
@@ -290,27 +317,30 @@ const hyperionPack = (type: string, val: EncodingTypes): string => {
 		return size ? leftPad(num.toString(16), size / 4) : num.toString(16);
 	}
 
-	if (name === 'bytes') {
-		if (value.replace(/^0x/i, '').length % 2 !== 0) {
+	if (name === 'bytes' || type.startsWith('bytes')) {
+		// Bytes must be hex (optionally `0x`-prefixed) of even length; `zz` used to be packed
+		// verbatim as `0xzz` (L-29).
+		const hex = val instanceof Uint8Array ? bytesToHex(val).slice(2) : value.replace(/^0x/i, '');
+		if (hex.length % 2 !== 0 || !/^[0-9a-f]*$/i.test(hex)) {
 			throw new InvalidBytesError(value);
 		}
-		return value;
-	}
 
-	if (type.startsWith('bytes')) {
-		if (value.replace(/^0x/i, '').length % 2 !== 0) {
-			throw new InvalidBytesError(value);
+		if (name === 'bytes') {
+			return hex;
 		}
 
 		const size = parseTypeN(type, 'bytes'.length);
 
-		if (!size || size < 1 || size > 64 || size < value.replace(/^0x/i, '').length / 2) {
+		if (!size || size < 1 || size > 64 || size < hex.length / 2) {
 			throw new InvalidBytesError(value);
 		}
 
-		return rightPad(value, size * 2);
+		return hex.padEnd(size * 2, '0');
 	}
-	return '';
+
+	// A type nobody knows must not be packed as nothing: the resulting hash would silently
+	// cover fewer arguments than the caller passed.
+	throw new InvalidTypeError(type);
 };
 
 /**
@@ -320,6 +350,18 @@ const hyperionPack = (type: string, val: EncodingTypes): string => {
  */
 export const processHyperionEncodePackedArgs = (arg: Sha3Input): string => {
 	const [type, val] = getType(arg);
+
+	const arrayType = /\[(\d*)\]$/.exec(type);
+	if (arrayType) {
+		// `T[]` and `T[n]` take an array; `T[n]` takes exactly `n` elements. A declared size
+		// used to be ignored, so `uint8[2]` happily packed three values (L-29).
+		if (!Array.isArray(val)) {
+			throw new InvalidTypeError(type);
+		}
+		if (arrayType[1] !== '' && val.length !== parseInt(arrayType[1], 10)) {
+			throw new InvalidSizeError(`${type} with ${val.length} elements`);
+		}
+	}
 
 	// array case
 	if (Array.isArray(val)) {
@@ -395,12 +437,26 @@ export const hyperionSha3Raw = (...values: TypedObject[] | TypedObjectAbbreviate
  * @param mainSlotNumber - the slot number where will be stored hash of long string
  * @returns - the slot number where will be stored long string
  */
-export const getStorageSlotNumForLongString = (mainSlotNumber: number | string) =>
+export const getStorageSlotNumForLongString = (mainSlotNumber: number | string) => {
 	// The pre-image is the slot as a hex 64-byte VM word, matching hyperion's `keccak256(0, VMWordBytes=64)`;
 	// the 32-byte keccak output is the storage key. Numeric slots must be hex-formatted (`toString(16)`).
-	sha3(
-		`0x${(typeof mainSlotNumber === 'number'
-			? mainSlotNumber.toString(16)
-			: mainSlotNumber
-		).padStart(128, '0')}`,
-	);
+	let slotHex: string;
+
+	if (typeof mainSlotNumber === 'number') {
+		if (!Number.isSafeInteger(mainSlotNumber) || mainSlotNumber < 0) {
+			throw new InvalidNumberError(mainSlotNumber);
+		}
+		slotHex = mainSlotNumber.toString(16);
+	} else if (typeof mainSlotNumber === 'string' && /^(0x)?[0-9a-f]+$/i.test(mainSlotNumber)) {
+		// A `0x` prefix used to end up inside the padded pre-image, which then hashed as text (L-29).
+		slotHex = mainSlotNumber.replace(/^0x/i, '');
+	} else {
+		throw new InvalidNumberError(mainSlotNumber);
+	}
+
+	if (slotHex.length > 128) {
+		throw new InvalidNumberError(mainSlotNumber);
+	}
+
+	return sha3(`0x${slotHex.padStart(128, '0')}`);
+};

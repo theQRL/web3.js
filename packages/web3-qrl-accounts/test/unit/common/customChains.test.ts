@@ -15,6 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import { Chain, Common, ConsensusType, /* CustomChain, */ Hardfork } from '../../../src/common';
+import type { ChainConfig } from '../../../src/common/types';
 
 import * as testnet from '../../fixtures/common/testnet.json';
 import * as testnet2 from '../../fixtures/common/testnet2.json';
@@ -173,5 +174,64 @@ describe('custom chain setup with hardforks', () => {
 		expect('tangerineWhistle').toEqual(common.hardfork());
 		common.setHardforkByBlockNumber(3);
 		expect('chainstart').toEqual(common.hardfork());
+	});
+});
+
+describe('[Common]: chain state isolation (L-16)', () => {
+	it('copy() shares neither chain parameters, fork hashes nor listeners with the original', () => {
+		const original = new Common({ chain: Chain.Mainnet });
+		const listener = jest.fn();
+		original.on('hardforkChanged', listener);
+
+		const copy = original.copy();
+		copy.setForkHashes(new Uint8Array(32));
+
+		expect(copy.forkHash()).toMatch(/^0x[0-9a-f]{8}$/);
+		expect(copy.hardforks()).not.toBe(original.hardforks());
+		expect(copy.qips()).not.toBe(original.qips());
+		expect(copy.listenerCount('hardforkChanged')).toBe(0);
+		expect(original.listenerCount('hardforkChanged')).toBe(1);
+		// The original and every other Common still have no fork hash.
+		expect(() => original.forkHash()).toThrow('genesisHash required');
+		expect(() => new Common({ chain: 1 }).forkHash()).toThrow('genesisHash required');
+		expect(() => Common.custom({ chainId: 7 }).forkHash()).toThrow('genesisHash required');
+	});
+
+	it('does not hand out the module-level mainnet definition by reference', () => {
+		const a = new Common({ chain: 'mainnet' });
+		const b = new Common({ chain: 'mainnet' });
+		expect(a.hardforks()).not.toBe(b.hardforks());
+		expect(a.genesis()).not.toBe(b.genesis());
+
+		a.setForkHashes(new Uint8Array(32));
+		expect(() => b.forkHash()).toThrow('genesisHash required');
+		expect(() => Common.custom({ chainId: 7 }).forkHash()).toThrow('genesisHash required');
+		expect(Common.custom({ chainId: 7 }).hardforks()).not.toBe(a.hardforks());
+	});
+
+	it('setChain(object) keeps a private copy of the caller configuration', () => {
+		const config = JSON.parse(JSON.stringify(testnet)) as ChainConfig;
+		const c = new Common({ chain: config, hardfork: Hardfork.Zond });
+
+		config.chainId = 99999;
+		config.hardforks[0].block = 5;
+		config.bootstrapNodes![0].ip = '0.0.0.0';
+
+		expect(c.chainId()).toEqual(BigInt(12345));
+		expect(c.hardforks()[0].block).toBe(0);
+		expect(c.bootstrapNodes()![0].ip).not.toBe('0.0.0.0');
+		// ...and the instance does not write into the caller's object either.
+		c.setForkHashes(new Uint8Array(32));
+		expect(config.hardforks[0].forkHash).toBeUndefined();
+	});
+
+	it('customChains are copied as well', () => {
+		const custom = JSON.parse(JSON.stringify(testnet)) as ChainConfig;
+		const c = new Common({ chain: 'testnet', customChains: [custom] });
+		c.setForkHashes(new Uint8Array(32));
+		expect(custom.hardforks[0].forkHash).toBeUndefined();
+		expect(() => new Common({ chain: 'testnet', customChains: [custom] }).forkHash()).toThrow(
+			'genesisHash required',
+		);
 	});
 });

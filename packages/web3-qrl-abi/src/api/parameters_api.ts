@@ -69,7 +69,9 @@ export const encodeParameters = (abi: ReadonlyArray<AbiInput>, params: unknown[]
 			modifiedParams,
 		);
 	} catch (err) {
-		throw new AbiError(`Parameter encoding error`, err as Error);
+		// The coder's reason is part of the message (I-10); the original error stays attached
+		// as `innerError`.
+		throw new AbiError(`Parameter encoding error: ${(err as Error).message}`, err as Error);
 	}
 };
 
@@ -145,6 +147,11 @@ const formatArrayResToObject = (data: Result): DecodedParams => {
 	};
 
 	for (const key of Object.keys(data)) {
+		// `__length__` is the result's own counter: a parameter named like it (the ABI is
+		// untrusted) stays reachable by position only instead of corrupting the count (L-34).
+		if (key === '__length__') {
+			continue;
+		}
 		returnValue[key] =
 			Array.isArray(data[key]) && isParamRequiredToConvert(data[key] as Result)
 				? formatArrayResToObject(data[key] as Result)

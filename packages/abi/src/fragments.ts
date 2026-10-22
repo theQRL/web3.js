@@ -178,6 +178,12 @@ function parseParamType(param: string, allowIndexed: boolean): ParseNode {
 
 			// Hit a space...
 			case ' ':
+				// Diff vs ethers v5 (L-35): whitespace inside `[...]` silently turned `uint256[ 2]`
+				// into the dynamic array `uint256[]` named "2", changing selector and encoding.
+				if (node.state.readArray) {
+					throwError(i);
+				}
+
 				// If reading type, the type is done and may read a param or name
 				if (node.state.allowType) {
 					if (node.type !== '') {
@@ -280,6 +286,22 @@ function populate(object: any, params: any) {
 	}
 }
 
+// Diff vs ethers v5 (I-10): ABI JSON is untrusted input. A fragment that is not an object or an
+// `inputs`/`outputs`/`components` list that is not an array used to end in a raw TypeError;
+// they are rejected with an argument error instead.
+function verifyObject(value: unknown, name: string): void {
+	if (value == null || typeof value !== 'object') {
+		logger.throwArgumentError(`invalid ${name}`, 'value', value);
+	}
+}
+
+function verifyArray(value: unknown, name: string): Array<any> {
+	if (!Array.isArray(value)) {
+		logger.throwArgumentError(`invalid ${name}`, name, value);
+	}
+	return value as Array<any>;
+}
+
 export const FormatTypes: { [name: string]: string } = Object.freeze({
 	// Bare formatting, as is needed for computing a sighash of an event or function
 	sighash: 'sighash',
@@ -295,6 +317,10 @@ export const FormatTypes: { [name: string]: string } = Object.freeze({
 });
 
 const paramTypeArray = new RegExp(/^(.*)\[([0-9]*)\]$/);
+
+// Diff vs ethers v5 (M-10): the length of a fixed-length array comes from the (untrusted) ABI
+// and sizes what the decoder allocates, so it must be a safe integer below this bound.
+const MAX_ARRAY_LENGTH = 2 ** 32;
 
 export class ParamType {
 	// The local name of the parameter (of null if unbound)
@@ -331,8 +357,18 @@ export class ParamType {
 
 		const match = this.type.match(paramTypeArray);
 		if (match) {
+			const arrayLength = parseInt(match[2] || '-1');
+			// A fixed length must be a positive safe integer below 2^32: Hyperion (like Solidity)
+			// has no zero-length static arrays, and a `T[0]` element type would let an array of
+			// such elements grow without consuming any data (M-10).
+			if (
+				match[2] &&
+				(!Number.isSafeInteger(arrayLength) || arrayLength < 1 || arrayLength >= MAX_ARRAY_LENGTH)
+			) {
+				logger.throwArgumentError('array length out-of-bounds', 'type', this.type);
+			}
 			populate(this, {
-				arrayLength: parseInt(match[2] || '-1'),
+				arrayLength,
 				arrayChildren: ParamType.fromObject({
 					type: match[1],
 					components: this.components,
@@ -418,12 +454,15 @@ export class ParamType {
 		if (ParamType.isParamType(value)) {
 			return value;
 		}
+		verifyObject(value, 'param type object');
 
 		return new ParamType(_constructorGuard, {
 			name: value.name || null,
 			type: verifyType(value.type),
 			indexed: value.indexed == null ? null : !!value.indexed,
-			components: value.components ? value.components.map(ParamType.fromObject) : null,
+			components: value.components
+				? verifyArray(value.components, 'components').map(ParamType.fromObject)
+				: null,
 		});
 	}
 
@@ -447,6 +486,12 @@ export class ParamType {
 
 function parseParams(value: string, allowIndex: boolean): Array<ParamType> {
 	return splitNesting(value).map(param => ParamType.fromString(param, allowIndex));
+}
+
+// The `inputs`/`outputs` of a JSON fragment: absent means none, anything but an array is an
+// error (I-10).
+function verifyParams(value: unknown, name: string): Array<ParamType> {
+	return value ? verifyArray(value, name).map(ParamType.fromObject) : [];
 }
 
 type TypeCheck<T> = { -readonly [K in keyof T]: T[K] };
@@ -495,6 +540,7 @@ export abstract class Fragment {
 		if (Fragment.isFragment(value)) {
 			return value;
 		}
+		verifyObject(value, 'fragment object');
 
 		switch (value.type) {
 			case 'function':
@@ -595,6 +641,7 @@ export class EventFragment extends Fragment {
 		if (EventFragment.isEventFragment(value)) {
 			return value;
 		}
+		verifyObject(value, 'event object');
 
 		if (value.type !== 'event') {
 			logger.throwArgumentError('invalid event object', 'value', value);
@@ -603,7 +650,7 @@ export class EventFragment extends Fragment {
 		const params: TypeCheck<_EventFragment> = {
 			name: verifyIdentifier(value.name),
 			anonymous: value.anonymous,
-			inputs: value.inputs ? value.inputs.map(ParamType.fromObject) : [],
+			inputs: verifyParams(value.inputs, 'inputs'),
 			type: 'event',
 		};
 
@@ -834,6 +881,7 @@ export class ConstructorFragment extends Fragment {
 		if (ConstructorFragment.isConstructorFragment(value)) {
 			return value;
 		}
+		verifyObject(value, 'constructor object');
 
 		if (value.type !== 'constructor') {
 			logger.throwArgumentError('invalid constructor object', 'value', value);
@@ -847,7 +895,7 @@ export class ConstructorFragment extends Fragment {
 		const params: TypeCheck<_ConstructorFragment> = {
 			name: null,
 			type: value.type,
-			inputs: value.inputs ? value.inputs.map(ParamType.fromObject) : [],
+			inputs: verifyParams(value.inputs, 'inputs'),
 			payable: state.payable,
 			stateMutability: state.stateMutability,
 			gas: value.gas ? BigNumber.from(value.gas) : null,
@@ -953,6 +1001,7 @@ export class FunctionFragment extends ConstructorFragment {
 		if (FunctionFragment.isFunctionFragment(value)) {
 			return value;
 		}
+		verifyObject(value, 'function object');
 
 		if (value.type !== 'function') {
 			logger.throwArgumentError('invalid function object', 'value', value);
@@ -964,8 +1013,8 @@ export class FunctionFragment extends ConstructorFragment {
 			type: value.type,
 			name: verifyIdentifier(value.name),
 			constant: state.constant,
-			inputs: value.inputs ? value.inputs.map(ParamType.fromObject) : [],
-			outputs: value.outputs ? value.outputs.map(ParamType.fromObject) : [],
+			inputs: verifyParams(value.inputs, 'inputs'),
+			outputs: verifyParams(value.outputs, 'outputs'),
 			payable: state.payable,
 			stateMutability: state.stateMutability,
 			gas: value.gas ? BigNumber.from(value.gas) : null,
@@ -1068,6 +1117,7 @@ export class ErrorFragment extends Fragment {
 		if (ErrorFragment.isErrorFragment(value)) {
 			return value;
 		}
+		verifyObject(value, 'error object');
 
 		if (value.type !== 'error') {
 			logger.throwArgumentError('invalid error object', 'value', value);
@@ -1076,7 +1126,7 @@ export class ErrorFragment extends Fragment {
 		const params: TypeCheck<_Fragment> = {
 			type: value.type,
 			name: verifyIdentifier(value.name),
-			inputs: value.inputs ? value.inputs.map(ParamType.fromObject) : [],
+			inputs: verifyParams(value.inputs, 'inputs'),
 		};
 
 		return checkForbidden(new ErrorFragment(_constructorGuard, params));
@@ -1106,6 +1156,12 @@ export class ErrorFragment extends Fragment {
 }
 
 function verifyType(type: string): string {
+	// Diff vs ethers v5 (I-10): a `type` taken from ABI JSON that is not a string ended in a
+	// raw TypeError below.
+	if (typeof type !== 'string') {
+		logger.throwArgumentError('invalid type', 'type', type);
+	}
+
 	// These need to be transformed to their full description
 	if (type.match(/^uint($|[^1-9])/)) {
 		type = `uint256${type.substring(4)}`;

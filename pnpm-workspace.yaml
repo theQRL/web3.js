@@ -35,7 +35,6 @@ overrides:
   "ws@>=7.0.0 <7.5.11": "7.5.11"
   "ws@>=8.0.0 <8.21.0": "8.21.0"
   # CVE remediation — high/critical in dev tooling (Trivy HIGH,CRITICAL gate)
-  "adm-zip@<0.6.0": "0.6.0"
   "http-proxy-middleware@<2.0.10": "2.0.10"
   "http-proxy-middleware@>=4.0.0 <4.1.1": "4.2.0"
   "linkify-it@<5.0.1": "5.0.2"
@@ -89,23 +88,15 @@ overrides:
   es-module-lexer: 2.0.0
   express: 5.2.1
   loader-runner: 4.3.1
-  "path-to-regexp@<0.1.13": "0.1.13"
   "schema-utils@4>ajv": 8.17.1
   serialize-javascript: 7.0.5
-  socks: 2.8.7
   webpack: 5.107.1
   webpack-sources: 3.3.3
 strictDepBuilds: true
+# Every key below must exist in pnpm-lock.yaml: `pnpm run doctor` fails on a
+# stale entry so install scripts are never pre-approved for an absent package.
 allowBuilds:
-  "@parcel/watcher": true
   bufferutil: true
   core-js: true
-  es5-ext: true
-  keccak: true
-  nx: true
-  secp256k1: true
   unrs-resolver: true
   utf-8-validate: true
-  web3: true
-  web3-bzz: true
-  web3-shh: true

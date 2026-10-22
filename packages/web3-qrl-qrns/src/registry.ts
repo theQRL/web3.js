@@ -16,7 +16,12 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { Web3ContextObject } from '@theqrl/web3-core';
-import { TransactionRevertInstructionError } from '@theqrl/web3-errors';
+import {
+	BaseWeb3Error,
+	ContractExecutionError,
+	TransactionRevertInstructionError,
+	Web3ContractError,
+} from '@theqrl/web3-errors';
 import { Contract } from '@theqrl/web3-qrl-contract';
 import { Address } from '@theqrl/web3-types';
 import { isAddressString } from '@theqrl/web3-validator';
@@ -27,11 +32,27 @@ import { namehash } from './utils.js';
 
 const QRL_ZERO_ADDRESS = `Q${'0'.repeat(128)}`;
 
+/**
+ * Maps a failed registry call to a typed error: a revert reported by the node becomes a
+ * `TransactionRevertInstructionError`, any other web3 error (an ABI decoding failure, a
+ * malformed reply, a connection error) is passed through unchanged, and anything else is
+ * wrapped in a `Web3ContractError` that keeps the cause as `innerError` (L-26).
+ */
 const wrapContractCallError = (error: unknown): Error => {
+	if (error instanceof ContractExecutionError) {
+		const revertError = new TransactionRevertInstructionError(
+			error.innerError?.message ?? error.message,
+		);
+		revertError.innerError = error;
+		return revertError;
+	}
+	if (error instanceof BaseWeb3Error) {
+		return error;
+	}
 	const cause = error instanceof Error ? error : new Error(String(error));
-	const revertError = new TransactionRevertInstructionError(cause.message);
-	revertError.innerError = cause;
-	return revertError;
+	const wrapped = new Web3ContractError(`QRNS registry call failed: ${cause.message}`);
+	wrapped.innerError = cause;
+	return wrapped;
 };
 
 export class Registry {
@@ -46,6 +67,18 @@ export class Registry {
 		);
 
 		this.context = context;
+	}
+
+	/**
+	 * The address of the registry contract the queries are sent to. Settable, so that the
+	 * owning {@link QRNS} can repoint the registry at the address it resolved (L-62).
+	 */
+	public get address(): Address | undefined {
+		return this.contract.options.address;
+	}
+
+	public set address(value: Address | undefined) {
+		this.contract.options.address = value;
 	}
 
 	public async getOwner(name: string) {
@@ -81,13 +114,15 @@ export class Registry {
 		}
 
 		if (typeof address !== 'string') {
-			throw new Error('QRNS registry returned non-string resolver address');
+			throw new Web3ContractError('QRNS registry returned non-string resolver address');
 		}
 		if (!isAddressString(address)) {
-			throw new Error(`QRNS registry returned invalid resolver address: ${address}`);
+			throw new Web3ContractError(
+				`QRNS registry returned invalid resolver address: ${address}`,
+			);
 		}
 		if (address.toLowerCase() === QRL_ZERO_ADDRESS.toLowerCase()) {
-			throw new Error('QRNS registry returned zero resolver address');
+			throw new Web3ContractError('QRNS registry returned zero resolver address');
 		}
 		return new Contract(PublicResolverAbi, address, this.context);
 	}

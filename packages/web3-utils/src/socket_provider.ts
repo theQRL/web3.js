@@ -52,6 +52,7 @@ import {
 	RequestTimeoutError,
 	ResponseError,
 	Web3WSProviderError,
+	redactClientUrl,
 } from '@theqrl/web3-errors';
 import { Eip1193Provider } from './web3_eip1193_provider.js';
 import { ChunkResponseParser } from './chunk_response_parser.js';
@@ -173,6 +174,8 @@ export abstract class SocketProvider<
 	>();
 	/** Bounds the connect / handshake phase. Separate from the per-request deadline. */
 	private _connectionTimer?: ReturnType<typeof setTimeout>;
+	/** The pending reconnect attempt armed by {@link _reconnect}, so it can be cancelled. */
+	private _reconnectTimer?: ReturnType<typeof setTimeout>;
 	private _peakInFlight = 0;
 	private readonly _onDiagnostics?: (diagnostics: SocketProviderDiagnostics) => void;
 	protected _socketConnection?: unknown;
@@ -264,8 +267,10 @@ export abstract class SocketProvider<
 			if (!this.isReconnecting) {
 				this._connectionStatus = 'disconnected';
 				if (e && (e as Error).message) {
+					// The socket path may be a `ws://user:password@host/path` URL: credentials
+					// and path never belong in an error message (L-48).
 					throw new ConnectionError(
-						`Error while connecting to ${this._socketPath}. Reason: ${
+						`Error while connecting to ${redactClientUrl(this._socketPath)}. Reason: ${
 							(e as Error).message
 						}`,
 					);
@@ -287,6 +292,13 @@ export abstract class SocketProvider<
 	 * This bound is *separate* from the per-request deadline but does not replace it: a
 	 * request issued while connecting has already armed its own `requestTimeout`, so the
 	 * connection wait is spent out of the request's total budget (see {@link request}).
+	 *
+	 * When the deadline fires the attempt is abandoned for good: the socket's listeners are
+	 * detached and the socket is closed, so a late handshake cannot resurrect it and nothing is
+	 * left half-open. With `autoReconnect` the regular reconnect cycle takes over; without it
+	 * the provider is `disconnected` and the next {@link request} opens a fresh socket. A peer
+	 * that accepts TCP but never completes the handshake used to wedge the provider for the
+	 * lifetime of the process (M-8).
 	 */
 	private _armConnectionTimer(): void {
 		this._clearConnectionTimer();
@@ -300,13 +312,32 @@ export abstract class SocketProvider<
 
 			const error = new ConnectionTimeoutError(duration);
 			this._connectionStatus = 'disconnected';
+			// Listeners go first: closing the stalled socket must not be reported as a lost
+			// connection by the transport's close / error handlers.
+			this._removeSocketListeners();
 			// A handshake that never completes must not strand the requests queued behind
 			// it, whether or not their own 120s deadline has elapsed.
 			this._rejectAllRequests(error);
 			this._emitError(error);
+			if (this._reconnectOptions.autoReconnect) {
+				this._reconnect();
+			}
+			this._closeSocketConnection(NORMAL_CLOSE_CODE, 'connection timeout');
 		}, duration);
 
 		unrefTimer(this._connectionTimer);
+	}
+
+	/**
+	 * Drops a pending reconnect attempt. Called by every caller-initiated teardown: a provider
+	 * that was disconnected or reset must not re-open a socket on its own a minute later (L-22).
+	 */
+	private _cancelReconnect(): void {
+		if (this._reconnectTimer !== undefined) {
+			clearTimeout(this._reconnectTimer);
+			this._reconnectTimer = undefined;
+		}
+		this.isReconnecting = false;
 	}
 
 	private _clearConnectionTimer(): void {
@@ -479,6 +510,7 @@ export abstract class SocketProvider<
 	 */
 	public disconnect(code?: number, data?: string): void {
 		const disconnectCode = code ?? NORMAL_CLOSE_CODE;
+		this._cancelReconnect();
 		this._clearConnectionTimer();
 		this.chunkResponseParser.reset();
 		this._removeSocketListeners();
@@ -611,9 +643,15 @@ export abstract class SocketProvider<
 	}
 
 	/**
-	 * Resets the socket, removing all listeners and pending requests
+	 * Resets the provider: cancels every pending request and any pending reconnect, drops any
+	 * partially received message and restarts the reconnect attempt counter.
+	 *
+	 * The transport listeners registered by {@link connect} stay attached. They used to be
+	 * removed and re-added here, which on a transport that keeps its `error` listener across
+	 * `_removeSocketListeners` (IPC) registered one more `error` listener per call (L-24).
 	 */
 	public reset(): void {
+		this._cancelReconnect();
 		this._clearConnectionTimer();
 		this.chunkResponseParser.reset();
 		// Previously these maps were simply cleared, which abandoned every caller's promise
@@ -623,8 +661,6 @@ export abstract class SocketProvider<
 		);
 
 		this._init();
-		this._removeSocketListeners();
-		this._addSocketListeners();
 	}
 
 	protected _reconnect(): void {
@@ -648,11 +684,15 @@ export abstract class SocketProvider<
 			const capped = Math.min(exp, 60_000);
 			const jitter = capped * (Math.random() * 0.4 - 0.2);
 			const wait = Math.max(0, Math.floor(capped + jitter));
-			setTimeout(() => {
+			// Stored so that `disconnect()` / `reset()` can cancel it (L-22) and unref'd so that
+			// a pending attempt alone does not keep the process alive.
+			this._reconnectTimer = setTimeout(() => {
+				this._reconnectTimer = undefined;
 				this._removeSocketListeners();
 				this.connect();
 				this.isReconnecting = false;
 			}, wait);
+			unrefTimer(this._reconnectTimer);
 		} else {
 			this.isReconnecting = false;
 			this._clearQueues();
@@ -713,8 +753,12 @@ export abstract class SocketProvider<
 		if (isNullish(this._socketConnection)) {
 			throw new Error('Connection is undefined');
 		}
-		// if socket disconnected - open connection
-		if (this.getStatus() === 'disconnected') {
+		// If the socket is disconnected, open a connection. Not while a reconnect is pending:
+		// the request would open a socket of its own, the reconnect timer would then open
+		// another one and the first would never be closed (L-44). The request is parked in the
+		// pending queue instead and written once the reconnect completes, within its own
+		// deadline.
+		if (this.getStatus() === 'disconnected' && !this.isReconnecting) {
 			this.connect();
 		}
 
@@ -787,7 +831,9 @@ export abstract class SocketProvider<
 		abort.signal.addEventListener('abort', onAbort, { once: true });
 
 		const queue =
-			this.getStatus() === 'connecting' ? this._pendingRequestsQueue : this._sentRequestsQueue;
+			this.getStatus() === 'connecting' || this.isReconnecting
+				? this._pendingRequestsQueue
+				: this._sentRequestsQueue;
 
 		for (const id of requestIds) {
 			queue.set(id, reqItem);

@@ -230,4 +230,49 @@ describe('watchTransactionForConfirmations', () => {
 			},
 		);
 	});
+
+	describe('threshold already satisfied by the receipt (L-54)', () => {
+		let web3Context: Web3Context<Web3QRLExecutionAPI>;
+
+		beforeAll(() => {
+			web3Context = new Web3Context({
+				request: jest.fn(),
+				supportsSubscriptions: () => false,
+			});
+		});
+
+		afterEach(() => jest.resetAllMocks());
+
+		it.each([[0], [1]])(
+			'emits the first confirmation and starts no watcher when transactionConfirmationBlocks is %i',
+			blocks => {
+				web3Context.transactionConfirmationBlocks = blocks;
+				const formattedTransactionReceipt = format(
+					transactionReceiptSchema,
+					expectedTransactionReceipt,
+					DEFAULT_RETURN_FORMAT,
+				);
+				const promiEvent = new Web3PromiEvent<
+					TransactionReceipt,
+					SendSignedTransactionEvents<typeof DEFAULT_RETURN_FORMAT>
+				>(() => undefined);
+				const confirmation = jest.fn();
+				promiEvent.on('confirmation', confirmation);
+
+				WatchTransactionForConfirmations.watchTransactionForConfirmations(
+					web3Context,
+					promiEvent,
+					formattedTransactionReceipt,
+					expectedTransactionHash,
+					DEFAULT_RETURN_FORMAT,
+				);
+
+				expect(confirmation).toHaveBeenCalledTimes(1);
+				expect(WatchTransactionByPolling.watchTransactionByPolling).not.toHaveBeenCalled();
+				expect(
+					WatchTransactionBySubscription.watchTransactionBySubscription,
+				).not.toHaveBeenCalled();
+			},
+		);
+	});
 });

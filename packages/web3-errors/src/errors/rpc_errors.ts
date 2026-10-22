@@ -39,14 +39,14 @@ export class RpcError extends BaseWeb3Error {
 	public jsonrpc: string;
 	public jsonRpcError: JsonRpcError;
 	public constructor(rpcError: JsonRpcResponseWithError, message?: string) {
-		super(
-			message ??
-				genericRpcErrorMessageTemplate.replace('*code*', rpcError.error.code.toString()),
-		);
-		this.code = rpcError.error.code;
-		this.id = rpcError.id;
-		this.jsonrpc = rpcError.jsonrpc;
-		this.jsonRpcError = rpcError.error;
+		// The reply is node supplied: a missing or null `error.code` must not turn into a
+		// `TypeError` thrown from inside an error constructor (I-15).
+		const code = rpcError?.error?.code;
+		super(message ?? genericRpcErrorMessageTemplate.replace('*code*', String(code)));
+		this.code = code;
+		this.id = rpcError?.id;
+		this.jsonrpc = rpcError?.jsonrpc;
+		this.jsonRpcError = rpcError?.error;
 	}
 
 	public toJSON() {

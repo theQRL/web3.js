@@ -28,6 +28,8 @@ export type Timeout = ReturnType<typeof setTimeout>;
 export function isPromise(object: unknown): boolean {
 	return (
 		(typeof object === 'object' || typeof object === 'function') &&
+		// `typeof null` is `'object'` (L-25).
+		!isNullish(object) &&
 		typeof (object as { then: unknown }).then === 'function'
 	);
 }
@@ -57,14 +59,20 @@ export async function waitWithTimeout<T>(
 	error?: Error,
 ): Promise<T | undefined> {
 	let timeoutId: Timeout | undefined;
-	const result = await Promise.race([
-		awaitable instanceof Promise ? awaitable : awaitable(),
-		new Promise<undefined | Error>((resolve, reject) => {
-			timeoutId = setTimeout(() => (error ? reject(error) : resolve(undefined)), timeout);
-		}),
-	]);
-	if (timeoutId) {
-		clearTimeout(timeoutId);
+	let result: T | undefined | Error;
+	try {
+		result = await Promise.race([
+			awaitable instanceof Promise ? awaitable : awaitable(),
+			new Promise<undefined | Error>((resolve, reject) => {
+				timeoutId = setTimeout(() => (error ? reject(error) : resolve(undefined)), timeout);
+			}),
+		]);
+	} finally {
+		// The timer is dropped however the race ends: a rejected awaitable used to leave it
+		// armed and keep the process alive for the full timeout (L-25).
+		if (timeoutId) {
+			clearTimeout(timeoutId);
+		}
 	}
 	if (result instanceof Error) {
 		throw result;
@@ -157,9 +165,17 @@ export function rejectIfConditionAtInterval<T>(
 	const rejectIfCondition = new Promise<never>((_, reject) => {
 		intervalId = setInterval(() => {
 			(async () => {
-				const error = await cond();
-				if (error) {
+				try {
+					const error = await cond();
+					if (error) {
+						clearInterval(intervalId);
+						reject(error);
+					}
+				} catch (error) {
+					// A throwing condition settles the promise instead of producing one unhandled
+					// rejection per tick while the promise stays pending forever (L-25).
 					clearInterval(intervalId);
+					// eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors -- whatever `cond` threw is propagated as is
 					reject(error);
 				}
 			})() as unknown;

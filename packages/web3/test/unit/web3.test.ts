@@ -59,7 +59,8 @@ describe('Web3 object', () => {
 		it('should work when `address` is an empty string and `options` is an object', () => {
 			const contract4 = new Web3Contract(abi, '', options);
 			expect(contract4).toBeInstanceOf(Contract);
-			expect(contract4.options.address).toBe('');
+			// An empty string means "no address yet" since the contract validates addresses (L-57).
+			expect(contract4.options.address).toBeUndefined();
 			expect(contract4.options.gas).toEqual(options.gas);
 		});
 		it('should work when `address` is a string and `options` is not passed', () => {

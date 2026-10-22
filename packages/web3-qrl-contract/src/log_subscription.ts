@@ -98,6 +98,15 @@ export class LogsSubscription extends Web3Subscription<
 
 	public readonly jsonInterface: ContractAbiWithSignature;
 
+	/**
+	 * Set when the subscription was created through `contract.events.<Event>()`: resolves with
+	 * the subscription id once `qrl_subscribe` succeeded (and, with `fromBlock`, the past events
+	 * were replayed), rejects with the `SubscriptionError` that is also emitted on `error` when
+	 * an `error` listener exists. Rejections are handled by the contract, so awaiting it is
+	 * optional. A subscription created through the subscription manager leaves it `undefined`.
+	 */
+	public subscribed?: Promise<string>;
+
 	public constructor(
 		args: {
 			address?: HexString;
@@ -121,8 +130,8 @@ export class LogsSubscription extends Web3Subscription<
 			returnFormat?: DataFormat;
 		},
 	) {
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-		super(args, options as any);
+		// The base constructor accepts either option shape; the overloads above narrow it.
+		super(args, options as { subscriptionManager: Web3SubscriptionManager });
 
 		this.address = args.address;
 		this.topics = args.topics;

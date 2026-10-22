@@ -152,6 +152,17 @@ export abstract class Web3Subscription<
 		this._id = undefined;
 	}
 
+	/**
+	 * Forgets the subscription id without talking to the node. The subscription manager calls
+	 * it when it drops the subscription locally: when the node refused `qrl_unsubscribe`, when
+	 * the provider is replaced (the previous node may already be unreachable), or on
+	 * `dispose()`. Afterwards {@link unsubscribe} is a no-op and no notification is dispatched
+	 * to the subscription any more (M-7f).
+	 */
+	public _markUnsubscribed(): void {
+		this._id = undefined;
+	}
+
 	// eslint-disable-next-line class-methods-use-this
 	protected formatSubscriptionResult(data: CombinedEventMap['data']) {
 		return data;

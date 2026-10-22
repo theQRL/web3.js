@@ -26,9 +26,21 @@ import * as signatureErrors from '../../src/errors/signature_errors';
 import * as transactionErrors from '../../src/errors/transaction_errors';
 import * as utilsErrors from '../../src/errors/utils_errors';
 import * as responseErrors from '../../src/errors/response_errors';
+import * as coreErrors from '../../src/errors/core_errors';
+import * as rpcErrors from '../../src/errors/rpc_errors';
 
 import { ConvertValueToString } from '../fixtures/errors';
-import { BaseWeb3Error } from '../../src/web3_error_base';
+import {
+	BaseWeb3Error,
+	InvalidValueError,
+	MAX_ECHOED_VALUE_LENGTH,
+	redactClientUrl,
+} from '../../src/web3_error_base';
+import {
+	ERR_CONN_HTTP_STATUS,
+	ERR_CORE_CHAIN_MISMATCH,
+	ERR_REQUEST_SERIALIZATION,
+} from '../../src/error_codes';
 
 describe('errors', () => {
 	describe('error convertToString', () => {
@@ -447,5 +459,365 @@ describe('errors', () => {
 			);
 		});
 		/* eslint-enable no-null/no-null */
+	});
+
+	describe('Eip838ExecutionError on provider-controlled input (L-45)', () => {
+		const nest = (depth: number, key: 'data' | 'originalError') => {
+			let value: unknown = key === 'data' ? '0x' : { data: '0x' };
+			for (let i = 0; i < depth; i += 1) value = { [key]: value };
+			return value;
+		};
+
+		it.each(['data', 'originalError'] as const)(
+			'does not recurse into %s nested 100000 levels deep',
+			key => {
+				const error = new contractErrors.ContractExecutionError({
+					code: 3,
+					message: 'execution reverted',
+					data: nest(100_000, key),
+				} as never);
+				expect(error).toBeInstanceOf(contractErrors.ContractExecutionError);
+				expect(error.innerError).toBeInstanceOf(contractErrors.Eip838ExecutionError);
+				// Only the documented level is unwrapped: deeper nesting is not data.
+				expect(error.innerError.innerError).toBeInstanceOf(
+					contractErrors.Eip838ExecutionError,
+				);
+				expect(error.innerError.innerError?.innerError).toBeUndefined();
+			},
+		);
+
+		it('still reads the two documented shapes', () => {
+			expect(
+				new contractErrors.Eip838ExecutionError({ code: 3, message: 'm', data: '0xab' })
+					.data,
+			).toBe('0xab');
+			expect(
+				new contractErrors.Eip838ExecutionError({
+					code: 3,
+					message: 'm',
+					data: { data: '0xcd' },
+				}).data,
+			).toBe('0xcd');
+			expect(
+				new contractErrors.Eip838ExecutionError({
+					code: 3,
+					message: 'm',
+					data: { originalError: { data: '0xef' } },
+				}).data,
+			).toBe('0xef');
+		});
+
+		it.each([5, true, ['0x'], { data: 5 }, { originalError: { data: ['0x'] } }])(
+			'accepts data only when it is a string (%p)',
+			data => {
+				const error = new contractErrors.Eip838ExecutionError({
+					code: 3,
+					message: 'm',
+					data,
+				} as never);
+				expect(error.data).toBeUndefined();
+			},
+		);
+
+		it('never copies a provider-supplied name or stack and keeps its own trace', () => {
+			const error = new contractErrors.Eip838ExecutionError({
+				code: 3,
+				message: 'execution reverted',
+				name: 'RangeError',
+				stack: 'INJECTED\n    at evil.js:1:1',
+				data: '0x08c379a0',
+			} as never);
+			expect(error.name).toBe('Eip838ExecutionError');
+			expect(error.stack).toEqual(expect.stringContaining('Eip838ExecutionError'));
+			expect(error.stack).not.toContain('INJECTED');
+			expect(error.message).toBe('execution reverted');
+
+			const withoutStack = new contractErrors.Eip838ExecutionError({
+				code: 3,
+				message: 'execution reverted',
+				data: '0x',
+			});
+			expect(typeof withoutStack.stack).toBe('string');
+			expect(withoutStack.stack).toEqual(expect.stringContaining('errors.test'));
+		});
+	});
+
+	describe('BigInt values in error constructors (L-46)', () => {
+		const receipt = {
+			blockNumber: BigInt(1),
+			status: BigInt(1),
+			gasUsed: BigInt(21000),
+		} as never;
+
+		it.each([
+			[
+				'ChainIdMismatchError',
+				() =>
+					new transactionErrors.ChainIdMismatchError({
+						txChainId: BigInt(1),
+						customChainId: BigInt(2),
+					}),
+			],
+			[
+				'ChainMismatchError',
+				() =>
+					new transactionErrors.ChainMismatchError({
+						txChain: BigInt(1),
+						baseChain: 'mainnet',
+					}),
+			],
+			[
+				'HardforkMismatchError',
+				() =>
+					new transactionErrors.HardforkMismatchError({
+						txHardfork: BigInt(1),
+						commonHardfork: 'x',
+					}),
+			],
+			[
+				'TransactionOutOfGasError',
+				() => new transactionErrors.TransactionOutOfGasError(receipt),
+			],
+			[
+				'TransactionMissingReceiptOrBlockHashError',
+				() =>
+					new transactionErrors.TransactionMissingReceiptOrBlockHashError({
+						receipt,
+						blockHash: undefined as never,
+						transactionHash: '0xab',
+					}),
+			],
+			[
+				'TransactionReceiptMissingBlockNumberError',
+				() => new transactionErrors.TransactionReceiptMissingBlockNumberError({ receipt }),
+			],
+		])('%s renders a bigint instead of throwing a TypeError', (_name, build) => {
+			expect(build).not.toThrow();
+			expect(build().message).toEqual(expect.stringContaining('1'));
+		});
+	});
+
+	describe('HttpStatusError (L-47)', () => {
+		it('carries the status line, the retry-after delay and a JSON-RPC error body', () => {
+			const body = new responseErrors.ResponseError({
+				jsonrpc: '2.0',
+				id: 1,
+				error: { code: -32000, message: 'unauthorized', data: '0x08c379a0' },
+			});
+			const error = new connectionErrors.HttpStatusError(429, 'Too Many Requests', 30, body);
+			expect(error.data).toBe('0x08c379a0');
+			expect(error.toJSON()).toMatchObject({ data: '0x08c379a0' });
+			expect(error).toBeInstanceOf(connectionErrors.ConnectionError);
+			expect(error.code).toBe(ERR_CONN_HTTP_STATUS);
+			expect(error.status).toBe(429);
+			expect(error.statusText).toBe('Too Many Requests');
+			expect(error.retryAfter).toBe(30);
+			expect(error.retryable).toBe(true);
+			expect(error.errorCode).toBe(429);
+			expect(error.errorReason).toBe('Too Many Requests');
+			expect(error.innerError).toBe(body);
+			expect(error.message).toBe(
+				'HTTP STATUS ERROR: the JSON-RPC endpoint answered with HTTP 429 (Too Many Requests), retry after 30s. Returned error: unauthorized',
+			);
+			expect(error.toJSON()).toMatchObject({
+				name: 'HttpStatusError',
+				status: 429,
+				statusText: 'Too Many Requests',
+				retryAfter: 30,
+				retryable: true,
+			});
+		});
+
+		it.each([
+			[401, false],
+			[403, false],
+			[404, false],
+			[408, true],
+			[429, true],
+			[500, true],
+			[502, true],
+			[503, true],
+			[504, true],
+		])('marks HTTP %i retryable=%p', (status, retryable) => {
+			const error = new connectionErrors.HttpStatusError(status);
+			expect(error.retryable).toBe(retryable);
+			expect(error.message).toBe(
+				`HTTP STATUS ERROR: the JSON-RPC endpoint answered with HTTP ${status}`,
+			);
+		});
+	});
+
+	describe('client URL redaction (L-48)', () => {
+		it.each([
+			['http://user:s3cret@127.0.0.1:8545/v3/KEY', 'http://***@127.0.0.1:8545/[redacted]'],
+			['https://host.example/v3/API-KEY?token=x#f', 'https://host.example/[redacted]'],
+			['wss://user:pw@node.example:8546', 'wss://***@node.example:8546'],
+			['http://localhost:8545/', 'http://localhost:8545/'],
+			['http://localhost:8545', 'http://localhost:8545'],
+			['htt://localhost:8545', 'htt://localhost:8545'],
+			['http//localhost:8545', 'http//localhost:8545'],
+			['/var/run/gqrl.ipc', '/var/run/gqrl.ipc'],
+			['', ''],
+		])('redacts %s to %s', (url, redacted) => {
+			expect(redactClientUrl(url)).toBe(redacted);
+		});
+
+		it('renders non-strings with String()', () => {
+			// eslint-disable-next-line no-null/no-null
+			expect(redactClientUrl(null)).toBe('null');
+			expect(redactClientUrl(undefined)).toBe('undefined');
+			expect(redactClientUrl(42)).toBe('42');
+		});
+
+		it('keeps credentials and paths out of InvalidClientError and InvalidProviderError', () => {
+			const url = 'http://alice:hunter2@127.0.0.1:1/v3/API-KEY-0123456789abcdef';
+			const client = new providerErrors.InvalidClientError(url);
+			expect(client.message).toBe(
+				'Client URL "http://***@127.0.0.1:1/[redacted]" is invalid.',
+			);
+			expect(client.message).not.toContain('hunter2');
+			expect(client.message).not.toContain('API-KEY');
+			const provider = new providerErrors.InvalidProviderError(url);
+			expect(provider.message).not.toContain('hunter2');
+			expect(provider.message).not.toContain('API-KEY');
+		});
+
+		it('appends the transport reason to InvalidConnectionError', () => {
+			const error = new connectionErrors.InvalidConnectionError('127.0.0.1:1', {
+				reason: 'ECONNREFUSED',
+			});
+			expect(error.message).toBe(
+				"CONNECTION ERROR: Couldn't connect to node 127.0.0.1:1. Reason: ECONNREFUSED",
+			);
+			expect(error.errorReason).toBe('ECONNREFUSED');
+			expect(error.errorCode).toBeUndefined();
+		});
+	});
+
+	describe('base error hygiene (I-15)', () => {
+		it('captures the stack trace onto the instance, not onto the global Function', () => {
+			expect(Object.getOwnPropertyDescriptor(Function, 'stack')).toBeUndefined();
+			const error = new responseErrors.ResponseError({
+				jsonrpc: '2.0',
+				id: 1,
+				error: { code: 1, message: 'x' },
+			});
+			expect(Object.getOwnPropertyDescriptor(Function, 'stack')).toBeUndefined();
+			expect(error.stack).toEqual(
+				expect.stringContaining('ResponseError: Returned error: x'),
+			);
+			expect(error.stack).toEqual(expect.stringContaining('errors.test'));
+		});
+
+		it('ConfigChainMismatchError uses the chain mismatch code', () => {
+			expect(new coreErrors.ConfigChainMismatchError('a', 'b').code).toBe(
+				ERR_CORE_CHAIN_MISMATCH,
+			);
+			expect(new coreErrors.ConfigChainMismatchError('a', 'b').code).not.toBe(
+				new coreErrors.ConfigHardforkMismatchError('a', 'b').code,
+			);
+		});
+
+		it.each([
+			['missing', { jsonrpc: '2.0', id: 1, error: { message: 'x' } }],
+			// eslint-disable-next-line no-null/no-null
+			['null', { jsonrpc: '2.0', id: 1, error: { code: null, message: 'x' } }],
+			['no error member', { jsonrpc: '2.0', id: 1 }],
+		])('RpcError tolerates a %s error code', (_label, reply) => {
+			let error: rpcErrors.RpcError | undefined;
+			expect(() => {
+				error = new rpcErrors.RpcError(reply as never);
+			}).not.toThrow();
+			expect(error?.message).toEqual(expect.stringContaining('An Rpc error has occured'));
+			expect(error?.id).toBe(1);
+		});
+
+		it('RpcError keeps rendering a present code', () => {
+			expect(
+				new rpcErrors.RpcError({
+					jsonrpc: '2.0',
+					id: 1,
+					error: { code: 123, message: 'x' },
+				}).message,
+			).toBe('An Rpc error has occured with a code of 123');
+		});
+
+		class SomeInvalidValueError extends InvalidValueError {
+			public code = 0;
+		}
+
+		it('bounds the value echoed by InvalidValueError', () => {
+			const error = new SomeInvalidValueError('a'.repeat(4_000_000), 'too long');
+			expect(error.message.length).toBeLessThan(MAX_ECHOED_VALUE_LENGTH + 100);
+			expect(error.message).toEqual(
+				expect.stringContaining('... [truncated, 4000000 characters]'),
+			);
+			expect(new SomeInvalidValueError('a'.repeat(256), 'fits').message).toBe(
+				`Invalid value given "${'a'.repeat(256)}". Error: fits.`,
+			);
+		});
+
+		it('survives circular values and a throwing toJSON', () => {
+			const circular: Record<string, unknown> = {};
+			circular.self = circular;
+			expect(() => new SomeInvalidValueError(circular, 'circular')).not.toThrow();
+			expect(new SomeInvalidValueError(circular, 'circular').message).toBe(
+				'Invalid value given "[unserialisable object]". Error: circular.',
+			);
+			const throwing = {
+				toJSON() {
+					throw new Error('boom');
+				},
+			};
+			expect(() => new SomeInvalidValueError(throwing, 'throws')).not.toThrow();
+			expect(BaseWeb3Error.convertToString(circular)).toBe('[unserialisable object]');
+			expect(BaseWeb3Error.convertToString(() => 1)).toBe('undefined');
+			expect(BaseWeb3Error.convertToString(Symbol('s'), true)).toBe('undefined');
+		});
+
+		it('InvalidResponseError names an id mismatch', () => {
+			const request = { jsonrpc: '2.0', id: 1, method: 'qrl_blockNumber', params: [] };
+			const mismatch = new responseErrors.InvalidResponseError(
+				{ jsonrpc: '2.0', id: 999, result: '0x1' },
+				request as never,
+			);
+			expect(mismatch.message).toBe(
+				'Invalid JSON-RPC response: response id 999 does not match request id 1',
+			);
+			const mismatchWithError = new responseErrors.InvalidResponseError(
+				{ jsonrpc: '2.0', id: '7', error: { code: 1, message: 'boom', data: '0x' } },
+				request as never,
+			);
+			expect(mismatchWithError.message).toBe(
+				'Invalid JSON-RPC response: response id "7" does not match request id 1. Returned error: boom',
+			);
+			expect(mismatchWithError.data).toBe('0x');
+			// Matching ids and batches keep the historical message.
+			expect(
+				new responseErrors.InvalidResponseError(
+					{ jsonrpc: '2.0', id: 1, error: { code: 1, message: 'boom' } },
+					request as never,
+				).message,
+			).toBe('Returned error: boom');
+			expect(
+				new responseErrors.InvalidResponseError(
+					[{ jsonrpc: '2.0', id: 2, result: '0x1' }] as never,
+					[request] as never,
+				).message,
+			).toBe('Returned error: ');
+		});
+
+		it('RequestSerializationError is typed and does not echo the payload', () => {
+			const error = new providerErrors.RequestSerializationError(
+				'Do not know how to serialize a BigInt',
+			);
+			expect(error.code).toBe(ERR_REQUEST_SERIALIZATION);
+			expect(error.message).toBe(
+				'REQUEST SERIALIZATION FAILED: the JSON-RPC payload could not be serialised as JSON (Do not know how to serialize a BigInt)',
+			);
+			expect(error.toJSON()).toMatchObject({
+				reason: 'Do not know how to serialize a BigInt',
+			});
+		});
 	});
 });

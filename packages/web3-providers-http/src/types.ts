@@ -27,13 +27,24 @@ import { ProviderBoundsOptions, RequestBoundsOptions } from '@theqrl/web3-utils'
  */
 export interface HttpProviderOptions extends ProviderBoundsOptions {
 	/**
-	 * Extra `fetch` options merged into every request. Note that `method`, `body` and
-	 * `Content-Type` are always set by the provider, and `signal` is composed with the
-	 * provider's own deadline rather than used directly.
+	 * Extra `fetch` options merged into every request. Note that `method` and `body` are
+	 * always set by the provider, and `signal` is composed with the provider's own deadline
+	 * rather than used directly.
+	 *
+	 * `headers` is the place for credentials (`authorization`, `x-api-key`, ...): a URL of
+	 * the form `http://user:password@host/` works, but a header never ends up in an error
+	 * message, whereas the URL used to. Per-request `headers` passed to `request()` are
+	 * merged on top of these, header names compared case-insensitively so that one name is
+	 * sent once; `Content-Type: application/json` is added unless a `content-type` header
+	 * (any letter case) is supplied explicitly here or per request.
 	 *
 	 * `redirect` defaults to `'error'`: a JSON-RPC endpoint that answers with a redirect is
-	 * refused rather than followed, so the request body and any custom authentication headers
-	 * are never re-sent to another host. Set `redirect: 'follow'` to opt in explicitly.
+	 * refused rather than followed (the request rejects with a `ConnectionError`), so the
+	 * request body and any custom authentication headers are never re-sent to another host.
+	 * Set `redirect: 'follow'` to opt in explicitly, knowing what that costs: the underlying
+	 * `fetch` re-sends the body and every custom header, `authorization`, `x-api-key` and
+	 * `cookie` included, to a redirect target on the **same host** (another port or path
+	 * counts as the same host); only a redirect to a different hostname drops them.
 	 */
 	providerOptions?: RequestInit;
 }

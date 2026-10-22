@@ -15,11 +15,11 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { ResolverMethodMissingError } from '@theqrl/web3-errors';
+import { ResolverMethodMissingError, Web3ContractError } from '@theqrl/web3-errors';
 import { Contract } from '@theqrl/web3-qrl-contract';
 import { Address, PayableCallOptions } from '@theqrl/web3-types';
-import { isNullish, sha3 } from '@theqrl/web3-utils';
-import { isHexStrict } from '@theqrl/web3-validator';
+import { isNullish, sha3, toChecksumAddress } from '@theqrl/web3-utils';
+import { isAddressString, isHexStrict } from '@theqrl/web3-validator';
 import { PublicResolverAbi } from './abi/qrns/PublicResolver.js';
 import { interfaceIds, methodsInInterface } from './config.js';
 import { Registry } from './registry.js';
@@ -27,6 +27,17 @@ import { namehash } from './utils.js';
 
 //  Default public resolver
 //  https://github.com/ensdomains/resolvers/blob/master/contracts/PublicResolver.sol
+
+/** The SLIP-44 coin type of the QRL address record, served by `addr(bytes32)`. */
+const QRL_COIN_TYPE = 60;
+
+const isQrlCoinType = (coinType: unknown): boolean => {
+	try {
+		return BigInt(coinType as number) === BigInt(QRL_COIN_TYPE);
+	} catch {
+		return false;
+	}
+};
 
 export class Resolver {
 	private readonly registry: Registry;
@@ -69,23 +80,40 @@ export class Resolver {
 		let interfaceIdParam = interfaceId;
 
 		if (!isHexStrict(interfaceIdParam)) {
-			interfaceIdParam = sha3(interfaceId) ?? '';
+			if (interfaceId === '') throw new Web3ContractError('Invalid interface Id');
 
-			if (interfaceId === '') throw new Error('Invalid interface Id');
-
-			interfaceIdParam = interfaceIdParam.slice(0, 10);
+			interfaceIdParam = (sha3(interfaceId) ?? '').slice(0, 10);
 		}
 
 		return resolverContract.methods.supportsInterface(interfaceIdParam).call();
 	}
 
-	// eslint-disable-next-line @typescript-eslint/no-inferrable-types
-	public async getAddress(QRNSName: string, coinType: number = 60) {
+	/**
+	 * Resolves the address record of a name. Coin type 60 (the default) is the QRL address:
+	 * the resolver must implement `addr(bytes32)` (interface `0x3b3b57de`) and a checksummed
+	 * `Q` address is returned (the zero address when the record is unset). Any other coin type
+	 * goes through `addr(bytes32,uint256)` (interface `0xf1cb7e06`) and returns the raw
+	 * address bytes as hex (L-63).
+	 */
+	public async getAddress(QRNSName: string, coinType = QRL_COIN_TYPE): Promise<string> {
 		const resolverContract = await this.getResolverContractAdapter(QRNSName);
 
-		await this.checkInterfaceSupport(resolverContract, methodsInInterface.addr);
+		if (isQrlCoinType(coinType)) {
+			await this.checkInterfaceSupport(resolverContract, methodsInInterface.addr);
 
-		return resolverContract.methods.addr(namehash(QRNSName), coinType).call();
+			const address: unknown = await resolverContract.methods
+				.addr(namehash(QRNSName))
+				.call();
+			if (typeof address !== 'string' || !isAddressString(address)) {
+				throw new Web3ContractError('QRNS resolver returned an invalid address');
+			}
+			return toChecksumAddress(address);
+		}
+
+		await this.checkInterfaceSupport(resolverContract, methodsInInterface.multicoinAddr);
+
+		// The ABI decoder returns `bytes` outputs as hex strings.
+		return (await resolverContract.methods.addr(namehash(QRNSName), coinType).call()) as string;
 	}
 
 	public async getPubkey(QRNSName: string) {

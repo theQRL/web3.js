@@ -58,7 +58,9 @@ describe('rpc_method_wrappers', () => {
 		});
 
 		it('isListening', async () => {
-			await isListening(web3Net);
+			// The wrapper validates the reply (L-40), so the mocked node answers with a boolean.
+			(netRpcMethods.isListening as jest.Mock).mockResolvedValueOnce(true);
+			await expect(isListening(web3Net)).resolves.toBe(true);
 			expect(netRpcMethods.isListening).toHaveBeenCalledWith(web3Net.requestManager);
 		});
 	});

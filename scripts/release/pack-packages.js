@@ -17,11 +17,15 @@ const releasedPackages = publishablePackages().map(pkg => ({
 	tarballName: tarballName(pkg),
 }));
 
-// `pnpm pack` (unlike `npm pack`) replaces the `workspace:` protocol on
-// dependencies with the resolved version range, so the tarballs install
-// cleanly under any package manager.
+// Sibling ranges in the packed manifests come from two places. In the release
+// workflow `multi-semantic-release --deps.prefix=^` has already rewritten the
+// `workspace:^` entries of released siblings to `^<version>`; for siblings that
+// were not released in that run (and for every entry when this script runs
+// outside a release, e.g. in CI's package inspection) `pnpm pack` substitutes
+// `workspace:^` with `^<current version>`. Either way the tarballs carry caret
+// ranges and install under any package manager; see RELEASE.md.
 for (const pkg of releasedPackages) {
-	console.log(`Packing ${pkg.name}@${pkg.version}`);
+	console.info(`Packing ${pkg.name}@${pkg.version}`);
 	execFileSync('pnpm', ['pack', '--pack-destination', tarballDirectory], {
 		cwd: pkg.path,
 		stdio: 'inherit',
@@ -33,6 +37,6 @@ const tsv = releasedPackages
 	.join('\n');
 
 writeFileSync(resolve(outputDirectory, 'released-packages.tsv'), `${tsv}\n`);
-writeFileSync(resolve(outputDirectory, 'released-packages.json'), `${JSON.stringify(releasedPackages, null, 2)}\n`);
+writeFileSync(resolve(outputDirectory, 'released-packages.json'), `${JSON.stringify(releasedPackages, undefined, 2)}\n`);
 
-console.log(`Packed ${releasedPackages.length} publishable packages into ${tarballDirectory}`);
+console.info(`Packed ${releasedPackages.length} publishable packages into ${tarballDirectory}`);

@@ -27,6 +27,8 @@ import { qrlRpcMethods } from '@theqrl/web3-rpc-methods';
 
 import { SendSignedTransactionEvents, SendTransactionEvents } from '../types.js';
 import { transactionReceiptSchema } from '../schemas.js';
+import { MAX_CONSECUTIVE_POLLING_ERRORS } from '../constants.js';
+import { reportWatcherError } from './promi_event_errors.js';
 
 export type Web3PromiEventEventTypeBase<ReturnFormat extends DataFormat> =
 	| SendTransactionEvents<ReturnFormat>
@@ -40,9 +42,16 @@ export type WaitProps<ReturnFormat extends DataFormat, ResolveType = Transaction
 };
 
 /**
- * This function watches a Transaction by subscribing to new heads.
+ * This function watches a Transaction by polling for the blocks after the receipt's block.
  * It is used by `watchTransactionForConfirmations`, in case the provider does not support subscription.
  * And it is also used by `watchTransactionBySubscription`, as a fallback, if the subscription failed for any reason.
+ *
+ * A `confirmation` event is emitted for every block found; polling stops as soon as
+ * `transactionConfirmationBlocks` confirmations have been emitted, so neither an extra event nor
+ * an extra request follows the last one (L-54). A failed block request is retried on the next
+ * tick up to {@link MAX_CONSECUTIVE_POLLING_ERRORS} times in a row; a persistent failure stops
+ * the poller and is reported through the PromiEvent's `error` event when a listener is attached,
+ * and logged otherwise (M-7c).
  */
 export const watchTransactionByPolling = <
 	ReturnFormat extends DataFormat,
@@ -56,41 +65,59 @@ export const watchTransactionByPolling = <
 	// Having a transactionReceipt means that the transaction has already been included
 	// in at least one block, so we start with 1
 	let confirmations = 1;
-	const intervalId = setInterval(() => {
-		// Attach error handling to the async work so that a failed block fetch does not
-		// turn into an unhandled promise rejection that loops forever. On a fatal error we
-		// stop the poller (clearInterval) and surface the error via the promiEvent.
-		void (async () => {
-			if (confirmations >= web3Context.transactionConfirmationBlocks)
-				clearInterval(intervalId);
+	let consecutiveErrors = 0;
+	let stopped = false;
+	let intervalId: ReturnType<typeof setInterval> | undefined;
 
+	const stop = () => {
+		stopped = true;
+		if (intervalId !== undefined) {
+			clearInterval(intervalId);
+			intervalId = undefined;
+		}
+	};
+
+	const poll = async () => {
+		if (stopped) return;
+		try {
 			const nextBlock = await qrlRpcMethods.getBlockByNumber(
 				web3Context.requestManager,
 				numberToHex(BigInt(transactionReceipt.blockNumber) + BigInt(confirmations)),
 				false,
 			);
+			// Stopped while the request was in flight.
+			if (stopped) return;
+			consecutiveErrors = 0;
 
-			if (nextBlock?.hash) {
-				confirmations += 1;
-				const formattedConfirmations: Numbers = confirmations;
+			if (!nextBlock?.hash) return;
 
-				transactionPromiEvent.emit('confirmation', {
-					confirmations: format({ format: 'uint' }, formattedConfirmations, returnFormat),
-					receipt: format(transactionReceiptSchema, transactionReceipt, returnFormat),
-					latestBlockHash: format(
-						{ format: 'bytes32' },
-						nextBlock.hash as Bytes,
-						returnFormat,
-					),
-				});
-			}
-		})().catch(error => {
-			// Stop polling on a fatal error to avoid an infinite loop of unhandled rejections.
-			clearInterval(intervalId);
-			transactionPromiEvent.emit(
-				'error',
-				error as Web3PromiEventEventTypeBase<ReturnFormat>['error'],
-			);
-		});
+			confirmations += 1;
+			const formattedConfirmations: Numbers = confirmations;
+
+			transactionPromiEvent.emit('confirmation', {
+				confirmations: format({ format: 'uint' }, formattedConfirmations, returnFormat),
+				receipt: format(transactionReceiptSchema, transactionReceipt, returnFormat),
+				latestBlockHash: format(
+					{ format: 'bytes32' },
+					nextBlock.hash as Bytes,
+					returnFormat,
+				),
+			});
+
+			if (confirmations >= web3Context.transactionConfirmationBlocks) stop();
+		} catch (error) {
+			if (stopped) return;
+			consecutiveErrors += 1;
+			// A transient error is retried on the next tick.
+			if (consecutiveErrors < MAX_CONSECUTIVE_POLLING_ERRORS) return;
+			// A persistent one stops the poller, so a failing node cannot cause an endless loop
+			// of failed requests, and is reported without ever throwing out of the timer.
+			stop();
+			reportWatcherError(transactionPromiEvent, error);
+		}
+	};
+
+	intervalId = setInterval(() => {
+		void poll();
 	}, web3Context.transactionReceiptPollingInterval ?? web3Context.transactionPollingInterval);
 };

@@ -15,9 +15,8 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import CRC32 from 'crc-32';
-import { EventEmitter } from 'events';
 import type { Numbers } from '@theqrl/web3-types';
-import { bytesToHex, hexToBytes, uint8ArrayConcat } from '@theqrl/web3-utils';
+import { EventEmitter, bytesToHex, hexToBytes, uint8ArrayConcat } from '@theqrl/web3-utils';
 import { TypeOutput } from './types.js';
 import { intToUint8Array, toType, parseGqrlGenesis } from './utils.js';
 import mainnet from './chains/mainnet.js';
@@ -94,7 +93,9 @@ export class Common extends EventEmitter {
 		opts: CustomCommonOpts = {},
 	): Common {
 		const baseChain = opts.baseChain ?? 'mainnet';
-		const standardChainParams = { ...Common._getChainParams(baseChain) };
+		// A fresh copy of the base chain: the custom chain must not share nested state (hardforks,
+		// genesis, bootstrap nodes) with the base chain's parameters.
+		const standardChainParams = Common.cloneChainData(Common._getChainParams(baseChain));
 		standardChainParams.name = 'custom-chain';
 
 		if (typeof chainParamsOrName !== 'string') {
@@ -207,7 +208,9 @@ export class Common extends EventEmitter {
 					throw new Error(`Missing required chain parameter: ${param}`);
 				}
 			}
-			this._chainParams = chain as ChainConfig;
+			// Keep a private copy: the caller's object must not be able to change this instance's
+			// chain parameters after construction, and this instance must not mutate it.
+			this._chainParams = Common.cloneChainData(chain as ChainConfig);
 		} else {
 			throw new Error('Wrong input format');
 		}
@@ -930,14 +933,42 @@ export class Common extends EventEmitter {
 
 	/**
 	 * Returns a deep copy of this {@link Common} instance.
+	 *
+	 * The copy has no event listeners and owns its chain parameters and QIP list, so changes
+	 * made through one instance (for example `setForkHashes`) never show up in the other.
 	 */
 	public copy(): Common {
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment
-		const copy = Object.assign(Object.create(Object.getPrototypeOf(this)), this);
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+		const copy = Object.assign(
+			Object.create(Object.getPrototypeOf(this) as object) as Common,
+			this,
+		);
 		copy.removeAllListeners();
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-return
+		copy._chainParams = Common.cloneChainData(this._chainParams);
+		copy._qips = [...this._qips];
 		return copy;
+	}
+
+	/**
+	 * Deep-copies plain chain configuration data (objects, arrays, primitives, bigints and byte
+	 * arrays). Chain parameters are handed to every {@link Common} instance as a private copy so
+	 * that neither the module-level chain definitions nor a caller's configuration object are
+	 * shared, and a fork hash or other value written by one instance stays local to it.
+	 */
+	private static cloneChainData<T>(value: T): T {
+		if (!value || typeof value !== 'object') {
+			return value;
+		}
+		if (value instanceof Uint8Array) {
+			return new Uint8Array(value) as unknown as T;
+		}
+		if (Array.isArray(value)) {
+			return (value as unknown[]).map(item => Common.cloneChainData(item)) as unknown as T;
+		}
+		const copy: Record<string, unknown> = {};
+		for (const [key, item] of Object.entries(value as unknown as Record<string, unknown>)) {
+			copy[key] = Common.cloneChainData(item);
+		}
+		return copy as unknown as T;
 	}
 
 	public static _getInitializedChains(customChains?: ChainConfig[]): ChainsConfig {
@@ -945,12 +976,14 @@ export class Common extends EventEmitter {
 		for (const [name, id] of Object.entries(Chain)) {
 			names[id] = name.toLowerCase();
 		}
-		const chains = { mainnet } as ChainsConfig;
+		// Every lookup returns a private copy: the module-level `mainnet` definition and the
+		// caller's custom chain objects are never handed out by reference.
+		const chains = { mainnet: Common.cloneChainData(mainnet) } as ChainsConfig;
 		if (customChains) {
 			for (const chain of customChains) {
 				const { name } = chain;
 				names[chain.chainId.toString()] = name;
-				chains[name] = chain;
+				chains[name] = Common.cloneChainData(chain);
 			}
 		}
 		chains.names = names;

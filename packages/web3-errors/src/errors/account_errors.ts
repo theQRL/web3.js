@@ -76,7 +76,7 @@ export class KeyStoreVersionError extends BaseWeb3Error {
 export class InvalidPasswordError extends BaseWeb3Error {
 	public code = ERR_INVALID_PASSWORD;
 	public constructor() {
-		super('Password cannot be empty');
+		super('Password must be a string or a Uint8Array');
 	}
 }
 

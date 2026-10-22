@@ -48,10 +48,15 @@ export interface Web3QRLInterface extends QRL {
 	/**
 	 * Extended [Contract](/api/@theqrl/web3-qrl-contract/classes/Contract) constructor for main `web3` object. See [Contract](/api/@theqrl/web3-qrl-contract/classes/Contract) for further details.
 	 *
-	 * You can use `.setProvider` on this constructor to set provider for **all the instances** of the contracts which were created by `web3.qrl.Contract`.
+	 * Every contract created through `web3.qrl.Contract` shares the request manager, wallet,
+	 * account provider, subscription manager and configuration of the `web3` instance (M-6).
+	 * There is no static `setProvider` on the constructor: change the provider on the instance
+	 * and **all** these contracts follow, because they use the same request manager. For the
+	 * same reason `contract.setProvider(p)` on one of them also switches `web3` and every other
+	 * contract created from it.
 	 *
 	 * ```ts
-	 * web3.qrl.Contract.setProvider(myProvider)
+	 * web3.setProvider(myProvider); // reaches every contract created with web3.qrl.Contract
 	 * ```
 	 */
 	Contract: typeof Contract;

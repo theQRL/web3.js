@@ -242,6 +242,31 @@ describe('SocketProvider', () => {
 					`Error while connecting to ${socketPath}. Reason: ${dummyError.message}`,
 				);
 			});
+			it('redacts credentials and path of the socket URL in the connect error (L-48)', () => {
+				const provider = new TestProvider(
+					'ws://user:password@host.example:8546/secret/path?token=abc',
+					socketOption,
+				);
+				// @ts-expect-error run protected method
+				jest.spyOn(provider, '_addSocketListeners').mockImplementation(() => {
+					throw new Error('refused');
+				});
+
+				let message = '';
+				try {
+					provider.connect();
+				} catch (error) {
+					message = (error as Error).message;
+				}
+
+				expect(message).toBe(
+					'Error while connecting to ws://***@host.example:8546/[redacted]. Reason: refused',
+				);
+				expect(message).not.toContain('password');
+				expect(message).not.toContain('secret');
+				expect(message).not.toContain('token');
+			});
+
 			it('should throw "Client URL ... is invalid" in case of error with no message inside `connect()`', () => {
 				const provider = new TestProvider(socketPath, socketOption);
 				// @ts-expect-error run protected method
@@ -1066,6 +1091,205 @@ describe('SocketProvider', () => {
 				await quietPromise;
 				expect(onDiagnostics).toHaveBeenCalledTimes(2);
 			});
+		});
+	});
+
+	// Third audit pass: a reconnect must be cancellable, must not race a request and a stalled
+	// handshake must be abandoned rather than left half-open.
+	describe('reconnect lifecycle', () => {
+		const reconnectOptions = { autoReconnect: true, delay: 1_000, maxAttempts: 3 };
+		const CONNECTION_TIMEOUT = 5_000;
+		let eip1193OnConnect: jest.SpyInstance;
+
+		const makeReconnectingProvider = () =>
+			new TestProvider(socketPath, socketOption, reconnectOptions, {
+				connectionTimeout: CONNECTION_TIMEOUT,
+			});
+
+		/** A connected provider whose transport just dropped: the reconnect cycle is armed. */
+		const makeProviderInBackoff = () => {
+			const provider = makeReconnectingProvider();
+			provider.simulateOpen();
+			provider.setStatus('disconnected');
+			// @ts-expect-error run protected method
+			provider._reconnect();
+			// @ts-expect-error read protected member
+			expect(provider.isReconnecting).toBe(true);
+			expect(jest.getTimerCount()).toBe(1);
+			return provider;
+		};
+
+		beforeEach(() => {
+			jest.useFakeTimers();
+			eip1193OnConnect = jest
+				.spyOn(Object.getPrototypeOf(SocketProvider.prototype), '_onConnect')
+				.mockReturnValue(undefined);
+		});
+
+		afterEach(() => {
+			eip1193OnConnect.mockRestore();
+			jest.clearAllTimers();
+			jest.useRealTimers();
+		});
+
+		it('cancels a pending reconnect on disconnect() so the socket is not re-opened later (L-22)', () => {
+			const provider = makeProviderInBackoff();
+			const connect = jest.spyOn(provider, 'connect');
+
+			provider.disconnect();
+
+			// @ts-expect-error read protected member
+			expect(provider.isReconnecting).toBe(false);
+			expect(jest.getTimerCount()).toBe(0);
+			jest.advanceTimersByTime(60_000);
+			expect(connect).not.toHaveBeenCalled();
+			expect(provider.getStatus()).toBe('disconnected');
+		});
+
+		it('cancels a pending reconnect on reset() (L-22)', () => {
+			const provider = makeProviderInBackoff();
+			const connect = jest.spyOn(provider, 'connect');
+
+			provider.reset();
+
+			// @ts-expect-error read protected member
+			expect(provider.isReconnecting).toBe(false);
+			expect(jest.getTimerCount()).toBe(0);
+			jest.advanceTimersByTime(60_000);
+			expect(connect).not.toHaveBeenCalled();
+		});
+
+		it('does not re-register transport listeners on reset() (L-24)', () => {
+			const provider = makeReconnectingProvider();
+			// @ts-expect-error run protected method
+			const addListeners = jest.spyOn(provider, '_addSocketListeners');
+
+			provider.reset();
+			provider.reset();
+			provider.reset();
+
+			expect(addListeners).not.toHaveBeenCalled();
+			// @ts-expect-error read protected member
+			expect(provider._reconnectAttempts).toBe(0);
+		});
+
+		it('parks a request issued during the backoff instead of opening a socket of its own (L-44)', async () => {
+			const provider = makeProviderInBackoff();
+			const connect = jest.spyOn(provider, 'connect');
+
+			const promise = provider.request({ id: 1, method: 'qrl_blockNumber' });
+
+			expect(connect).not.toHaveBeenCalled();
+			expect(provider.sentPayloads).toHaveLength(0);
+			expect(provider.getDiagnostics().pendingRequests).toBe(1);
+
+			// The reconnect fires (1s +-20% jitter), the handshake completes and the parked
+			// request is written exactly once, on the reconnected socket.
+			jest.advanceTimersByTime(1_300);
+			expect(connect).toHaveBeenCalledTimes(1);
+			// @ts-expect-error read protected member
+			expect(provider.isReconnecting).toBe(false);
+			expect(provider.getStatus()).toBe('connecting');
+
+			provider.simulateOpen();
+			expect(provider.sentPayloads).toHaveLength(1);
+			provider.message([{ jsonrpc: '2.0', id: 1, result: '0x1' }]);
+			await expect(promise).resolves.toMatchObject({ result: '0x1' });
+		});
+
+		it('abandons a stalled handshake: detaches listeners, closes the socket and reconnects (M-8)', async () => {
+			const provider = makeReconnectingProvider();
+			// @ts-expect-error run protected method
+			const removeListeners = jest.spyOn(provider, '_removeSocketListeners');
+			// @ts-expect-error run protected method
+			const closeSocket = jest.spyOn(provider, '_closeSocketConnection');
+			const errors: unknown[] = [];
+			provider.on('error', (error: unknown) => {
+				errors.push(error);
+			});
+			const pending = provider.request({ id: 1, method: 'qrl_blockNumber' });
+			const assertion = expect(pending).rejects.toThrow(ConnectionTimeoutError);
+
+			jest.advanceTimersByTime(CONNECTION_TIMEOUT);
+			await assertion;
+
+			expect(removeListeners).toHaveBeenCalled();
+			expect(closeSocket).toHaveBeenCalledTimes(1);
+			expect(provider.getStatus()).toBe('disconnected');
+			// The deadline is reported once by the timer and once more by the rejected request,
+			// which re-emits its rejection reason like every failed request does.
+			expect(errors.length).toBeGreaterThanOrEqual(1);
+			expect(errors.every(error => error instanceof ConnectionTimeoutError)).toBe(true);
+			// @ts-expect-error read protected member
+			expect(provider.isReconnecting).toBe(true);
+			// @ts-expect-error read protected member
+			expect(provider._reconnectAttempts).toBe(1);
+			// Only the reconnect timer is armed: the request's deadline went with the request.
+			expect(jest.getTimerCount()).toBe(1);
+
+			const connect = jest.spyOn(provider, 'connect');
+			jest.advanceTimersByTime(1_300);
+			expect(connect).toHaveBeenCalledTimes(1);
+			expect(provider.getStatus()).toBe('connecting');
+			// A fresh connection deadline guards the new attempt.
+			expect(jest.getTimerCount()).toBe(1);
+		});
+
+		it('abandons a stalled handshake and reconnects lazily on the next request without autoReconnect (M-8)', () => {
+			const provider = new TestProvider(
+				socketPath,
+				socketOption,
+				{ autoReconnect: false },
+				{ connectionTimeout: CONNECTION_TIMEOUT },
+			);
+			// @ts-expect-error run protected method
+			const closeSocket = jest.spyOn(provider, '_closeSocketConnection');
+
+			jest.advanceTimersByTime(CONNECTION_TIMEOUT);
+
+			expect(closeSocket).toHaveBeenCalledTimes(1);
+			expect(provider.getStatus()).toBe('disconnected');
+			// @ts-expect-error read protected member
+			expect(provider.isReconnecting).toBe(false);
+			expect(jest.getTimerCount()).toBe(0);
+
+			const connect = jest.spyOn(provider, 'connect');
+			const promise = provider.request({ id: 1, method: 'qrl_blockNumber' });
+			promise.catch(() => undefined);
+
+			expect(connect).toHaveBeenCalledTimes(1);
+			expect(provider.getStatus()).toBe('connecting');
+			expect(provider.getDiagnostics().pendingRequests).toBe(1);
+		});
+	});
+
+	describe('accountsChanged (L-23)', () => {
+		it('emits accountsChanged whenever the accounts differ, not only when their number differs', async () => {
+			const provider = new TestProvider(socketPath, socketOption, { autoReconnect: false });
+			const served: string[][] = [['Qaaa'], ['Qbbb'], ['Qbbb'], ['Qccc', 'Qddd'], ['Qeee', 'Qfff']];
+			let connection = 0;
+			jest.spyOn(provider, 'request').mockImplementation(
+				(payload: { id?: unknown; method: string }) =>
+					Promise.resolve({
+						jsonrpc: '2.0',
+						id: payload.id,
+						result: payload.method === 'qrl_chainId' ? '0x1' : served[connection],
+					}) as never,
+			);
+			const events: string[][] = [];
+			provider.on('accountsChanged', (accounts: string[]) => {
+				events.push(accounts);
+			});
+
+			for (connection = 0; connection < served.length; connection += 1) {
+				provider.simulateOpen();
+				// eslint-disable-next-line no-await-in-loop
+				await new Promise(resolve => {
+					setImmediate(resolve);
+				});
+			}
+
+			expect(events).toEqual([['Qaaa'], ['Qbbb'], ['Qccc', 'Qddd'], ['Qeee', 'Qfff']]);
 		});
 	});
 });

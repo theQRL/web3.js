@@ -14,10 +14,11 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { Web3Context } from '@theqrl/web3-core';
+import { Web3Context, Web3PromiEvent } from '@theqrl/web3-core';
 import { format } from '@theqrl/web3-utils';
-import { DEFAULT_RETURN_FORMAT, Web3QRLExecutionAPI } from '@theqrl/web3-types';
+import { DEFAULT_RETURN_FORMAT, TransactionReceipt, Web3QRLExecutionAPI } from '@theqrl/web3-types';
 import { qrlRpcMethods } from '@theqrl/web3-rpc-methods';
+import { BaseWeb3Error, TransactionError } from '@theqrl/web3-errors';
 import * as rpcMethodWrappers from '../../../src/rpc_method_wrappers';
 import * as WaitForTransactionReceipt from '../../../src/utils/wait_for_transaction_receipt';
 
@@ -28,6 +29,8 @@ import {
 	testData,
 } from '../rpc_method_wrappers/fixtures/send_signed_transaction';
 import { transactionReceiptSchema } from '../../../src/schemas';
+import { MAX_CONSECUTIVE_POLLING_ERRORS } from '../../../src/constants';
+import { SendSignedTransactionEvents } from '../../../src/types';
 import { sleep } from '../../shared_fixtures/utils';
 
 jest.mock('@theqrl/web3-rpc-methods');
@@ -93,59 +96,111 @@ describe('watchTransactionByPolling', () => {
 		);
 	});
 
-	describe('when a block fetch fails during polling', () => {
+	describe('polling behaviour (M-7c, L-54)', () => {
 		let web3Context: Web3Context<Web3QRLExecutionAPI>;
+		let promiEvent: Web3PromiEvent<
+			TransactionReceipt,
+			SendSignedTransactionEvents<typeof DEFAULT_RETURN_FORMAT>
+		>;
+		let confirmations: bigint[];
+		const formattedTransactionReceipt = format(
+			transactionReceiptSchema,
+			expectedTransactionReceipt,
+			DEFAULT_RETURN_FORMAT,
+		);
+
+		const start = () =>
+			WatchTransactionByPolling.watchTransactionByPolling({
+				web3Context,
+				transactionReceipt: formattedTransactionReceipt,
+				transactionPromiEvent: promiEvent,
+				returnFormat: DEFAULT_RETURN_FORMAT,
+			});
 
 		beforeEach(() => {
+			// The automock keeps the call counts of the describe above.
+			jest.clearAllMocks();
+			jest.useFakeTimers();
 			web3Context = new Web3Context(
 				// dummy provider that does not supports subscription
 				{
 					request: jest.fn(),
 				},
 			);
-			// keep the poller ticking quickly
 			web3Context.transactionReceiptPollingInterval = 50;
 			web3Context.transactionPollingInterval = 50;
-			// high enough that the "confirmations complete" branch never clears the interval,
-			// so the only way the interval stops is via the error handling under test
-			web3Context.transactionConfirmationBlocks = 24;
+			web3Context.transactionConfirmationBlocks = 3;
+			promiEvent = new Web3PromiEvent(() => undefined);
+			confirmations = [];
+			promiEvent.on('confirmation', ({ confirmations: count }) => {
+				confirmations.push(count as bigint);
+			});
 		});
 
-		it('stops the poller (clears the interval) and surfaces the error instead of looping forever', async () => {
+		afterEach(() => {
+			jest.clearAllTimers();
+			jest.useRealTimers();
+			jest.resetAllMocks();
+		});
+
+		it('emits exactly the confirmations up to the threshold and stops polling (L-54)', async () => {
+			(qrlRpcMethods.getBlockByNumber as jest.Mock).mockResolvedValue(mockBlockData);
+
+			start();
+			await jest.advanceTimersByTimeAsync(1_000);
+
+			// The receipt's own block is confirmation 1 (emitted by the caller); with a
+			// threshold of 3 the poller adds 2 and 3 and then stops: no extra event or request.
+			expect(confirmations).toStrictEqual([BigInt(2), BigInt(3)]);
+			expect(qrlRpcMethods.getBlockByNumber).toHaveBeenCalledTimes(2);
+		});
+
+		it('retries a transient block fetch failure on the next tick (M-7c)', async () => {
+			(qrlRpcMethods.getBlockByNumber as jest.Mock)
+				.mockRejectedValueOnce(new Error('header not found'))
+				.mockRejectedValueOnce(new Error('header not found'))
+				.mockResolvedValue(mockBlockData);
+			const errorListener = jest.fn<void, [BaseWeb3Error]>();
+			promiEvent.on('error', errorListener);
+
+			start();
+			await jest.advanceTimersByTimeAsync(1_000);
+
+			expect(confirmations).toStrictEqual([BigInt(2), BigInt(3)]);
+			expect(errorListener).not.toHaveBeenCalled();
+		});
+
+		it('stops after MAX_CONSECUTIVE_POLLING_ERRORS failures and reports a typed error to the listener (M-7c)', async () => {
 			const pollingError = new Error('polling failure');
 			(qrlRpcMethods.getBlockByNumber as jest.Mock).mockRejectedValue(pollingError);
+			const errorListener = jest.fn<void, [BaseWeb3Error]>();
+			promiEvent.on('error', errorListener);
 
-			const formattedTransactionReceipt = format(
-				transactionReceiptSchema,
-				expectedTransactionReceipt,
-				DEFAULT_RETURN_FORMAT,
+			start();
+			await jest.advanceTimersByTimeAsync(2_000);
+
+			expect(qrlRpcMethods.getBlockByNumber).toHaveBeenCalledTimes(
+				MAX_CONSECUTIVE_POLLING_ERRORS,
+			);
+			expect(errorListener).toHaveBeenCalledTimes(1);
+			expect(errorListener.mock.calls[0][0]).toBeInstanceOf(TransactionError);
+			expect(errorListener.mock.calls[0][0].innerError).toBe(pollingError);
+			expect(confirmations).toStrictEqual([]);
+		});
+
+		it('warns instead of throwing when no error listener is attached (M-7c)', async () => {
+			const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+			(qrlRpcMethods.getBlockByNumber as jest.Mock).mockRejectedValue(
+				new Error('polling failure'),
 			);
 
-			const emit = jest.fn();
-			// minimal stand-in for the Web3PromiEvent; we only observe the emitted error here
-			const transactionPromiEvent = { emit } as any;
+			start();
+			await jest.advanceTimersByTimeAsync(2_000);
 
-			WatchTransactionByPolling.watchTransactionByPolling({
-				web3Context,
-				transactionReceipt: formattedTransactionReceipt,
-				transactionPromiEvent,
-				returnFormat: DEFAULT_RETURN_FORMAT,
-			});
-
-			// allow at least one interval tick (and its rejection) to be processed
-			await sleep(300);
-			const callsAfterFirstWait = (qrlRpcMethods.getBlockByNumber as jest.Mock).mock.calls
-				.length;
-
-			// the failure must have been surfaced via the promiEvent ...
-			expect(emit).toHaveBeenCalledWith('error', pollingError);
-			expect(callsAfterFirstWait).toBeGreaterThanOrEqual(1);
-
-			// ... and the poller must have stopped: no further polling calls happen
-			await sleep(300);
-			const callsAfterSecondWait = (qrlRpcMethods.getBlockByNumber as jest.Mock).mock.calls
-				.length;
-			expect(callsAfterSecondWait).toBe(callsAfterFirstWait);
+			expect(warn).toHaveBeenCalledTimes(1);
+			expect(qrlRpcMethods.getBlockByNumber).toHaveBeenCalledTimes(
+				MAX_CONSECUTIVE_POLLING_ERRORS,
+			);
 		});
 	});
 });

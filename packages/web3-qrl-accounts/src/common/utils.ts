@@ -225,6 +225,18 @@ export const toUint8Array = function (v: ToBytesInputTypes): Uint8Array {
 	}
 
 	if (Array.isArray(v)) {
+		// Only a flat array of byte values is a byte string. A nested array (an RLP list decoded
+		// where a string was expected) or an out-of-range element must not be coerced silently.
+		if (
+			!v.every(
+				(item: unknown) =>
+					typeof item === 'number' && Number.isInteger(item) && item >= 0 && item <= 255,
+			)
+		) {
+			throw new Error(
+				'Cannot convert array to Uint8Array: every element must be an integer between 0 and 255',
+			);
+		}
 		return Uint8Array.from(v);
 	}
 

@@ -20,6 +20,9 @@ import { bytesToUtf8, utf8ToBytes } from '@theqrl/qrl-cryptography/utils.js';
 import { Reader, Writer } from './abstract-coder.js';
 import { DynamicBytesCoder } from './bytes.js';
 
+// A high surrogate not followed by a low one, or a low surrogate not preceded by a high one.
+const UNPAIRED_SURROGATE = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
+
 export class StringCoder extends DynamicBytesCoder {
 	constructor(localName: string) {
 		super('string', localName);
@@ -30,6 +33,15 @@ export class StringCoder extends DynamicBytesCoder {
 	}
 
 	encode(writer: Writer, value: any): number {
+		// Diff vs ethers v5: `toUtf8Bytes` threw for a non-string and for an unpaired surrogate;
+		// `TextEncoder` would coerce the former and replace the latter with U+FFFD, encoding a
+		// string the caller never wrote.
+		if (typeof value !== 'string') {
+			this._throwError('expected string value', value);
+		}
+		if (UNPAIRED_SURROGATE.test(value)) {
+			this._throwError('invalid string value: unpaired surrogate', value);
+		}
 		return super.encode(writer, utf8ToBytes(value));
 	}
 

@@ -15,10 +15,12 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+import { AbiError } from '@theqrl/web3-errors';
 import {
 	jsonInterfaceMethodToString,
 	isAbiConstructorFragment,
 	formatParam,
+	mapTypes,
 } from '../../src/utils';
 import {
 	jsonInterfaceInvalidData,
@@ -101,6 +103,37 @@ describe('utils', () => {
 		it('does not apply a default width to a dynamic bytes param', () => {
 			expect(formatParam('bytes', '0x1234')).toBe('0x1234');
 			expect(formatParam('bytes', '0x123')).toBe('0x0123');
+		});
+
+		it('normalises the explicit bool forms by value and leaves anything else to the coder (H-3)', () => {
+			for (const value of ['0', '0x0', 0, BigInt(0), false]) {
+				expect(formatParam('bool', value)).toBe(false);
+			}
+			for (const value of ['1', '0x1', 1, BigInt(1), true]) {
+				expect(formatParam('bool', value)).toBe(true);
+			}
+			expect(formatParam('bool', 'false')).toBe('false');
+			expect(formatParam('bool', 2)).toBe(2);
+			expect(formatParam('bool[]', ['0', '1', true, 'x'])).toEqual([false, true, true, 'x']);
+		});
+	});
+
+	describe('ABI JSON edge cases (I-10)', () => {
+		it('rejects a parameter without a string type with an AbiError', () => {
+			expect(() =>
+				jsonInterfaceMethodToString({ type: 'function', name: 'f', inputs: [{ name: 'x' }] } as any),
+			).toThrow(AbiError);
+			expect(() =>
+				jsonInterfaceMethodToString({
+					type: 'function',
+					name: 'f',
+					inputs: [JSON.parse('{"type":null}')],
+				} as any),
+			).toThrow(AbiError);
+		});
+
+		it('rejects an empty object in a type list with an AbiError', () => {
+			expect(() => mapTypes([{} as any])).toThrow(AbiError);
 		});
 	});
 	describe('isAbiConstructorFragment', () => {

@@ -23,10 +23,18 @@ import { FeeMarketEIP1559Transaction } from '@theqrl/web3-qrl-accounts';
 import { qrlRpcMethods } from '@theqrl/web3-rpc-methods';
 
 import { bytesToHex, hexToBytes } from '@theqrl/web3-utils';
-import { TransactionSigningError } from '@theqrl/web3-errors';
+import {
+	InvalidNumberError,
+	InvalidPropertiesForTransactionTypeError,
+	LocalWalletNotAvailableError,
+	TransactionSigningError,
+} from '@theqrl/web3-errors';
+import { Wallet } from '@theqrl/web3-qrl-accounts';
 import { Common } from '@theqrl/web3-types';
 import { prepareTransactionForSigning } from '../../src/utils/prepare_transaction_for_signing';
+import Web3QRL from '../../src';
 import { validTransactions } from '../fixtures/prepare_transaction_for_signing';
+import { createAccountProvider } from '../fixtures/system_test_utils';
 
 describe('prepareTransactionForSigning', () => {
 	const web3Context = new Web3Context<QRLExecutionAPI>({
@@ -71,6 +79,80 @@ describe('prepareTransactionForSigning', () => {
 			expect(qrljsTx.common.hardfork()).toBe('zond');
 			expect(qrljsTx.sign(hexToBytes(expectedSeed)).verifySignature()).toBe(true);
 			expect(context.defaultCommon).toStrictEqual(snapshot);
+		});
+	});
+
+	describe('input checks and wallet indexes (L-50, L-55, I-12)', () => {
+		const [mockBlock, expectedTransaction, expectedSeed, expectedAddress] = validTransactions[0];
+
+		beforeEach(() => {
+			jest.spyOn(qrlRpcMethods, 'estimateGas').mockImplementation(
+				// @ts-expect-error - Mocked implementation doesn't have correct method signature
+				() => expectedTransaction.gas,
+			);
+			// @ts-expect-error - Mocked implementation doesn't have correct method signature
+			jest.spyOn(qrlRpcMethods, 'getBlockByNumber').mockImplementation(() => mockBlock);
+		});
+
+		it('rejects a legacy gasPrice (L-50)', async () => {
+			await expect(
+				prepareTransactionForSigning(
+					{ ...expectedTransaction, gasPrice: '0x1' } as never,
+					web3Context,
+					expectedSeed,
+					true,
+				),
+			).rejects.toThrow(InvalidPropertiesForTransactionTypeError);
+		});
+
+		it('rejects a value above Number.MAX_SAFE_INTEGER given as a number (L-55)', async () => {
+			await expect(
+				prepareTransactionForSigning(
+					{ ...expectedTransaction, value: 2 ** 53 + 1 },
+					web3Context,
+					expectedSeed,
+					true,
+				),
+			).rejects.toThrow(InvalidNumberError);
+		});
+
+		it('resolves a wallet index in `from` before checking it against the seed (I-12)', async () => {
+			const context = new Web3QRL({
+				provider: new HttpProvider('http://127.0.0.1'),
+				config: { defaultNetworkId: '0x1' },
+			});
+			const wallet = new Wallet(createAccountProvider(context));
+			wallet.add(expectedSeed);
+			context['_wallet'] = wallet;
+
+			const qrljsTx = await prepareTransactionForSigning(
+				{ ...expectedTransaction, from: 0 } as never,
+				context,
+				expectedSeed,
+				true,
+			);
+
+			const signedTransaction = qrljsTx.sign(hexToBytes(expectedSeed.substring(2)));
+			expect(signedTransaction.getSenderAddress().toString()).toBe(
+				`Q${expectedAddress.slice(1).toLowerCase()}`,
+			);
+		});
+
+		it('rejects a wallet index the wallet does not hold', async () => {
+			const context = new Web3QRL({
+				provider: new HttpProvider('http://127.0.0.1'),
+				config: { defaultNetworkId: '0x1' },
+			});
+			context['_wallet'] = new Wallet(createAccountProvider(context));
+
+			await expect(
+				prepareTransactionForSigning(
+					{ ...expectedTransaction, from: 0 } as never,
+					context,
+					expectedSeed,
+					true,
+				),
+			).rejects.toThrow(LocalWalletNotAvailableError);
 		});
 	});
 

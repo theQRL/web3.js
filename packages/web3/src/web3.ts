@@ -34,7 +34,11 @@ import {
 	QRLExecutionAPI,
 	SupportedProviders,
 } from '@theqrl/web3-types';
-import { InvalidMethodParamsError } from '@theqrl/web3-errors';
+import {
+	InvalidMethodParamsError,
+	InvalidProviderError,
+	ProviderError,
+} from '@theqrl/web3-errors';
 import abi from './abi.js';
 import { initAccountsForContext } from './accounts.js';
 import { Web3QRLInterface } from './types.js';
@@ -57,15 +61,31 @@ export class Web3<
 
 	public qrl: Web3QRLInterface;
 
+	/**
+	 * @param providerOrContext - A provider URL, a provider instance or a
+	 * {@link Web3ContextInitOptions} object. A `wallet` or `accountProvider` supplied through the
+	 * options is kept: `web3.wallet` and `web3.qrl.accounts.wallet` are that wallet (L-41). An
+	 * empty or blank URL throws an {@link InvalidProviderError} and a value of any other type
+	 * (`true`, a number) a {@link ProviderError} instead of a raw `TypeError` (I-14).
+	 */
 	public constructor(
 		providerOrContext?:
 			| string
 			| SupportedProviders<QRLExecutionAPI>
 			| Web3ContextInitOptions<QRLExecutionAPI, CustomRegisteredSubscription>,
 	) {
+		if (typeof providerOrContext === 'string') {
+			if (providerOrContext.trim() === '') {
+				throw new InvalidProviderError(providerOrContext);
+			}
+		} else if (!isNullish(providerOrContext) && typeof providerOrContext !== 'object') {
+			throw new ProviderError(
+				`Invalid provider or context: expected a provider URL, a provider instance or Web3ContextInitOptions, got ${typeof providerOrContext}`,
+			);
+		}
+
 		if (
 			isNullish(providerOrContext) ||
-			(typeof providerOrContext === 'string' && providerOrContext.trim() === '') ||
 			(typeof providerOrContext !== 'string' &&
 				!isSupportedProvider(providerOrContext as SupportedProviders<QRLExecutionAPI>) &&
 				!(providerOrContext as Web3ContextInitOptions).provider)
@@ -98,11 +118,14 @@ export class Web3<
 		} as CustomRegisteredSubscription;
 
 		super(contextInitOptions);
-		const accounts = initAccountsForContext(this);
+		// A wallet handed in through the init options is kept and shared with the accounts
+		// helper, so `web3.wallet` and `web3.qrl.accounts.wallet` are one object; a fresh empty
+		// wallet is created only when none was supplied (L-41).
+		const accounts = initAccountsForContext(this, this._wallet);
 
 		// Init protected properties
 		this._wallet = accounts.wallet;
-		this._accountProvider = accounts;
+		this._accountProvider = this._accountProvider ?? accounts;
 
 		this.utils = utils;
 
@@ -134,12 +157,24 @@ export class Web3<
 						self.getContextObject() as Web3ContextObject,
 					);
 				} else if (typeof addressOrOptions === 'string') {
-					super(
-						jsonInterface,
-						addressOrOptions,
-						options ?? {},
-						self.getContextObject() as Web3ContextObject,
-					);
+					// `options` is forwarded only when it carries something. An empty object (or
+					// `undefined` turned into `{}`) in the options slot used to be taken for the
+					// context argument, which detached the contract from `web3`: no wallet, a
+					// provider switch never reaching it, default configuration (M-6).
+					if (isNullish(options) || Object.keys(options).length === 0) {
+						super(
+							jsonInterface,
+							addressOrOptions,
+							self.getContextObject() as Web3ContextObject,
+						);
+					} else {
+						super(
+							jsonInterface,
+							addressOrOptions,
+							options,
+							self.getContextObject() as Web3ContextObject,
+						);
+					}
 				} else {
 					throw new InvalidMethodParamsError();
 				}

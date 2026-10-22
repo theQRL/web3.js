@@ -1,9 +1,7 @@
 {
 	"name": "@theqrl/eslint-config-base-web3",
 	"version": "0.5.0",
-	"publishConfig": {
-		"access": "public"
-	},
+	"private": true,
 	"description": "Base eslint config for Web3 project.",
 	"author": "The QRL Contributors",
 	"license": "LGPL-3.0",

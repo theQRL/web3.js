@@ -21,6 +21,7 @@ import { bytesToHex, hexToBytes, uint8ArrayConcat, uint8ArrayEquals } from '@the
 import { MAX_INTEGER } from './constants.js';
 import { BaseTransaction } from './baseTransaction.js';
 import {
+	assertAccessListUint8Array,
 	getAccessListData,
 	getAccessListJSON,
 	getDataFeeEIP2930,
@@ -133,6 +134,37 @@ export class FeeMarketEIP1559Transaction extends BaseTransaction<FeeMarketEIP155
 			signature,
 			publicKey,
 		] = values;
+
+		// Every scalar field must be an RLP byte string. `RLP.decode` yields a nested array for an
+		// RLP *list*, and the generic byte conversion would flatten a list of one-byte strings back
+		// into the original bytes, so one signed transaction would have many "valid" encodings
+		// with different hashes. go-qrl's RLP decoder rejects a list where `[]byte` is expected;
+		// so does this method. `signature`/`publicKey` are only present in the 13-element form.
+		const byteFields: [string, unknown][] = [
+			['chainId', chainId],
+			['nonce', nonce],
+			['maxPriorityFeePerGas', maxPriorityFeePerGas],
+			['maxFeePerGas', maxFeePerGas],
+			['gasLimit', gasLimit],
+			['to', to],
+			['value', value],
+			['data', data],
+			['descriptor', descriptor],
+			['extraParams', extraParams],
+		];
+		if (values.length === 13) {
+			byteFields.push(['signature', signature], ['publicKey', publicKey]);
+		}
+		for (const [name, field] of byteFields) {
+			if (!(field instanceof Uint8Array)) {
+				throw new Error(
+					`Invalid EIP-1559 transaction: ${name} must be a byte string, not ${
+						Array.isArray(field) ? 'a list' : typeof field
+					}`,
+				);
+			}
+		}
+		assertAccessListUint8Array(accessList);
 
 		this._validateNotArray({ chainId });
 		validateNoLeadingZeroes({
@@ -256,14 +288,14 @@ export class FeeMarketEIP1559Transaction extends BaseTransaction<FeeMarketEIP155
 	 * Returns a Uint8Array Array of the raw Uint8Arrays of the EIP-1559 transaction, in order.
 	 *
 	 * Format: `[chainId, nonce, maxPriorityFeePerGas, maxFeePerGas, gasLimit, to, value, data,
-	 * accessList, signatureYParity, signatureR, signatureS]`
+	 * accessList, descriptor, extraParams, signature, publicKey]`
 	 *
 	 * Use {@link FeeMarketEIP1559Transaction.serialize} to add a transaction to a block
 	 * with {@link Block.fromValuesArray}.
 	 *
 	 * For an unsigned tx this method uses the empty Uint8Array values for the
-	 * signature parameters for encoding. For an EIP-155 compliant
-	 * representation for external signing use {@link FeeMarketEIP1559Transaction.getMessageToSign}.
+	 * authentication fields. For the signing preimage used by external signers use
+	 * {@link FeeMarketEIP1559Transaction.getMessageToSign}.
 	 */
 	public raw(): FeeMarketEIP1559ValuesArray {
 		return [

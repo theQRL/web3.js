@@ -1,4 +1,4 @@
-﻿/*
+/*
 This file is part of web3.js.
 
 web3.js is free software: you can redistribute it and/or modify
@@ -47,19 +47,18 @@ import {
 import {
 	bytesToUint8Array,
 	bytesToHex,
-	fromUtf8,
 	hexToBytes,
 	randomBytes,
 	sha3Raw,
 	toChecksumAddress,
 	uint8ArrayConcat,
-	utf8ToHex,
 	uuidV4,
 } from '@theqrl/web3-utils';
 
 import { isHexStrict, isNullish, isString, validator } from '@theqrl/web3-validator';
 import { keyStoreSchema } from './schemas.js';
 import { validateArgon2idParams, validateArgon2idSalt } from './kdf_policy.js';
+import { keystoreContainerError, keystoreHexToBytes } from './keystore_utils.js';
 import { CryptoPublicKeyBytes } from './qrl_crypto.js';
 import {
 	addressFromPublicKeyAndDescriptor,
@@ -68,8 +67,19 @@ import {
 	newQrlExtendedSeed,
 	qrlSeedFromBytes,
 } from './qrl_wallet.js';
+import { SEED_BYTES } from './tx/constants.js';
 import { TransactionFactory } from './tx/transactionFactory.js';
 import type { SignTransactionResult, TypedTransaction, Web3Account, SignResult } from './types.js';
+
+/** Length of the AES-256-GCM authentication tag appended to the keystore ciphertext. */
+const GCM_TAG_BYTES = 16;
+
+/**
+ * Encodes a keystore password exactly as go-qrl does (`[]byte(auth)`): the raw UTF-8 bytes of
+ * the string, with nothing trimmed. A `Uint8Array` is used as given.
+ */
+const passwordToBytes = (password: string | Uint8Array): Uint8Array =>
+	typeof password === 'string' ? new TextEncoder().encode(password) : password;
 
 /**
  * Get the public key Uint8Array after the validation
@@ -96,8 +106,51 @@ export const parseAndValidatePublicKey = (data: Bytes, ignoreLength?: boolean): 
 };
 
 /**
+ * Get the seed Uint8Array after the validation.
  *
- * Hashes the given message. The data will be UTF-8 HEX decoded and enveloped as follows: "\\x19QRL Signed Message:\\n" + message.length + message and hashed using keccak256.
+ * This is the single seed policy of the package, shared by {@link seedToAccount}, {@link sign},
+ * {@link signTransaction}, {@link encrypt} and `Wallet.add`: a lowercase `0x`-prefixed hex
+ * string of exactly 51 bytes (3-byte descriptor + 48-byte seed) or a 51-byte array. Whitespace,
+ * separators, a missing or `0X` prefix and any other lenient spelling are rejected.
+ *
+ * The errors thrown here ({@link InvalidSeedError}, {@link SeedLengthError}) never carry the
+ * offending value, so a malformed seed cannot leak through logs or error reporting.
+ *
+ * @param data - The seed as a hex string or byte array
+ * @param ignoreLength - if true, will not error check length
+ */
+export const parseAndValidateSeed = (data: Bytes, ignoreLength?: boolean): Uint8Array => {
+	let seedUint8Array: Uint8Array;
+	if (typeof data === 'string' && !data.startsWith('0x')) {
+		throw new InvalidSeedError();
+	}
+
+	// To avoid the case of 1 character less in a hex string which is prefixed with '0' by using 'bytesToUint8Array'
+	if (!ignoreLength && typeof data === 'string' && isHexStrict(data) && data.length !== 104) {
+		throw new SeedLengthError();
+	}
+
+	try {
+		seedUint8Array = data instanceof Uint8Array ? data : bytesToUint8Array(data);
+	} catch {
+		throw new InvalidSeedError();
+	}
+
+	if (!ignoreLength && seedUint8Array.byteLength !== SEED_BYTES) {
+		throw new SeedLengthError();
+	}
+
+	return seedUint8Array;
+};
+
+/**
+ *
+ * Hashes the given message. The message is enveloped as "\\x19QRL Signed Message:\\n" + message.length + message and hashed using keccak256,
+ * exactly like go-qrl's `accounts.TextHash`.
+ *
+ * A `0x`-prefixed hex string is hashed as the bytes it encodes (as `qrl_sign` does); every other string is hashed as its
+ * raw UTF-8 bytes and `message.length` is the byte length. Nothing is trimmed: a leading or trailing NUL character is part
+ * of the message, so `hashMessage("\\u0000abc")` differs from `hashMessage("abc")`.
  *
  * @param message - A message to hash, if its HEX it will be UTF8 decoded.
  * @returns The hashed message
@@ -110,11 +163,13 @@ export const parseAndValidatePublicKey = (data: Bytes, ignoreLength?: boolean): 
  * ```
  */
 export const hashMessage = (message: string): string => {
-	const messageHex = isHexStrict(message) ? message : utf8ToHex(message);
+	const messageBytes = isHexStrict(message)
+		? hexToBytes(message)
+		: new TextEncoder().encode(message);
 
-	const messageBytes = hexToBytes(messageHex);
-
-	const preamble = hexToBytes(fromUtf8(`\x19QRL Signed Message:\n${messageBytes.byteLength}`));
+	const preamble = new TextEncoder().encode(
+		`\x19QRL Signed Message:\n${messageBytes.byteLength}`,
+	);
 
 	const qrlMessage = uint8ArrayConcat(preamble, messageBytes);
 
@@ -124,6 +179,9 @@ export const hashMessage = (message: string): string => {
 /**
  * Signs arbitrary data with the private key derived from the given seed.
  * **_NOTE:_** The value passed as the data parameter will be UTF-8 HEX decoded and wrapped as follows: "\\x19QRL Signed Message:\\n" + message.length + message
+ *
+ * The seed is validated with the same strict policy as {@link seedToAccount} (see {@link parseAndValidateSeed});
+ * a malformed seed throws a value-free {@link InvalidSeedError} or {@link SeedLengthError}.
  *
  * @param data - The data to sign
  * @param seed - The 51 byte extended seed (3-byte descriptor + 48-byte seed)
@@ -139,7 +197,7 @@ export const hashMessage = (message: string): string => {
  * ```
  */
 export const sign = (data: string, seed: Bytes): SignResult => {
-	const wallet = newMLDSA87WalletFromExtendedSeed(seed);
+	const wallet = newMLDSA87WalletFromExtendedSeed(parseAndValidateSeed(seed));
 	const hash = hashMessage(data);
 	const signature = wallet.sign(hexToBytes(hash));
 
@@ -152,6 +210,10 @@ export const sign = (data: string, seed: Bytes): SignResult => {
 
 /**
  * Signs a QRL transaction with the private key derived from the given seed.
+ *
+ * The seed is validated with the same strict policy as {@link seedToAccount} (see {@link parseAndValidateSeed}):
+ * a malformed seed (for example one read from a file with a trailing newline) throws a value-free
+ * {@link InvalidSeedError} or {@link SeedLengthError} and is never echoed in an error message.
  *
  * @param transaction - The transaction, must be a EIP 1559 transaction type
  * @param seed -  The extended seed to import. This is a 51-byte value (3-byte descriptor + 48-byte seed).
@@ -185,11 +247,11 @@ export const sign = (data: string, seed: Bytes): SignResult => {
  */
 export const signTransaction = async (
 	transaction: TypedTransaction,
-	seed: HexString,
+	seed: Bytes,
 	// To make it compatible with rest of the API, have to keep it async
 	// eslint-disable-next-line @typescript-eslint/require-await
 ): Promise<SignTransactionResult> => {
-	const signedTx = transaction.sign(hexToBytes(seed));
+	const signedTx = transaction.sign(parseAndValidateSeed(seed));
 	if (
 		isNullish(signedTx.descriptor) ||
 		isNullish(signedTx.signature) ||
@@ -200,11 +262,7 @@ export const signTransaction = async (
 	const validationErrors = signedTx.validate(true);
 
 	if (validationErrors.length > 0) {
-		let errorString = 'Signer Error ';
-		for (const validationError of validationErrors) {
-			errorString += `${errorString} ${validationError}.`;
-		}
-		throw new TransactionSigningError(errorString);
+		throw new TransactionSigningError(`Signer Error: ${validationErrors.join('; ')}`);
 	}
 
 	const rawTx = bytesToHex(signedTx.serialize());
@@ -269,7 +327,15 @@ export type EncryptOptions = Omit<CipherOptions, 'iv'>;
  * a server event loop SHOULD run it in a worker thread (as the QRL wallet
  * does).
  *
- * @param privateKey - The private key to encrypt, 32 bytes.
+ * **Parameters:** the Argon2id parameters are bounded (`m` 19456..1048576 KiB, `t` 2..50, `p` 1..16, see
+ * `ARGON2ID_BOUNDS`) and `dklen` must be 32, the AES-256-GCM key length (go-qrl pins the same value).
+ * Out-of-range values throw {@link InvalidKdfError} before any key derivation runs. The default
+ * parameters match go-qrl's standard keystore profile.
+ *
+ * **Password:** a string is encoded as its raw UTF-8 bytes (go-qrl `[]byte(auth)`), a `Uint8Array` is used as
+ * given. An empty password is accepted, as it is by go-qrl; any other type throws {@link InvalidPasswordError}.
+ *
+ * @param seed - The 51-byte extended seed to encrypt (3-byte descriptor + 48-byte seed), as a `0x`-prefixed hex string or byte array.
  * @param password - The password used for encryption.
  * @param options - Options to configure to encrypt the keystore with argon2id. The GCM IV is always generated internally and cannot be supplied.
  * @returns Returns a V1 JSON Keystore
@@ -278,7 +344,7 @@ export type EncryptOptions = Omit<CipherOptions, 'iv'>;
  * Encrypt using argon2id options
  * ```ts
  * encrypt(
- *   '0xcea755979937e2dc6137c0e51ba0d1eb2a44920cefffb1a860cf194ea7d23d694045fd2c8a72ec5aecf1e7e5bb591ff2',
+ *   '0x010000cea755979937e2dc6137c0e51ba0d1eb2a44920cefffb1a860cf194ea7d23d694045fd2c8a72ec5aecf1e7e5bb591ff2',
  *    '123',
  *    {
  *      m: 262144,
@@ -290,11 +356,11 @@ export type EncryptOptions = Omit<CipherOptions, 'iv'>;
  * // ciphertext is non-deterministic even for identical inputs.
  * {
  *   version: 1,
- *   id: '1b1dd3e2-ee6f-49c6-8a9b-a4722046582e',
+ *   id: '039e0135-b74c-4b6b-8be7-398a52a70030',
  *   address: 'Qcfec0cbee560cbd6ed89580204af71448f1fb8c577e60e9afc6e697019e2312cf3b24b98eb763627a1c38c96ecd7e7c20ba9774cb6c0a810b78e8ea529ccdc40',
  *   crypto: {
- *     ciphertext: '02383d4ea331fdf518651aa638d77f36de002f6b2cb340712c2957b68f927234a9c87f776e40b61227aca366bd4b7056046dfdddee29df22290939a1e96f5be5',
- *     cipherparams: { iv: 'bfb43120ae00e9de110f8325' },
+ *     ciphertext: 'ef6a98e4915b6138affa96055bdbd6b2a0edcfe8a12fcaf6ae77853604d22c1f975323c36e57fea929cef736977a58274eab20b7355d536be9119dbdc7bc2108befdf5',
+ *     cipherparams: { iv: 'f8eaaf8c815653b05091ec99' },
  *     cipher: 'aes-256-gcm',
  *     kdf: 'argon2id',
  *     kdfparams: {
@@ -313,8 +379,12 @@ export const encrypt = async (
 	password: string | Uint8Array,
 	options?: EncryptOptions,
 ): Promise<KeyStore> => {
-	// eslint-disable-next-line no-use-before-define
 	const seedUint8Array = parseAndValidateSeed(seed);
+
+	if (!(isString(password) || password instanceof Uint8Array)) {
+		throw new InvalidPasswordError();
+	}
+	const uint8ArrayPassword = passwordToBytes(password);
 
 	// if given salt is a string, convert it to a Uint8Array
 	let salt;
@@ -326,13 +396,6 @@ export const encrypt = async (
 	} else {
 		salt = randomBytes(32);
 	}
-
-	if (!(isString(password) || password instanceof Uint8Array)) {
-		throw new InvalidPasswordError();
-	}
-
-	const uint8ArrayPassword =
-		typeof password === 'string' ? hexToBytes(utf8ToHex(password)) : password;
 
 	// AES-GCM catastrophically fails on (key, nonce) reuse: a repeated nonce
 	// leaks the authentication key. The caller must NOT control the GCM nonce,
@@ -356,8 +419,9 @@ export const encrypt = async (
 			salt: bytesToHex(salt).replace('0x', ''),
 		};
 		// Reject out-of-bounds Argon2id parameters (after defaults are applied)
-		// to avoid unreasonable memory/time costs.
-		validateArgon2idParams(kdfparams);
+		// to avoid unreasonable memory/time costs, and a dklen other than the
+		// AES-256-GCM key length, before the KDF cost is paid.
+		validateArgon2idParams(kdfparams, 'encrypt');
 		derivedKey = argon2idSync(
 			uint8ArrayPassword,
 			salt,
@@ -392,51 +456,25 @@ export const encrypt = async (
 };
 
 /**
- * Get the seed Uint8Array after the validation
- */
-export const parseAndValidateSeed = (data: Bytes, ignoreLength?: boolean): Uint8Array => {
-	let seedUint8Array: Uint8Array;
-	if (typeof data === 'string' && !data.startsWith('0x')) {
-		throw new InvalidSeedError();
-	}
-
-	// To avoid the case of 1 character less in a hex string which is prefixed with '0' by using 'bytesToUint8Array'
-	if (!ignoreLength && typeof data === 'string' && isHexStrict(data) && data.length !== 104) {
-		throw new SeedLengthError();
-	}
-
-	try {
-		seedUint8Array = data instanceof Uint8Array ? data : bytesToUint8Array(data);
-	} catch {
-		throw new InvalidSeedError();
-	}
-
-	if (!ignoreLength && seedUint8Array.byteLength !== 51) {
-		throw new SeedLengthError();
-	}
-
-	return seedUint8Array;
-};
-
-/**
  * Get an Account object from the seed
  *
  * @param seed - String or Uint8Array of the 51-byte extended seed (3-byte descriptor + 48-byte seed)
- * @param ignoreLength - if true, will not error check length
  * @returns A Web3Account object
  *
  * The `Web3Account.signTransaction` is not stateful here. We need network access to get the account `nonce` and `chainId` to sign the transaction.
  * Use {@link Web3.qrl.accounts.signTransaction} instead.
+ *
+ * The returned object carries the seed as a non-enumerable `seed` property: it is readable as `account.seed` but does
+ * not appear in `console.log`, `Object.keys`, spreads or `JSON.stringify` output (the latter prints `"<redacted>"`).
  *
  * ```ts
  * seedToAccount("0x010000cea755979937e2dc6137c0e51ba0d1eb2a44920cefffb1a860cf194ea7d23d694045fd2c8a72ec5aecf1e7e5bb591ff2");
  * >
  * {
  *   address: 'QCfeC0cbeE560cbD6ed89580204AF71448f1fB8c577e60e9afC6E697019E2312cF3B24B98Eb763627a1C38c96ecd7E7c20BA9774cb6c0a810B78E8ea529ccdc40',
- *   seed: '0x010000cea755979937e2dc6137c0e51ba0d1eb2a44920cefffb1a860cf194ea7d23d694045fd2c8a72ec5aecf1e7e5bb591ff2',
  *   signTransaction: [Function: signTransaction],
  *   sign: [Function: sign],
- *   encrypt: [Function: encrypt]
+ *   encrypt: [AsyncFunction: encrypt]
  * }
  * ```
  */
@@ -484,12 +522,13 @@ export const seedToAccount = (seed: Bytes): Web3Account => {
  * Generates and returns a Web3Account object that includes the private and public key
  * and a seed if it's not provided.
  *
+ * The seed is available as the non-enumerable `account.seed` property (see {@link seedToAccount}).
+ *
  * @returns A Web3Account object
  * ```ts
  * web3.qrl.accounts.create();
  * {
  * address: 'QCfeC0cbeE560cbD6ed89580204AF71448f1fB8c577e60e9afC6E697019E2312cF3B24B98Eb763627a1C38c96ecd7E7c20BA9774cb6c0a810B78E8ea529ccdc40',
- * seed: '0x010000cea755979937e2dc6137c0e51ba0d1eb2a44920cefffb1a860cf194ea7d23d694045fd2c8a72ec5aecf1e7e5bb591ff2',
  * signTransaction: [Function: signTransaction],
  * sign: [Function: sign],
  * encrypt: [AsyncFunction: encrypt]
@@ -513,6 +552,17 @@ export const create = (): Web3Account => {
  * a server event loop SHOULD run it in a worker thread (as the QRL wallet
  * does).
  *
+ * **Interoperability:** keystores written by go-qrl are accepted, including the `--lightkdf` profile
+ * (Argon2id `m = 4096`): on decrypt the memory floor is `ARGON2ID_DECRYPT_MEMORY_MIN` (4096 KiB) instead of
+ * the 19456 KiB that {@link encrypt} enforces when *creating* a keystore. `dklen` must be 32.
+ *
+ * **Errors:** every malformed field is reported before the key derivation runs and without echoing the
+ * keystore content or the password: a password that is neither a string nor a `Uint8Array` throws
+ * {@link InvalidPasswordError} (an empty password is accepted, as in go-qrl); a missing field or a field
+ * of the wrong type throws `Web3ValidatorError`; a non-hex or non-12-byte `cipherparams.iv` throws
+ * {@link IVLengthError}; a non-hex or wrong-length `ciphertext` throws {@link KeyStoreDecryptionError};
+ * a non-hex or short salt and out-of-range Argon2id parameters throw {@link InvalidKdfError}.
+ *
  * @param keystore - the encrypted Keystore object or string to decrypt
  * @param password - The password that was used for encryption
  * @param nonStrict - if true and given a json string, the keystore will be parsed as lowercase.
@@ -522,11 +572,11 @@ export const create = (): Web3Account => {
  * ```ts
  * decrypt({
  *   version: 1,
- *   id: '1b1dd3e2-ee6f-49c6-8a9b-a4722046582e',
+ *   id: '039e0135-b74c-4b6b-8be7-398a52a70030',
  *   address: 'Qcfec0cbee560cbd6ed89580204af71448f1fb8c577e60e9afc6e697019e2312cf3b24b98eb763627a1c38c96ecd7e7c20ba9774cb6c0a810b78e8ea529ccdc40',
  *   crypto: {
- *     ciphertext: '02383d4ea331fdf518651aa638d77f36de002f6b2cb340712c2957b68f927234a9c87f776e40b61227aca366bd4b7056046dfdddee29df22290939a1e96f5be5',
- *     cipherparams: { iv: 'bfb43120ae00e9de110f8325' },
+ *     ciphertext: 'ef6a98e4915b6138affa96055bdbd6b2a0edcfe8a12fcaf6ae77853604d22c1f975323c36e57fea929cef736977a58274eab20b7355d536be9119dbdc7bc2108befdf5',
+ *     cipherparams: { iv: 'f8eaaf8c815653b05091ec99' },
  *     cipher: 'aes-256-gcm',
  *     kdf: 'argon2id',
  *     kdfparams: {
@@ -541,11 +591,11 @@ export const create = (): Web3Account => {
  * >
  * {
  *   address: 'QCfeC0cbeE560cbD6ed89580204AF71448f1fB8c577e60e9afC6E697019E2312cF3B24B98Eb763627a1C38c96ecd7E7c20BA9774cb6c0a810B78E8ea529ccdc40',
- *   seed: '0x010000cea755979937e2dc6137c0e51ba0d1eb2a44920cefffb1a860cf194ea7d23d694045fd2c8a72ec5aecf1e7e5bb591ff2',
  *   signTransaction: [Function: signTransaction],
  *   sign: [Function: sign],
- *   encrypt: [Function: encrypt]
+ *   encrypt: [AsyncFunction: encrypt]
  * }
+ * // res.seed === '0x010000cea755979937e2dc6137c0e51ba0d1eb2a44920cefffb1a860cf194ea7d23d694045fd2c8a72ec5aecf1e7e5bb591ff2' (non-enumerable)
  * ```
  */
 export const decrypt = async (
@@ -553,10 +603,23 @@ export const decrypt = async (
 	password: string | Uint8Array,
 	nonStrict?: boolean,
 ): Promise<Web3Account> => {
-	const json =
-		typeof keystore === 'object'
-			? keystore
-			: (JSON.parse(nonStrict ? keystore.toLowerCase() : keystore) as KeyStore);
+	// The password type is checked before anything else so that a wrong type never reaches a
+	// validator whose message would echo the value.
+	if (!(isString(password) || password instanceof Uint8Array)) {
+		throw new InvalidPasswordError();
+	}
+	const uint8ArrayPassword = passwordToBytes(password);
+
+	let json: KeyStore;
+	if (typeof keystore === 'object') {
+		json = keystore;
+	} else {
+		try {
+			json = JSON.parse(nonStrict ? keystore.toLowerCase() : keystore) as KeyStore;
+		} catch (error) {
+			throw keystoreContainerError('keystore string is not valid JSON', error);
+		}
+	}
 
 	validator.validateJSONSchema(keyStoreSchema, json);
 
@@ -567,38 +630,44 @@ export const decrypt = async (
 	// rather than deep inside the AES-GCM decryption.
 	if (json.crypto.cipher !== 'aes-256-gcm') throw new InvalidCipherError(json.crypto.cipher);
 
-	const uint8ArrayPassword =
-		typeof password === 'string' ? hexToBytes(utf8ToHex(password)) : password;
-
-	validator.validate(['bytes'], [uint8ArrayPassword]);
-
-	let derivedKey;
-	if (json.crypto.kdf === 'argon2id') {
-		const kdfparams = json.crypto.kdfparams as Argon2idParams;
-		// Bound the untrusted KDF parameters from the keystore JSON before
-		// deriving the key, to prevent maliciously large memory/time costs.
-		validateArgon2idParams(kdfparams);
-		// Normalize every accepted byte representation before handing it to Argon2.
-		const uint8ArraySalt =
-			typeof kdfparams.salt === 'string'
-				? hexToBytes(kdfparams.salt)
-				: bytesToUint8Array(kdfparams.salt);
-		validateArgon2idSalt(uint8ArraySalt);
-		derivedKey = argon2idSync(
-			uint8ArrayPassword,
-			uint8ArraySalt,
-			kdfparams.t,
-			kdfparams.m,
-			kdfparams.p,
-			kdfparams.dklen,
-		);
-	} else {
-		throw new InvalidKdfError();
+	// The hex fields are checked before the KDF runs so that a malformed keystore fails fast
+	// with a typed, value-free error. The GCM nonce is exactly 12 bytes; the ciphertext is the
+	// 51-byte extended seed followed by the 16-byte authentication tag.
+	const initializationVector = keystoreHexToBytes(json.crypto.cipherparams.iv);
+	if (initializationVector?.length !== 12) {
+		throw new IVLengthError();
+	}
+	const ciphertext = keystoreHexToBytes(json.crypto.ciphertext);
+	if (ciphertext?.length !== SEED_BYTES + GCM_TAG_BYTES) {
+		throw new KeyStoreDecryptionError();
 	}
 
-	const initializationVector = hexToBytes(json.crypto.cipherparams.iv);
-	if (initializationVector.length !== 12) throw new IVLengthError();
-	const ciphertext = hexToBytes(json.crypto.ciphertext);
+	if (json.crypto.kdf !== 'argon2id') {
+		throw new InvalidKdfError();
+	}
+	const { kdfparams } = json.crypto;
+	// Bound the untrusted KDF parameters from the keystore JSON before deriving the key, to
+	// prevent maliciously large memory/time costs. The `decrypt` profile accepts go-qrl's
+	// `--lightkdf` memory parameter (m = 4096) that `encrypt` would refuse to create.
+	validateArgon2idParams(kdfparams, 'decrypt');
+	// go-qrl stores the salt as unprefixed hex; a byte array is accepted for keystores built in
+	// JavaScript. Both forms are normalized before being handed to Argon2.
+	const uint8ArraySalt =
+		typeof kdfparams.salt === 'string'
+			? keystoreHexToBytes(kdfparams.salt)
+			: bytesToUint8Array(kdfparams.salt);
+	if (uint8ArraySalt === undefined) {
+		throw new InvalidKdfError('Argon2id salt must be a hex string or a byte array');
+	}
+	validateArgon2idSalt(uint8ArraySalt);
+	const derivedKey = argon2idSync(
+		uint8ArrayPassword,
+		uint8ArraySalt,
+		kdfparams.t,
+		kdfparams.m,
+		kdfparams.p,
+		kdfparams.dklen,
+	);
 
 	let seed: Uint8Array;
 	try {

@@ -132,12 +132,23 @@ export type ProviderErrorData =
 	| { data: HexString }
 	| { originalError: { data: HexString } };
 
+/** A provider-supplied object, read member by member without trusting its shape. */
+const isObject = (value: unknown): value is Record<string, unknown> =>
+	// eslint-disable-next-line no-null/no-null
+	typeof value === 'object' && value !== null;
+
 /**
  * This class is expected to be set as an `innerError` inside ContractExecutionError
  * The properties would be typically decoded from the `data` if it was encoded according to EIP-838
+ *
+ * The revert data is read from the documented places only: `error.data`, `error.data.data`
+ * or `error.data.originalError.data` (the last two are what wallet providers such as
+ * MetaMask wrap a node error into). Exactly one level is unwrapped and `data` is accepted only
+ * when it is a string: the structure is provider supplied, so it is neither recursed into
+ * (a deeply nested `data` used to overflow the stack) nor are its `name` or `stack` members
+ * copied onto this error (L-45).
  */
 export class Eip838ExecutionError extends Web3ContractError {
-	public readonly name: string;
 	public code: number;
 	public data?: HexString;
 	public errorName?: string;
@@ -147,38 +158,31 @@ export class Eip838ExecutionError extends Web3ContractError {
 	public innerError: Eip838ExecutionError | undefined;
 
 	public constructor(error: JsonRpcError<ProviderErrorData> | Eip838ExecutionError) {
-		super(error.message || 'Error');
+		super(typeof error.message === 'string' && error.message ? error.message : 'Error');
 
-		this.name = ('name' in error && error.name) || this.constructor.name;
-		this.stack = ('stack' in error && error.stack) || undefined;
 		this.code = error.code;
 
-		// get embedded error details got from some providers like MetaMask
-		// and set this.data from the inner error data for easier read.
-		// note: the data is a hex string inside either:
-		//	 error.data, error.data.data or error.data.originalError.data (https://github.com/web3/web3.js/issues/4454#issuecomment-1485953455)
-		// `data` is provider supplied. `typeof null` is `'object'`, so `null` is excluded
-		// explicitly, and a `null` `originalError` member counts as absent: otherwise a reply
-		// such as `{"code":3,"message":"execution reverted","data":null}` ends in a `TypeError`
-		// instead of this error.
-		if (typeof error.data === 'object') {
-			// eslint-disable-next-line no-null/no-null
-			if (error.data === null) {
-				this.data = undefined;
-			} else {
-				const nested = (error.data as { originalError?: unknown }).originalError;
-				// Some provider implementations have no `originalError` sub-object.
-				// eslint-disable-next-line no-null/no-null
-				const hasNested = typeof nested === 'object' && nested !== null;
-				const originalError = (hasNested ? nested : error.data) as { data: string };
-				this.data = originalError.data;
-				this.innerError = new Eip838ExecutionError(
-					originalError as JsonRpcError<ProviderErrorData>,
-				);
-			}
-		} else {
-			this.data = error.data;
+		const { data } = error as { data?: unknown };
+		if (typeof data === 'string') {
+			this.data = data;
+			return;
 		}
+		if (!isObject(data)) {
+			// `null`, a number, a boolean: nothing to decode.
+			this.data = undefined;
+			return;
+		}
+
+		// Some provider implementations have no `originalError` sub-object.
+		const source = isObject(data.originalError) ? data.originalError : data;
+		this.data = typeof source.data === 'string' ? source.data : undefined;
+		// The unwrapped level stays reachable as `innerError`, built from a flat copy of the
+		// three members this class reads, so that construction cannot recurse further.
+		this.innerError = new Eip838ExecutionError({
+			code: source.code,
+			message: source.message,
+			data: this.data,
+		} as JsonRpcError<ProviderErrorData>);
 	}
 
 	public setDecodedProperties(

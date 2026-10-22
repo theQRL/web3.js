@@ -26,10 +26,20 @@ import {
 	Transaction,
 } from '@theqrl/web3-types';
 import { isNullish } from '@theqrl/web3-utils';
-import { ExistingPluginNamespaceError } from '@theqrl/web3-errors';
+import {
+	ExistingPluginNamespaceError,
+	InvalidProviderError,
+	ProviderError,
+} from '@theqrl/web3-errors';
 
 import { isSupportedProvider } from './utils.js';
-import { Web3Config, Web3ConfigEvent, Web3ConfigOptions } from './web3_config.js';
+import {
+	Web3Config,
+	Web3ConfigChangeEvent,
+	Web3ConfigEvent,
+	Web3ConfigOptions,
+} from './web3_config.js';
+import { Web3EventCallback } from './web3_event_emitter.js';
 import { Web3RequestManager } from './web3_request_manager.js';
 import { Web3SubscriptionConstructor } from './web3_subscriptions.js';
 import { Web3SubscriptionManager } from './web3_subscription_manager.js';
@@ -82,6 +92,8 @@ export type Web3ContextFactory<
 	fromContextObject(this: Web3ContextConstructor<T, T2>, contextObject: Web3ContextObject): T;
 };
 
+type ConfigChangeListener = Web3EventCallback<Web3ConfigChangeEvent>;
+
 export class Web3Context<
 	API extends Web3APISpec = unknown,
 	RegisteredSubs extends {
@@ -97,6 +109,20 @@ export class Web3Context<
 	protected _accountProvider?: Web3AccountProvider<Web3BaseWalletAccount>;
 	protected _wallet?: Web3BaseWallet<Web3BaseWalletAccount>;
 
+	/** True when this context created its subscription manager (not shared through the init options or a parent). */
+	private _ownsSubscriptionManager = false;
+	/** The `CONFIG_CHANGE` forwarders registered on parent contexts for this one (`use()`, `link()`). */
+	private readonly _parentConfigListeners: {
+		parent: Web3Config;
+		listener: ConfigChangeListener;
+	}[] = [];
+
+	/**
+	 * @param providerOrContext - A provider URL, a provider instance or a
+	 * {@link Web3ContextInitOptions} object. An empty or blank URL throws an
+	 * {@link InvalidProviderError} and a value of any other type (`true`, a number) a
+	 * {@link ProviderError} (I-14).
+	 */
 	public constructor(
 		providerOrContext?:
 			| string
@@ -105,10 +131,24 @@ export class Web3Context<
 	) {
 		super();
 
+		if (typeof providerOrContext === 'string') {
+			if (providerOrContext.trim() === '') {
+				throw new InvalidProviderError(providerOrContext);
+			}
+		} else if (
+			!isNullish(providerOrContext) &&
+			typeof providerOrContext !== 'object' &&
+			typeof providerOrContext !== 'function'
+		) {
+			throw new ProviderError(
+				`Invalid provider or context: expected a provider URL, a provider instance or Web3ContextInitOptions, got ${typeof providerOrContext}`,
+			);
+		}
+
 		// If "providerOrContext" is provided as "string" or an objects matching "SupportedProviders" interface
 		if (
 			isNullish(providerOrContext) ||
-			(typeof providerOrContext === 'string' && providerOrContext.trim() !== '') ||
+			typeof providerOrContext === 'string' ||
 			isSupportedProvider(providerOrContext as SupportedProviders<API>)
 		) {
 			this._requestManager = new Web3RequestManager<API>(
@@ -118,6 +158,7 @@ export class Web3Context<
 				this._requestManager,
 				{} as RegisteredSubs,
 			);
+			this._ownsSubscriptionManager = true;
 
 			return;
 		}
@@ -148,6 +189,7 @@ export class Web3Context<
 				this.requestManager,
 				registeredSubscriptions ?? ({} as RegisteredSubs),
 			);
+			this._ownsSubscriptionManager = true;
 		}
 
 		if (accountProvider) {
@@ -202,6 +244,9 @@ export class Web3Context<
 	 * Use to create new object of any type extended by `Web3Context`
 	 * and link it to current context. This can be used to initiate a global context object
 	 * and then use it to create new objects of any type extended by `Web3Context`.
+	 *
+	 * The child follows every configuration change of this context; the forwarding listener is
+	 * released by the child's {@link dispose}.
 	 */
 	public use<T extends Web3Context, T2 extends unknown[]>(
 		ContextRef: Web3ContextConstructor<T, T2>,
@@ -211,28 +256,64 @@ export class Web3Context<
 			...([...args, this.getContextObject()] as unknown as [...T2, Web3ContextObject]),
 		);
 
-		this.on(Web3ConfigEvent.CONFIG_CHANGE, event => {
+		const listener: ConfigChangeListener = event => {
 			newContextChild.setConfig({ [event.name]: event.newValue });
-		});
+		};
+		this.on(Web3ConfigEvent.CONFIG_CHANGE, listener);
+		newContextChild._trackParentConfigListener(this, listener);
 
 		return newContextChild;
 	}
 
 	/**
 	 * Link current context to another context.
+	 *
+	 * Adopts the parent's request manager, subscription manager, wallet, account provider and
+	 * configuration, and follows the parent's configuration changes from then on. The parent's
+	 * provider is not set again on the shared request manager: doing so used to emit the
+	 * provider-change events, which unsubscribed every live subscription and left a duplicate
+	 * provider listener behind (L-36).
 	 */
 	public link<T extends Web3Context>(parentContext: T) {
 		this.setConfig(parentContext.config);
 		this._requestManager = parentContext.requestManager;
-		this.provider = parentContext.provider;
 		// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 		this._subscriptionManager = parentContext.subscriptionManager;
+		this._ownsSubscriptionManager = false;
 		this._wallet = parentContext.wallet;
 		this._accountProvider = parentContext._accountProvider;
 
-		parentContext.on(Web3ConfigEvent.CONFIG_CHANGE, event => {
+		const listener: ConfigChangeListener = event => {
 			this.setConfig({ [event.name]: event.newValue });
-		});
+		};
+		parentContext.on(Web3ConfigEvent.CONFIG_CHANGE, listener);
+		this._trackParentConfigListener(parentContext, listener);
+	}
+
+	/**
+	 * Releases the listeners this context holds on other objects: the `CONFIG_CHANGE` forwarders
+	 * registered on the parent it was created from with {@link use} or attached to with
+	 * {@link link}, every listener registered on this context, and, when the subscription manager
+	 * was created by this context rather than shared, that manager's provider and
+	 * provider-change listeners (see {@link Web3SubscriptionManager.dispose}). A context created
+	 * for a short-lived task can thus be dropped without leaving a listener behind on a shared
+	 * provider or parent (L-37). The context must not be used afterwards.
+	 */
+	public dispose(): void {
+		for (const { parent, listener } of this._parentConfigListeners) {
+			parent.off(Web3ConfigEvent.CONFIG_CHANGE, listener);
+		}
+		this._parentConfigListeners.length = 0;
+		this.removeAllListeners();
+
+		if (this._ownsSubscriptionManager) {
+			this._subscriptionManager.dispose();
+		}
+	}
+
+	/** Remembers a `CONFIG_CHANGE` forwarder registered on `parent` for this context, so {@link dispose} can remove it. */
+	protected _trackParentConfigListener(parent: Web3Config, listener: ConfigChangeListener) {
+		this._parentConfigListeners.push({ parent, listener });
 	}
 
 	public registerPlugin(plugin: Web3PluginBase) {
@@ -340,7 +421,8 @@ export class Web3Context<
 		return Web3Context.givenProvider;
 	}
 	/**
-	 * Will set the provider.
+	 * Will set the provider. Setting the provider instance that is already set is a no-op (L-36);
+	 * an empty URL throws an {@link InvalidProviderError}.
 	 *
 	 * @param provider - {@link SupportedProviders} The provider to set
 	 * @returns Returns true if the provider was set

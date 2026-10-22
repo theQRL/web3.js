@@ -5,6 +5,7 @@ const { tmpdir } = require('os');
 const { join, resolve } = require('path');
 const { execFileSync } = require('child_process');
 
+const { checkPackageDependencies } = require('../check-package-dependencies');
 const { publishablePackages } = require('./packages');
 
 const npmCache = process.env.npm_config_cache || mkdtempSync(resolve(tmpdir(), 'web3-pack-npm-cache-'));
@@ -63,6 +64,13 @@ const packDryRun = packagePath => {
 
 const errors = [];
 const summaries = [];
+
+// The built output is what gets packed: every module it loads must be a
+// declared dependency, and browser-facing packages must not load Node
+// built-ins. Runs here, after the build, so the release cannot skip it.
+const dependencyCheck = checkPackageDependencies({ requireBuilt: true });
+for (const warning of dependencyCheck.warnings) console.warn(`WARN ${warning}`);
+errors.push(...dependencyCheck.failures);
 
 for (const pkg of publishablePackages()) {
 	const manifestPath = join(pkg.path, 'package.json');

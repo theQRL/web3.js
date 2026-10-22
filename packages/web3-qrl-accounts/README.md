@@ -30,6 +30,18 @@ pnpm add @theqrl/web3-qrl-accounts
 -   :writing_hand: If you have questions [submit an issue](https://github.com/theqrl/web3.js/issues/new) or join us on [Discord](https://theqrl.org/discord)
     ![Discord](https://img.shields.io/discord/357604137204056065.svg?label=Discord&logo=discord)
 
+## Keystores
+
+`encrypt` writes and `decrypt` reads the go-qrl v1 keystore format (AES-256-GCM, Argon2id). Keystores
+interoperate with go-qrl in both directions:
+
+-   `encrypt` uses go-qrl's standard profile by default (`m = 262144` KiB, `t = 8`, `p = 1`) and refuses
+    to create a keystore below the OWASP Argon2id floor (`m >= 19456`); `dklen` is always 32.
+-   `decrypt` additionally accepts keystores written by `gqrl --lightkdf` (`m = 4096`), so an existing
+    light keystore can always be read, while this library never creates one.
+-   An empty password is accepted on both sides, as in go-qrl. A string password is encoded as its raw
+    UTF-8 bytes.
+
 ## Prerequisites
 
 -   :gear: [NodeJS](https://nodejs.org/) (20 or newer)

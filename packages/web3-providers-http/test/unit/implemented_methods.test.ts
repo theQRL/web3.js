@@ -21,7 +21,7 @@ import fetchMock from 'jest-fetch-mock';
 jest.setMock('cross-fetch', fetchMock);
 
 import { Web3APIPayload, QRLExecutionAPI } from '@theqrl/web3-types';
-import { ResponseError } from '@theqrl/web3-errors';
+import { HttpStatusError, ResponseError } from '@theqrl/web3-errors';
 import HttpProvider from '../../src/index';
 import { mockGetBalanceResponse } from '../fixtures/test_data';
 
@@ -56,8 +56,21 @@ describe('HttpProvider - implemented methods', () => {
 			);
 		});
 
-		it('should return ResponseError', async () => {
-			fetchMock.mockResponseOnce(JSON.stringify(mockGetBalanceResponse), { status: 400 });
+		it('rejects a non-2xx reply with HttpStatusError carrying the status (L-47)', async () => {
+			fetchMock.mockResponseOnce(JSON.stringify(mockGetBalanceResponse), {
+				status: 400,
+				statusText: 'Bad Request',
+			});
+
+			const request = httpProvider.request(jsonRpcPayload);
+			await expect(request).rejects.toThrow(HttpStatusError);
+			await expect(request).rejects.toMatchObject({ status: 400, statusText: 'Bad Request' });
+			// The body was a JSON-RPC result, not an error reply: nothing to attach.
+			await expect(request).rejects.toMatchObject({ innerError: undefined });
+		});
+
+		it('rejects an unparseable 2xx body with ResponseError', async () => {
+			fetchMock.mockResponseOnce('<html>hi</html>');
 
 			await expect(httpProvider.request(jsonRpcPayload)).rejects.toThrow(ResponseError);
 		});

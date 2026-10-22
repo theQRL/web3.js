@@ -37,6 +37,15 @@ import {
 } from './watch_transaction_by_pooling.js';
 import { watchTransactionBySubscription } from './watch_transaction_by_subscription.js';
 
+/**
+ * Emits the first `confirmation` for the receipt's own block and, while fewer than
+ * `transactionConfirmationBlocks` confirmations have been emitted, watches the chain for the
+ * next ones (through a `newHeads` subscription when the provider supports one, by polling
+ * otherwise).
+ *
+ * @throws TransactionMissingReceiptOrBlockHashError / TransactionReceiptMissingBlockNumberError
+ * for a receipt that cannot be watched; the caller reports it through the PromiEvent (L-54).
+ */
 export function watchTransactionForConfirmations<
 	ReturnFormat extends DataFormat,
 	ResolveType = TransactionReceipt,
@@ -65,6 +74,10 @@ export function watchTransactionForConfirmations<
 		receipt: format(transactionReceiptSchema, transactionReceipt, returnFormat),
 		latestBlockHash: format({ format: 'bytes32' }, transactionReceipt.blockHash, returnFormat),
 	});
+
+	// One confirmation already satisfies a threshold of 0 or 1: no watcher is started, which
+	// used to emit a second `confirmation` and send one request regardless (L-54).
+	if (web3Context.transactionConfirmationBlocks <= 1) return;
 
 	// so a subscription for newBlockHeaders can be made instead of polling
 	const provider: Web3BaseProvider = web3Context.requestManager.provider as Web3BaseProvider;

@@ -1122,7 +1122,7 @@ describe('Web3RequestManager', () => {
 				expect(myProvider.request).toHaveBeenCalledWith(payload);
 			});
 
-			it('should pass request to provider and reject if provider throws error', async () => {
+			it('should return the batch response if the provider throws it, as the web3 provider path does (L-38)', async () => {
 				const manager = new Web3RequestManager();
 				const myProvider = {
 					request: jest.fn().mockImplementation(async _ => {
@@ -1132,7 +1132,8 @@ describe('Web3RequestManager', () => {
 
 				jest.spyOn(manager, 'provider', 'get').mockReturnValue(myProvider);
 
-				await expect(manager.sendBatch(request)).rejects.toEqual(errorResponse);
+				// Its error members are reported per batch entry; the batch itself did not fail.
+				await expect(manager.sendBatch(request)).resolves.toEqual(errorResponse);
 				expect(myProvider.request).toHaveBeenCalledTimes(1);
 				expect(myProvider.request).toHaveBeenCalledWith(payload);
 			});

@@ -15,6 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+import { TransactionSigningError } from '@theqrl/web3-errors';
 import { Numbers } from '@theqrl/web3-types';
 import { bytesToHex, toHex } from '@theqrl/web3-utils';
 import { isAddressString } from '@theqrl/web3-validator';
@@ -76,8 +77,7 @@ export abstract class BaseTransaction<TransactionObject> {
 	/**
 	 * The default chain the tx falls back to if no Common
 	 * is provided and if the chain can't be derived from
-	 * a passed in chainId (only EIP-2718 typed txs) or
-	 * EIP-155 signature (legacy txs).
+	 * a passed in chainId.
 	 *
 	 * @hidden
 	 */
@@ -127,7 +127,15 @@ export abstract class BaseTransaction<TransactionObject> {
 		this.extraParams = extraParamsB.length > 0 ? extraParamsB : undefined;
 		this.signature = signatureB.length > 0 ? signatureB : undefined;
 		this.publicKey = publicKeyB.length > 0 ? publicKeyB : undefined;
-		
+
+		// `extraParams` is reserved for future use and must be empty: go-qrl refuses a transaction
+		// that carries a value ("non-empty extraParams not supported"). It is refused here, at
+		// construction time, for `fromTxData`, `fromValuesArray` and decoded raw transactions alike,
+		// instead of being silently dropped by `sign()` or accepted by `verifySignature()`.
+		if (this.extraParams !== undefined) {
+			throw new Error(this._errorMsg('non-empty extraParams not supported'));
+		}
+
 		this._validateCannotExceedMaxInteger({ value: this.value });
 
 		// gqrl limits gasLimit to 2^64-1
@@ -165,6 +173,10 @@ export abstract class BaseTransaction<TransactionObject> {
 			errors.push(
 				`gasLimit is too low. given ${this.gasLimit}, need at least ${this.getBaseFee()}`,
 			);
+		}
+
+		if (this.extraParams !== undefined && this.extraParams.length > 0) {
+			errors.push('non-empty extraParams not supported');
 		}
 
 		if (this.isSigned() && !this.verifySignature()) {
@@ -230,8 +242,8 @@ export abstract class BaseTransaction<TransactionObject> {
 	 * with {@link Block.fromValuesArray}.
 	 *
 	 * For an unsigned tx this method uses the empty Uint8Array values for the
-	 * signature parameters `publicKey` and `signature` for encoding. For an EIP-155 compliant
-	 * representation for external signing use {@link BaseTransaction.getMessageToSign}.
+	 * authentication fields `descriptor`, `extraParams`, `signature` and `publicKey`. For the
+	 * signing preimage used by external signers use {@link BaseTransaction.getMessageToSign}.
 	 */
 	public abstract raw(): FeeMarketEIP1559ValuesArray;
 
@@ -266,6 +278,11 @@ export abstract class BaseTransaction<TransactionObject> {
 	 * Determines if the signature is valid
 	 */
 	public verifySignature(): boolean {
+		// A transaction with non-empty `extraParams` is invalid on every go-qrl node, so its
+		// signature is never considered valid here either.
+		if (this.extraParams !== undefined && this.extraParams.length > 0) {
+			return false;
+		}
 		const msgHash = this.getMessageToVerifySignature();
 		const { descriptor, signature, publicKey } = this;
 		
@@ -296,18 +313,25 @@ export abstract class BaseTransaction<TransactionObject> {
 	public abstract getSenderPublicKey(): Uint8Array;
 
 	/**
-	 * Signs a transaction.
+	 * Signs a transaction with the ML-DSA-87 key derived from the 51-byte extended seed.
 	 *
 	 * Note that the signed tx is returned as a new object,
 	 * use as follows:
 	 * ```javascript
-	 * const signedTx = tx.sign(privateKey, publicKey)
+	 * const signedTx = tx.sign(seed)
 	 * ```
+	 *
+	 * The signed transaction always carries empty `extraParams`; a transaction holding a
+	 * non-empty value is refused with a {@link TransactionSigningError} rather than signed over
+	 * silently altered fields.
 	 */
 	public sign(seed: Uint8Array): TransactionObject {
 		if (seed.length !== SEED_BYTES) {
 			const msg = this._errorMsg(`Seed must be ${SEED_BYTES} bytes in length.`);
 			throw new Error(msg);
+		}
+		if (this.extraParams !== undefined && this.extraParams.length > 0) {
+			throw new TransactionSigningError('non-empty extraParams not supported');
 		}
 
 		const wallet = newMLDSA87WalletFromExtendedSeed(seed);
@@ -441,7 +465,12 @@ export abstract class BaseTransaction<TransactionObject> {
 			'type',
 			'baseFee',
 			'maxFeePerGas',
+			'maxPriorityFeePerGas',
 			'chainId',
+			'descriptor',
+			'extraParams',
+			'signature',
+			'publicKey',
 		];
 		for (const [key, value] of Object.entries(values)) {
 			if (txDataKeys.includes(key)) {

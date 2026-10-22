@@ -78,6 +78,12 @@ Current controls:
   encryption/decryption uses Argon2id and AES from `@theqrl/qrl-cryptography`.
 - Address, bytes, block, and transaction field validation is centralized through
   `@theqrl/web3-validator` and package schemas.
+- The runtime packages are bundler-safe: no publishable package other than the
+  Node-only `@theqrl/web3-providers-ipc` loads a Node built-in module (the
+  event emitter is a dependency-free implementation in `@theqrl/web3-utils`),
+  so Vite/esbuild/Rollup consumers get working code rather than an empty
+  polyfill stub. `scripts/check-package-dependencies.js` fails `pnpm run
+  doctor` and the release inspection if a built-in import is reintroduced.
 
 Residual risks:
 
@@ -227,7 +233,14 @@ Current controls:
 - Pull requests that change package manager or dependency files must document
   lockfile review and install/audit outputs.
 - Package inspection rejects forbidden dependency-manager, secret, generated, and
-  copied-file artefacts in npm pack output.
+  copied-file artefacts in npm pack output, and cross-checks the built output
+  against each manifest so a package never depends on hoisting to resolve a
+  module it does not declare.
+- `pnpm run doctor` rejects `allowBuilds` entries for packages absent from the
+  lockfile and `.trivyignore` exceptions without a current revisit date.
+- The release pipeline publishes the GitHub releases only after every tarball
+  is on npm; the npm publish loop is idempotent so a failed run is re-driven
+  rather than recovered by hand (`RELEASE.md`).
 
 Residual risks:
 
@@ -270,11 +283,32 @@ Residual risks:
 
 ## Open Audit Questions
 
-- Confirm the exact signing preimage for every supported transaction type
-  against QRL reference implementations.
-- Add deterministic cross-implementation vectors for address derivation,
-  extended seeds, transaction serialization, message signing, and signature
-  verification.
+Closed by the third audit pass (2026-10-22, section 12.5 of the audit report):
+
+- The signing preimage and the cross-implementation vectors. A Go harness
+  (`govec`, kept with the audit evidence outside the repository) was built
+  against two go-qrl trees from the module cache, `b92884a` (2026-06-08) and
+  `f3864c4` (2026-10-20), plus go-qrllib v0.8.0/v0.10.0 and the Hyperion
+  compiler source, and generated deterministic vectors for address derivation
+  from the extended seed, the typed transaction preimage
+  (`0x02 ‖ RLP[...]`) and its keccak, deterministic ML-DSA-87 signatures, the
+  signed raw encoding, transaction hash and sender recovery, intrinsic gas and
+  chain parameters, `\x19QRL Signed Message:\n` hashing, typed-data hashing,
+  keystore files (both directions) and the address checksum. 145 of 145
+  comparisons with the library matched, Go verified the library's artefacts in
+  the reverse direction, and the checked-out go-qrl tree of 2026-04-09 was
+  identified as a previous generation and excluded as a reference. The
+  remaining divergences are tracked as findings, not open questions: go-qrl's
+  `--lightkdf` keystores are rejected by the stricter Argon2id bound (L-72),
+  indexed array/tuple event filters (L-71), reply fields the formatter drops
+  (L-73) and the non-empty `extraParams` acceptance (L-15).
+
+Still open:
+
+- Keep the vectors current: regenerate them against each new go-qrl release
+  that touches `core/types`, `accounts/keystore` or `signer/core/apitypes`,
+  and turn the harness output into committed fixtures once the Go module
+  versions are pinned in-repo.
 - Decide which integration/e2e provider checks are required before release
   freeze and which remain scheduled/manual.
 - Re-run tarball smoke tests and local `act` install/package paths when Docker

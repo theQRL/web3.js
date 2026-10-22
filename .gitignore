@@ -49,6 +49,3 @@ packages/web3/test/*_black_box/pnpm-lock.yaml
 packages/web3/test/*_black_box/yarn.lock
 
 tmp/
-
-# Incubed (in3) nodelist
-packages/web3/.in3/

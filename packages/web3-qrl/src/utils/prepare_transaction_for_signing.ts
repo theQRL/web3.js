@@ -20,6 +20,7 @@ import {
 	HexString,
 	PopulatedUnsignedTransaction,
 	Transaction,
+	TransactionWithFromLocalWalletIndex,
 	ValidChains,
 	FormatType,
 	QRL_DATA_FORMAT,
@@ -31,7 +32,8 @@ import { TransactionSigningError } from '@theqrl/web3-errors';
 import { isNullish } from '@theqrl/web3-validator';
 import { validateTransactionForSigning } from '../validation.js';
 import { formatTransaction } from './format_transaction.js';
-import { transactionBuilder } from './transaction_builder.js';
+import { getTransactionFromOrToAttr, transactionBuilder } from './transaction_builder.js';
+import { validateTransactionInput } from './transaction_input.js';
 
 const getQRLjsTxDataFromTransaction = (
 	transaction: FormatType<PopulatedUnsignedTransaction, typeof QRL_DATA_FORMAT>,
@@ -129,12 +131,31 @@ const getQRLjsTransactionOptions = (
 };
 
 export const prepareTransactionForSigning = async (
-	transaction: Transaction,
+	rawTransaction: Transaction,
 	web3Context: Web3Context<QRLExecutionAPI>,
 	seed?: HexString | Uint8Array,
 	fillGasPrice = false,
 	fillGasLimit = true,
 ) => {
+	// Rejected before anything is populated, so that a custom `transactionBuilder` cannot
+	// bypass the checks either (L-50, L-55).
+	validateTransactionInput(rawTransaction);
+
+	// A wallet index in `from` names a local account. It is resolved before the sender check
+	// below, so that `accounts.signTransaction({ from: 0 }, seed)` behaves like
+	// `sendTransaction({ from: 0 })` instead of failing with an address error on the index (I-12).
+	const transaction: Transaction =
+		typeof (rawTransaction as { from?: unknown }).from === 'number'
+			? {
+					...rawTransaction,
+					from: getTransactionFromOrToAttr(
+						'from',
+						web3Context,
+						rawTransaction as unknown as TransactionWithFromLocalWalletIndex,
+					),
+			  }
+			: rawTransaction;
+
 	// If a 'from' address is supplied together with a signing seed, assert that
 	// 'from' matches the address derived from that seed. Otherwise the tx would
 	// be signed by the seed's key while claiming a different sender, and the

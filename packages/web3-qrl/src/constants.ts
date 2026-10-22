@@ -17,3 +17,12 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import { FMT_BYTES, FMT_NUMBER } from '@theqrl/web3-types';
 
 export const NUMBER_DATA_FORMAT = { bytes: FMT_BYTES.HEX, number: FMT_NUMBER.NUMBER } as const;
+
+/**
+ * How many consecutive failed polls are tolerated before the failure is reported, both while
+ * waiting for a receipt (`qrl_getTransactionReceipt`) and while counting confirmations
+ * (`qrl_getBlockByNumber`). One transient node error used to abort the wait for a transaction
+ * that was already broadcast (L-49) or to stop the confirmation watcher (M-7c); a persistent
+ * error must still surface quickly instead of hiding behind the polling timeout.
+ */
+export const MAX_CONSECUTIVE_POLLING_ERRORS = 5;

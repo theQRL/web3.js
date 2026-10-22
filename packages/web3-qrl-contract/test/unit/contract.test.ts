@@ -130,17 +130,11 @@ describe('Contract', () => {
 				provider,
 			});
 
-			expect(contract.provider).toEqual({
+			// The provider instance carries transport state of its own (bounds, endpoint, ...);
+			// only the URL it was built from matters here.
+			expect(contract.provider).toMatchObject({
 				clientUrl: provider,
 				httpProviderOptions: undefined,
-				// A `bounds` object (request/response safety limits) was added to
-				// HttpProvider; deep-equal on a provider instance must expect it.
-				bounds: {
-					connectionTimeout: 30000,
-					requestTimeout: 120000,
-					maxResponseBytes: 10485760,
-					maxInFlightRequests: 256,
-				},
 			});
 		});
 
@@ -156,17 +150,9 @@ describe('Contract', () => {
 				},
 			);
 
-			expect(contract.provider).toEqual({
+			expect(contract.provider).toMatchObject({
 				clientUrl: provider,
 				httpProviderOptions: undefined,
-				// A `bounds` object (request/response safety limits) was added to
-				// HttpProvider; deep-equal on a provider instance must expect it.
-				bounds: {
-					connectionTimeout: 30000,
-					requestTimeout: 120000,
-					maxResponseBytes: 10485760,
-					maxInFlightRequests: 256,
-				},
 			});
 		});
 
@@ -579,7 +565,15 @@ describe('Contract', () => {
 
 			const clonnedContract = contract.clone();
 
-			expect(JSON.stringify(contract)).toStrictEqual(JSON.stringify(clonnedContract));
+			// The clone shares the request manager and reproduces the public state; the private
+			// context bookkeeping (listener tables, ownership flags) legitimately differs.
+			expect(clonnedContract.options.address).toStrictEqual(contract.options.address);
+			expect(clonnedContract.options.gas).toStrictEqual(contract.options.gas);
+			expect(JSON.stringify(clonnedContract.options.jsonInterface)).toStrictEqual(
+				JSON.stringify(contract.options.jsonInterface),
+			);
+			expect(clonnedContract.config).toStrictEqual(contract.config);
+			expect(clonnedContract.requestManager).toBe(contract.requestManager);
 
 			contract.options.jsonInterface = GreeterAbi;
 		});
@@ -588,7 +582,12 @@ describe('Contract', () => {
 			const contract = new Contract(sampleStorageContractABI);
 
 			const clonnedContract = contract.clone();
-			expect(JSON.stringify(contract)).toStrictEqual(JSON.stringify(clonnedContract));
+			expect(clonnedContract.options.address).toBeUndefined();
+			expect(JSON.stringify(clonnedContract.options.jsonInterface)).toStrictEqual(
+				JSON.stringify(contract.options.jsonInterface),
+			);
+			expect(clonnedContract.config).toStrictEqual(contract.config);
+			expect(clonnedContract.requestManager).toBe(contract.requestManager);
 		});
 
 		it('should be able to update the jsonInterface', () => {

@@ -19,13 +19,38 @@ The workspace install policy is defined in `pnpm-workspace.yaml`:
 - `strictDepBuilds: true` fails installs when dependencies have unreviewed build
   scripts.
 - `allowBuilds` is the reviewed allowlist of dependencies whose install-time
-  build scripts are expected for the current lockfile.
+  build scripts are expected for the current lockfile. Every entry must name a
+  package that is present in `pnpm-lock.yaml`; `pnpm run doctor` fails on a
+  stale entry, because it would pre-approve the install script of whatever a
+  future dependency change brings in under that name.
 
 Do not widen `allowBuilds`, add pnpm overrides, or relax these settings without
 explaining the reason in the pull request.
 
 Known install warnings and the current remediation plan are tracked in
 [`docs/dependency-warning-triage.md`](dependency-warning-triage.md).
+
+## Declared Dependencies
+
+Each package must declare everything it imports. The workspace uses
+`nodeLinker: hoisted`, so an undeclared module still resolves during
+development and tests and the gap only surfaces when a consumer installs the
+package from the registry under a strict resolver (pnpm's isolated linker, Yarn
+PnP). `scripts/check-package-dependencies.js` (`pnpm run check:dependencies`,
+also part of `pnpm run doctor` and of `pnpm run release:inspect-packages`)
+parses every package's `src/**/*.ts` with the TypeScript compiler and, once
+built, its `lib/**/*.js`, and fails when:
+
+- a runtime import is not in `dependencies`, `peerDependencies` or
+  `optionalDependencies` (a `devDependency` only satisfies `import type`);
+- the built output of a publishable package loads a Node built-in module.
+  Only `@theqrl/web3-providers-ipc` (`net`, `fs`) is Node-only; every other
+  package must stay bundler-safe for Vite/esbuild/Rollup consumers, which is
+  why the event emitter is a dependency-free implementation in
+  `@theqrl/web3-utils` rather than Node's `events`.
+
+It warns about a dependency that nothing imports and about a plain (non
+`import type`) import of a Node built-in in a browser-facing package's source.
 
 ## Git-hosted Dependency Integrity
 
@@ -88,13 +113,18 @@ Local and CI runs are pinned to the same scanner:
 
 The command prints `trivy version` after the scan, so the scanner version and
 the vulnerability database timestamp appear in the output and a saved result can
-be dated as release evidence.
+be dated as release evidence. The repository is mounted read-only into the
+scanner container; only the named volume holding the vulnerability database is
+writable.
 
 The scan covers the whole locked dependency graph, not only production
 dependencies. High and critical findings are release blockers unless a
 maintainer documents why the affected dependency is unreachable and records a
 time-bounded follow-up; accepted advisories are recorded in `.trivyignore` with
-that reasoning. A development-only vulnerability that can execute in CI, release
+that reasoning and a `revisit by YYYY-MM-DD` marker. `pnpm run doctor` fails
+when the marker is missing or the date has passed, so an exception cannot
+silently become permanent: re-assess the advisory and either drop the entry or
+record a new date. A development-only vulnerability that can execute in CI, release
 packaging, docs generation, or local developer install/build paths is
 release-relevant even though it is not part of package runtime dependencies.
 
@@ -140,7 +170,7 @@ one once every dependent has released a compatible fixed version.
 | `brace-expansion@<1.1.20` | `1.1.20` | CVE-2026-102276 / CVE-2026-102278 recursion DoS (high), brace-expansion 1 line. |
 | `brace-expansion@>=2.0.0 <2.1.6` | `2.1.6` | CVE-2026-102276 / CVE-2026-102278 recursion DoS (high), brace-expansion 2 line. |
 | `brace-expansion@>=5.0.0 <5.0.11` | `5.0.11` | CVE-2026-102276 / CVE-2026-102278 recursion DoS (high), brace-expansion 5 line. |
-| `undici@<6.27.0` | `6.27.0` | Patch floor for the Undici 6 line. |
+| `undici@<6.27.0` | `6.27.0` | Patch floor for the Undici 6 line (reached through `@actions/http-client` in the semantic-release npm plugin). |
 | `undici@>=7.0.0 <7.28.0` | `7.28.0` | Patch floor for the Undici 7 line; also the version required for Node 20 compatibility in CI. |
 | `fast-uri@<3.1.7` | `3.1.7` | CVE-2026-84292 / CVE-2026-84394 authority injection and host confusion (high), plus the earlier URI parsing fixes; also quarantine-excluded so a fix can land inside the seven-day window. |
 | `postcss@<8.5.18` | `8.5.18` | Patched release for GHSA-r28c-9q8g-f849; quarantine-excluded for the security update. |
@@ -148,7 +178,6 @@ one once every dependent has released a compatible fixed version.
 | `shell-quote@<1.11.0` | `1.11.0` | CVE-2026-102422 command injection through a line terminator after a comment token (critical). |
 | `ws@>=7.0.0 <7.5.11` | `7.5.11` | Memory-exhaustion DoS advisory (high), ws 7 line. |
 | `ws@>=8.0.0 <8.21.0` | `8.21.0` | Memory-exhaustion DoS advisory (high), ws 8 line. |
-| `path-to-regexp@<0.1.13` | `0.1.13` | Patched version for GHSA-37ch-88jc-xwx2. |
 | `serialize-javascript` | `7.0.5` | Patched version for GHSA-5c6j-r48x-rmvq in the Docusaurus/webpack graph. |
 
 ### Development-tooling patch floors
@@ -159,7 +188,6 @@ they execute on developer and CI machines, so they are remediated the same way.
 
 | Override | Resolves to | Reason |
 | --- | --- | --- |
-| `adm-zip@<0.6.0` | `0.6.0` | GHSA-xcpc-8h2w-3j85 path traversal (high); via hardhat. |
 | `http-proxy-middleware@<2.0.10` | `2.0.10` | Patch floor, 2.x line. |
 | `http-proxy-middleware@>=4.0.0 <4.1.1` | `4.2.0` | Patch floor, 4.x line. |
 | `linkify-it@<5.0.1` | `5.0.2` | Patch floor. |
@@ -222,7 +250,6 @@ seven-day `minimumReleaseAge` quarantine.
 | `express` | `5.2.1` | Holds the docs/dev-server graph on one reviewed Express release. |
 | `loader-runner` | `4.3.1` | Holds webpack's loader runner on a reviewed version. |
 | `schema-utils@4>ajv` | `8.17.1` | Keeps modern schema validation on a reviewed Ajv 8 version while avoiding loader stacks that require Ajv 6. |
-| `socks` | `2.8.7` | Holds npm registry proxy support on a reviewed transitive version. |
 | `webpack` | `5.107.1` | Holds the whole graph on the reviewed webpack version declared in the root `devDependencies`. |
 | `webpack-sources` | `3.3.3` | Holds webpack on a reviewed source-map dependency. |
 

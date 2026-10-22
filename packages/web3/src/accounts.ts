@@ -15,7 +15,15 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { QRLExecutionAPI, Bytes, Transaction, KeyStore, QRL_DATA_FORMAT } from '@theqrl/web3-types';
+import {
+	QRLExecutionAPI,
+	Bytes,
+	Transaction,
+	KeyStore,
+	QRL_DATA_FORMAT,
+	Web3BaseWallet,
+	Web3BaseWalletAccount,
+} from '@theqrl/web3-types';
 import { bytesToHex, format } from '@theqrl/web3-utils';
 import { Web3Context } from '@theqrl/web3-core';
 import { prepareTransactionForSigning } from '@theqrl/web3-qrl';
@@ -37,8 +45,15 @@ import {
  * To avoid multiple package dependencies for `@theqrl/web3-qrl-accounts` we are creating
  * this function in `web3` package. In future the actual `@theqrl/web3-qrl-accounts` package
  * should be converted to context aware.
+ *
+ * @param context - The context the signing helpers are bound to.
+ * @param existingWallet - A wallet the context already holds (supplied through
+ * `Web3ContextInitOptions`); it becomes `accounts.wallet` instead of a fresh empty one (L-41).
  */
-export const initAccountsForContext = (context: Web3Context<QRLExecutionAPI>) => {
+export const initAccountsForContext = (
+	context: Web3Context<QRLExecutionAPI>,
+	existingWallet?: Web3BaseWallet<Web3BaseWalletAccount>,
+) => {
 	const signTransactionWithContext = async (transaction: Transaction, seed: Bytes) => {
 		// Snapshot mutable seeds so sender validation, nonce lookup, and signing use the same key.
 		const signingSeed = seed instanceof Uint8Array ? bytesToHex(seed) : seed;
@@ -92,11 +107,15 @@ export const initAccountsForContext = (context: Web3Context<QRLExecutionAPI>) =>
 		);
 	};
 
-	const wallet = new Wallet({
-		create: createWithContext,
-		seedToAccount: seedToAccountWithContext,
-		decrypt: decryptWithContext,
-	});
+	// `Wallet` is the only wallet implementation the umbrella ships; a caller-supplied wallet
+	// is exposed under the same type.
+	const wallet =
+		(existingWallet as Wallet | undefined) ??
+		new Wallet({
+			create: createWithContext,
+			seedToAccount: seedToAccountWithContext,
+			decrypt: decryptWithContext,
+		});
 
 	return {
 		signTransaction: signTransactionWithContext,

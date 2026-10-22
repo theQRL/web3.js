@@ -81,11 +81,11 @@ describe('Web3Context', () => {
 		it('should init context with correct configuration', () => {
 			const parent = new Context1({
 				provider: 'http://test/abc',
-				config: { defaultNetworkId: 'my-network-id', defaultHardfork: 'my-fork' },
+				config: { defaultNetworkId: 31337, defaultHardfork: 'my-fork' },
 			});
 			const child = parent.use(Context2);
 
-			expect(child.defaultNetworkId).toBe('my-network-id');
+			expect(child.defaultNetworkId).toBe(31337);
 			expect(child.defaultHardfork).toBe('my-fork');
 		});
 
@@ -93,9 +93,9 @@ describe('Web3Context', () => {
 			const parent = new Context1('http://test/abc');
 			const child = parent.use(Context2);
 
-			parent.defaultNetworkId = 'my-network-id';
+			parent.defaultNetworkId = 31337;
 
-			expect(child.defaultNetworkId).toBe('my-network-id');
+			expect(child.defaultNetworkId).toBe(31337);
 		});
 
 		it('should use same instance of request manager', () => {
@@ -129,7 +129,7 @@ describe('Web3Context', () => {
 					defaultCommon: {
 						customChain: {
 							name: 'foo',
-							networkId: 'my-network-id',
+							networkId: 31337,
 							chainId: 1337,
 						},
 						baseChain: 'mainnet',
@@ -139,7 +139,7 @@ describe('Web3Context', () => {
 			});
 			const child = parent.use(Context2);
 
-			expect(child.defaultCommon?.customChain.networkId).toBe('my-network-id');
+			expect(child.defaultCommon?.customChain.networkId).toBe(31337);
 			expect(child.defaultCommon?.customChain.chainId).toBe(1337);
 		});
 	});
@@ -148,13 +148,13 @@ describe('Web3Context', () => {
 		it('should link context with correct configuration', () => {
 			const parent = new Context1({
 				provider: 'http://test/abc',
-				config: { defaultNetworkId: 'my-network-id', defaultHardfork: 'my-fork' },
+				config: { defaultNetworkId: 31337, defaultHardfork: 'my-fork' },
 			});
 			const child = new Context2('http://test/abc');
 
 			child.link(parent);
 
-			expect(child.defaultNetworkId).toBe('my-network-id');
+			expect(child.defaultNetworkId).toBe(31337);
 			expect(child.defaultHardfork).toBe('my-fork');
 		});
 
@@ -164,9 +164,9 @@ describe('Web3Context', () => {
 
 			child.link(parent);
 
-			parent.defaultNetworkId = 'my-network-id';
+			parent.defaultNetworkId = 31337;
 
-			expect(child.defaultNetworkId).toBe('my-network-id');
+			expect(child.defaultNetworkId).toBe(31337);
 		});
 
 		it('should use same instance of request manager', () => {

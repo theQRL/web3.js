@@ -47,7 +47,9 @@ describe('[BaseTransaction]', () => {
 			class: FeeMarketEIP1559Transaction,
 			name: 'FeeMarketEIP1559Transaction',
 			type: 2,
-			values: [new Uint8Array([1])].concat(Array(10).fill(zero)),
+			// [chainId, nonce, maxPriorityFeePerGas, maxFeePerGas, gasLimit, to, value, data,
+			// accessList (an RLP list, never a byte string), descriptor, extraParams]
+			values: [new Uint8Array([1]), zero, zero, zero, zero, zero, zero, zero, [], zero, zero],
 			txs: eip1559Txs,
 			fixtures: eip1559Fixtures,
 		},

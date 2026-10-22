@@ -41,6 +41,11 @@ const isValidBlockHash = (value: unknown): value is string =>
 /**
  * This function watches a Transaction by subscribing to new heads.
  * It is used by `watchTransactionForConfirmations`, in case the provider supports subscription.
+ *
+ * Exactly one source counts confirmations at any time: the `newHeads` subscription, or polling
+ * once the subscription failed or stayed silent for `blockHeaderTimeout` seconds. Starting the
+ * polling fallback drops the subscription and a header arriving in time cancels the fallback,
+ * so confirmations are never counted twice (L-54).
  */
 export const watchTransactionBySubscription = <
 	ReturnFormat extends DataFormat,
@@ -51,16 +56,54 @@ export const watchTransactionBySubscription = <
 	transactionPromiEvent,
 	returnFormat,
 }: WaitProps<ReturnFormat, ResolveType>) => {
-	// The following variable will stay true except if the data arrived,
-	//	or if watching started after an error had occurred.
-	let needToWatchLater = true;
-	let lastCaughtBlockHash: string;
+	let polling = false;
+	let headerReceived = false;
+	let subscription: NewHeadsSubscription | undefined;
+	let lastCaughtBlockHash: string | undefined;
+	let fallbackTimer: ReturnType<typeof setTimeout> | undefined;
+
+	const dropSubscription = (sub: NewHeadsSubscription | undefined) => {
+		if (sub === undefined) return;
+		if (sub === subscription) subscription = undefined;
+		web3Context.subscriptionManager?.removeSubscription(sub).catch(() => {
+			// Already removed (for example by `subscriptionManager.clear()`): nothing to do.
+		});
+	};
+
+	const cancelFallback = () => {
+		if (fallbackTimer !== undefined) {
+			clearTimeout(fallbackTimer);
+			fallbackTimer = undefined;
+		}
+	};
+
+	const startPolling = () => {
+		if (polling) return;
+		polling = true;
+		cancelFallback();
+		dropSubscription(subscription);
+		watchTransactionByPolling({
+			web3Context,
+			transactionReceipt,
+			transactionPromiEvent,
+			returnFormat,
+		});
+	};
+
 	setImmediate(() => {
 		web3Context.subscriptionManager
 			?.subscribe('newHeads')
-			.then((subscription: NewHeadsSubscription) => {
-				subscription.on('data', async (newBlockHeader: BlockHeaderOutput) => {
-					needToWatchLater = false;
+			.then((sub: NewHeadsSubscription) => {
+				if (polling) {
+					// The fallback fired while the subscription was being set up.
+					dropSubscription(sub);
+					return;
+				}
+				subscription = sub;
+				sub.on('data', (newBlockHeader: BlockHeaderOutput) => {
+					if (polling || subscription !== sub) return;
+					headerReceived = true;
+					cancelFallback();
 					if (
 						!newBlockHeader?.number ||
 						!isValidUnsignedHexNumber(newBlockHeader.number) ||
@@ -71,7 +114,7 @@ export const watchTransactionBySubscription = <
 					) {
 						return;
 					}
-					lastCaughtBlockHash = newBlockHeader?.parentHash as string;
+					lastCaughtBlockHash = newBlockHeader?.parentHash;
 
 					const confirmations =
 						BigInt(newBlockHeader.number) -
@@ -92,41 +135,22 @@ export const watchTransactionBySubscription = <
 						),
 					});
 					if (confirmations >= web3Context.transactionConfirmationBlocks) {
-						await web3Context.subscriptionManager?.removeSubscription(subscription);
+						dropSubscription(sub);
 					}
 				});
-				subscription.on('error', async () => {
-					await web3Context.subscriptionManager?.removeSubscription(subscription);
-
-					needToWatchLater = false;
-					watchTransactionByPolling({
-						web3Context,
-						transactionReceipt,
-						transactionPromiEvent,
-						returnFormat,
-					});
+				sub.on('error', () => {
+					startPolling();
 				});
 			})
 			.catch(() => {
-				needToWatchLater = false;
-				watchTransactionByPolling({
-					web3Context,
-					transactionReceipt,
-					transactionPromiEvent,
-					returnFormat,
-				});
+				startPolling();
 			});
 	});
 
-	// Fallback to polling if tx receipt didn't arrived in "blockHeaderTimeout" [10 seconds]
-	setTimeout(() => {
-		if (needToWatchLater) {
-			watchTransactionByPolling({
-				web3Context,
-				transactionReceipt,
-				transactionPromiEvent,
-				returnFormat,
-			});
+	// Fallback to polling if no block header arrived within "blockHeaderTimeout" [10 seconds]
+	fallbackTimer = setTimeout(() => {
+		if (!headerReceived) {
+			startPolling();
 		}
 	}, web3Context.blockHeaderTimeout * 1000);
 };

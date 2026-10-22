@@ -4,9 +4,11 @@
 # Both scans read this file, so an entry here suppresses the finding locally and
 # in CI alike. Add one only with a maintainer's reason for why the advisory is
 # unreachable and a time-bounded follow-up, per docs/supply-chain-security.md.
-# One advisory ID per line, e.g.:
+# One advisory ID per line. The `revisit by YYYY-MM-DD` marker is mandatory and
+# enforced: `pnpm run doctor` fails once the date has passed (or when the marker
+# is missing), so every exception is re-assessed on time. E.g.:
 #
-#   CVE-0000-00000  # unreachable: <reason>; revisit by <date>
+#   CVE-0000-00000  # unreachable: <reason>; revisit by 2026-01-31
 
 # braces 3.0.3 has no patched release for deeply nested glob patterns.
 # It is used only by development tooling (Jest, webpack/Docusaurus, file

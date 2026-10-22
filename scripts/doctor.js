@@ -4,6 +4,8 @@ const { execFileSync, spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 
+const { checkPackageDependencies } = require('./check-package-dependencies');
+const { allowBuildsFailures, listWorkspaceBlockKeys, trivyIgnoreFailures } = require('./doctor-checks');
 const { digestInstalledPackage, installedPackageRoot } = require('./git-dependency-digest');
 
 const root = path.resolve(__dirname, '..');
@@ -73,31 +75,13 @@ function listPackageJsonFiles() {
 					.filter(Boolean),
 			),
 		);
-	} catch (error) {
+	} catch {
 		fail('Unable to list package manifests with git');
 		return [];
 	}
 }
 
-// Reads the keys of the `overrides:` block in pnpm-workspace.yaml. Every key is
-// a two-space-indented mapping entry, quoted when it carries a range specifier.
-function listWorkspaceOverrideKeys(workspaceYaml) {
-	const lines = workspaceYaml.split('\n');
-	const start = lines.indexOf('overrides:');
-	if (start === -1) return null;
-
-	const keys = [];
-	for (let index = start + 1; index < lines.length; index += 1) {
-		const line = lines[index];
-		if (line.trim() === '') continue;
-		if (!line.startsWith('  ')) break;
-
-		const match = /^ {2}(?:"([^"]+)"|([^\s"#][^:]*)):/.exec(line);
-		if (match) keys.push(match[1] ?? match[2]);
-	}
-
-	return keys;
-}
+const listWorkspaceOverrideKeys = workspaceYaml => listWorkspaceBlockKeys(workspaceYaml, 'overrides');
 
 // Reads the override keys documented in the generated-by-hand inventory table,
 // which is fenced by HTML markers so this stays a table lookup and not a
@@ -105,7 +89,7 @@ function listWorkspaceOverrideKeys(workspaceYaml) {
 function listDocumentedOverrideKeys(doc) {
 	const start = doc.indexOf('<!-- overrides:start -->');
 	const end = doc.indexOf('<!-- overrides:end -->');
-	if (start === -1 || end === -1 || end < start) return null;
+	if (start === -1 || end === -1 || end < start) return undefined;
 
 	return doc
 		.slice(start, end)
@@ -186,6 +170,22 @@ if (!exists('pnpm-workspace.yaml')) {
 	}
 }
 
+// allowBuilds is reviewed per lockfile: an entry for a package that the
+// lockfile no longer contains would pre-approve a future install script.
+if (exists('pnpm-workspace.yaml') && exists('pnpm-lock.yaml')) {
+	for (const message of allowBuildsFailures(readText('pnpm-workspace.yaml'), readText('pnpm-lock.yaml'))) {
+		fail(message);
+	}
+}
+
+// Accepted advisories are time-bounded exceptions; a passed revisit date fails
+// the toolchain check until the advisory is re-assessed.
+if (!exists('.trivyignore')) {
+	fail('Missing .trivyignore');
+} else {
+	for (const message of trivyIgnoreFailures(readText('.trivyignore'))) fail(message);
+}
+
 // The supply-chain gate is only reproducible if the local script and the CI step
 // name the same scanner. Both assertions are offline string checks, so they are
 // safe to fail on; scanner availability is checked separately and only warns.
@@ -238,6 +238,13 @@ for (const manifestPath of listPackageJsonFiles()) {
 	}
 }
 
+// Every bare import in src/ (and in lib/ once built) must be declared by the
+// package itself; hoisting hides a missing declaration until a consumer
+// installs the package from the registry.
+const dependencyCheck = checkPackageDependencies({ root });
+for (const message of dependencyCheck.warnings) warn(message);
+for (const message of dependencyCheck.failures) fail(message);
+
 for (const [name, args] of [
 	['turbo', ['--version']],
 	['eslint', ['--version']],
@@ -272,7 +279,7 @@ for (const [packageName, { tarball, integrity, treeDigest }] of Object.entries(e
 		fail(`${packageName} must retain its reviewed archive integrity and URL in pnpm-lock.yaml`);
 	}
 	const actualDigest = digestInstalledPackage(installedPackageRoot(root, packageName));
-	if (actualDigest === null) {
+	if (!actualDigest) {
 		fail(`${packageName} is not installed; run pnpm install --frozen-lockfile before pnpm run doctor`);
 	} else if (actualDigest !== treeDigest) {
 		fail(
@@ -302,4 +309,4 @@ if (failures.length > 0) {
 	process.exit(1);
 }
 
-console.log('Environment checks passed');
+console.info('Environment checks passed');

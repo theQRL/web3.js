@@ -24,11 +24,14 @@ import {
 	ValidationSchemaInput,
 } from '@theqrl/web3-validator';
 import { bytesToUint8Array, bytesToHex, numberToHex, toBigInt } from './converters.js';
-import { mergeDeep } from './objects.js';
+import { MAX_NESTING_DEPTH, mergeDeep } from './objects.js';
 import { padLeft } from './string_manipulation.js';
 import { uint8ArrayConcat } from './uint8array.js';
 
 const { parseBaseType } = utils;
+
+const MAX_SAFE_INTEGER = BigInt(Number.MAX_SAFE_INTEGER);
+const MIN_SAFE_INTEGER = BigInt(Number.MIN_SAFE_INTEGER);
 
 export const isDataFormat = (dataFormat: unknown): dataFormat is DataFormat =>
 	typeof dataFormat === 'object' &&
@@ -90,29 +93,52 @@ const findSchemaByDataPath = (
 };
 /**
  * Converts a value depending on the format
+ *
+ * A value that cannot be parsed as the given type is returned unchanged: the scope of this
+ * function is formatting, not validation.
+ *
  * @param value - value to convert
  * @param qrlType - The type of the value to be parsed
  * @param format - The format to be converted to
  * @returns - The value converted to the specified format
+ * @throws FormatterError when `format.number` is {@link FMT_NUMBER.NUMBER} and the value lies
+ * outside the safe integer range: a JavaScript number cannot hold it without rounding (L-55).
  */
 export const convertScalarValue = (value: unknown, qrlType: string, format: DataFormat) => {
-	try {
-		const { baseType, baseTypeSize } = parseBaseType(qrlType);
-		if (baseType === 'int' || baseType === 'uint') {
-			switch (format.number) {
-				case FMT_NUMBER.NUMBER:
-					return Number(toBigInt(value));
-				case FMT_NUMBER.HEX:
-					return numberToHex(toBigInt(value));
-				case FMT_NUMBER.STR:
-					return toBigInt(value).toString();
-				case FMT_NUMBER.BIGINT:
-					return toBigInt(value);
-				default:
-					throw new FormatterError(`Invalid format: ${String(format.number)}`);
-			}
+	const { baseType, baseTypeSize } = parseBaseType(qrlType);
+
+	if (baseType === 'int' || baseType === 'uint') {
+		let parsed: bigint;
+		try {
+			parsed = toBigInt(value);
+		} catch {
+			return value;
 		}
-		if (baseType === 'bytes') {
+
+		switch (format.number) {
+			case FMT_NUMBER.NUMBER:
+				// 1 QRL is 1e18 planck, so silently rounding here corrupted every realistic
+				// balance, value or fee a caller asked for in this format.
+				if (parsed > MAX_SAFE_INTEGER || parsed < MIN_SAFE_INTEGER) {
+					throw new FormatterError(
+						`Value ${parsed.toString()} cannot be represented as a JavaScript number without loss of precision; use FMT_NUMBER.BIGINT, FMT_NUMBER.STR or FMT_NUMBER.HEX`,
+					);
+				}
+				return Number(parsed);
+			case FMT_NUMBER.HEX:
+				return numberToHex(parsed);
+			case FMT_NUMBER.STR:
+				return parsed.toString();
+			case FMT_NUMBER.BIGINT:
+				return parsed;
+			default:
+				// An unknown number format leaves the value untouched.
+				return value;
+		}
+	}
+
+	if (baseType === 'bytes') {
+		try {
 			let paddedValue;
 			if (baseTypeSize) {
 				if (typeof value === 'string') paddedValue = padLeft(value, baseTypeSize * 2);
@@ -131,19 +157,168 @@ export const convertScalarValue = (value: unknown, qrlType: string, format: Data
 				case FMT_BYTES.UINT8ARRAY:
 					return bytesToUint8Array(paddedValue as Bytes);
 				default:
-					throw new FormatterError(`Invalid format: ${String(format.bytes)}`);
+					return value;
 			}
+		} catch {
+			return value;
 		}
-	} catch (error) {
-		// If someone didn't use `eth` keyword we can return original value
-		// as the scope of this code is formatting not validation
-		return value;
 	}
 
 	return value;
 };
+
+const assertDepth = (depth: number): void => {
+	if (depth > MAX_NESTING_DEPTH) {
+		throw new FormatterError(`Data nesting exceeds the maximum depth of ${MAX_NESTING_DEPTH}`);
+	}
+};
+
+/**
+ * The schema that applies to an array value once a `oneOf` has been resolved against the data:
+ * the alternative whose `items` type matches the first element. This is the (naive) handling
+ * of `BlockSchema.transactions`, which is either an array of hashes or an array of objects.
+ */
+const resolveArraySchema = (schemaProp: JsonSchema, value: unknown[]): JsonSchema => {
+	if (isNullish(schemaProp.oneOf) || Array.isArray(schemaProp.items)) {
+		return schemaProp;
+	}
+
+	let resolved = schemaProp;
+	for (const alternative of schemaProp.oneOf) {
+		const itemsType = (alternative?.items as JsonSchema | undefined)?.type;
+		if (
+			(typeof value[0] === 'object' && itemsType === 'object') ||
+			(typeof value[0] === 'string' && itemsType !== 'object')
+		) {
+			resolved = alternative;
+		}
+	}
+
+	return resolved;
+};
+
+/**
+ * Formats an object in place against the schema node that describes it. Keys without a
+ * schema are removed.
+ */
+const convertObject = (
+	object: Record<string, unknown>,
+	nodeSchema: JsonSchema,
+	format: DataFormat,
+	depth: number,
+): void => {
+	assertDepth(depth);
+
+	// An object handed in where an array of objects was described is formatted as one of its
+	// elements (kept from the path based lookup, which fell through to `items.properties`).
+	const properties =
+		nodeSchema.properties ??
+		(isObject(nodeSchema.items) ? nodeSchema.items.properties : undefined);
+
+	for (const [key, value] of Object.entries(object)) {
+		const schemaProp = properties?.[key];
+
+		if (isNullish(schemaProp)) {
+			delete object[key];
+			continue;
+		}
+
+		if (isObject(value)) {
+			convertObject(value, schemaProp, format, depth + 1);
+			continue;
+		}
+
+		if (Array.isArray(value)) {
+			const arraySchema = resolveArraySchema(schemaProp, value);
+
+			if (isNullish(arraySchema.items)) {
+				// Can not find schema for array item, delete that item
+				delete object[key];
+				continue;
+			}
+
+			// eslint-disable-next-line no-use-before-define
+			convertArray(value, arraySchema, format, depth + 1);
+			continue;
+		}
+
+		object[key] = convertScalarValue(value, schemaProp.format as string, format);
+	}
+};
+
+/**
+ * Formats one array element against the schema of the array's items and returns the value to
+ * store in its place. Objects and nested arrays are formatted in place; everything else is
+ * converted as a scalar, which leaves an unparseable value untouched.
+ */
+const convertElement = (
+	element: unknown,
+	itemSchema: JsonSchema,
+	format: DataFormat,
+	depth: number,
+): unknown => {
+	if (!isNullish(itemSchema.format)) {
+		return convertScalarValue(element, itemSchema.format, format);
+	}
+
+	if (isObject(element)) {
+		convertObject(element, itemSchema, format, depth);
+		return element;
+	}
+
+	if (Array.isArray(element)) {
+		const arraySchema = resolveArraySchema(itemSchema, element);
+
+		if (!isNullish(arraySchema.items)) {
+			// eslint-disable-next-line no-use-before-define
+			convertArray(element, arraySchema, format, depth);
+		}
+		return element;
+	}
+
+	// A scalar under a schema that declares no format has nothing to be converted to.
+	return element;
+};
+
+/**
+ * Formats an array in place. `items` is either one schema for every element (scalars, objects
+ * or, for a nested array such as `feeHistory.reward`, arrays again) or a tuple of per-position
+ * schemas; positions without a schema are left untouched.
+ */
+const convertArray = (
+	array: unknown[],
+	arraySchema: JsonSchema,
+	format: DataFormat,
+	depth: number,
+): void => {
+	assertDepth(depth);
+
+	const { items } = arraySchema;
+
+	if (Array.isArray(items)) {
+		for (let i = 0; i < array.length; i += 1) {
+			const itemSchema = items[i];
+			if (!isNullish(itemSchema)) {
+				array[i] = convertElement(array[i], itemSchema, format, depth + 1);
+			}
+		}
+		return;
+	}
+
+	if (!isObject(items)) {
+		return;
+	}
+
+	for (let i = 0; i < array.length; i += 1) {
+		array[i] = convertElement(array[i], items, format, depth + 1);
+	}
+};
+
 /**
  * Converts the data to the specified format
+ *
+ * The data is formatted in place. Prefer {@link format}, which copies the data first.
+ *
  * @param data - data to convert
  * @param schema - The JSON schema that describes the structure of the data
  * @param dataPath - A string array that specifies the path to the data within the JSON schema
@@ -158,121 +333,41 @@ export const convert = (
 	format: DataFormat,
 	oneOfPath: [string, number][] = [],
 ) => {
-	// If it's a scalar value
-	if (!isObject(data) && !Array.isArray(data)) {
-		return convertScalarValue(data, schema?.format as string, format);
+	const nodeSchema =
+		dataPath.length > 0 ? findSchemaByDataPath(schema, dataPath, oneOfPath) : schema;
+
+	if (isNullish(nodeSchema)) {
+		return data;
 	}
 
-	const object = data as Record<string, unknown>;
-
-	for (const [key, value] of Object.entries(object)) {
-		dataPath.push(key);
-		const schemaProp = findSchemaByDataPath(schema, dataPath, oneOfPath);
-
-		// If value is a scaler value
-		if (isNullish(schemaProp)) {
-			delete object[key];
-			dataPath.pop();
-
-			continue;
-		}
-
-		// If value is an object, recurse into it
-		if (isObject(value)) {
-			convert(value, schema, dataPath, format);
-			dataPath.pop();
-			continue;
-		}
-
-		// If value is an array
-		if (Array.isArray(value)) {
-			let _schemaProp = schemaProp;
-
-			// TODO This is a naive approach to solving the issue of
-			// a schema using oneOf. This chunk of code was intended to handle
-			// BlockSchema.transactions
-			// TODO BlockSchema.transactions are not being formatted
-			if (schemaProp?.oneOf !== undefined) {
-				// The following code is basically saying:
-				// if the schema specifies oneOf, then we are to loop
-				// over each possible schema and check if they type of the schema
-				// matches the type of value[0], and if so we use the oneOfSchemaProp
-				// as the schema for formatting
-				schemaProp.oneOf.forEach((oneOfSchemaProp: JsonSchema, index: number) => {
-					if (
-						!Array.isArray(schemaProp?.items) &&
-						((typeof value[0] === 'object' &&
-							(oneOfSchemaProp?.items as JsonSchema)?.type === 'object') ||
-							(typeof value[0] === 'string' &&
-								(oneOfSchemaProp?.items as JsonSchema)?.type !== 'object'))
-					) {
-						_schemaProp = oneOfSchemaProp;
-						oneOfPath.push([key, index]);
-					}
-				});
-			}
-
-			if (isNullish(_schemaProp?.items)) {
-				// Can not find schema for array item, delete that item
-				delete object[key];
-				dataPath.pop();
-
-				continue;
-			}
-
-			// If schema for array items is a single type
-			if (isObject(_schemaProp.items) && !isNullish(_schemaProp.items.format)) {
-				for (let i = 0; i < value.length; i += 1) {
-					(object[key] as unknown[])[i] = convertScalarValue(
-						value[i],
-						_schemaProp?.items?.format,
-						format,
-					);
-				}
-
-				dataPath.pop();
-				continue;
-			}
-
-			// If schema for array items is an object
-			if (!Array.isArray(_schemaProp?.items) && _schemaProp?.items?.type === 'object') {
-				for (const arrObject of value) {
-					convert(
-						arrObject as Record<string, unknown> | unknown[],
-						schema,
-						dataPath,
-						format,
-						oneOfPath,
-					);
-				}
-
-				dataPath.pop();
-				continue;
-			}
-
-			// If schema for array is a tuple
-			if (Array.isArray(_schemaProp?.items)) {
-				for (let i = 0; i < value.length; i += 1) {
-					(object[key] as unknown[])[i] = convertScalarValue(
-						value[i],
-						_schemaProp.items[i].format as string,
-						format,
-					);
-				}
-
-				dataPath.pop();
-				continue;
-			}
-		}
-
-		object[key] = convertScalarValue(value, schemaProp.format as string, format);
-
-		dataPath.pop();
+	if (isObject(data)) {
+		convertObject(data, nodeSchema, format, dataPath.length);
+		return data;
 	}
 
-	return object;
+	if (Array.isArray(data)) {
+		const arraySchema = resolveArraySchema(nodeSchema, data);
+		if (!isNullish(arraySchema.items)) {
+			convertArray(data, arraySchema, format, dataPath.length);
+		}
+		return data;
+	}
+
+	return convertScalarValue(data, nodeSchema.format as string, format);
 };
 
+/**
+ * Formats data (a scalar, an object or an array) according to a JSON schema and the requested
+ * {@link DataFormat}.
+ *
+ * The caller's data is never modified: objects, arrays and the objects nested inside arrays
+ * are deep-copied first (L-20). Nested arrays (`uint[][]`, `feeHistory.reward`) and top-level
+ * arrays of objects are formatted like any other value (L-21).
+ *
+ * @throws FormatterError for a schema without `properties`, `items` or `format`, for data
+ * nested deeper than {@link MAX_NESTING_DEPTH} (L-31), and for a number that does not fit a
+ * JavaScript number when {@link FMT_NUMBER.NUMBER} is requested (L-55).
+ */
 export const format = <
 	DataType extends Record<string, unknown> | unknown[] | unknown,
 	ReturnType extends DataFormat,
@@ -281,24 +376,29 @@ export const format = <
 	data: DataType,
 	returnFormat: ReturnType,
 ): FormatType<DataType, ReturnType> => {
-	let dataToParse: Record<string, unknown> | unknown[] | unknown;
-
-	if (isObject(data)) {
-		dataToParse = mergeDeep({}, data);
-	} else if (Array.isArray(data)) {
-		dataToParse = [...data];
-	} else {
-		dataToParse = data;
-	}
-
 	const jsonSchema: JsonSchema = isObject(schema) ? schema : utils.qrlAbiToJsonSchema(schema);
 
 	if (!jsonSchema.properties && !jsonSchema.items && !jsonSchema.format) {
 		throw new FormatterError('Invalid json schema for formatting');
 	}
 
-	return convert(dataToParse, jsonSchema, [], returnFormat) as FormatType<
-		typeof data,
-		ReturnType
-	>;
+	let result: unknown;
+
+	if (isObject(data)) {
+		const copy = mergeDeep({}, data);
+		convertObject(copy, jsonSchema, returnFormat, 0);
+		result = copy;
+	} else if (Array.isArray(data)) {
+		// `mergeDeep` deep-copies array elements, so the copy shares nothing with the caller.
+		const copy = (mergeDeep({}, { data }) as { data: unknown[] }).data;
+		const arraySchema = resolveArraySchema(jsonSchema, copy);
+		if (!isNullish(arraySchema.items)) {
+			convertArray(copy, arraySchema, returnFormat, 0);
+		}
+		result = copy;
+	} else {
+		result = convertScalarValue(data, jsonSchema.format as string, returnFormat);
+	}
+
+	return result as FormatType<DataType, ReturnType>;
 };

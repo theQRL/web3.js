@@ -17,6 +17,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 import { when } from 'jest-when';
 import { Web3AccountProvider, Web3BaseWalletAccount, KeyStore } from '@theqrl/web3-types';
+import { Web3ValidatorError } from '@theqrl/web3-validator';
 import { Wallet } from '../../src/wallet';
 
 describe('Wallet', () => {
@@ -410,6 +411,40 @@ describe('Wallet', () => {
 			expect(wallet.decrypt).toHaveBeenCalledWith(['encryptedWallet'], 'password');
 			expect(localStorageSpy.getItem).toHaveBeenCalledTimes(1);
 			expect(localStorageSpy.getItem).toHaveBeenCalledWith('web3js_wallet');
+		});
+	});
+	describe('stored wallet validation (L-17)', () => {
+		it('rejects a stored value that is not valid JSON with a Web3ValidatorError', async () => {
+			when(localStorageSpy.getItem).calledWith('web3js_wallet').mockReturnValue('{not json');
+
+			const error = await wallet.load('password').catch((e: unknown) => e);
+
+			expect(error).toBeInstanceOf(Web3ValidatorError);
+			expect((error as Web3ValidatorError).innerError).toBeInstanceOf(SyntaxError);
+			expect((error as Error).message).not.toContain('{not json');
+			expect(accountProvider.decrypt).not.toHaveBeenCalled();
+		});
+
+		it('rejects a stored object that is not an array of keystores', async () => {
+			when(localStorageSpy.getItem).calledWith('myKey').mockReturnValue('{"a":1}');
+
+			await expect(wallet.load('password', 'myKey')).rejects.toThrow(Web3ValidatorError);
+			expect(accountProvider.decrypt).not.toHaveBeenCalled();
+		});
+
+		it('loads an empty wallet from a stored null', async () => {
+			when(localStorageSpy.getItem).calledWith('web3js_wallet').mockReturnValue('null');
+
+			await expect(wallet.load('password')).resolves.toBe(wallet);
+			expect(wallet).toHaveLength(0);
+			expect(accountProvider.decrypt).not.toHaveBeenCalled();
+		});
+
+		it('decrypt() rejects a non-array argument with a Web3ValidatorError', async () => {
+			await expect(
+				wallet.decrypt({ address: 'x' } as unknown as KeyStore[], 'password'),
+			).rejects.toThrow(Web3ValidatorError);
+			expect(accountProvider.decrypt).not.toHaveBeenCalled();
 		});
 	});
 });

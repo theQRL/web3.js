@@ -16,7 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { BaseWeb3Error } from '../web3_error_base.js';
-import { ERR_CORE_HARDFORK_MISMATCH } from '../error_codes.js';
+import { ERR_CORE_CHAIN_MISMATCH, ERR_CORE_HARDFORK_MISMATCH } from '../error_codes.js';
 
 export class ConfigHardforkMismatchError extends BaseWeb3Error {
 	public code = ERR_CORE_HARDFORK_MISMATCH;
@@ -29,7 +29,7 @@ export class ConfigHardforkMismatchError extends BaseWeb3Error {
 }
 
 export class ConfigChainMismatchError extends BaseWeb3Error {
-	public code = ERR_CORE_HARDFORK_MISMATCH;
+	public code = ERR_CORE_CHAIN_MISMATCH;
 
 	public constructor(defaultHardfork: string, commonHardFork: string) {
 		super(

@@ -18,6 +18,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 // Have to use `require` because of Jest issue https://jestjs.io/docs/ecmascript-modules
 require('../config/setup');
 
-const jestTimeout = 30000; // Sometimes `in3` takes long time because of its decentralized nature.
+// Node round trips against a local gqrl instance can exceed Jest's 5 s default.
+const jestTimeout = 30000;
 
 jest.setTimeout(jestTimeout);

@@ -18,9 +18,13 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
  * An object holding the interface Ids of the QRNS resolver contracts. Please see [how to write a resolver](https://docs.ens.domains/contract-developer-guide/writing-a-resolver).
+ *
+ * `addr` is `addr(bytes32)` (the QRL address of a name), `multicoinAddr` is
+ * `addr(bytes32,uint256)` (the address bytes of a name for any coin type).
  */
 export const interfaceIds: { [T: string]: string } = {
 	addr: '0x3b3b57de',
+	multicoinAddr: '0xf1cb7e06',
 	name: '0x691f3431',
 	abi: '0x2203ab56',
 	pubkey: '0xc8690233',
@@ -34,6 +38,7 @@ export const interfaceIds: { [T: string]: string } = {
 export const methodsInInterface: { [T: string]: string } = {
 	setAddr: 'addr',
 	addr: 'addr',
+	multicoinAddr: 'multicoinAddr',
 	setPubkey: 'pubkey',
 	pubkey: 'pubkey',
 	setContenthash: 'contenthash',

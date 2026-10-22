@@ -4,7 +4,31 @@ fail-on-scopes:
   - development
   - unknown
 vulnerability-check: true
+# The packages ship under LGPL-3.0 and are consumed as a library, so a new
+# dependency under a strong or network copyleft licence is rejected at review
+# time. Permissive and weak-copyleft licences already present in the graph
+# (MIT, ISC, BSD, Apache-2.0, MPL-2.0, CC-BY, BlueOak, Artistic-2.0) stay
+# allowed; extend `deny-licenses` rather than switching to an allow list, which
+# would have to enumerate every SPDX identifier in pnpm-lock.yaml.
 license-check: true
+deny-licenses:
+  - AGPL-1.0-only
+  - AGPL-1.0-or-later
+  - AGPL-3.0-only
+  - AGPL-3.0-or-later
+  - GPL-1.0-only
+  - GPL-1.0-or-later
+  - GPL-2.0-only
+  - GPL-2.0-or-later
+  - GPL-3.0-only
+  - GPL-3.0-or-later
+  - SSPL-1.0
+  - BUSL-1.1
+  - EUPL-1.1
+  - EUPL-1.2
+  - CC-BY-NC-4.0
+  - CC-BY-NC-SA-4.0
+  - CC-BY-ND-4.0
 show-patched-versions: true
 retry-on-snapshot-warnings: true
 retry-on-snapshot-warnings-timeout: 300

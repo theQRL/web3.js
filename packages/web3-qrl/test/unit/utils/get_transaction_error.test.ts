@@ -41,7 +41,7 @@ describe('getTransactionError', () => {
 			{
 				jsonrpc: '2.0',
 				id: '3f839900-afdd-4553-bca7-b4e2b835c687',
-				error: { code: -32000, message: 'intrinsic gas too low' },
+				error: { code: 3, message: 'execution reverted' },
 			},
 			{
 				jsonrpc: '2.0',
@@ -61,6 +61,47 @@ describe('getTransactionError', () => {
 		);
 		await getTransactionError(web3Context, undefined, undefined, receivedError);
 		expect(parseTransactionErrorSpy).toHaveBeenCalledWith(receivedError);
+	});
+
+	describe('non-revert errors (L-52)', () => {
+		const transaction = {
+			from: 'Q2CCeCC72b4C8C0d943bEcFb1E67c4d8996D2F24d138E62dd19Dde2dA366C4faFff063A86501141d64AC7f273CCAE5053fD059722A4E9453170cb40F569872A02',
+			to: 'Q224D6a535f8991Cf611b3447F8DfE1059dbEd07c540A53e9E36D37b2ecEEA19013F66E973b207B0467a5A793203b27456B7aa1CEE00dF1e385D1eC5272718eb7',
+			data: '0x819f48fe',
+			maxPriorityFeePerGas: '0x0',
+			maxFeePerGas: '0x15ab8f14',
+		};
+		const nodeError = () =>
+			new InvalidResponseError({
+				jsonrpc: '2.0',
+				id: 1,
+				error: { code: -32000, message: 'insufficient funds for gas * price + value' },
+			});
+
+		it('rethrows a received error that is not a revert', async () => {
+			const receivedError = nodeError();
+			await expect(
+				getTransactionError(web3Context, undefined, undefined, receivedError),
+			).rejects.toBe(receivedError);
+		});
+
+		it('rethrows a failed reason lookup when no receipt proves a revert', async () => {
+			const lookupError = nodeError();
+			jest.spyOn(GetRevertReasonUtils, 'getRevertReason').mockRejectedValueOnce(lookupError);
+			web3Context.handleRevert = true;
+
+			await expect(getTransactionError(web3Context, transaction)).rejects.toBe(lookupError);
+		});
+
+		it('reports the revert without a reason when the lookup fails but a receipt proves it', async () => {
+			jest.spyOn(GetRevertReasonUtils, 'getRevertReason').mockRejectedValueOnce(nodeError());
+			web3Context.handleRevert = true;
+			const receipt = { status: BigInt(0) } as never;
+
+			const error = await getTransactionError(web3Context, transaction, receipt);
+			expect(error).toBeInstanceOf(TransactionRevertedWithoutReasonError);
+			expect(error.receipt).toBe(receipt);
+		});
 	});
 
 	it('should call getRevertReason to get error from transactionFormatted without contractAbi', async () => {
@@ -152,7 +193,7 @@ describe('getTransactionError', () => {
 				{
 					jsonrpc: '2.0',
 					id: '3f839900-afdd-4553-bca7-b4e2b835c687',
-					error: { code: -32000, message: 'intrinsic gas too low' },
+					error: { code: 3, message: 'intrinsic gas too low' },
 				},
 				{
 					jsonrpc: '2.0',
@@ -205,7 +246,7 @@ describe('getTransactionError', () => {
 				{
 					jsonrpc: '2.0',
 					id: '3f839900-afdd-4553-bca7-b4e2b835c687',
-					error: { code: -32000, message: 'intrinsic gas too low' },
+					error: { code: 3, message: 'intrinsic gas too low' },
 				},
 				{
 					jsonrpc: '2.0',

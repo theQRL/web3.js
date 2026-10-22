@@ -45,6 +45,11 @@ export class FunctionCoder extends Coder {
 	decode(reader: Reader): string {
 		const address = reader.readBytes(ADDRESS_BYTES);
 		const selector = reader.readBytes(reader.wordSize);
+		// The selector is a uint32 right-aligned in its own word (see `encode`): the bytes before
+		// it are padding and must be zero, as for every other static type (I-10).
+		if (selector.subarray(0, selector.length - SELECTOR_BYTES).some(byte => byte !== 0)) {
+			this._throwError('non-zero padding in function selector', hexlify(selector));
+		}
 		return reader.coerce(
 			this.name,
 			hexConcat([address, selector.slice(-SELECTOR_BYTES)]),

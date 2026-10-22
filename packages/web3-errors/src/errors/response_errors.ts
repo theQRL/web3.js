@@ -55,6 +55,28 @@ const buildErrorMessage = (response: JsonRpcResponse<unknown, unknown>): string 
 		? response.error.message
 		: '';
 
+/**
+ * A single (non-batch) reply whose `id` differs from the request's: the default
+ * `Returned error: ` message carried nothing for the common case of a result reply with the
+ * wrong id (I-15), so the mismatch is named instead.
+ */
+const describeIdMismatch = (response: unknown, request: unknown): string | undefined => {
+	// eslint-disable-next-line no-null/no-null
+	if (typeof request !== 'object' || request === null || Array.isArray(request)) {
+		return undefined;
+	}
+	// eslint-disable-next-line no-null/no-null
+	if (typeof response !== 'object' || response === null || Array.isArray(response)) {
+		return undefined;
+	}
+	const requestId = (request as { id?: unknown }).id;
+	const responseId = (response as { id?: unknown }).id;
+	if (requestId === undefined || responseId === requestId) return undefined;
+	return `Invalid JSON-RPC response: response id ${BaseWeb3Error.convertToString(
+		responseId,
+	)} does not match request id ${BaseWeb3Error.convertToString(requestId)}`;
+};
+
 export class ResponseError<ErrorType = unknown, RequestType = unknown> extends BaseWeb3Error {
 	public code = ERR_RESPONSE;
 	public data?: ErrorType | ErrorType[];
@@ -132,8 +154,20 @@ export class InvalidResponseError<ErrorType = unknown, RequestType = unknown> ex
 		result: JsonRpcResponse<unknown, ErrorType>,
 		request?: JsonRpcPayload<RequestType>,
 	) {
-		super(result, undefined, request);
+		const mismatch = describeIdMismatch(result, request);
+		const returnedError = mismatch === undefined ? '' : buildErrorMessage(result);
+		super(
+			result,
+			mismatch === undefined
+				? undefined
+				: `${mismatch}${returnedError ? `. Returned error: ${returnedError}` : ''}`,
+			request,
+		);
 		this.code = ERR_INVALID_RESPONSE;
+		if (mismatch !== undefined) {
+			// A custom message skips the base class's `data` extraction; keep it available.
+			this.data = errorOf(result)?.data as ErrorType;
+		}
 		const errorOrErrors: JsonRpcError | JsonRpcError[] | undefined = Array.isArray(result)
 			? (result.map(r => errorOf(r)) as JsonRpcError[])
 			: errorOf(result);

@@ -44,7 +44,6 @@
 		"@theqrl/eslint-config-base-web3": "workspace:^",
 		"@theqrl/web3": "workspace:^",
 		"@theqrl/web3-core": "workspace:^",
-		"@theqrl/web3-qrl-abi": "workspace:^",
 		"@theqrl/web3-qrl-contract": "workspace:^",
 		"@theqrl/web3-types": "workspace:^",
 		"@theqrl/web3-utils": "workspace:^",
@@ -61,7 +60,6 @@
 	},
 	"peerDependencies": {
 		"@theqrl/web3-core": "workspace:^",
-		"@theqrl/web3-qrl-abi": "workspace:^",
 		"@theqrl/web3-qrl-contract": "workspace:^",
 		"@theqrl/web3-types": "workspace:^",
 		"@theqrl/web3-utils": "workspace:^"

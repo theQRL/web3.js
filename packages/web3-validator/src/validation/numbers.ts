@@ -24,23 +24,59 @@ import { isHexStrict } from './string.js';
  */
 export const isBigInt = (value: ValidInputTypes): boolean => typeof value === 'bigint';
 
+// A decimal integer in its only accepted spelling: an optional `-` and digits. `BigInt()`
+// itself also takes `''` (as 0), surrounding whitespace, `+1`, `0b11`, `0o7` and `0x1`, which
+// let `' 1 '` or `'0b11'` validate as numbers (L-28).
+const DECIMAL_INTEGER = /^-?\d+$/;
+
+// A decimal number with an optional fraction: `1`, `1.5`, `1.`, `.5`, `-0.5`. No exponent,
+// no sign other than `-`, no whitespace, at most one dot.
+const DECIMAL_NUMBER = /^-?(?:\d+\.?\d*|\.\d+)$/;
+
+/**
+ * The integer a number-like input stands for, or `undefined` when the input is not an integer
+ * written in a strict spelling. A JavaScript `number` must be a safe integer: above 2^53 it no
+ * longer identifies one integer, so neither `isInt` nor `isUInt` accepts it (I-11).
+ */
+const toIntegerBigInt = (value: ValidInputTypes): bigint | undefined => {
+	if (typeof value === 'bigint') {
+		return value;
+	}
+
+	if (typeof value === 'number') {
+		return Number.isSafeInteger(value) ? BigInt(value) : undefined;
+	}
+
+	if (typeof value !== 'string') {
+		return undefined;
+	}
+
+	if (isHexStrict(value)) {
+		try {
+			return BigInt(hexToNumber(value));
+		} catch {
+			// `0x` and `-0x` carry no digits.
+			return undefined;
+		}
+	}
+
+	return DECIMAL_INTEGER.test(value) ? BigInt(value) : undefined;
+};
+
 export const isUInt = (
 	value: ValidInputTypes,
 	options: { abiType: string; bitSize?: never } | { bitSize: number; abiType?: never } = {
 		abiType: 'uint',
 	},
 ) => {
-	if (
-		!['number', 'string', 'bigint'].includes(typeof value) ||
-		(typeof value === 'string' && value.length === 0)
-	) {
-		return false;
-	}
-
 	let size!: number;
 
 	if (options?.abiType) {
-		const { baseTypeSize } = parseBaseType(options.abiType);
+		const { baseTypeSize, baseType } = parseBaseType(options.abiType);
+
+		if (baseType !== 'uint') {
+			return false;
+		}
 
 		if (baseTypeSize) {
 			size = baseTypeSize;
@@ -50,18 +86,9 @@ export const isUInt = (
 	}
 
 	const maxSize = BigInt(2) ** BigInt(size ?? 256) - BigInt(1);
+	const valueToCheck = toIntegerBigInt(value);
 
-	try {
-		const valueToCheck =
-			typeof value === 'string' && isHexStrict(value)
-				? BigInt(hexToNumber(value))
-				: BigInt(value as number);
-
-		return valueToCheck >= 0 && valueToCheck <= maxSize;
-	} catch (error) {
-		// Some invalid number value given which can not be converted via BigInt
-		return false;
-	}
+	return valueToCheck !== undefined && valueToCheck >= 0 && valueToCheck <= maxSize;
 };
 
 export const isInt = (
@@ -70,14 +97,6 @@ export const isInt = (
 		abiType: 'int',
 	},
 ) => {
-	if (!['number', 'string', 'bigint'].includes(typeof value)) {
-		return false;
-	}
-
-	if (typeof value === 'number' && value > Number.MAX_SAFE_INTEGER) {
-		return false;
-	}
-
 	let size!: number;
 
 	if (options?.abiType) {
@@ -96,40 +115,25 @@ export const isInt = (
 
 	const maxSize = BigInt(2) ** BigInt((size ?? 256) - 1) - BigInt(1);
 	const minSize = BigInt(-1) * BigInt(2) ** BigInt((size ?? 256) - 1);
+	const valueToCheck = toIntegerBigInt(value);
 
-	try {
-		const valueToCheck =
-			typeof value === 'string' && isHexStrict(value)
-				? BigInt(hexToNumber(value))
-				: BigInt(value as number);
-
-		return valueToCheck >= minSize && valueToCheck <= maxSize;
-	} catch (error) {
-		// Some invalid number value given which can not be converted via BigInt
-		return false;
-	}
+	return valueToCheck !== undefined && valueToCheck >= minSize && valueToCheck <= maxSize;
 };
 
+/**
+ * Checks whether a value is a number: a finite JavaScript `number`, a `bigint` or hex string
+ * within 512 bits, or a decimal string with an optional fraction (`'1.5'`, `'-0.5'`).
+ *
+ * `NaN`, `Infinity`, `''`, `'.'`, `' 1 '`, `'+1'`, `'0b11'` and `'1e3'` are not numbers (L-28).
+ */
 export const isNumber = (value: ValidInputTypes) => {
-	if (isInt(value, { bitSize: 512 })) {
-		return true;
-	}
-
-	// It would be a decimal number
-	if (
-		typeof value === 'string' &&
-		/[0-9.]/.test(value) &&
-		// NOTE(rgeraldes24): issue found during the tests; previously, values such
-		// as 'Q1' returned true; making sure that we just have numbers and dot here
-		!/[^0-9.]/.test(value) &&
-		value.indexOf('.') === value.lastIndexOf('.')
-	) {
-		return true;
-	}
-
 	if (typeof value === 'number') {
-		return true;
+		return Number.isFinite(value);
 	}
 
-	return false;
+	if (typeof value === 'bigint' || (typeof value === 'string' && isHexStrict(value))) {
+		return isInt(value, { bitSize: 512 }) || isUInt(value, { bitSize: 512 });
+	}
+
+	return typeof value === 'string' && DECIMAL_NUMBER.test(value);
 };

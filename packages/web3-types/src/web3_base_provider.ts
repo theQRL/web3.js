@@ -14,7 +14,7 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { Socket } from 'net';
+import type { Socket } from 'net';
 
 import { Web3Error } from './error_types.js';
 import { QRLExecutionAPI } from './apis/qrl_execution_api.js';
@@ -319,6 +319,15 @@ export type SupportedProviders<API extends Web3APISpec = Web3QRLExecutionAPI> =
 	| LegacySendAsyncProvider
 	| SimpleProvider<API>;
 
+/**
+ * The shape of a provider class that `Web3RequestManager` can instantiate from a URL.
+ *
+ * The second parameter is an Ethereum-era leftover: no provider in this library takes a
+ * `net.Socket` (the IPC provider takes the socket *path* as its first argument).
+ *
+ * @deprecated The `net` parameter is ignored by every provider and will be removed from this
+ * type in the next major version; construct providers with their URL or path only.
+ */
 export type Web3BaseProviderConstructor = new <API extends Web3APISpec>(
 	url: string,
 	net?: Socket,

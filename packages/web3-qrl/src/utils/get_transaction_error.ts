@@ -45,7 +45,14 @@ export async function getTransactionError<ReturnFormat extends DataFormat>(
 		if (receivedError !== undefined) {
 			_reason = parseTransactionError(receivedError);
 		} else if (web3Context.handleRevert && transactionFormatted !== undefined) {
-			_reason = await getRevertReason(web3Context, transactionFormatted, contractAbi);
+			try {
+				_reason = await getRevertReason(web3Context, transactionFormatted, contractAbi);
+			} catch (error) {
+				// Without a receipt nothing proves a revert, so the error of the failed call is
+				// the result. With a receipt the revert is a fact and a failed reason lookup
+				// must not hide it: the revert is reported without a reason (L-52).
+				if (transactionReceiptFormatted === undefined) throw error;
+			}
 		}
 	}
 

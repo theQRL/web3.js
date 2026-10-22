@@ -32,7 +32,9 @@ describe('IPCProvider', () => {
 
 	beforeEach(() => {
 		socketPath = '/test/test.ipc';
-		jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+		jest.spyOn(fs, 'statSync').mockReturnValue({
+			isSocket: () => true,
+		} as unknown as fs.Stats);
 		jest.spyOn(net.Socket.prototype, 'connect').mockImplementation(jest.fn());
 		jest.spyOn(net.Socket.prototype, 'write').mockImplementation(jest.fn());
 	});
@@ -163,12 +165,14 @@ describe('IPCProvider', () => {
 			ipc._socketConnection.listeners = () => {
 				throw new Error('error');
 			};
+			// Invokes the handlers as they are registered; a real socket never emits
+			// `close`/`end` synchronously, so those two are only recorded.
 			const on = jest.fn((event: string, cb: (data?: string) => void) => {
 				if (event === 'error') {
 					cb('error');
 				} else if (event === 'data') {
 					cb('data');
-				} else {
+				} else if (event === 'connect') {
 					cb();
 				}
 			});
@@ -180,6 +184,19 @@ describe('IPCProvider', () => {
 			ipc._reconnect = jest.fn();
 			// @ts-expect-error mock method
 			ipc._clearQueues = jest.fn();
+			// @ts-expect-error mock method
+			ipc._addSocketListeners();
+			// The constructor already attached the error listener to this socket: re-adding
+			// the others (what `reset()` does) must not add a second one (L-24).
+			// @ts-expect-error mock method
+			expect(on).not.toHaveBeenCalledWith('error', ipc._onErrorHandler);
+			// @ts-expect-error mock method
+			expect(on).toHaveBeenCalledWith('close', ipc._onCloseHandler);
+			// @ts-expect-error mock method
+			expect(on).toHaveBeenCalledWith('end', ipc._onCloseHandler);
+			// A socket that carries no error listener yet gets one.
+			// @ts-expect-error mock field
+			ipc._socketConnection = { on, removeAllListeners: jest.fn(), end: jest.fn() };
 			// @ts-expect-error mock method
 			ipc._addSocketListeners();
 			// @ts-expect-error mock method

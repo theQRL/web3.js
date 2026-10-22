@@ -16,7 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import { JsonRpcResponse } from '@theqrl/web3-types';
 import { InvalidResponseError } from '@theqrl/web3-errors';
-import { EventEmitter } from 'events';
+import type { EventEmitterLike } from './event_emitter.js';
 import { isNullish } from './validation.js';
 
 const MAX_CHUNK_BYTES = 10 * 1024 * 1024;
@@ -68,12 +68,12 @@ export class ChunkResponseParser {
 	private escaped = false;
 	private lastChunkTimeout: NodeJS.Timeout | undefined;
 	private _clearQueues: ((error: InvalidResponseError) => void) | undefined;
-	private readonly eventEmitter: EventEmitter;
+	private readonly eventEmitter: EventEmitterLike;
 	private readonly autoReconnect: boolean;
 	private readonly framed: boolean;
 
 	public constructor(
-		eventEmitter: EventEmitter,
+		eventEmitter: EventEmitterLike,
 		autoReconnect: boolean,
 		options: ChunkResponseParserOptions = {},
 	) {
@@ -114,9 +114,10 @@ export class ChunkResponseParser {
 	}
 
 	/**
-	 * Emitting `error` on an `EventEmitter` that has no `error` listener throws. Inside a socket
-	 * `message`/`data` callback that exception is uncaught and terminates the process, so a
-	 * malformed message from the peer is only reported when someone is listening.
+	 * A malformed message from the peer is only reported when someone is listening: emitting
+	 * `error` on a Node `EventEmitter` without a listener throws, and the library's own emitter
+	 * drops it, so an unobserved parser error must never turn into an uncaught exception inside a
+	 * socket `message`/`data` callback.
 	 */
 	private emitError(message: string, clearQueues = false): void {
 		const error = new InvalidResponseError({
@@ -226,10 +227,16 @@ export class ChunkResponseParser {
 			}
 			// Bound the lifetime of the incomplete message, not the idle time between chunks.
 			// Subsequent traffic must not keep a poisoned prefix alive forever.
-			this.lastChunkTimeout ??= setTimeout(() => {
-				this.reset();
-				this.emitError('Chunk timeout', !this.autoReconnect);
-			}, CHUNK_TIMEOUT_MS);
+			if (this.lastChunkTimeout === undefined) {
+				this.lastChunkTimeout = setTimeout(() => {
+					this.reset();
+					this.emitError('Chunk timeout', !this.autoReconnect);
+				}, CHUNK_TIMEOUT_MS);
+				// A half-received message must not, by itself, keep a Node process alive (I-11).
+				if (typeof this.lastChunkTimeout.unref === 'function') {
+					this.lastChunkTimeout.unref();
+				}
+			}
 		} else {
 			this.reset();
 		}

@@ -15,7 +15,6 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
 import {
 	Bytes,
 	HexString,
@@ -67,7 +66,10 @@ import { InvalidValueError, BaseWeb3Error } from '../web3_error_base.js';
 export class TransactionError<ReceiptType = TransactionReceipt> extends BaseWeb3Error {
 	public code = ERR_TX;
 
-	public constructor(message: string, public receipt?: ReceiptType) {
+	public constructor(
+		message: string,
+		public receipt?: ReceiptType,
+	) {
 		super(message);
 	}
 
@@ -79,7 +81,10 @@ export class TransactionError<ReceiptType = TransactionReceipt> extends BaseWeb3
 export class RevertInstructionError extends BaseWeb3Error {
 	public code = ERR_TX_REVERT_INSTRUCTION;
 
-	public constructor(public reason: string, public signature: string) {
+	public constructor(
+		public reason: string,
+		public signature: string,
+	) {
 		super(`Your request got reverted with the following reason string: ${reason}`);
 	}
 
@@ -188,10 +193,8 @@ export class TransactionRevertedWithoutReasonError<
 export class TransactionOutOfGasError extends TransactionError {
 	public constructor(receipt: TransactionReceipt) {
 		super(
-			`Transaction ran out of gas. Please provide more gas:\n ${JSON.stringify(
+			`Transaction ran out of gas. Please provide more gas:\n ${BaseWeb3Error.convertToString(
 				receipt,
-				undefined,
-				2,
 			)}`,
 			receipt,
 		);
@@ -261,7 +264,7 @@ export class ChainIdMismatchError extends InvalidValueError {
 
 	public constructor(value: { txChainId: unknown; customChainId: unknown }) {
 		super(
-			JSON.stringify(value),
+			BaseWeb3Error.convertToString(value),
 			'Chain Id doesnt match in tx.chainId tx.common.customChain.chainId',
 		);
 	}
@@ -271,7 +274,10 @@ export class ChainMismatchError extends InvalidValueError {
 	public code = ERR_TX_CHAIN_MISMATCH;
 
 	public constructor(value: { txChain: unknown; baseChain: unknown }) {
-		super(JSON.stringify(value), 'Chain doesnt match in tx.chain tx.common.basechain');
+		super(
+			BaseWeb3Error.convertToString(value),
+			'Chain doesnt match in tx.chain tx.common.basechain',
+		);
 	}
 }
 
@@ -279,7 +285,10 @@ export class HardforkMismatchError extends InvalidValueError {
 	public code = ERR_TX_HARDFORK_MISMATCH;
 
 	public constructor(value: { txHardfork: unknown; commonHardfork: unknown }) {
-		super(JSON.stringify(value), 'hardfork doesnt match in tx.hardfork tx.common.hardfork');
+		super(
+			BaseWeb3Error.convertToString(value),
+			'hardfork doesnt match in tx.hardfork tx.common.hardfork',
+		);
 	}
 }
 
@@ -462,7 +471,7 @@ export class TransactionMissingReceiptOrBlockHashError extends InvalidValueError
 		transactionHash: Bytes;
 	}) {
 		super(
-			`receipt: ${JSON.stringify(
+			`receipt: ${BaseWeb3Error.convertToString(
 				value.receipt,
 			)}, blockHash: ${value.blockHash?.toString()}, transactionHash: ${value.transactionHash?.toString()}`,
 			`Receipt missing or blockHash null`,
@@ -474,7 +483,10 @@ export class TransactionReceiptMissingBlockNumberError extends InvalidValueError
 	public code = ERR_TX_RECEIPT_MISSING_BLOCK_NUMBER;
 
 	public constructor(value: { receipt: TransactionReceipt }) {
-		super(`receipt: ${JSON.stringify(value.receipt)}`, `Receipt missing block number`);
+		super(
+			`receipt: ${BaseWeb3Error.convertToString(value.receipt)}`,
+			`Receipt missing block number`,
+		);
 	}
 }
 

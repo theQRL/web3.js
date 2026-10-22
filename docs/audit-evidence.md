@@ -96,16 +96,18 @@ exception and follow-up issue.
 | Workspace integration | `pnpm run test:integration` | Exit `0` against the configured provider/backend; integration suites pass. |
 | Local GQRL HTTP e2e | `pnpm run test:e2e:gqrl:http` | Exit `0` after a local GQRL-compatible node is started and accounts are available. |
 | Local GQRL WS e2e | `pnpm run test:e2e:gqrl:ws` | Exit `0` after a local GQRL-compatible WebSocket endpoint is available. |
-| Local GQRL IPC e2e | `pnpm run test:e2e:gqrl:ipc` | Exit `0` after a local GQRL-compatible IPC endpoint is available. |
+| Local GQRL IPC | covered by `pnpm run test:integration` (`packages/web3/test/integration/ipc.test.ts`, `packages/web3-providers-ipc/test/integration`) | Exit `0` with `WEB3_SYSTEM_TEST_PROVIDER` pointing at the node's `gqrl.ipc` socket; there is no separate `test:e2e:gqrl:ipc` script. |
 | Remote testnet HTTP/WS | `pnpm run test:e2e:testnet:http` and `pnpm run test:e2e:testnet:ws` | Exit `0` against the documented testnet endpoint and credentials. |
 | Remote mainnet HTTP/WS | `pnpm run test:e2e:mainnet:http` and `pnpm run test:e2e:mainnet:ws` | Exit `0` for read-only mainnet checks only; no private key or value-transfer dependency. |
 | E2E coverage | `pnpm run test:e2e:coverage` | Exit `0`; integration/e2e coverage artefacts are generated. |
 
-Current known prerequisite gap: `scripts/test-runner.sh` still references legacy
-`gqrl:start:background`, `gqrl-binary:start:background`, `generate:accounts`,
-and stop scripts that are not currently exposed by the root `package.json`.
-Resolve that runner mapping before treating local GQRL e2e evidence as
-release-blocking.
+`scripts/test-runner.sh` only exports the `WEB3_SYSTEM_TEST_*` variables and
+dispatches to `test:integration`, `test:coverage:integration` or
+`test:e2e:<backend>`; it does not start a node. The local gqrl backend must be
+running first (`pnpm run pos:start`, see `scripts/local_testnet/README.md`,
+and `pnpm run pos:stop` afterwards) with the funded accounts from
+`scripts/accounts.json` available. Record the node version and the exact
+`WEB3_SYSTEM_TEST_*` values with the evidence.
 
 ## Artefacts To Preserve
 

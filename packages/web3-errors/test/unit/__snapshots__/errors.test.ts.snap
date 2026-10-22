@@ -149,7 +149,7 @@ exports[`errors InvalidConnectionError should have valid json structure 1`] = `
   "errorReason": "reason",
   "host": "my host",
   "innerError": undefined,
-  "message": "CONNECTION ERROR: Couldn't connect to node my host.",
+  "message": "CONNECTION ERROR: Couldn't connect to node my host. Reason: reason",
   "name": "InvalidConnectionError",
 }
 `;
@@ -350,9 +350,7 @@ exports[`errors TransactionOutOfGasError should have valid json structure 1`] = 
   "code": 406,
   "innerError": undefined,
   "message": "Transaction ran out of gas. Please provide more gas:
- {
-  "attr1": "attr1"
-}",
+ {"attr1":"attr1"}",
   "name": "TransactionOutOfGasError",
   "receipt": {
     "attr1": "attr1",

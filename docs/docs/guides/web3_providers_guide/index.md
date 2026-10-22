@@ -33,7 +33,7 @@ Actually, the provider could be any of the following:
 -   An instance of [HttpProvider](/api/@theqrl/web3-providers-http/classes/HttpProvider)
 -   An instance of [WebSocketProvider](/api/@theqrl/web3-providers-ws/classes/WebSocketProvider)
 -   An instance of [IpcProvider](/api/@theqrl/web3-providers-ipc/classes/IpcProvider)
--   A string containing string url for `http`/`https` or `ws`/`wss` protocol. And when a string is passed, an instance of the compatible class above will be created accordingly. ex. WebSocketProvider instance will be created for string containing `ws` or `wss`. And you access this instance by calling `web3.provider` to read the provider and possibly register an event listener.
+-   A string containing string url for `http`/`https` or `ws`/`wss` protocol. And when a string is passed, an instance of the compatible class above will be created accordingly. ex. WebSocketProvider instance will be created for string containing `ws` or `wss`. And you access this instance by calling `web3.provider` to read the provider and possibly register an event listener. Only HTTP(S) and WS(S) URLs are auto-detected: an IPC socket path is not, so an `IpcProvider` must always be constructed explicitly (see the [Local Gqrl Node](#local-gqrl-node) example).
 -   Any provider object that adheres to [EIP-1193](https://eips.ethereum.org/EIPS/eip-1193) and speaks QRL-compatible JSON-RPC.
 
 For both [WebSocketProvider](/api/@theqrl/web3-providers-ws/classes/WebSocketProvider) and [IpcProvider](/api/@theqrl/web3-providers-ipc/classes/IpcProvider) the user can listen to emitted events. More on this is at [Providers Events Listening](events_listening).
@@ -49,14 +49,13 @@ There are multiple ways to set the provider.
 ```ts title='Setting a provider'
 web3.setProvider(myProvider);
 web3.qrl.setProvider(myProvider);
-web3.Contract.setProvider(myProvider);
 contractInstance.setProvider(myProvider);
 ```
 
 The key rule for setting provider is as follows:
 
-1. Any provider set on the higher level will be applied to all lower levels. e.g. Any provider set using `web3.setProvider` will also be applied to `web3.qrl` object.
-2. For contracts `web3.Contract.setProvider` can be used to set provider for **all instances** of contracts created by `web3.qrl.Contract`.
+1. Any provider set on the higher level will be applied to all lower levels. e.g. Any provider set using `web3.setProvider` will also be applied to the `web3.qrl` object and to the contracts created with `new web3.qrl.Contract(...)`, because they share the `web3` context.
+2. A single contract instance can be given its own provider with `contractInstance.setProvider(myProvider)`. There is no static `Contract.setProvider`: a provider is set either on an instance or on the `web3` context it was created from.
 
 ---
 
@@ -74,17 +73,23 @@ const web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:8545'));
 web3.setProvider('ws://localhost:8546');
 // or
 web3.setProvider(new Web3.providers.WebsocketProvider('ws://localhost:8546'));
+```
 
-// Using the IPC provider in node.js
-const net = require('net');
-const web3 = new Web3('/Users/myuser/Library/QRL/Execution/gqrl.ipc', net); // mac os path
-// or
-const web3 = new Web3(
-	new Web3.providers.IpcProvider('/Users/myuser/Library/QRL/Execution/gqrl.ipc', net),
-); // mac os path
+The IPC transport is a separate, Node.js-only package (`@theqrl/web3-providers-ipc`) and is never created from a string. `Web3.providers` only lists `HttpProvider` and `WebsocketProvider`; construct the `IpcProvider` yourself and pass the instance:
+
+```ts
+const { Web3 } = require('@theqrl/web3');
+const { IpcProvider } = require('@theqrl/web3-providers-ipc');
+
+const web3 = new Web3(new IpcProvider('/Users/myuser/Library/QRL/Execution/gqrl.ipc')); // mac os path
 // on windows the path is: "\\\\.\\pipe\\gqrl.ipc"
 // on linux the path is: "/users/myuser/.qrl/execution/gqrl.ipc"
+
+// the same instance can be set later
+web3.setProvider(new IpcProvider('/users/myuser/.qrl/execution/gqrl.ipc'));
 ```
+
+The socket is opened with Node's `net` module internally; nothing else needs to be passed. Browser bundles cannot use the IPC provider: the runtime packages are bundler-safe (they load no Node built-in modules), and `@theqrl/web3-providers-ipc` is the one package that intentionally depends on Node.
 
 ### Remote Node Provider
 

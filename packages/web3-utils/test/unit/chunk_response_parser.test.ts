@@ -281,4 +281,17 @@ describe('ChunkResponseParser', () => {
 			}
 		});
 	});
+
+	describe('timer handle (I-11)', () => {
+		it('does not keep the process alive for a half-received message', () => {
+			const parser = new ChunkResponseParser(new EventEmitter(), false);
+			expect(parser.parseResponse('{"id":1')).toEqual([]);
+			// @ts-expect-error read private member
+			const timer = parser.lastChunkTimeout as NodeJS.Timeout;
+			expect(timer.hasRef()).toBe(false);
+			parser.reset();
+			// @ts-expect-error read private member
+			expect(parser.lastChunkTimeout).toBeUndefined();
+		});
+	});
 });

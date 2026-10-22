@@ -21,5 +21,7 @@ for path in "${paths[@]}"; do
 	rm -rf "$path"
 done
 
-find packages tools -type d \( -name coverage -o -name lib -o -name dist \) -prune -exec rm -rf {} +
+# Prune node_modules first: a package-local dependency may legitimately ship a
+# lib/ or dist/ directory of its own, and it is not ours to delete.
+find packages tools -path '*/node_modules' -prune -o -type d \( -name coverage -o -name lib -o -name dist \) -prune -exec rm -rf {} +
 find . -name '*.tsbuildinfo' -type f -delete

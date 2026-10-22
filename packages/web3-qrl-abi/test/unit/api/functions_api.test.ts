@@ -15,6 +15,8 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+import { AbiError } from '@theqrl/web3-errors';
+import { AbiFunctionFragment } from '@theqrl/web3-types';
 import { encodeFunctionCall, encodeFunctionSignature } from '../../../src/api/functions_api';
 import {
 	inValidFunctionsSignatures,
@@ -61,6 +63,33 @@ describe('functions_api', () => {
 					expect(() => encodeFunctionCall(input, [])).toThrow(output);
 				},
 			);
+		});
+
+		describe('bool arguments (H-3)', () => {
+			const setFlag: AbiFunctionFragment = {
+				type: 'function',
+				name: 'setFlag',
+				stateMutability: 'nonpayable',
+				inputs: [{ type: 'bool', name: 'flag' }],
+				outputs: [],
+			};
+			const selector = encodeFunctionSignature(setFlag);
+			const calldata = (bit: number) => `${selector}${'0'.repeat(127)}${bit}`;
+
+			it('encodes "0" and "0x0" as false in the calldata, like false and 0', () => {
+				expect(selector).toBe('0x3927f6af');
+				for (const value of [false, 0, '0', '0x0', BigInt(0)]) {
+					expect(encodeFunctionCall(setFlag, [value])).toBe(calldata(0));
+				}
+				for (const value of [true, 1, '1', '0x1', BigInt(1)]) {
+					expect(encodeFunctionCall(setFlag, [value])).toBe(calldata(1));
+				}
+			});
+
+			it.each(['false', 'true', 2, '0x00', {}])('rejects %p with an AbiError', value => {
+				expect(() => encodeFunctionCall(setFlag, [value])).toThrow(AbiError);
+				expect(() => encodeFunctionCall(setFlag, [value])).toThrow('invalid boolean value');
+			});
 		});
 	});
 });

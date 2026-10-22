@@ -16,7 +16,9 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import {
+	BaseWeb3Error,
 	ContractExecutionError,
+	TransactionError,
 	TransactionRevertedWithoutReasonError,
 	TransactionRevertInstructionError,
 	TransactionRevertWithCustomError,
@@ -36,6 +38,20 @@ import {
 
 export type InternalTransaction = FormatType<Transaction, typeof QRL_DATA_FORMAT>;
 
+/**
+ * The payload of the `error` event of `sendTransaction` and `sendSignedTransaction`. Every
+ * failure of the send pipeline is reported as a typed error: errors raised by the library are
+ * emitted as they are, anything else is wrapped in a {@link TransactionError} (M-7b).
+ */
+export type SendTransactionErrorEvent<ReturnFormat extends DataFormat> =
+	| TransactionRevertedWithoutReasonError<FormatType<TransactionReceipt, ReturnFormat>>
+	| TransactionRevertInstructionError<FormatType<TransactionReceipt, ReturnFormat>>
+	| TransactionRevertWithCustomError<FormatType<TransactionReceipt, ReturnFormat>>
+	| InvalidResponseError
+	| ContractExecutionError
+	| TransactionError<FormatType<TransactionReceipt, ReturnFormat>>
+	| BaseWeb3Error;
+
 export type SendTransactionEvents<ReturnFormat extends DataFormat> = {
 	sending: FormatType<Transaction, typeof QRL_DATA_FORMAT>;
 	sent: FormatType<Transaction, typeof QRL_DATA_FORMAT>;
@@ -46,12 +62,7 @@ export type SendTransactionEvents<ReturnFormat extends DataFormat> = {
 		receipt: FormatType<TransactionReceipt, ReturnFormat>;
 		latestBlockHash: FormatType<Bytes, ReturnFormat>;
 	};
-	error:
-		| TransactionRevertedWithoutReasonError<FormatType<TransactionReceipt, ReturnFormat>>
-		| TransactionRevertInstructionError<FormatType<TransactionReceipt, ReturnFormat>>
-		| TransactionRevertWithCustomError<FormatType<TransactionReceipt, ReturnFormat>>
-		| InvalidResponseError
-		| ContractExecutionError;
+	error: SendTransactionErrorEvent<ReturnFormat>;
 };
 
 export type SendSignedTransactionEvents<ReturnFormat extends DataFormat> = {
@@ -64,12 +75,7 @@ export type SendSignedTransactionEvents<ReturnFormat extends DataFormat> = {
 		receipt: FormatType<TransactionReceipt, ReturnFormat>;
 		latestBlockHash: FormatType<Bytes, ReturnFormat>;
 	};
-	error:
-		| TransactionRevertedWithoutReasonError<FormatType<TransactionReceipt, ReturnFormat>>
-		| TransactionRevertInstructionError<FormatType<TransactionReceipt, ReturnFormat>>
-		| TransactionRevertWithCustomError<FormatType<TransactionReceipt, ReturnFormat>>
-		| InvalidResponseError
-		| ContractExecutionError;
+	error: SendTransactionErrorEvent<ReturnFormat>;
 };
 
 export interface SendTransactionOptions<ResolveType = TransactionReceipt> {

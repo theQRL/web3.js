@@ -49,7 +49,7 @@ runtime package to assemble the default user API.
 | `@theqrl/web3-errors` | `packages/web3-errors/src/index.ts` | Types | Shared error taxonomy, RPC error mapping, transaction/contract/account errors |
 | `@theqrl/web3-packagetemplate` | `tools/web3-packagetemplate/src/index.ts` | none | Package scaffolding template, not runtime-critical |
 | `@theqrl/web3-plugin-example` | `tools/web3-plugin-example/src/index.ts` | Core, QRL ABI, contract, utils, types | Example plugin RPC and contract wrappers |
-| `@theqrl/eslint-config-base-web3` | `tools/eslint-config-base-web3/index.cjs` | none | Shared lint configuration, private tooling package |
+| `@theqrl/eslint-config-base-web3` | `tools/eslint-config-base-web3/index.cjs` | none | Shared lint configuration; `"private": true`, never published, consumed through `workspace:` links only |
 
 ## Critical Runtime Flows
 

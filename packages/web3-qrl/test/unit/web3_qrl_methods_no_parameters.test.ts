@@ -58,6 +58,7 @@ describe('web3_qrl_methods_no_parameters', () => {
 		});
 
 		it('getMaxPriorityFeePerGas', async () => {
+			(qrlRpcMethods.getMaxPriorityFeePerGas as jest.Mock).mockResolvedValueOnce('0x1');
 			await web3QRL.getMaxPriorityFeePerGas();
 			expect(qrlRpcMethods.getMaxPriorityFeePerGas).toHaveBeenCalledWith(
 				web3QRL.requestManager,

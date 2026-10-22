@@ -16,9 +16,10 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { Web3Context, Web3ContextObject } from '@theqrl/web3-core';
-import { ResolverMethodMissingError } from '@theqrl/web3-errors';
+import { ResolverMethodMissingError, Web3ContractError } from '@theqrl/web3-errors';
 import { Contract, NonPayableMethodObject } from '@theqrl/web3-qrl-contract';
-import { sha3 } from '@theqrl/web3-utils';
+import { sha3, toChecksumAddress } from '@theqrl/web3-utils';
+import { isAddressString } from '@theqrl/web3-validator';
 import { PublicResolverAbi } from '../../src/abi/qrns/PublicResolver';
 import { interfaceIds, methodsInInterface } from '../../src/config';
 import { Registry } from '../../src/registry';
@@ -32,6 +33,7 @@ describe('resolver', () => {
 	let contract: Contract<typeof PublicResolverAbi>;
 	const mockAddress =
 		'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000';
+	const recordAddress = toChecksumAddress(`Q${'ab'.repeat(64)}`);
 	const QRNS_NAME = 'web3js.qrl';
 
 	beforeAll(() => {
@@ -129,7 +131,7 @@ describe('resolver', () => {
 			expect(checkInteraface).toHaveBeenCalled();
 			expect(setAddrMock).toHaveBeenCalledWith(namehash(QRNS_NAME), mockAddress);
 		});
-		it('getAddress', async () => {
+		it('getAddress calls addr(bytes32) for coin type 60 and returns a checksummed address (L-63)', async () => {
 			const supportsInterfaceMock = jest
 				.spyOn(contract.methods, 'supportsInterface')
 				.mockReturnValue({
@@ -137,7 +139,7 @@ describe('resolver', () => {
 				} as unknown as NonPayableMethodObject<any, any>);
 
 			const addrMock = jest.spyOn(contract.methods, 'addr').mockReturnValue({
-				call: async () => Promise.resolve(true),
+				call: async () => Promise.resolve(recordAddress.toLowerCase()),
 			} as unknown as NonPayableMethodObject<any, any>);
 
 			// todo when moving this mock in beforeAll, jest calls the actual implementation, how to fix that
@@ -148,11 +150,73 @@ describe('resolver', () => {
 				});
 			});
 
-			await resolver.getAddress(QRNS_NAME);
+			const address = await resolver.getAddress(QRNS_NAME);
 			expect(supportsInterfaceMock).toHaveBeenCalledWith(
 				interfaceIds[methodsInInterface.addr],
 			);
-			expect(addrMock).toHaveBeenCalledWith(namehash(QRNS_NAME), 60);
+			expect(supportsInterfaceMock).toHaveBeenCalledWith('0x3b3b57de');
+			expect(addrMock).toHaveBeenCalledWith(namehash(QRNS_NAME));
+			expect(address).toBe(recordAddress);
+			expect(isAddressString(address)).toBe(true);
+		});
+
+		it('getAddress checks addr(bytes32,uint256) support for other coin types and returns the raw bytes (L-63)', async () => {
+			const supportsInterfaceMock = jest
+				.spyOn(contract.methods, 'supportsInterface')
+				.mockReturnValue({
+					call: async () => Promise.resolve(true),
+				} as unknown as NonPayableMethodObject<any, any>);
+
+			const addrMock = jest.spyOn(contract.methods, 'addr').mockReturnValue({
+				call: async () => Promise.resolve('0x00112233'),
+			} as unknown as NonPayableMethodObject<any, any>);
+
+			jest.spyOn(registry, 'getResolver').mockImplementation(async () => {
+				return new Promise(resolve => {
+					resolve(contract);
+				});
+			});
+
+			const bytes = await resolver.getAddress(QRNS_NAME, 0);
+			expect(supportsInterfaceMock).toHaveBeenCalledWith('0xf1cb7e06');
+			expect(supportsInterfaceMock).not.toHaveBeenCalledWith('0x3b3b57de');
+			expect(addrMock).toHaveBeenCalledWith(namehash(QRNS_NAME), 0);
+			expect(bytes).toBe('0x00112233');
+		});
+
+		it('getAddress rejects a resolver reply that is not an address (L-63)', async () => {
+			jest.spyOn(contract.methods, 'supportsInterface').mockReturnValue({
+				call: async () => Promise.resolve(true),
+			} as unknown as NonPayableMethodObject<any, any>);
+			jest.spyOn(contract.methods, 'addr').mockReturnValue({
+				call: async () => Promise.resolve('0x'),
+			} as unknown as NonPayableMethodObject<any, any>);
+			jest.spyOn(registry, 'getResolver').mockImplementation(async () => {
+				return new Promise(resolve => {
+					resolve(contract);
+				});
+			});
+
+			await expect(resolver.getAddress(QRNS_NAME)).rejects.toThrow(Web3ContractError);
+		});
+
+		it('getAddress uses the multicoin interface for a non-60 coin type given as a string', async () => {
+			const supportsInterfaceMock = jest
+				.spyOn(contract.methods, 'supportsInterface')
+				.mockReturnValue({
+					call: async () => Promise.resolve(true),
+				} as unknown as NonPayableMethodObject<any, any>);
+			jest.spyOn(contract.methods, 'addr').mockReturnValue({
+				call: async () => Promise.resolve('0x'),
+			} as unknown as NonPayableMethodObject<any, any>);
+			jest.spyOn(registry, 'getResolver').mockImplementation(async () => {
+				return new Promise(resolve => {
+					resolve(contract);
+				});
+			});
+
+			await resolver.getAddress(QRNS_NAME, '2' as unknown as number);
+			expect(supportsInterfaceMock).toHaveBeenCalledWith('0xf1cb7e06');
 		});
 	});
 

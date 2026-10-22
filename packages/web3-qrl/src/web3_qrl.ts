@@ -43,9 +43,11 @@ import {
 import { isSupportedProvider, Web3Context, Web3ContextInitOptions } from '@theqrl/web3-core';
 import { TransactionNotFound } from '@theqrl/web3-errors';
 import { toChecksumAddress, isNullish, qrlUnitMap } from '@theqrl/web3-utils';
+import { isObject } from '@theqrl/web3-validator';
 import { qrlRpcMethods } from '@theqrl/web3-rpc-methods';
 
 import * as rpcMethodsWrappers from './rpc_method_wrappers.js';
+import { invalidResponseError } from './utils/invalid_response_error.js';
 import { SendTransactionOptions } from './types.js';
 import {
 	LogsSubscription,
@@ -108,11 +110,21 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 * ```ts
 	 * web3.qrl.isSyncing().then(console.log);
 	 * > {
-	 *     startingBlock: 100,
-	 *     currentBlock: 312,
-	 *     highestBlock: 512,
-	 *     knownStates: 234566,
-	 *     pulledStates: 123455
+	 *     startingBlock: '0x64',
+	 *     currentBlock: '0x138',
+	 *     highestBlock: '0x200',
+	 *     syncedAccounts: '0x0',
+	 *     syncedAccountBytes: '0x0',
+	 *     syncedBytecodes: '0x0',
+	 *     syncedBytecodeBytes: '0x0',
+	 *     syncedStorage: '0x0',
+	 *     syncedStorageBytes: '0x0',
+	 *     healedTrienodes: '0x0',
+	 *     healedTrienodeBytes: '0x0',
+	 *     healedBytecodes: '0x0',
+	 *     healedBytecodeBytes: '0x0',
+	 *     healingTrienodes: '0x0',
+	 *     healingBytecode: '0x0'
 	 * }
 	 * ```
 	 */
@@ -189,7 +201,19 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 			false,
 		);
 
+		// The block is node supplied: a `baseFeePerGas` that is not a quantity used to be
+		// concatenated into the result or to throw a raw `TypeError` (L-26).
+		if (!isNullish(block) && !isObject(block)) {
+			throw invalidResponseError('qrl_getBlockByNumber', 'a block object', block);
+		}
 		const baseFeePerGas: bigint | undefined = block?.baseFeePerGas ?? undefined; // use undefined if it was null
+		if (!isNullish(baseFeePerGas) && typeof baseFeePerGas !== 'bigint') {
+			throw invalidResponseError(
+				'qrl_getBlockByNumber',
+				'a block with a hex quantity in baseFeePerGas',
+				baseFeePerGas,
+			);
+		}
 
 		let maxPriorityFeePerGas: bigint | undefined;
 		try {
@@ -226,8 +250,13 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 * ```
 	 */
 	public async getAccounts() {
-		const hexAddresses = (await qrlRpcMethods.getAccounts(this.requestManager)) ?? [];
-		return hexAddresses.map(address => toChecksumAddress(address));
+		const addresses: unknown = (await qrlRpcMethods.getAccounts(this.requestManager)) ?? [];
+		// `qrl_accounts` answers an array of addresses; anything else used to surface as a
+		// raw `TypeError` (L-26).
+		if (!Array.isArray(addresses) || addresses.some(address => typeof address !== 'string')) {
+			throw invalidResponseError('qrl_accounts', 'an array of addresses', addresses);
+		}
+		return addresses.map((address: string) => toChecksumAddress(address));
 	}
 
 	/**
@@ -282,11 +311,11 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 * @returns The value in storage at the given position.
 	 *
 	 * ```ts
-	 * web3.qrl.getStorageAt("0x033456732123ffff2342342dd12342434324234234fd234fd23fd4f23d4234", 0).then(console.log);
+	 * web3.qrl.getStorageAt("Q83cd1122848dd1b2E3AF9ca60a1340e595B2C6d5b3B340AfD625e38EEf9067bc9C28db215702Aa8B3C0243Bb13785a9365A35ee1Fe8e57983b1D47d9fff835a3", 0).then(console.log);
 	 * > "0x033456732123ffff2342342dd12342434324234234fd234fd23fd4f23d4234"
 	 *
 	 * web3.qrl.getStorageAt(
-	 *      "0x033456732123ffff2342342dd12342434324234234fd234fd23fd4f23d4234",
+	 *      "Q83cd1122848dd1b2E3AF9ca60a1340e595B2C6d5b3B340AfD625e38EEf9067bc9C28db215702Aa8B3C0243Bb13785a9365A35ee1Fe8e57983b1D47d9fff835a3",
 	 *      0,
 	 *      undefined,
 	 *      { number: FMT_NUMBER.HEX , bytes: FMT_BYTES.UINT8ARRAY }
@@ -323,7 +352,7 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 * @returns The [data](https://ethereum.org/en/developers/docs/transactions/#the-data-field) at the provided `address`.
 	 *
 	 * ```ts
-	 * web3.qrl.getCode("0x033456732123ffff2342342dd12342434324234234fd234fd23fd4f23d4234").then(console.log);
+	 * web3.qrl.getCode("Q83cd1122848dd1b2E3AF9ca60a1340e595B2C6d5b3B340AfD625e38EEf9067bc9C28db215702Aa8B3C0243Bb13785a9365A35ee1Fe8e57983b1D47d9fff835a3").then(console.log);
 	 * > "0x600160008035811a818181146012578301005b601b6001356025565b8060005260206000f25b600060078202905091905056"
 	 *
 	 * web3.qrl.getCode(
@@ -754,10 +783,12 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	}
 
 	/**
-	 * @param transaction The {@link Transaction}, {@link TransactionWithFromLocalWalletIndex}, {@link TransactionWithToLocalWalletIndex} or {@link TransactionWithFromAndToLocalWalletIndex} to send. __Note:__ In the `to` and `from` fields when hex strings are used, it is assumed they are addresses, for any other form (number, string number, etc.) it is assumed they are wallet indexes.
+	 * @param transaction - The {@link Transaction}, {@link TransactionWithFromLocalWalletIndex}, {@link TransactionWithToLocalWalletIndex} or {@link TransactionWithFromAndToLocalWalletIndex} to send. __Note:__ In the `to` and `from` fields a string is an address and must be a QRL (`Q`-prefixed) address; a non-negative integer `number` is the index of an account in the local wallet (`web3.qrl.accounts.wallet`). Any other value (a hex string, a decimal string, a bigint) is rejected.
 	 * @param returnFormat ({@link DataFormat} defaults to {@link DEFAULT_RETURN_FORMAT}) Specifies how the return data should be formatted.
 	 * @param options A configuration object used to change the behavior of the `sendTransaction` method.
-	 * @returns If `await`ed or `.then`d (i.e. the promise resolves), the transaction hash is returned.
+	 * @returns If `await`ed or `.then`d (i.e. the promise resolves), the {@link TransactionReceipt} of the mined transaction is returned. The promise resolves only for a receipt with `status` 1; a reverted transaction rejects with a `TransactionRevertedWithoutReasonError`, `TransactionRevertInstructionError` or `TransactionRevertWithCustomError`, whatever `returnFormat` is.
+	 *
+	 * __Note:__ Every failure rejects the returned promise. Either `await` (or `.catch`) the returned {@link Web3PromiEvent}, or attach an `error` listener with `.on('error', ...)`: with a listener attached the failure is delivered to it as a typed error and the rejection is marked as handled, without one an unobserved rejection is reported by the runtime as an unhandled rejection.
 	 * ```ts
 	 * const transaction = {
 	 *   from: 'Q9Fa83f21CE9bd493B02D7460E03d82D44a77B4612d8B6a0Acc94655106Fbb96152d3E16a0ba414C368653BaE2fe868cB109c05727Ca47148114749451afb7Cc1',
@@ -765,19 +796,33 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 *   value: '0x1'
 	 * }
 	 *
-	 * const transactionHash = await web3.qrl.sendTransaction(transaction);
-	 * console.log(transactionHash);
-	 * > 0xdf7756865c2056ce34c4eabe4eff42ad251a9f920a1c620c00b4ea0988731d3f
+	 * const receipt = await web3.qrl.sendTransaction(transaction);
+	 * console.log(receipt);
+	 * > {
+	 *      transactionHash: '0xdf7756865c2056ce34c4eabe4eff42ad251a9f920a1c620c00b4ea0988731d3f',
+	 *      transactionIndex: 0n,
+	 *      blockNumber: 2n,
+	 *      blockHash: '0xeb1565a08b23429552dafa92e32409f42eb43944f7611963c63ce40e7243941a',
+	 *      from: 'Q9Fa83f21CE9bd493B02D7460E03d82D44a77B4612d8B6a0Acc94655106Fbb96152d3E16a0ba414C368653BaE2fe868cB109c05727Ca47148114749451afb7Cc1',
+	 *      to: 'Q32bC304efeA6eeDA861cf8949EBb480da50B91dA5F7f8d5918779865C88e16C790935cB72a27613327126Ad142b767616784022611b0A345fF346F4E81fA1499',
+	 *      cumulativeGasUsed: 21000n,
+	 *      gasUsed: 21000n,
+	 *      logs: [],
+	 *      logsBloom: '0x00…00',
+	 *      status: 1n,
+	 *      effectiveGasPrice: 2000000000n,
+	 *      type: 2n
+	 *   }
 	 *
 	 * web3.qrl.sendTransaction(transaction).then(console.log);
-	 * > 0xdf7756865c2056ce34c4eabe4eff42ad251a9f920a1c620c00b4ea0988731d3f
+	 * > { transactionHash: '0xdf7756865c2056ce34c4eabe4eff42ad251a9f920a1c620c00b4ea0988731d3f', status: 1n, ... }
 	 *
 	 * web3.qrl.sendTransaction(transaction).catch(console.log);
 	 * > <Some TransactionError>
 	 *
 	 * // Example using options.ignoreGasPricing = true
 	 * web3.qrl.sendTransaction(transaction, undefined, { ignoreGasPricing: true }).then(console.log);
-	 * > 0xdf7756865c2056ce34c4eabe4eff42ad251a9f920a1c620c00b4ea0988731d3f
+	 * > { transactionHash: '0xdf7756865c2056ce34c4eabe4eff42ad251a9f920a1c620c00b4ea0988731d3f', status: 1n, ... }
 	 * ```
 	 *
 	 *
@@ -851,9 +896,9 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 *     latestBlockHash: '0xb57fbe6f145cefd86a305a9a024a4351d15d4d39607d7af53d69a319bc3b5548'
 	 * }
 	 * ```
-	 * - `error`
+	 * - `error` (emitted for every failure, as a typed error, when a listener is attached; see the note above)
 	 * ```ts
-	 * web3.qrl.sendTransaction(transaction).on('error', error => console.log);
+	 * web3.qrl.sendTransaction(transaction).on('error', error => console.log(error));
 	 * > <Some TransactionError>
 	 * ```
 	 */
@@ -872,18 +917,20 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	/**
 	 * @param transaction Signed transaction in one of the valid {@link Bytes} format.
 	 * @param returnFormat ({@link DataFormat} defaults to {@link DEFAULT_RETURN_FORMAT}) Specifies how the return data should be formatted.
-	 * @returns If `await`ed or `.then`d (i.e. the promise resolves), the transaction hash is returned.
+	 * @returns If `await`ed or `.then`d (i.e. the promise resolves), the {@link TransactionReceipt} of the mined transaction is returned. The promise resolves only for a receipt with `status` 1; a reverted transaction rejects, whatever `returnFormat` is.
+	 *
+	 * __Note:__ As for {@link Web3QRL.sendTransaction}, either `await` (or `.catch`) the returned {@link Web3PromiEvent} or attach an `error` listener; an unobserved failure is an unhandled rejection.
 	 * ```ts
 	 * // A signed type-2 QRL transaction: 0x02 || rlp([..., descriptor, extraParams, signature, publicKey]),
 	 * // as produced by web3.qrl.accounts.signTransaction (the full string is several kilobytes).
 	 * const signedTransaction = "0x02f9…"
 	 *
-	 * const transactionHash = await web3.qrl.sendSignedTransaction(signedTransaction);
-	 * console.log(transactionHash);
-	 * > 0xed8c241ea44d57f4605dc22c63500de46254d6c7844fd65fa438b128c80cf700
+	 * const receipt = await web3.qrl.sendSignedTransaction(signedTransaction);
+	 * console.log(receipt.transactionHash, receipt.status);
+	 * > 0xed8c241ea44d57f4605dc22c63500de46254d6c7844fd65fa438b128c80cf700 1n
 	 *
 	 * web3.qrl.sendSignedTransaction(signedTransaction).then(console.log);
-	 * > 0xed8c241ea44d57f4605dc22c63500de46254d6c7844fd65fa438b128c80cf700
+	 * > { transactionHash: '0xed8c241ea44d57f4605dc22c63500de46254d6c7844fd65fa438b128c80cf700', status: 1n, ... }
 	 *
 	 * web3.qrl.sendSignedTransaction(signedTransaction).catch(console.log);
 	 * > <Some TransactionError>
@@ -1011,7 +1058,8 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 *
 	 * web3.qrl.signTransaction(transaction).then(console.log);
 	 * > {
-	 *   raw: '0xf86501843b9aca0182520894e899f0130fd099c0b896b2ce4e5e15a25b23139a0180820a96a0adb3468dbb4dce89fe1785ea9182e85fb56b399b378f82b93af7a8a12a4f9679a027d37d736e9bcf00121f78b2d10e4404fa5c45856d62b746574345f5cd278097',
+	 *   // A signed type-2 QRL transaction: 0x02 || rlp([..., descriptor, extraParams, signature, publicKey]); several kilobytes long.
+	 *   raw: '0x02f9…',
 	 *   tx: {
 	 *      type: 2n,
 	 *      nonce: 1n,
@@ -1030,7 +1078,7 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 *
 	 * web3.qrl.signTransaction(transaction, { number: FMT_NUMBER.NUMBER , bytes: FMT_BYTES.HEX }).then(console.log);
 	 * > {
-	 *   raw: '0xf86501843b9aca0182520894e899f0130fd099c0b896b2ce4e5e15a25b23139a0180820a96a0adb3468dbb4dce89fe1785ea9182e85fb56b399b378f82b93af7a8a12a4f9679a027d37d736e9bcf00121f78b2d10e4404fa5c45856d62b746574345f5cd278097',
+	 *   raw: '0x02f9…',
 	 *   tx: {
 	 *      type: 2,
 	 *      nonce: 1,
@@ -1442,12 +1490,15 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 * - on("error") - Fires when an error in the subscription occurs.
 	 * - on("connected") - Fires once after the subscription successfully connected. Returns the subscription id.
 	 *
+	 * `subscribe()` returns a promise: `await` it (or `.then` it) to get the subscription object before attaching listeners.
+	 * When a subscription has no `error` listener, a subscription error (a backfill of past logs that failed, a notification the subscription cannot decode) is logged with `console.warn` instead.
+	 *
 	 * @example **Subscribe to Smart Contract events**
 	 * ```ts
 	 * // Subscribe to `logs`
-	 * const logSubscription = web3.qrl.subscribe('logs', {
+	 * const logSubscription = await web3.qrl.subscribe('logs', {
 	 *     address: 'Qd5812F6Cf4a0f645aa620cd57319a0Ed649dd8f5519A9dde7770ae5b0E49e547985f35eB972A2a07041561aa39c65A3991478f9B1e6749e05277dcf58A9A8B72',
-	 *     topics: ['0x033456732123ffff2342342dd12342434324234234fd234fd23fd4f23d4234']
+	 *     topics: ['0x033456732123ffff2342342dd12342434324234234fd234fd23fd4f23d42340000000000000000000000000000000000000000000000000000000000000000']
 	 * });
 	 * logSubscription.on('data', (data: any) => console.log(data));
 	 * logSubscription.on('error', (error: any) => console.log(error));
@@ -1487,6 +1538,10 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 			!isNullish((args as any).fromBlock) &&
 			Number.isFinite(Number((args as any).fromBlock))
 		) {
+			// The backfill runs after the caller got the subscription back, so the logs reach
+			// the `data` listeners attached after the `await`. A failed backfill is reported
+			// through the subscription's guarded error path: the `error` event when a listener
+			// is attached, a warning otherwise; it never becomes an unhandled rejection (M-7d).
 			setImmediate(() => {
 				this.getPastLogs(args)
 					.then(logs => {

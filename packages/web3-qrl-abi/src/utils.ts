@@ -16,7 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { AbiError } from '@theqrl/web3-errors';
-import { AbiCoder, ParamType } from '@theqrl/abi';
+import { AbiCoder, ParamType, booleanToBit } from '@theqrl/abi';
 import { bytesToHex, isNullish, leftPad } from '@theqrl/web3-utils';
 import {
 	AbiInput,
@@ -121,6 +121,14 @@ export const mapTypes = (
 
 		if (isSimplifiedStructFormat(modifiedType)) {
 			const structName = Object.keys(modifiedType)[0] as unknown as keyof typeof modifiedType;
+			// An empty object is neither a type string, an ABI parameter nor a struct (I-10).
+			if (typeof structName !== 'string') {
+				throw new AbiError(
+					`Invalid ABI parameter: expected a type string, an object with a "type" or a struct definition, got ${JSON.stringify(
+						modifiedType,
+					)}`,
+				);
+			}
 
 			mappedTypes.push({
 				...mapStructNameAndType(structName),
@@ -149,13 +157,22 @@ export const formatOddHexstrings = (param: string): string =>
 	isOddHexstring(param) ? `0x0${param.substring(2)}` : param;
 
 /**
- * Handle some formatting of params for backwards compatibility with Ethers V4
+ * Handle some formatting of params for backwards compatibility with Ethers V4.
+ *
+ * A `bool` is normalised to `true`/`false` from exactly the forms the library's validator
+ * (`web3-validator`'s `bool` format) accepts, mapped by value: `0`/`1`, `0n`/`1n`, `'0'`/`'1'`
+ * and `'0x0'`/`'0x1'`. Any other value is passed through for the coder to reject, so `'0'`
+ * and `'0x0'` encode as `false` on every path and `'false'` is an error (H-3).
  */
 const STRICT_HEX = /^-?0x[0-9a-f]+$/i;
 
 export const formatParam = (type: string, _param: unknown): unknown => {
 	if (type === 'function') {
 		return _param;
+	}
+	if (type === 'bool') {
+		const bit = booleanToBit(_param);
+		return bit === undefined ? _param : bit === 1;
 	}
 	// Normalize binary values before cloning objects to preserve their bytes.
 	const normalizedParam = _param instanceof Uint8Array ? bytesToHex(_param) : _param;
@@ -167,13 +184,18 @@ export const formatParam = (type: string, _param: unknown): unknown => {
 	const paramTypeBytesArray = /^bytes([0-9]*)\[\]$/;
 	const paramTypeNumber = /^(u?int)([0-9]*)$/;
 	const paramTypeNumberArray = /^(u?int)([0-9]*)\[\]$/;
+	const paramTypeBoolArray = /^bool\[\]$/;
 
 	// Format BN to string
 	if (param instanceof BigInt) {
 		return param.toString(10);
 	}
 
-	if (paramTypeBytesArray.exec(type) || paramTypeNumberArray.exec(type)) {
+	if (
+		paramTypeBytesArray.exec(type) ||
+		paramTypeNumberArray.exec(type) ||
+		paramTypeBoolArray.exec(type)
+	) {
 		const paramClone = [...(param as Array<unknown>)];
 		return paramClone.map(p => formatParam(type.replace('[]', ''), p));
 	}
@@ -234,6 +256,13 @@ export const flattenTypes = (
 	const types: string[] = [];
 
 	puts.forEach(param => {
+		// ABI JSON is untrusted input: a parameter without a string `type` is an error, not a
+		// raw TypeError from `.startsWith` / `.replace` below (I-10).
+		if (typeof param?.type !== 'string') {
+			throw new AbiError(
+				`Invalid ABI parameter: missing "type" in ${JSON.stringify(param) ?? 'undefined'}`,
+			);
+		}
 		if (typeof param.components === 'object') {
 			if (!param.type.startsWith('tuple')) {
 				throw new AbiError(

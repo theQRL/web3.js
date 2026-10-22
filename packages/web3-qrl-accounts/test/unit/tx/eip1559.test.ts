@@ -14,7 +14,9 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { hexToBytes } from '@theqrl/web3-utils';
+import { RLP } from '@ethereumjs/rlp';
+import { TransactionSigningError } from '@theqrl/web3-errors';
+import { hexToBytes, uint8ArrayConcat } from '@theqrl/web3-utils';
 import { Chain, Common, Hardfork } from '../../../src/common';
 
 import { FeeMarketEIP1559Transaction } from '../../../src';
@@ -271,5 +273,149 @@ describe('[FeeMarketEIP1559Transaction]', () => {
 				{ common },
 			);
 		}).toThrow();
+	});
+});
+
+describe('[FeeMarketEIP1559Transaction] strict RLP decoding (L-13)', () => {
+	const seed = hexToBytes(testdata[0].seed.slice(2));
+	const signedValues = (): unknown[] =>
+		FeeMarketEIP1559Transaction.fromTxData(testdata[0], { common }).sign(seed).raw() as unknown[];
+	const serialize = (values: unknown[]) =>
+		uint8ArrayConcat(Uint8Array.from([2]), RLP.encode(values as Parameters<typeof RLP.encode>[0]));
+	// Each byte as its own one-byte RLP string: the generic byte conversion would flatten this
+	// back into the original bytes.
+	const perByteList = (bytes: Uint8Array) => Array.from(bytes, b => Uint8Array.from([b]));
+	const fieldNames = [
+		'chainId',
+		'nonce',
+		'maxPriorityFeePerGas',
+		'maxFeePerGas',
+		'gasLimit',
+		'to',
+		'value',
+		'data',
+		'accessList',
+		'descriptor',
+		'extraParams',
+		'signature',
+		'publicKey',
+	];
+	const scalarFields = fieldNames
+		.map((name, index) => [name, index] as [string, number])
+		.filter(([name]) => name !== 'accessList');
+
+	it('decodes the canonical encoding and re-encodes it byte for byte', () => {
+		const values = signedValues();
+		const serialized = serialize(values);
+		const decoded = FeeMarketEIP1559Transaction.fromSerializedTx(serialized, { common });
+		expect(decoded.verifySignature()).toBe(true);
+		expect(decoded.serialize()).toEqual(serialized);
+	});
+
+	it.each(scalarFields)(
+		'rejects %s encoded as an RLP list of one-byte strings',
+		(name, index) => {
+			const values = signedValues();
+			values[index] = perByteList(values[index] as Uint8Array);
+			expect(() =>
+				FeeMarketEIP1559Transaction.fromSerializedTx(serialize(values), { common }),
+			).toThrow(`${name} must be a byte string`);
+			expect(() =>
+				FeeMarketEIP1559Transaction.fromValuesArray(
+					values as unknown as Parameters<typeof FeeMarketEIP1559Transaction.fromValuesArray>[0],
+					{ common },
+				),
+			).toThrow(`${name} must be a byte string`);
+		},
+	);
+
+	it('rejects an unsigned (11-value) transaction with a list in place of a byte string', () => {
+		const values = signedValues().slice(0, 11);
+		values[10] = []; // extraParams as an empty RLP list instead of an empty string
+		expect(() =>
+			FeeMarketEIP1559Transaction.fromSerializedTx(serialize(values), { common }),
+		).toThrow('extraParams must be a byte string');
+	});
+
+	it('rejects an access list that is not a list of [address, [storageKeys]] byte strings', () => {
+		const cases: [string, unknown][] = [
+			['a byte string instead of a list', Uint8Array.from([1])],
+			['an address encoded as a list', [[perByteList(validAddress), [validSlot]]]],
+			['storage keys that are not a list', [[validAddress, validSlot]]],
+			['a storage key encoded as a list', [[validAddress, [perByteList(validSlot)]]]],
+			['an item that is a byte string', [validAddress]],
+		];
+		for (const [, accessList] of cases) {
+			const values = signedValues();
+			values[8] = accessList;
+			expect(() =>
+				FeeMarketEIP1559Transaction.fromSerializedTx(serialize(values), { common }),
+			).toThrow('Invalid EIP-1559 transaction');
+		}
+	});
+
+	it('rejects maxPriorityFeePerGas and the authentication fields given as arrays in fromTxData', () => {
+		for (const field of ['maxPriorityFeePerGas', 'descriptor', 'extraParams', 'signature', 'publicKey']) {
+			// A non-empty extraParams value is refused earlier (L-15); the empty array still
+			// reaches the array rule.
+			const value = field === 'extraParams' ? [] : [1];
+			expect(() =>
+				FeeMarketEIP1559Transaction.fromTxData({ [field]: value } as never, { common }),
+			).toThrow(`${field} cannot be an array`);
+		}
+	});
+});
+
+describe('[FeeMarketEIP1559Transaction] extraParams must be empty (L-15)', () => {
+	const seed = hexToBytes(testdata[0].seed.slice(2));
+
+	it('fromTxData rejects a non-empty extraParams', () => {
+		expect(() =>
+			FeeMarketEIP1559Transaction.fromTxData(
+				{ ...testdata[0], extraParams: '0xdeadbeef' },
+				{ common },
+			),
+		).toThrow('non-empty extraParams not supported');
+		expect(() =>
+			FeeMarketEIP1559Transaction.fromTxData(
+				{ ...testdata[0], extraParams: Uint8Array.from([0]) },
+				{ common },
+			),
+		).toThrow('non-empty extraParams not supported');
+	});
+
+	it('accepts every spelling of empty extraParams', () => {
+		for (const extraParams of ['0x', '', undefined, new Uint8Array(0)]) {
+			const tx = FeeMarketEIP1559Transaction.fromTxData(
+				{ ...testdata[0], extraParams },
+				{ common },
+			);
+			expect(tx.extraParams).toBeUndefined();
+			expect(tx.sign(seed).verifySignature()).toBe(true);
+		}
+	});
+
+	it('rejects a raw transaction that carries extraParams', () => {
+		const values = FeeMarketEIP1559Transaction.fromTxData(testdata[0], { common })
+			.sign(seed)
+			.raw() as unknown[];
+		values[10] = hexToBytes('1234');
+		const serialized = uint8ArrayConcat(
+			Uint8Array.from([2]),
+			RLP.encode(values as Parameters<typeof RLP.encode>[0]),
+		);
+		expect(() =>
+			FeeMarketEIP1559Transaction.fromSerializedTx(serialized, { common }),
+		).toThrow('non-empty extraParams not supported');
+	});
+
+	it('sign() refuses a transaction holding extraParams instead of dropping them, and validate()/verifySignature() reject it', () => {
+		const tx = FeeMarketEIP1559Transaction.fromTxData(testdata[0], { common, freeze: false });
+		(tx as unknown as { extraParams?: Uint8Array }).extraParams = hexToBytes('1234');
+
+		expect(() => tx.sign(seed)).toThrow(TransactionSigningError);
+		expect(tx.validate(true)).toContain('non-empty extraParams not supported');
+		expect(tx.validate()).toBe(false);
+		expect(tx.verifySignature()).toBe(false);
 	});
 });

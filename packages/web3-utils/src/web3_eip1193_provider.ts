@@ -23,7 +23,7 @@ import {
 	Web3APISpec,
 	Web3BaseProvider,
 } from '@theqrl/web3-types';
-import { EventEmitter } from 'events';
+import { EventEmitter, EventEmitterLike } from './event_emitter.js';
 import { EIP1193ProviderRpcError } from '@theqrl/web3-errors';
 import { toPayload } from './json_rpc.js';
 
@@ -33,7 +33,7 @@ import { toPayload } from './json_rpc.js';
 export abstract class Eip1193Provider<
 	API extends Web3APISpec = QRLExecutionAPI,
 > extends Web3BaseProvider<API> {
-	protected readonly _eventEmitter: EventEmitter = new EventEmitter();
+	protected readonly _eventEmitter: EventEmitterLike = new EventEmitter();
 	private _chainId: HexString = '';
 	private _accounts: HexString[] = [];
 
@@ -78,13 +78,14 @@ export abstract class Eip1193Provider<
 				.catch(err => this._emitError(err)),
 
 			this._getAccounts()
-				.then(accounts => {
-					if (
-						!(
-							this._accounts.length === accounts.length &&
-							accounts.every(v => accounts.includes(v))
-						)
-					) {
+				.then(result => {
+					const accounts = Array.isArray(result) ? result : [];
+					// Compared with the *previous* list: the new list used to be compared with
+					// itself, so only a change in length was ever reported (L-23).
+					const unchanged =
+						this._accounts.length === accounts.length &&
+						accounts.every(account => this._accounts.includes(account));
+					if (!unchanged) {
 						this._accounts = accounts;
 						this._onAccountsChanged();
 					}

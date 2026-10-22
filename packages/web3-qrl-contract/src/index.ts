@@ -24,12 +24,13 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
  * To use it standalone:
  *
  * ```ts
- * const Contract = require('@theqrl/web3-qrl-contract');
+ * const { Contract } = require('@theqrl/web3-qrl-contract');
  *
- * // set provider for all later instances to use
- * Contract.setProvider('ws://localhost:8546');
+ * // the provider is set per instance: either as a constructor option ...
+ * const contract = new Contract(jsonInterface, address, { provider: 'ws://localhost:8546' });
  *
- * const contract = new Contract(jsonInterface, address);
+ * // ... or later on the instance
+ * contract.setProvider('ws://localhost:8546');
  *
  * contract.methods.somFunc().send({from: ....})
  * .on('receipt', function(){

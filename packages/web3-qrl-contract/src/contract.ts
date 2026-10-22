@@ -24,7 +24,10 @@ import {
 } from '@theqrl/web3-core';
 import {
 	ContractExecutionError,
+	ContractMissingABIError,
 	ContractTransactionDataAndInputError,
+	InvalidAddressError,
+	NoContractAddressFoundError,
 	SubscriptionError,
 	Web3ContractError,
 } from '@theqrl/web3-errors';
@@ -36,12 +39,13 @@ import {
 	NewHeadsSubscription,
 	sendTransaction,
 	SendTransactionEvents,
+	isTransactionStatusSuccessful,
 } from '@theqrl/web3-qrl';
 import {
 	encodeEventSignature,
 	encodeFunctionSignature,
+	encodeParameter,
 	decodeContractErrorData,
-	formatOddHexstrings,
 	isAbiErrorFragment,
 	isAbiEventFragment,
 	isAbiFunctionFragment,
@@ -53,6 +57,7 @@ import {
 	AbiEventFragment,
 	AbiFragment,
 	AbiFunctionFragment,
+	AbiParameter,
 	ContractAbi,
 	ContractConstructorArgs,
 	ContractEvent,
@@ -75,10 +80,12 @@ import {
 	PayableCallOptions,
 	DataFormat,
 	DEFAULT_RETURN_FORMAT,
+	SupportedProviders,
 	Web3ValidationErrorObject,
 } from '@theqrl/web3-types';
-import { format, isDataFormat, keccak256, toChecksumAddress } from '@theqrl/web3-utils';
+import { format, isDataFormat, rightPad, toChecksumAddress } from '@theqrl/web3-utils';
 import {
+	isAddressString,
 	isNullish,
 	validator,
 	utils as validatorUtils,
@@ -86,7 +93,14 @@ import {
 	Web3ValidatorError,
 } from '@theqrl/web3-validator';
 import { ALL_EVENTS, ALL_EVENTS_ABI } from './constants.js';
-import { decodeEventABI, decodeMethodReturn, encodeEventABI, encodeMethodABI } from './encoding.js';
+import {
+	decodeEventABI,
+	decodeMethodReturn,
+	encodeEventABI,
+	encodeIndexedTopic,
+	encodeMethodABI,
+	isIndexedHashType,
+} from './encoding.js';
 import { LogsSubscription } from './log_subscription.js';
 import {
 	ContractAbiWithSignature,
@@ -100,11 +114,14 @@ import {
 	Web3ContractContext,
 } from './types.js';
 import {
+	assertDataInputFill,
+	DataInputFill,
 	getCreateAccessListParams,
 	getEstimateGasParams,
 	getQRLTxCallParams,
 	getSendTxParams,
 	isContractInitOptions,
+	isExactAbiValue,
 	isWeb3ContractContext,
 } from './utils.js';
 
@@ -137,6 +154,15 @@ export type ContractOverloadedMethodOutputs<AbiArr extends ReadonlyArray<unknown
 		: undefined
 >;
 
+/**
+ * The type of `contract.methods['f(uint256)']` and `contract.methods['0x…']`: the signature and
+ * selector keys take the inputs of whichever overload they name, which the type system cannot
+ * know, so they accept any argument list (`ContractBoundMethod<any>` used to accept none, which
+ * made the documented overload keys unusable from TypeScript, H-4).
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- the arguments depend on the named overload
+export type ContractBoundMethodBySignature = (...args: any[]) => PayableMethodObject<any, any> | NonPayableMethodObject<any, any>;
+
 // To avoid circular dependency between types and encoding, declared these types here.
 export type ContractMethodsInterface<Abi extends ContractAbi> = {
 	[MethodAbi in FilterAbis<
@@ -144,8 +170,7 @@ export type ContractMethodsInterface<Abi extends ContractAbi> = {
 		AbiFunctionFragment & { type: 'function' }
 	> as MethodAbi['name']]: ContractBoundMethod<MethodAbi>;
 	// To allow users to use method signatures
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-} & { [key: string]: ContractBoundMethod<any> };
+} & { [key: string]: ContractBoundMethodBySignature };
 
 /**
  * The event object can be accessed from `myContract.events.myEvent`.
@@ -181,11 +206,50 @@ export type ContractEventEmitterInterface<Abi extends ContractAbi> = {
 
 type EventParameters = Parameters<typeof encodeEventABI>[2];
 
+type ContextConfigListener = Parameters<Web3Context['on']>[1];
+
 const contractSubscriptions = {
 	logs: LogsSubscription,
 	newHeads: NewHeadsSubscription,
 	newBlockHeaders: NewHeadsSubscription,
 };
+
+/**
+ * A name under which no method or event is published on `contract.methods` /
+ * `contract.events`: a `then` member would make the maps thenables, so `await contract.methods`
+ * (or returning `contract.events` from an async function) would call into the ABI (L-64).
+ * Such a function or event stays reachable through its signature and selector keys.
+ */
+const RESERVED_INTERFACE_KEYS = new Set(['then']);
+
+/** The `provider` member of an argument, when the argument is an object that has one. */
+const providerOf = (arg: unknown): SupportedProviders<QRLExecutionAPI> | string | undefined =>
+	typeof arg === 'object' && !isNullish(arg) && 'provider' in arg
+		? (arg as { provider?: SupportedProviders<QRLExecutionAPI> | string }).provider
+		: undefined;
+
+/**
+ * A private copy of the ABI parameters, so that a caller mutating the array it handed to the
+ * constructor cannot change what the contract encodes later (I-13).
+ */
+const cloneAbiParameters = (
+	parameters: ReadonlyArray<AbiParameter> | undefined,
+): ReadonlyArray<AbiParameter> | undefined => {
+	// Anything that is not an array is left to the ABI layer to reject.
+	if (isNullish(parameters) || !Array.isArray(parameters as unknown)) {
+		return parameters;
+	}
+	return parameters.map(parameter => {
+		if (typeof parameter !== 'object' || isNullish(parameter)) {
+			return parameter;
+		}
+		return isNullish(parameter.components)
+			? { ...parameter }
+			: { ...parameter, components: cloneAbiParameters(parameter.components) };
+	});
+};
+
+const inputCount = (abi: AbiFunctionFragment): number => (abi.inputs ?? []).length;
 
 /**
  * The class designed to interact with smart contracts on the QRL blockchain.
@@ -237,13 +301,16 @@ export class Contract<Abi extends ContractAbi>
 	private _methods!: ContractMethodsInterface<Abi>;
 	private _events!: ContractEventsInterface<Abi>;
 	/**
-	 * Set property to `data`, `input`, or `both` to change the property of the contract being sent to the
-	 * RPC provider when using contract methods.
-	 * Default is `input`
+	 * The `dataInputFill` constructor option: where the calldata of a call or transaction is
+	 * placed (`data`, `input` or `both`). When absent, the context's `contractDataInputFill`
+	 * config applies; a config value of `both` always wins.
 	 */
-	private readonly _dataInputFill?: 'data' | 'input' | 'both';
+	private readonly _dataInputFillOption?: DataInputFill;
 
 	private context?: Web3Context;
+	/** The `CONFIG_CHANGE` listener registered on {@link context} while `syncWithContext` is on. */
+	private _contextConfigListener?: ContextConfigListener;
+
 	/**
 	 * Creates a new contract instance with all its methods and events defined in its {@doclink glossary/json_interface | json interface} object.
 	 *
@@ -251,10 +318,10 @@ export class Contract<Abi extends ContractAbi>
 	 * new web3.qrl.Contract(jsonInterface[, address][, options])
 	 * ```
 	 *
-	 * @param jsonInterface - The JSON interface for the contract to instantiate.
-	 * @param address - The address of the smart contract to call.
-	 * @param options - The options of the contract. Some are used as fallbacks for calls and transactions.
-	 * @param context - The context of the contract used for customizing the behavior of the contract.
+	 * @param jsonInterface - The JSON interface for the contract to instantiate. It must be an array of ABI fragment objects; a copy of it is kept.
+	 * @param address - The address of the smart contract to call. A mixed-case address must carry a valid checksum (an `InvalidAddressError` is thrown otherwise); `null`, `undefined` and `''` mean "no address yet".
+	 * @param options - The options of the contract. Some are used as fallbacks for calls and transactions. `dataInputFill` must be `'data'`, `'input'` or `'both'`.
+	 * @param context - The context of the contract used for customizing the behavior of the contract: a `Web3Context` instance or its `getContextObject()`. The contract then shares the request manager, subscription manager, wallet and config of that context. An empty object is not a context.
 	 * @returns - The contract instance with all its methods and events.
 	 *
 	 * ```ts title="Example"
@@ -316,37 +383,33 @@ export class Contract<Abi extends ContractAbi>
 			? optionsOrContextOrReturnFormat
 			: undefined;
 
-		let contractContext;
+		// Only an object that carries a context key is a context: an empty object (what
+		// `new web3.qrl.Contract(abi, address)` used to pass as the options) must not hide the
+		// real context given after it (M-6).
+		let contractContext: Web3ContractContext | Web3Context | undefined;
 		if (isWeb3ContractContext(addressOrOptionsOrContext)) {
 			contractContext = addressOrOptionsOrContext;
 		} else if (isWeb3ContractContext(optionsOrContextOrReturnFormat)) {
 			contractContext = optionsOrContextOrReturnFormat;
-		} else {
+		} else if (isWeb3ContractContext(contextOrReturnFormat)) {
 			contractContext = contextOrReturnFormat;
 		}
+		// A `Web3Context` instance shares its request manager, subscription manager, wallet
+		// and config through its context object; spreading the instance itself would only
+		// copy its private fields.
+		const contextObject =
+			contractContext instanceof Web3Context
+				? contractContext.getContextObject()
+				: contractContext;
 
-		let provider;
-		if (
-			typeof addressOrOptionsOrContext === 'object' &&
-			'provider' in addressOrOptionsOrContext
-		) {
-			provider = addressOrOptionsOrContext.provider;
-		} else if (
-			typeof optionsOrContextOrReturnFormat === 'object' &&
-			'provider' in optionsOrContextOrReturnFormat
-		) {
-			provider = optionsOrContextOrReturnFormat.provider;
-		} else if (
-			typeof contextOrReturnFormat === 'object' &&
-			'provider' in contextOrReturnFormat
-		) {
-			provider = contextOrReturnFormat.provider;
-		} else {
-			provider = Contract.givenProvider;
-		}
+		const provider =
+			providerOf(addressOrOptionsOrContext) ??
+			providerOf(optionsOrContextOrReturnFormat) ??
+			providerOf(contextOrReturnFormat) ??
+			Contract.givenProvider;
 
 		super({
-			...contractContext,
+			...contextObject,
 			provider,
 			registeredSubscriptions: contractSubscriptions,
 		});
@@ -371,13 +434,7 @@ export class Contract<Abi extends ContractAbi>
 		const address =
 			typeof addressOrOptionsOrContext === 'string' ? addressOrOptionsOrContext : undefined;
 
-		if (this.config.contractDataInputFill === 'both') {
-			this._dataInputFill = this.config.contractDataInputFill;
-		} else {
-			this._dataInputFill =
-				(options as ContractInitOptions)?.dataInputFill ??
-				this.config.contractDataInputFill;
-		}
+		this._dataInputFillOption = assertDataInputFill(options?.dataInputFill);
 		this._parseAndSetJsonInterface(jsonInterface, returnDataFormat);
 
 		if (!isNullish(address)) {
@@ -395,7 +452,7 @@ export class Contract<Abi extends ContractAbi>
 			data: options?.data,
 		};
 
-		this.syncWithContext = (options as ContractInitOptions)?.syncWithContext ?? false;
+		this.syncWithContext = options?.syncWithContext ?? false;
 		if (contractContext instanceof Web3Context) {
 			this.subscribeToContextEvents(contractContext);
 		}
@@ -423,6 +480,13 @@ export class Contract<Abi extends ContractAbi>
 	 * await myContract.events.allEvents([options])
 	 * ```
 	 *
+	 * The subscription request (and, with `fromBlock`, the replay of past events) is started on
+	 * the next microtask, so listeners attached right after the call are in place before anything
+	 * is emitted. A failure to subscribe or to replay past events is reported on the
+	 * subscription's `error` event when it has a listener, and always through the promise
+	 * `subscription.subscribed`, which otherwise resolves with the subscription id. Nothing is
+	 * thrown into the process when no `error` listener is attached.
+	 *
 	 * @returns - When individual event is accessed will returns {@link ContractBoundEvent} object
 	 */
 	public get events() {
@@ -439,6 +503,17 @@ export class Contract<Abi extends ContractAbi>
 	 * The signature `myContract.methods['0x58cf5f10'](123)`
 	 *
 	 * This allows calling functions with same name but different parameters from the JavaScript contract object.
+	 *
+	 * The signature and selector keys always encode exactly that overload: the arguments are
+	 * validated against its inputs and nothing else is considered. The name key resolves
+	 * overloads from the arguments: among the overloads with the same number of inputs, the
+	 * ones whose validation passes are kept; when more than one remains, the overload whose
+	 * inputs are all exact matches for the JavaScript values (an address string for `address`,
+	 * a boolean for `bool`, a hex string of the right length for `bytesN`, a number, bigint or
+	 * decimal string for `intN`/`uintN`, and so on) is chosen. When the arguments still fit
+	 * more than one overload (for example `f(uint256)` and `f(int256)` given `7`) a
+	 * `Web3ContractError` is thrown instead of guessing: use the signature key. Passing more
+	 * arguments than any overload takes throws a `Web3ValidatorError`.
 	 *
 	 * \> The method signature does not provide a type safe interface, so we recommend to use method `name` instead.
 	 *
@@ -474,6 +549,10 @@ export class Contract<Abi extends ContractAbi>
 	/**
 	 * Clones the current contract instance. This doesn't deploy contract on blockchain and only creates a local clone.
 	 *
+	 * The clone shares the request manager, subscription manager and wallet of this contract.
+	 * When this contract syncs its config with a context (`syncWithContext`), so does the
+	 * clone; call {@link Contract.dispose} on a clone you no longer use.
+	 *
 	 * @returns - The new contract instance.
 	 *
 	 * ```ts
@@ -487,7 +566,7 @@ export class Contract<Abi extends ContractAbi>
 	 * ```
 	 */
 	public clone() {
-		let newContract: Contract<any>;
+		let newContract: Contract<Abi>;
 		if (this.options.address) {
 			newContract = new Contract<Abi>(
 				[...this._jsonInterface, ...this._errorsInterface] as unknown as Abi,
@@ -501,7 +580,7 @@ export class Contract<Abi extends ContractAbi>
 					data: this.options.data,
 					provider: this.currentProvider,
 					syncWithContext: this.syncWithContext,
-					dataInputFill: this._dataInputFill,
+					dataInputFill: this._dataInputFillOption,
 				},
 				this.getContextObject(),
 			);
@@ -517,7 +596,7 @@ export class Contract<Abi extends ContractAbi>
 					data: this.options.data,
 					provider: this.currentProvider,
 					syncWithContext: this.syncWithContext,
-					dataInputFill: this._dataInputFill,
+					dataInputFill: this._dataInputFillOption,
 				},
 				this.getContextObject(),
 			);
@@ -525,6 +604,23 @@ export class Contract<Abi extends ContractAbi>
 		if (this.context) newContract.subscribeToContextEvents(this.context);
 
 		return newContract;
+	}
+
+	/**
+	 * Detaches the contract from the context it was created from: the `CONFIG_CHANGE` listener
+	 * that `syncWithContext` registered on that context is removed, so a contract (or a clone)
+	 * that is no longer used does not keep receiving config updates nor keep the context's
+	 * listener list growing (L-37). The contract itself stays usable; its config simply stops
+	 * following the context.
+	 */
+	public dispose(): void {
+		this._detachFromContext();
+		this.context = undefined;
+		// `Web3Context` may carry its own cleanup; run it when it exists.
+		const parent = Object.getPrototypeOf(Contract.prototype) as { dispose?: () => void };
+		if (typeof parent.dispose === 'function') {
+			parent.dispose.call(this);
+		}
 	}
 
 	/**
@@ -588,6 +684,10 @@ export class Contract<Abi extends ContractAbi>
 	 * });
 	 * ```
 	 *
+	 * The promise returned by `send()` rejects with a `Web3ContractError` when the receipt
+	 * reports a failed creation and with a `NoContractAddressFoundError` when a successful
+	 * receipt carries no `contractAddress`.
+	 *
 	 * @returns - The transaction object
 	 */
 	public deploy(deployOptions?: {
@@ -640,7 +740,6 @@ export class Contract<Abi extends ContractAbi>
 			> => {
 				const modifiedOptions = { ...options };
 
-				// eslint-disable-next-line @typescript-eslint/no-unsafe-return
 				return this._contractMethodDeploySend(
 					abi as AbiFunctionFragment,
 					args as unknown[],
@@ -703,6 +802,13 @@ export class Contract<Abi extends ContractAbi>
 	 * }]
 	 * ```
 	 *
+	 * Logs the node returns for another address, or (when an event is named and no custom
+	 * `topics` are given) with another signature topic, are dropped. The `filter` values are
+	 * compared through the ABI type of the input, so `{value: 20}`, `{value: '20'}` and
+	 * `{value: '0x14'}` match the same log; indexed `string`, `bytes`, `function`, array and
+	 * tuple values are compared through their keccak256 topic. A log entry that is not an
+	 * object, or a reply that is not an array, is reported with a `ResponseError`.
+	 *
 	 * @param eventName - The name of the event in the contract, or `allEvents` to get all events.
 	 * @param filter - The filter options used to get events.
 	 * @param returnFormat - Return format
@@ -744,11 +850,13 @@ export class Contract<Abi extends ContractAbi>
 			? param2
 			: param3 ?? DEFAULT_RETURN_FORMAT;
 
+		// Only an event fragment can be the event: a same-named function used to be picked
+		// (L-60).
 		const abi =
 			eventName === 'allEvents' || eventName === ALL_EVENTS
 				? ALL_EVENTS_ABI
 				: (this._jsonInterface.find(
-						j => 'name' in j && j.name === eventName,
+						j => isAbiEventFragment(j) && j.name === eventName,
 				  ) as AbiEventFragment & { signature: string });
 
 		if (!abi) {
@@ -761,11 +869,24 @@ export class Contract<Abi extends ContractAbi>
 			eventOptions,
 		);
 		const logs = await getLogs(this, { fromBlock, toBlock, topics, address }, returnFormat);
-		const decodedLogs = logs.map(log =>
-			typeof log === 'string'
-				? log
-				: decodeEventABI(abi, log as LogsInput, this._jsonInterface, returnFormat),
-		);
+		if (!Array.isArray(logs)) {
+			throw new Web3ContractError('qrl_getLogs did not return an array of logs');
+		}
+
+		// The node already filtered by address and signature; a log that does not match is
+		// not this contract's event and must not be labelled as one (I-13).
+		const expectedAddress = typeof address === 'string' ? address.toLowerCase() : undefined;
+		const expectedTopic =
+			Array.isArray(eventOptions.topics) || abi.name === ALL_EVENTS || abi.anonymous
+				? undefined
+				: rightPad(abi.signature, 128).toLowerCase();
+		const decodedLogs = logs
+			.filter(log => Contract._isLogOf(log, expectedAddress, expectedTopic))
+			.map(log =>
+				typeof log === 'string'
+					? log
+					: decodeEventABI(abi, log as LogsInput, this._jsonInterface, returnFormat),
+			);
 
 		const filter = eventOptions?.filter ?? {};
 		const filterKeys = Object.keys(filter);
@@ -781,26 +902,36 @@ export class Contract<Abi extends ContractAbi>
 								item =>
 									isAbiEventFragment(item) &&
 									item.signature === log.signature,
-							)
+						  )
 						: abi;
 
 				return filterKeys.every((key: string) => {
 					const inputAbi = logAbi?.inputs?.find(input => input.name === key);
+					if (!inputAbi) {
+						return false;
+					}
 
-					const matches = (value: unknown) => {
-						let expected = value;
-						if (inputAbi?.indexed && inputAbi.type === 'string') {
-							expected = keccak256(new TextEncoder().encode(value as string));
-						} else if (inputAbi?.indexed && inputAbi.type === 'bytes') {
-							expected = keccak256(formatOddHexstrings(value as string));
-						} else if (inputAbi?.indexed && inputAbi.type === 'function') {
-							expected = keccak256(value as Bytes);
+					// Compare through the ABI type: `20`, `'20'`, `20n` and `'0x14'` are the
+					// same `uint256`, and a hashed indexed value is compared as its topic
+					// (L-61).
+					const matches = (expected: unknown): boolean => {
+						const actual = log.returnValues[key];
+						if (inputAbi.indexed && isIndexedHashType(inputAbi.type)) {
+							const expectedTopicValue = encodeIndexedTopic(inputAbi, expected);
+							return (
+								typeof actual === 'string' &&
+								rightPad(actual, 128).toLowerCase() ===
+									expectedTopicValue.toLowerCase()
+							);
 						}
-
-						return (
-							String(log.returnValues[key]).toUpperCase() ===
-							String(expected).toUpperCase()
-						);
+						const expectedWord = encodeParameter(inputAbi, expected);
+						try {
+							return encodeParameter(inputAbi, actual) === expectedWord;
+						} catch {
+							// A value that cannot be re-encoded (the log was decoded as
+							// anonymous, for example) does not match.
+							return false;
+						}
 					};
 
 					if (Array.isArray(filter[key])) {
@@ -814,19 +945,77 @@ export class Contract<Abi extends ContractAbi>
 		return decodedLogs;
 	}
 
+	/**
+	 * Whether a log the node returned belongs to the requested address and event (I-13). A
+	 * string entry (a hash) or an entry without the member is kept and left to the decoder.
+	 */
+	private static _isLogOf(log: unknown, expectedAddress?: string, expectedTopic?: string) {
+		if (typeof log !== 'object' || isNullish(log) || Array.isArray(log)) {
+			return true;
+		}
+		const { address, topics } = log as { address?: unknown; topics?: unknown };
+		if (
+			expectedAddress &&
+			typeof address === 'string' &&
+			address.toLowerCase() !== expectedAddress
+		) {
+			return false;
+		}
+		if (
+			expectedTopic &&
+			Array.isArray(topics) &&
+			typeof topics[0] === 'string' &&
+			topics[0].toLowerCase() !== expectedTopic
+		) {
+			return false;
+		}
+		return true;
+	}
+
+	/** Where the calldata of a call or transaction goes: the option, else the config (L-58). */
+	private get dataInputFill(): DataInputFill {
+		if (this.config.contractDataInputFill === 'both') {
+			return 'both';
+		}
+		return this._dataInputFillOption ?? this.config.contractDataInputFill;
+	}
+
 	private _parseAndSetAddress(value?: Address, returnFormat: DataFormat = DEFAULT_RETURN_FORMAT) {
-		this._address = value
-			? toChecksumAddress(format({ format: 'address' }, value, returnFormat))
-			: value;
+		if (isNullish(value) || value === '') {
+			this._address = undefined;
+			return;
+		}
+		// A mixed-case address with a wrong checksum is the one typo the checksum exists to
+		// catch; it used to be re-checksummed silently and become `to` of every send (L-57).
+		if (typeof value !== 'string' || !isAddressString(value)) {
+			throw new InvalidAddressError(value);
+		}
+		this._address = toChecksumAddress(format({ format: 'address' }, value, returnFormat));
 	}
 
 	private _parseAndSetJsonInterface(
 		abis: ContractAbi,
 		returnFormat: DataFormat = DEFAULT_RETURN_FORMAT,
 	) {
+		if (!Array.isArray(abis as unknown)) {
+			throw new ContractMissingABIError();
+		}
+		abis.forEach((item, index) => {
+			if (typeof item !== 'object' || isNullish(item) || Array.isArray(item)) {
+				throw new Web3ContractError(
+					`Invalid JSON interface: the item at index ${index} is not an ABI fragment object`,
+				);
+			}
+		});
+
 		this._functions = {};
-		this._methods = {} as ContractMethodsInterface<Abi>;
-		this._events = {} as ContractEventsInterface<Abi>;
+		// Null-prototype maps: an ABI name never reaches `Object.prototype` (L-64).
+		// eslint-disable-next-line no-null/no-null -- a null prototype is the point here
+		this._methods = Object.create(null) as ContractMethodsInterface<Abi>;
+		// eslint-disable-next-line no-null/no-null -- a null prototype is the point here
+		this._events = Object.create(null) as ContractEventsInterface<Abi>;
+		// Overloads of the previous interface must not survive a re-set (L-56).
+		this._overloadedMethodAbis.clear();
 
 		let result: ContractAbi = [];
 
@@ -840,6 +1029,12 @@ export class Contract<Abi extends ContractAbi>
 				...a,
 				signature: '',
 			};
+			if ('inputs' in abi) {
+				abi.inputs = cloneAbiParameters(abi.inputs);
+			}
+			if ('outputs' in abi) {
+				abi.outputs = cloneAbiParameters(abi.outputs);
+			}
 
 			if (isAbiFunctionFragment(abi)) {
 				const methodName = jsonInterfaceMethodToString(abi);
@@ -858,29 +1053,35 @@ export class Contract<Abi extends ContractAbi>
 					abi,
 				]);
 				const abiFragment = this._overloadedMethodAbis.get(abi.name) ?? [];
+				// The name key resolves the overload from the arguments; the signature and
+				// selector keys are bound to exactly this fragment (H-4).
 				const contractMethod = this._createContractMethod<
 					typeof abiFragment,
 					AbiErrorFragment
-				>(abiFragment, errorsAbi);
+				>(abiFragment, errorsAbi, false);
+				const exactContractMethod = this._createContractMethod<
+					typeof abiFragment,
+					AbiErrorFragment
+				>(abiFragment, errorsAbi, true);
 
 				this._functions[methodName] = {
 					signature: methodSignature,
-					method: contractMethod,
+					method: exactContractMethod,
 				};
 
-				// We don't know a particular type of the Abi method so can't type check
-				this._methods[abi.name as keyof ContractMethodsInterface<Abi>] = this._functions[
-					methodName
-				].method as never;
+				if (!RESERVED_INTERFACE_KEYS.has(abi.name)) {
+					// We don't know a particular type of the Abi method so can't type check
+					this._methods[abi.name as keyof ContractMethodsInterface<Abi>] =
+						contractMethod as never;
+				}
 
 				// We don't know a particular type of the Abi method so can't type check
-				this._methods[methodName as keyof ContractMethodsInterface<Abi>] = this._functions[
-					methodName
-				].method as never;
+				this._methods[methodName as keyof ContractMethodsInterface<Abi>] =
+					exactContractMethod as never;
 
 				// We don't know a particular type of the Abi method so can't type check
-				this._methods[methodSignature as keyof ContractMethodsInterface<Abi>] = this
-					._functions[methodName].method as never;
+				this._methods[methodSignature as keyof ContractMethodsInterface<Abi>] =
+					exactContractMethod as never;
 			} else if (isAbiEventFragment(abi)) {
 				const eventName = jsonInterfaceMethodToString(abi);
 				const eventSignature = encodeEventSignature(eventName);
@@ -891,8 +1092,10 @@ export class Contract<Abi extends ContractAbi>
 					// It's a private type and we don't want to expose it and no need to check
 					this._events[eventName as keyof ContractEventsInterface<Abi>] = event as never;
 				}
-				// It's a private type and we don't want to expose it and no need to check
-				this._events[abi.name as keyof ContractEventsInterface<Abi>] = event as never;
+				if (!RESERVED_INTERFACE_KEYS.has(abi.name)) {
+					// It's a private type and we don't want to expose it and no need to check
+					this._events[abi.name as keyof ContractEventsInterface<Abi>] = event as never;
+				}
 				// It's a private type and we don't want to expose it and no need to check
 				this._events[eventSignature as keyof ContractEventsInterface<Abi>] = event as never;
 			}
@@ -916,44 +1119,97 @@ export class Contract<Abi extends ContractAbi>
 		}
 	}
 
+	/**
+	 * Picks the overload the arguments are meant for (H-4, L-59): same number of inputs, then
+	 * validation, then exact JavaScript-type matches; anything still ambiguous is an error.
+	 */
+	private _resolveOverload(
+		candidates: AbiFunctionFragment[],
+		params: unknown[],
+	): { methodAbi: AbiFunctionFragment; abiParams: unknown[] } {
+		const { name } = candidates[0];
+		const sameArity = candidates.filter(candidate => inputCount(candidate) === params.length);
+
+		if (sameArity.length === 0) {
+			// Too few arguments: let the validator name the missing ones against the closest
+			// overload. Too many: no overload takes them, nothing may be dropped (L-59).
+			const larger = candidates
+				.filter(candidate => inputCount(candidate) > params.length)
+				.sort((a, b) => inputCount(a) - inputCount(b));
+			if (larger.length > 0) {
+				validator.validate(larger[0].inputs ?? [], this._getAbiParams(larger[0], params));
+			}
+			const signatures = candidates.map(candidate => jsonInterfaceMethodToString(candidate));
+			throw new Web3ValidatorError([
+				{
+					keyword: 'arity',
+					instancePath: '',
+					schemaPath: '#',
+					params: { value: params.length, signatures },
+					message: `no overload of "${name}" takes ${
+						params.length
+					} argument(s); available: ${signatures.join(', ')}`,
+				},
+			]);
+		}
+
+		if (sameArity.length === 1) {
+			const abiParams = this._getAbiParams(sameArity[0], params);
+			validator.validate(sameArity[0].inputs ?? [], abiParams);
+			return { methodAbi: sameArity[0], abiParams };
+		}
+
+		const errors: Web3ValidationErrorObject[] = [];
+		const applicable: { methodAbi: AbiFunctionFragment; abiParams: unknown[] }[] = [];
+		for (const candidate of sameArity) {
+			try {
+				const abiParams = this._getAbiParams(candidate, params);
+				validator.validate(candidate.inputs as unknown as ValidationSchemaInput, abiParams);
+				applicable.push({ methodAbi: candidate, abiParams });
+			} catch (e) {
+				errors.push(e as Web3ValidationErrorObject);
+			}
+		}
+		if (applicable.length === 0) {
+			throw new Web3ValidatorError(errors);
+		}
+		if (applicable.length === 1) {
+			return applicable[0];
+		}
+
+		const exactMatches = applicable.filter(({ methodAbi }) =>
+			(methodAbi.inputs ?? []).every((input, index) => isExactAbiValue(input, params[index])),
+		);
+		if (exactMatches.length === 1) {
+			return exactMatches[0];
+		}
+		const signatures = (exactMatches.length > 1 ? exactMatches : applicable).map(
+			({ methodAbi }) => jsonInterfaceMethodToString(methodAbi),
+		);
+		throw new Web3ContractError(
+			`Ambiguous call to "${name}": the arguments fit ${
+				signatures.length
+			} overloads (${signatures.join(
+				', ',
+			)}). Call the intended overload explicitly, e.g. contract.methods['${
+				signatures[0]
+			}'](...)`,
+		);
+	}
+
 	private _createContractMethod<T extends AbiFunctionFragment[], E extends AbiErrorFragment>(
 		abiArr: T,
 		errorsAbis: E[],
+		exact: boolean,
 	): ContractBoundMethod<T[0]> {
 		const abi = abiArr[abiArr.length - 1];
 		return (...params: unknown[]) => {
-			let abiParams!: Array<unknown>;
-			const abis = this._overloadedMethodAbis.get(abi.name) ?? [];
-			let methodAbi: AbiFunctionFragment = abis[0];
+			// A signature or selector key is bound to exactly its fragment; the name key sees
+			// every overload known at call time.
+			const candidates = exact ? [abi] : this._overloadedMethodAbis.get(abi.name) ?? [abi];
+			const { methodAbi, abiParams } = this._resolveOverload(candidates, params);
 			const internalErrorsAbis = errorsAbis;
 
-			const arrayOfAbis: AbiFunctionFragment[] = abis.filter(
-				_abi => (_abi.inputs ?? []).length === params.length,
-			);
-
-			if (abis.length === 1 || arrayOfAbis.length === 0) {
-				abiParams = this._getAbiParams(methodAbi, params);
-				validator.validate(abi.inputs ?? [], abiParams);
-			} else {
-				const errors: Web3ValidationErrorObject[] = [];
-
-				for (const _abi of arrayOfAbis) {
-					try {
-						abiParams = this._getAbiParams(_abi, params);
-						validator.validate(
-							_abi.inputs as unknown as ValidationSchemaInput,
-							abiParams,
-						);
-						methodAbi = _abi;
-						break;
-					} catch (e) {
-						errors.push(e as Web3ValidationErrorObject);
-					}
-				}
-				if (errors.length === arrayOfAbis.length) {
-					throw new Web3ValidatorError(errors);
-				}
-			}
 			const methods = {
 				arguments: abiParams,
 
@@ -1023,7 +1279,7 @@ export class Contract<Abi extends ContractAbi>
 			params,
 			options: {
 				...options,
-				dataInputFill: this._dataInputFill,
+				dataInputFill: this.dataInputFill,
 			},
 			contractOptions: {
 				...this.options,
@@ -1054,7 +1310,7 @@ export class Contract<Abi extends ContractAbi>
 		const tx = getCreateAccessListParams({
 			abi,
 			params,
-			options: { ...options, dataInputFill: this.config.contractDataInputFill },
+			options: { ...options, dataInputFill: this.dataInputFill },
 			contractOptions: {
 				...this.options,
 				from: this.options.from ?? this.config.defaultAccount,
@@ -1088,21 +1344,18 @@ export class Contract<Abi extends ContractAbi>
 		const tx = getSendTxParams({
 			abi,
 			params,
-			options: { ...options, dataInputFill: this.config.contractDataInputFill },
+			options: { ...options, dataInputFill: this.dataInputFill },
 			contractOptions: modifiedContractOptions,
 		});
-		const transactionToSend = sendTransaction(this, tx, DEFAULT_RETURN_FORMAT, {
+		// Custom errors are decoded against the contract's error ABI inside the send pipeline
+		// (`contractAbi`), so no internal `error` listener is attached here: a consumer that neither
+		// awaits the PromiEvent nor listens for `error` keeps the ordinary unhandled-rejection
+		// semantics instead of having failures silently marked as handled.
+		return sendTransaction(this, tx, DEFAULT_RETURN_FORMAT, {
 			// TODO Should make this configurable by the user
 			checkRevertBeforeSending: false,
+			contractAbi: errorsAbi,
 		});
-
-		void transactionToSend.on('error', (error: unknown) => {
-			if (error instanceof ContractExecutionError) {
-				// this will parse the error data by trying to decode the ABI error inputs according to EIP-838
-				decodeContractErrorData(errorsAbi, error.innerError);
-			}
-		});
-		return transactionToSend;
 	}
 
 	private _contractMethodDeploySend<Options extends PayableCallOptions | NonPayableCallOptions>(
@@ -1119,13 +1372,18 @@ export class Contract<Abi extends ContractAbi>
 		const tx = getSendTxParams({
 			abi,
 			params,
-			options: { ...options, dataInputFill: this.config.contractDataInputFill },
+			options: { ...options, dataInputFill: this.dataInputFill },
 			contractOptions: modifiedContractOptions,
 		});
 		return sendTransaction(this, tx, DEFAULT_RETURN_FORMAT, {
 			transactionResolver: receipt => {
-				if (receipt.status === BigInt(0)) {
+				if (!isTransactionStatusSuccessful(receipt.status)) {
 					throw new Web3ContractError("code couldn't be stored", receipt);
+				}
+				// A successful creation always reports the new address; a receipt without
+				// one must not resolve into an address-less contract (I-13).
+				if (isNullish(receipt.contractAddress)) {
+					throw new NoContractAddressFoundError(receipt);
 				}
 
 				const newContract = this.clone();
@@ -1157,7 +1415,7 @@ export class Contract<Abi extends ContractAbi>
 		const tx = getEstimateGasParams({
 			abi,
 			params,
-			options: { ...options, dataInputFill: this.config.contractDataInputFill },
+			options: { ...options, dataInputFill: this.dataInputFill },
 			contractOptions: contractOptions ?? this.options,
 		});
 		return estimateGas(this, tx, BlockTags.LATEST, returnFormat);
@@ -1181,44 +1439,77 @@ export class Contract<Abi extends ContractAbi>
 					jsonInterface: this._jsonInterface,
 				},
 				{
-					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-					subscriptionManager: this.subscriptionManager as Web3SubscriptionManager<
-						unknown,
-						any
-					>,
+					subscriptionManager: this
+						.subscriptionManager as unknown as Web3SubscriptionManager,
 					returnFormat,
 				},
 			);
-			if (!isNullish(fromBlock)) {
-				// emit past events when fromBlock is defined
-				this.getPastEvents(abi.name, { fromBlock, topics }, returnFormat)
-					.then(logs => {
-						logs.forEach(log => sub.emit('data', log as EventLog));
-					})
-					.catch((error: Error) => {
-						sub.emit(
-							'error',
-							new SubscriptionError('Failed to get past events.', error),
-						);
-					});
-			}
-			this.subscriptionManager?.addSubscription(sub).catch((error: Error) => {
-				sub.emit('error', new SubscriptionError('Failed to subscribe.', error));
+
+			// A failure is reported on `error` only when somebody listens: an unlistened
+			// `error` emit must not take the process down (M-7e). It always rejects
+			// `subscribed`, which is handled here so that nobody has to await it.
+			const report = (error: SubscriptionError): SubscriptionError => {
+				if (sub.listenerCount('error') > 0) {
+					sub.emit('error', error);
+				}
+				return error;
+			};
+
+			sub.subscribed = new Promise<string>((resolve, reject) => {
+				// Deferred to the next microtask so the caller can attach listeners first.
+				queueMicrotask(() => {
+					const backfill = isNullish(fromBlock)
+						? Promise.resolve()
+						: this.getPastEvents(abi.name, { fromBlock, topics }, returnFormat).then(
+								logs => {
+									logs.forEach(log => sub.emit('data', log as EventLog));
+								},
+								(error: Error) => {
+									throw report(
+										new SubscriptionError('Failed to get past events.', error),
+									);
+								},
+						  );
+					const subscribe = this.subscriptionManager.addSubscription(sub).then(
+						id => id,
+						(error: Error) => {
+							throw report(new SubscriptionError('Failed to subscribe.', error));
+						},
+					);
+					Promise.all([subscribe, backfill]).then(([id]) => resolve(id), reject);
+				});
+			});
+			void sub.subscribed.catch(() => {
+				// Reported through `error` (when listened) and through `subscribed` itself.
 			});
 
 			return sub;
 		};
 	}
 
+	/**
+	 * Attaches the contract to a context: with `syncWithContext` the contract's config follows
+	 * the context's `CONFIG_CHANGE` events. Attaching again replaces the previous listener, so
+	 * the context never carries more than one listener per contract; {@link Contract.dispose}
+	 * removes it.
+	 */
 	protected subscribeToContextEvents<T extends Web3Context>(context: T): void {
-		// eslint-disable-next-line @typescript-eslint/no-this-alias
-		const contractThis = this;
+		this._detachFromContext();
 		this.context = context;
 
-		if (contractThis.syncWithContext) {
-			context.on(Web3ConfigEvent.CONFIG_CHANGE, event => {
-				contractThis.setConfig({ [event.name]: event.newValue });
-			});
+		if (this.syncWithContext) {
+			const listener: ContextConfigListener = event => {
+				this.setConfig({ [event.name]: event.newValue });
+			};
+			context.on(Web3ConfigEvent.CONFIG_CHANGE, listener);
+			this._contextConfigListener = listener;
 		}
+	}
+
+	private _detachFromContext(): void {
+		if (this.context && this._contextConfigListener) {
+			this.context.off(Web3ConfigEvent.CONFIG_CHANGE, this._contextConfigListener);
+		}
+		this._contextConfigListener = undefined;
 	}
 }

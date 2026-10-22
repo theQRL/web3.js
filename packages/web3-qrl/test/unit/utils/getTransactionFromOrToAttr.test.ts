@@ -66,4 +66,39 @@ describe('getTransactionFromOrToAttr', () => {
 			},
 		);
 	});
+
+	describe('wallet indexes (L-51)', () => {
+		const seed =
+			'0x01000032c89a84a46859934c42dec330511fd3642e98f00575e74a44c486c8d112dbf19d7129cd61d3e6bd72c4f2f66e5556f3';
+		let web3QRL: Web3QRL;
+		let address: string;
+
+		beforeAll(() => {
+			web3QRL = new Web3QRL('http://localhost:8545');
+			const wallet = new Wallet(createAccountProvider(web3QRL));
+			wallet.add(seed);
+			web3QRL['_wallet'] = wallet;
+			address = wallet.get(0)?.address as string;
+		});
+
+		it('resolves a non-negative safe integer to the wallet account', () => {
+			expect(getTransactionFromOrToAttr('from', web3QRL, { from: 0 } as never)).toBe(address);
+			expect(getTransactionFromOrToAttr('to', web3QRL, { to: 0 } as never)).toBe(address);
+		});
+
+		it('never reads a hex or decimal string as an index, even with a wallet', () => {
+			expect(() => getTransactionFromOrToAttr('to', web3QRL, { to: '0x0' } as never)).toThrow(
+				'invalid transaction with invalid receiver',
+			);
+			expect(() => getTransactionFromOrToAttr('from', web3QRL, { from: '0' } as never)).toThrow(
+				'invalid transaction with invalid sender',
+			);
+		});
+
+		it('reports a missing account for an index the wallet does not hold', () => {
+			expect(() => getTransactionFromOrToAttr('from', web3QRL, { from: 1 } as never)).toThrow(
+				'no wallet is available',
+			);
+		});
+	});
 });
