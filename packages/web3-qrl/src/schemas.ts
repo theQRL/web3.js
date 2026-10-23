@@ -20,6 +20,9 @@ export const accessListItemSchema = {
 		address: {
 			format: 'address',
 		},
+		// Storage keys stay 32 bytes on QRL: go-qrl's `common.HashLength` is 32 and an access-list
+		// tuple carries `[]common.Hash` (`getStorageSlotNumForLongString` hashes a 64-byte word
+		// but returns the 32-byte keccak that is the key).
 		storageKeys: {
 			type: 'array',
 			items: {
