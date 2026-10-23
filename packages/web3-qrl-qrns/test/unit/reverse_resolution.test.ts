@@ -86,7 +86,7 @@ const selectors = (provider: FakeProvider) => provider.callsTo('qrl_call').map(c
 describe('QRNS reverse resolution (P4-L-31)', () => {
 	it('returns the claimed name when it forward-resolves to the address', async () => {
 		const provider = nodeWith();
-		const qrns = new QRNS(undefined, provider.asProvider());
+		const qrns = new QRNS(CUSTOM_REGISTRY, provider.asProvider());
 
 		await expect(qrns.getName(OWNER)).resolves.toBe(NAME);
 		expect(selectors(provider)).toEqual([
@@ -100,14 +100,14 @@ describe('QRNS reverse resolution (P4-L-31)', () => {
 	});
 
 	it('compares the forward-resolved address case-insensitively', async () => {
-		const qrns = new QRNS(undefined, nodeWith().asProvider());
+		const qrns = new QRNS(CUSTOM_REGISTRY, nodeWith().asProvider());
 
 		await expect(qrns.getName(`Q${OWNER.slice(1).toLowerCase()}`)).resolves.toBe(NAME);
 	});
 
 	it('returns an empty string when the claimed name resolves to another address', async () => {
 		const qrns = new QRNS(
-			undefined,
+			CUSTOM_REGISTRY,
 			nodeWith({ addrReply: `0x${addrWord(CUSTOM_REGISTRY)}` }).asProvider(),
 		);
 
@@ -116,7 +116,7 @@ describe('QRNS reverse resolution (P4-L-31)', () => {
 
 	it('returns an empty string without forward-resolving when there is no reverse record', async () => {
 		const provider = nodeWith({ claimed: '' });
-		const qrns = new QRNS(undefined, provider.asProvider());
+		const qrns = new QRNS(CUSTOM_REGISTRY, provider.asProvider());
 
 		await expect(qrns.getName(OWNER)).resolves.toBe('');
 		expect(selectors(provider)).not.toContain(sel('addr(bytes32)'));
@@ -124,20 +124,23 @@ describe('QRNS reverse resolution (P4-L-31)', () => {
 
 	it('returns an empty string for a claimed name the normalizer rejects', async () => {
 		const provider = nodeWith({ claimed: 'a b.qrl' });
-		const qrns = new QRNS(undefined, provider.asProvider());
+		const qrns = new QRNS(CUSTOM_REGISTRY, provider.asProvider());
 
 		await expect(qrns.getName(OWNER)).resolves.toBe('');
 		expect(selectors(provider)).not.toContain(sel('addr(bytes32)'));
 	});
 
 	it('returns an empty string when the claimed name has no resolver', async () => {
-		const qrns = new QRNS(undefined, nodeWith({ forwardResolver: ZERO_ADDRESS }).asProvider());
+		const qrns = new QRNS(
+			CUSTOM_REGISTRY,
+			nodeWith({ forwardResolver: ZERO_ADDRESS }).asProvider(),
+		);
 
 		await expect(qrns.getName(OWNER)).resolves.toBe('');
 	});
 
 	it('returns an empty string when the claimed name has no address record', async () => {
-		const qrns = new QRNS(undefined, nodeWith({ addrReply: '0x' }).asProvider());
+		const qrns = new QRNS(CUSTOM_REGISTRY, nodeWith({ addrReply: '0x' }).asProvider());
 
 		await expect(qrns.getName(OWNER)).resolves.toBe('');
 	});
@@ -147,7 +150,7 @@ describe('QRNS reverse resolution (P4-L-31)', () => {
 			// eslint-disable-next-line @typescript-eslint/only-throw-error -- a JSON-RPC error reply
 			throw { code: 3, message: 'execution reverted', data: '0x' };
 		};
-		const qrns = new QRNS(undefined, nodeWith({ addrReply: reverted }).asProvider());
+		const qrns = new QRNS(CUSTOM_REGISTRY, nodeWith({ addrReply: reverted }).asProvider());
 
 		await expect(qrns.getName(OWNER)).resolves.toBe('');
 	});
@@ -156,7 +159,7 @@ describe('QRNS reverse resolution (P4-L-31)', () => {
 		const failing = () => {
 			throw new Error('socket hang up');
 		};
-		const qrns = new QRNS(undefined, nodeWith({ addrReply: failing }).asProvider());
+		const qrns = new QRNS(CUSTOM_REGISTRY, nodeWith({ addrReply: failing }).asProvider());
 
 		await expect(qrns.getName(OWNER)).rejects.toBeInstanceOf(Error);
 	});
@@ -165,7 +168,7 @@ describe('QRNS reverse resolution (P4-L-31)', () => {
 		'rejects the non-address %p with an InvalidAddressError before any call',
 		async input => {
 			const provider = nodeWith();
-			const qrns = new QRNS(undefined, provider.asProvider());
+			const qrns = new QRNS(CUSTOM_REGISTRY, provider.asProvider());
 
 			await expect(qrns.getName(input)).rejects.toThrow(InvalidAddressError);
 			expect(provider.calls).toHaveLength(0);
@@ -174,7 +177,7 @@ describe('QRNS reverse resolution (P4-L-31)', () => {
 
 	it('getText(address) reads the text record of the verified name', async () => {
 		const provider = nodeWith();
-		const qrns = new QRNS(undefined, provider.asProvider());
+		const qrns = new QRNS(CUSTOM_REGISTRY, provider.asProvider());
 
 		await expect(qrns.getText(OWNER, 'url')).resolves.toBe(TEXT);
 		expect(selectors(provider)).toContain(sel('text(bytes32,string)'));
@@ -182,7 +185,7 @@ describe('QRNS reverse resolution (P4-L-31)', () => {
 
 	it('getText(address) is an empty string when the reverse record is not verified', async () => {
 		const provider = nodeWith({ addrReply: `0x${addrWord(CUSTOM_REGISTRY)}` });
-		const qrns = new QRNS(undefined, provider.asProvider());
+		const qrns = new QRNS(CUSTOM_REGISTRY, provider.asProvider());
 
 		await expect(qrns.getText(OWNER, 'url')).resolves.toBe('');
 		expect(selectors(provider)).not.toContain(sel('text(bytes32,string)'));

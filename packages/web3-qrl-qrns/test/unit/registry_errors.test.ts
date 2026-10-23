@@ -79,7 +79,7 @@ describe('registry error mapping (L-26)', () => {
 	});
 
 	it('exposes and repoints the registry contract address (L-62)', () => {
-		expect(registry.address).toBeDefined();
+		expect(registry.address).toBeUndefined();
 		registry.address = CUSTOM_REGISTRY;
 		expect(registry.address).toBe(CUSTOM_REGISTRY);
 		expect(registry['contract'].options.address).toBe(CUSTOM_REGISTRY);

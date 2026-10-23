@@ -15,7 +15,11 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { InvalidAddressError, QRNSUnsupportedNetworkError, Web3ContractError } from '@theqrl/web3-errors';
+import {
+	InvalidAddressError,
+	QRNSUnsupportedNetworkError,
+	Web3ContractError,
+} from '@theqrl/web3-errors';
 import { sha3Raw } from '@theqrl/web3-utils';
 import { isAddressString } from '@theqrl/web3-validator';
 import { registryAddresses } from '../../src/config';
@@ -34,7 +38,6 @@ import {
 } from '../fixtures/fake_provider';
 
 const sel = (signature: string) => sha3Raw(signature).slice(0, 10);
-const MAIN = registryAddresses.main.toLowerCase();
 
 const networkProvider = (netVersion: string) =>
 	new FakeProvider(method => {
@@ -45,13 +48,35 @@ const networkProvider = (netVersion: string) =>
 	});
 
 describe('QRNS registry address (L-62)', () => {
-	it('queries the mainnet registry by default', async () => {
+	afterEach(() => {
+		delete registryAddresses.main;
+	});
+
+	it('rejects an unconfigured registry without calling the former placeholder', async () => {
 		const provider = networkProvider('1');
 		const qrns = new QRNS(undefined, provider.asProvider());
 
-		expect(qrns.registryAddress).toBe(registryAddresses.main);
+		expect(registryAddresses.main).toBeUndefined();
+		expect(() => qrns.registryAddress).toThrow(/No verified QRNS registry/);
+		await expect(qrns.getOwner('alice.qrl')).rejects.toThrow(Web3ContractError);
+		await expect(qrns.getAddress('alice.qrl')).rejects.toThrow(Web3ContractError);
+		expect(() => qrns.events).toThrow(Web3ContractError);
+		expect(provider.callsTo('qrl_call')).toHaveLength(0);
+	});
+
+	it('reports an unsupported network until a deployment is registered', async () => {
+		const qrns = new QRNS(undefined, networkProvider('1').asProvider());
+		await expect(qrns.checkNetwork()).rejects.toThrow(QRNSUnsupportedNetworkError);
+	});
+
+	it('uses a verified network deployment after explicit detection', async () => {
+		registryAddresses.main = CUSTOM_REGISTRY;
+		const provider = networkProvider('1');
+		const qrns = new QRNS(undefined, provider.asProvider());
+
+		await expect(qrns.checkNetwork()).resolves.toBe(CUSTOM_REGISTRY);
 		await qrns.getOwner('alice.qrl');
-		expect(calledContract(provider.callsTo('qrl_call')[0])).toBe(MAIN);
+		expect(calledContract(provider.callsTo('qrl_call')[0])).toBe(CUSTOM_REGISTRY.toLowerCase());
 	});
 
 	it('repoints the registry when registryAddress is set, before and after checkNetwork() (L-62)', async () => {
@@ -62,7 +87,7 @@ describe('QRNS registry address (L-62)', () => {
 		await qrns.getOwner('alice.qrl');
 		expect(calledContract(provider.callsTo('qrl_call')[0])).toBe(CUSTOM_REGISTRY.toLowerCase());
 
-		await expect(qrns.checkNetwork()).resolves.toBe(registryAddresses.main);
+		await expect(qrns.checkNetwork()).resolves.toBe(CUSTOM_REGISTRY);
 		await qrns.getOwner('alice.qrl');
 		expect(calledContract(provider.callsTo('qrl_call')[1])).toBe(CUSTOM_REGISTRY.toLowerCase());
 		expect(qrns.registryAddress).toBe(CUSTOM_REGISTRY);
@@ -88,6 +113,7 @@ describe('QRNS registry address (L-62)', () => {
 	});
 
 	it('forgets the detected network when the provider changes (L-62)', async () => {
+		registryAddresses.main = CUSTOM_REGISTRY;
 		const p1 = networkProvider('1');
 		const p2 = networkProvider('2');
 		const qrns = new QRNS(undefined, p1.asProvider());
@@ -101,7 +127,7 @@ describe('QRNS registry address (L-62)', () => {
 		await expect(qrns.checkNetwork()).rejects.toThrow(QRNSUnsupportedNetworkError);
 		expect(p2.callsTo('qrl_syncing')).toHaveLength(1);
 		expect(p2.callsTo('net_version')).toHaveLength(1);
-		expect(qrns.registryAddress).toBe(registryAddresses.main);
+		expect(() => qrns.registryAddress).toThrow(/No verified QRNS registry/);
 	});
 });
 
@@ -122,7 +148,7 @@ describe('QRNS.getAddress through the resolver (L-63)', () => {
 
 	it('returns a checksummed Q address for coin type 60 (L-63)', async () => {
 		const provider = resolverProvider('');
-		const qrns = new QRNS(undefined, provider.asProvider());
+		const qrns = new QRNS(CUSTOM_REGISTRY, provider.asProvider());
 
 		const address = await qrns.getAddress('alice.qrl');
 
@@ -134,7 +160,9 @@ describe('QRNS.getAddress through the resolver (L-63)', () => {
 		const interfaceCheck = provider
 			.callsTo('qrl_call')
 			.find(call => calledSelector(call) === sel('supportsInterface(bytes4)'));
-		expect((interfaceCheck?.params[0] as { input: string }).input.slice(10, 18)).toBe('3b3b57de');
+		expect((interfaceCheck?.params[0] as { input: string }).input.slice(10, 18)).toBe(
+			'3b3b57de',
+		);
 	});
 
 	it('rejects the zero address for coin type 60: the name has no address record', async () => {
@@ -149,7 +177,7 @@ describe('QRNS.getAddress through the resolver (L-63)', () => {
 			if (selector === sel('addr(bytes32)')) return `0x${addrWord(`Q${'0'.repeat(128)}`)}`;
 			return '0x';
 		});
-		const qrns = new QRNS(undefined, provider.asProvider());
+		const qrns = new QRNS(CUSTOM_REGISTRY, provider.asProvider());
 
 		await expect(qrns.getAddress('alice.qrl')).rejects.toThrow(Web3ContractError);
 		await expect(qrns.getAddress('alice.qrl')).rejects.toThrow(/zero address/);
@@ -157,7 +185,7 @@ describe('QRNS.getAddress through the resolver (L-63)', () => {
 
 	it('returns the raw bytes for another coin type after checking 0xf1cb7e06 (L-63)', async () => {
 		const provider = resolverProvider('ab'.repeat(20));
-		const qrns = new QRNS(undefined, provider.asProvider());
+		const qrns = new QRNS(CUSTOM_REGISTRY, provider.asProvider());
 
 		const bytes = await qrns.getAddress('alice.qrl', 0);
 
@@ -165,7 +193,9 @@ describe('QRNS.getAddress through the resolver (L-63)', () => {
 		const interfaceCheck = provider
 			.callsTo('qrl_call')
 			.find(call => calledSelector(call) === sel('supportsInterface(bytes4)'));
-		expect((interfaceCheck?.params[0] as { input: string }).input.slice(10, 18)).toBe('f1cb7e06');
+		expect((interfaceCheck?.params[0] as { input: string }).input.slice(10, 18)).toBe(
+			'f1cb7e06',
+		);
 		expect(provider.callsTo('qrl_call').map(calledSelector)).toContain(
 			sel('addr(bytes32,uint256)'),
 		);
@@ -181,7 +211,7 @@ describe('QRNS.getAddress through the resolver (L-63)', () => {
 			if (selector === sel('addr(bytes32)')) return `0x${uintWord(0)}`;
 			return '0x';
 		});
-		const qrns = new QRNS(undefined, provider.asProvider());
+		const qrns = new QRNS(CUSTOM_REGISTRY, provider.asProvider());
 
 		await expect(qrns.getAddress('nobody.qrl')).rejects.toThrow(
 			'QRNS resolver returned the zero address: the name has no address record',

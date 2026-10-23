@@ -50,17 +50,14 @@ export const methodsInInterface: { [T: string]: string } = {
 export const QRL_ZERO_ADDRESS = `Q${'0'.repeat(128)}`;
 
 /**
- * An object holding the addresses of the QRNS registries on the different networks (mainnet).
+ * Verified QRNS registry deployments, keyed by network name.
  *
- * The `main` value is a placeholder: it is the sample address used throughout the test fixtures
- * (set in #100 together with the VM64 resolver fixtures), not a verified deployment, and
- * `QRNS.checkNetwork()` / `registryAddress` will point at it until the registry is deployed.
- * Replace it with the deployed registry address (and add the other networks) when QRNS ships.
+ * No deployment has been verified yet. The previous `main` entry was a test fixture,
+ * not a deployed registry. Configure `QRNS.registryAddress` (or the constructor's first
+ * argument) explicitly until a deployment address and its source can be recorded here.
  */
 // TODO(https://github.com/cyyber/web3.js/issues/103)
-export const registryAddresses: { [T: string]: string } = {
-	main: 'Q33380cd8b47eed92b0dcd1ccca2ee84efd0c8b87a4fe6ee4a918969cdd454c0b04ac9f03ffaafa765af0cbeab572d8c9dd514044aa94adee50fa5d361a3e4629',
-};
+export const registryAddresses: { [T: string]: string | undefined } = {};
 
 export const networkIds: { [T: string]: string } = {
 	'0x1': 'main',

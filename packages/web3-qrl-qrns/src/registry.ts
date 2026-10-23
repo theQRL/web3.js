@@ -27,9 +27,8 @@ import { Address } from '@theqrl/web3-types';
 import { isAddressString } from '@theqrl/web3-validator';
 import { QRNSRegistryAbi } from './abi/qrns/QRNSRegistry.js';
 import { PublicResolverAbi } from './abi/qrns/PublicResolver.js';
-import { registryAddresses, QRL_ZERO_ADDRESS } from './config.js';
+import { QRL_ZERO_ADDRESS } from './config.js';
 import { namehash } from './utils.js';
-
 
 /**
  * Maps a failed registry call to a typed error: a revert reported by the node becomes a
@@ -59,11 +58,7 @@ export class Registry {
 	private readonly context: Web3ContextObject;
 
 	public constructor(context: Web3ContextObject, customRegistryAddress?: Address) {
-		this.contract = new Contract(
-			QRNSRegistryAbi,
-			customRegistryAddress ?? registryAddresses.main,
-			context,
-		);
+		this.contract = new Contract(QRNSRegistryAbi, customRegistryAddress, context);
 
 		this.context = context;
 	}

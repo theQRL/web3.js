@@ -17,7 +17,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 import { getBlock } from '@theqrl/web3-qrl';
 import { Contract, PayableTxOptions } from '@theqrl/web3-qrl-contract';
-import { addressToHex, bytesToHex, sha3 } from '@theqrl/web3-utils';
+import { addressToHex, bytesToHex, sha3, toChecksumAddress } from '@theqrl/web3-utils';
 import { newMLDSA87WalletFromExtendedSeed } from '../../../web3-qrl-accounts/src/qrl_wallet';
 
 import { Address, Bytes, DEFAULT_RETURN_FORMAT } from '@theqrl/web3-types';
@@ -196,7 +196,6 @@ describe('qrns', () => {
 		expect(res).toBe(contentHash);
 	});
 
-	// eslint-disable-next-line jest/expect-expect
 	itIf(isSocket)('ContenthashChanged event', async () => {
 		// eslint-disable-next-line @typescript-eslint/no-misused-promises, no-async-promise-executor
 		await new Promise<void>(async resolve => {
@@ -236,6 +235,6 @@ describe('qrns', () => {
 		await resolver.methods.setAddr(domainNode, accountOne).send(sendOptions);
 
 		const resultAddress = await qrns.getAddress(domain);
-		expect(resultAddress).toBe(addressToHex(accountOne));
+		expect(resultAddress).toBe(toChecksumAddress(accountOne));
 	});
 });

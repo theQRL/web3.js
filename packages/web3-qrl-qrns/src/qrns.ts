@@ -21,6 +21,7 @@ import {
 	QRNSNetworkNotSyncedError,
 	QRNSUnsupportedNetworkError,
 	RevertInstructionError,
+	Web3ContractError,
 } from '@theqrl/web3-errors';
 import { isSyncing } from '@theqrl/web3-qrl';
 import { Contract } from '@theqrl/web3-qrl-contract';
@@ -57,12 +58,12 @@ export class QRNS extends Web3Context<QRLExecutionAPI & Web3NetAPI> {
 
 	/**
 	 * Use to create an instance of QRNS
-	 * @param registryAddr - (Optional) The address of the QRNS registry (default: mainnet registry address)
+	 * @param registryAddr - The address of a deployed QRNS registry. It may be set later through `registryAddress`; no built-in deployment is currently available.
 	 * @param provider - (Optional) The provider to use for the QRNS instance
 	 * @example
 	 * ```ts
 	 * const qrns = new QRNS(
-	 * 	"Q33380cd8b47eed92b0dcd1ccca2ee84efd0c8b87a4fe6ee4a918969cdd454c0b04ac9f03ffaafa765af0cbeab572d8c9dd514044aa94adee50fa5d361a3e4629",
+	 * 	registryAddress, // The address of your deployed registry.
 	 * 	"http://localhost:8545"
 	 * );
 	 *
@@ -88,12 +89,19 @@ export class QRNS extends Web3Context<QRLExecutionAPI & Web3NetAPI> {
 	/**
 	 * The address of the QRNS registry every query goes to. An address set here (or given to
 	 * the constructor) always wins; otherwise the address {@link QRNS.checkNetwork} detected
-	 * for the current provider is used, and the mainnet registry address as the last resort.
+	 * for the current provider is used. Without either, accessing this property or making a
+	 * QRNS query throws a `Web3ContractError` before sending a contract call.
 	 * Use it to define a custom registry address when you are connected to an unknown chain.
 	 * The registry contract is repointed lazily, before the next query (L-62).
 	 */
 	public get registryAddress(): string {
-		return this._registryAddress ?? this._detectedAddressFor(this.provider) ?? registryAddresses.main;
+		const address = this._registryAddress ?? this._detectedAddressFor(this.provider);
+		if (!address) {
+			throw new Web3ContractError(
+				'No verified QRNS registry is configured. Set registryAddress to your deployed registry address.',
+			);
+		}
+		return address;
 	}
 
 	public set registryAddress(value: string) {
@@ -246,13 +254,14 @@ export class QRNS extends Web3Context<QRLExecutionAPI & Web3NetAPI> {
 
 	/**
 	 * Checks if the current used network is synced and looks for QRNS support there.
-	 * Throws an error if not. The result is cached per provider: switching the provider
-	 * repeats the detection (L-62).
+	 * Throws an error if not. An explicitly configured registry is used after checking sync
+	 * status. Otherwise a verified deployment must be listed for the network. Detection is
+	 * cached per provider: switching the provider repeats it (L-62).
 	 * @returns - The address of the QRNS registry if the network has been detected successfully
 	 * @example
 	 * ```ts
 	 * console.log(await web3.qrl.qrns.checkNetwork());
-	 * > 'Q33380cd8b47eed92b0dcd1ccca2ee84efd0c8b87a4fe6ee4a918969cdd454c0b04ac9f03ffaafa765af0cbeab572d8c9dd514044aa94adee50fa5d361a3e4629'
+	 * // Returns the configured or detected registry address.
 	 * ```
 	 */
 	public async checkNetwork() {
@@ -269,6 +278,9 @@ export class QRNS extends Web3Context<QRLExecutionAPI & Web3NetAPI> {
 			this._lastSyncCheck = now;
 		}
 
+		if (this._registryAddress) {
+			return this._registryAddress;
+		}
 		if (this._detectedAddress) {
 			return this._detectedAddress;
 		}
