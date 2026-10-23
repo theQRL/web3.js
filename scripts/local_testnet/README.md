@@ -1,5 +1,47 @@
 # Local Testnet (Kurtosis)
 
+## Execution API checks with a two-CPU limit
+
+For Web3 integration checks, a standalone execution node can run without the
+beacon and validator services. It uses the published go-qrl 0.3.3 binaries at
+commit `f3864c46`, a digest-pinned image, the ten public accounts in
+`scripts/accounts.json`, and Clef signing rules restricted to those accounts.
+Hash-based archive storage retains historical state for `earliest` block queries.
+An Engine API driver produces blocks and advances finalized fork choice every
+32 blocks. This exercises the real execution client; consensus-client and
+validator behavior still requires the Kurtosis network below.
+
+On Linux AMD64, with Docker and the repository's Node/pnpm toolchain available,
+start it in a separate terminal:
+
+```sh
+bash scripts/local_testnet/start_execution_testnet.sh
+```
+
+Wait for the `Ready:` message. The launcher and its container share CPUs 0 and 1,
+the container has a two-CPU quota, and `GOMAXPROCS=2` limits the Go clients. The
+HTTP, WS, and authenticated Engine API ports bind only to `127.0.0.1`. The
+launcher prints the temporary state directory, including its node/signer logs
+and IPC socket. Ctrl-C stops the node and signer; the logs remain for inspection.
+An optional first argument selects an **empty** state directory.
+
+Run the HTTP suites serially on the same two CPUs:
+
+```sh
+UV_THREADPOOL_SIZE=2 NODE_OPTIONS=--v8-pool-size=1 GOMAXPROCS=2 \
+WEB3_SYSTEM_TEST_ENV=true WEB3_SYSTEM_TEST_BACKEND=gqrl \
+WEB3_SYSTEM_TEST_MODE=http WEB3_SYSTEM_TEST_PROVIDER=http://127.0.0.1:18545 \
+  taskset -c 0,1 pnpm exec turbo run test:integration --concurrency=1 -- --runInBand --watchman=false
+```
+
+Repeat with `WEB3_SYSTEM_TEST_MODE=ws` and
+`WEB3_SYSTEM_TEST_PROVIDER=ws://127.0.0.1:18546` for WebSocket coverage. To run a
+single package, add (for example) `--filter=@theqrl/web3-qrl-qrns` before `--`.
+For IPC, point `WEB3_SYSTEM_TEST_PROVIDER` at the printed `node/gqrl.ipc` path
+and run the IPC provider suites and `packages/web3/test/integration/ipc.test.ts`.
+Do not use `scripts/test-runner.sh` for this backend: that runner selects the
+Kurtosis ports 8545/8546 instead.
+
 ## Start / Stop
 
 - Start: `pnpm run pos:start`
