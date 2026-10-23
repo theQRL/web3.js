@@ -68,7 +68,7 @@ describeIf(isWs && !isBrowser)('WebSocketProvider - reconnection', () => {
 			await waitForCloseSocketConnection(web3Provider);
 		});
 		it('should emit connect and disconnected events', async () => {
-			const server = await createProxy(18545, getSystemTestProviderUrl());
+			const server = await createProxy(0, getSystemTestProviderUrl());
 			const web3Provider = new WebSocketProvider(server.path, {}, reconnectionOptions);
 			await waitForSocketConnect(web3Provider);
 			// @ts-expect-error set protected option
@@ -86,14 +86,14 @@ describeIf(isWs && !isBrowser)('WebSocketProvider - reconnection', () => {
 		});
 
 		it('should connect, disconnect and reconnect', async () => {
-			const server = await createProxy(18546, getSystemTestProviderUrl());
+			const server = await createProxy(0, getSystemTestProviderUrl());
 			const web3Provider = new WebSocketProvider(server.path, {}, reconnectionOptions);
 			await waitForSocketConnect(web3Provider);
 			const closeEvent = waitForCloseSocketConnection(web3Provider);
 			await server.close();
 			await closeEvent;
 			const connectEvent = waitForSocketConnect(web3Provider);
-			const server2 = await createProxy(18546, getSystemTestProviderUrl());
+			const server2 = await createProxy(server.port, getSystemTestProviderUrl());
 			expect(!!(await connectEvent)).toBe(true);
 
 			const disconnectEvent = waitForCloseSocketConnection(web3Provider);
@@ -102,7 +102,7 @@ describeIf(isWs && !isBrowser)('WebSocketProvider - reconnection', () => {
 			await server2.close();
 		});
 		it('should connect, disconnect, try reconnect and reach max attempts', async () => {
-			const server = await createProxy(18547, getSystemTestProviderUrl());
+			const server = await createProxy(0, getSystemTestProviderUrl());
 			const web3Provider = new WebSocketProvider(
 				server.path,
 				{},
