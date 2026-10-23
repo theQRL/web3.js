@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- A digest-pinned standalone go-qrl execution testnet launcher with Clef, hash archive state, HTTP/WS/IPC endpoints, and a shared two-CPU limit (`scripts/local_testnet/README.md`).
 - QRNS: `getText(name, key)`, `getName(address)` (reverse resolution, forward-verified) and `setAddress(name, address, txConfig)`.
 - `web3-errors`: `NodeChainIdMismatchError` (code 441), thrown when a supplied chain id does not match the connected node's.
 
@@ -63,7 +64,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-- The `@theqrl/web3-qrl-iban` package and the `Iban` exports of `@theqrl/web3` (`web3.qrl.Iban`, `web3.qrl.iban`, `Web3.modules.Iban`): IBAN/ICAP encoding is an Ethereum convention with no QRL counterpart. The last published version, `@theqrl/web3-qrl-iban@1.0.3`, is to be marked deprecated on npm (`npm deprecate @theqrl/web3-qrl-iban@1.0.3 "Removed: no QRL IBAN format"`).
+- The `@theqrl/web3-qrl-iban` package and the `Iban` exports of `@theqrl/web3` (`web3.qrl.Iban`, `web3.qrl.iban`, `Web3.modules.Iban`): IBAN/ICAP encoding is an Ethereum convention with no QRL counterpart. The last published version, `@theqrl/web3-qrl-iban@1.0.3`, was deprecated on npm on 2026-10-23; use checksummed QRL addresses instead.
 - `qrl_protocolVersion` (`getProtocolVersion`) and `qrl_getCompilers` / `qrl_compileHyperion` (`getCompilers`, `compileHyperion`, `CompileResultAPI`) from `web3-rpc-methods`, `web3-qrl` and `web3-types`: gqrl does not implement them.
 - `TransactionReceipt.root`, QRNS `normalizeWithSource`, and the dead `SendTransactionOptions.ignoreFillingGasLimit` option (see Fixed).
 

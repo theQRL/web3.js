@@ -110,6 +110,83 @@ and `pnpm run pos:stop` afterwards) with the funded accounts from
 `scripts/accounts.json` available. Record the node version and the exact
 `WEB3_SYSTEM_TEST_*` values with the evidence.
 
+For execution-API checks without a consensus client, use the digest-pinned
+standalone backend in
+[`scripts/local_testnet/README.md`](../scripts/local_testnet/README.md#execution-api-checks-with-a-two-cpu-limit).
+It provides the same public fixture accounts through Clef, real go-qrl HTTP/WS/IPC
+endpoints, and Engine API block production. Pin both the launcher and Jest to
+CPUs 0 and 1, use `--concurrency=1` for Turbo and `--runInBand` for Jest, and
+preserve each transport's result separately. Record that consensus is simulated;
+this does not establish qrysm/validator compatibility.
+
+### PR #118 follow-up verification (2026-10-23 UTC)
+
+Node 22.22.1 and pnpm 10.27.0 were used with the standalone backend above:
+go-qrl 0.3.3-stable, commit `f3864c46b3f94662c514105da1efaf3466394fae`, image
+`qrledger/go-qrl@sha256:72fb2a117d61d899e6cb763b91f1a37da4ab544a74530885032c99b4d7547912`.
+The node used hash archive state, chain/network ID 1337, and the public fixture
+accounts. HTTP was `http://127.0.0.1:18545`, WS was `ws://127.0.0.1:18546`, and
+IPC used the launcher's printed `node/gqrl.ipc` path. Consensus was simulated
+through the Engine API; no qrysm or validator compatibility claim is made.
+
+All local commands and containers shared CPU affinity `0,1`. The node had a
+two-CPU quota and `GOMAXPROCS=2`; Jest used `--runInBand --watchman=false`, with
+`UV_THREADPOOL_SIZE=2` and `NODE_OPTIONS=--v8-pool-size=1`. Package suites ran
+serially per transport. For direct Jest invocation, pass
+`--config=./test/integration/jest.config.js --forceExit` from the package directory;
+this matches the existing contract/QRL integration scripts' exit behavior.
+
+| Package | HTTP passed | HTTP skipped | WS passed | WS skipped |
+| --- | ---: | ---: | ---: | ---: |
+| web3-qrl-contract | 109 | 15 | 122 | 2 |
+| web3-qrl | 171 | 18 | 187 | 2 |
+| web3-qrl-qrns | 14 | 2 | 16 | 0 |
+| web3-qrl-accounts | 52 | 2 | 52 | 2 |
+| web3 | 35 | 6 | 35 | 6 |
+| web3-net | 4 | 0 | 4 | 0 |
+| web3-providers-http | 7 | 0 | 6 | 1 |
+| web3-providers-ws | 0 | 21 | 21 | 0 |
+| web3-providers-ipc | 0 | 9 | 0 | 9 |
+
+The 392 passing HTTP and 443 passing WS cases are the combined final results
+after rerunning corrected suites, not a claim that the initial full invocations
+passed. Skipped
+cases include transport-specific suites and existing disabled tests; they do
+not count as passes. IPC separately passed nine provider/reconnection tests and
+one umbrella Web3 connection test. The launcher was initialized from an empty
+state directory, its CPU quota/affinity were inspected, and Ctrl-C cleanup was
+verified after the run.
+
+The run exposed stale expectations for RPC errors versus execution reverts,
+confirmation event fields, invalid default blocks/hardforks, deployment gas,
+mocked chain IDs/transaction hashes, and WebSocket credentials in URLs. Those tests now match the existing
+audit remediations. The added access-list case writes a long string, checks that
+its VM64-derived hashed slots are 32-byte keys, and successfully submits the
+node-generated list in a transaction. IPC reconnection fixtures use a private
+alias of the configured socket and register listeners before disconnecting.
+WebSocket proxies bind free ports and send credentials in explicit headers.
+The latest-block transaction count is compared with the same stable head, so
+newly mined empty blocks do not invalidate the assertion.
+
+Additional passing checks: QRNS unit tests (118), Web3 unit tests (58),
+hash/packed encoding tests (169), compiler CLI tests (6, including byte-for-byte
+fixture reproduction), QRNS CJS/ESM/types build, doctor, repository hygiene,
+changed-file lint (existing warnings only), and `git diff --check`.
+The local proxy dependency was missing its `dist` directory; restoring it from
+the exact npm tarball after verifying the lockfile SHA-512 fixed a misleading
+fallback to hoisted v2 types. No dependency version or lockfile change was needed.
+
+### VM64 storage-key width
+
+Access-list keys remain **32 bytes**. go-qrl's
+[`AccessTuple.StorageKeys`](https://github.com/theQRL/go-qrl/blob/f3864c46b3f94662c514105da1efaf3466394fae/core/types/tx_dynamic_fee.go)
+is `[]common.Hash`, and
+[`common.HashLength`](https://github.com/theQRL/go-qrl/blob/f3864c46b3f94662c514105da1efaf3466394fae/common/types.go)
+is 32. `getStorageSlotNumForLongString` hashes a 64-byte VM word but returns a
+32-byte keccak digest. Storage **values**, addresses, and log topics are 64 bytes;
+their widths do not change the access-list key format. The contract access-list
+integration suite checks the RPC path against a node.
+
 ## Artefacts To Preserve
 
 For an audit handoff, preserve:
