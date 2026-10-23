@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Breaking:** Renamed the validator format `eip712TypedData` to `qrlTypedData`; typed-data schemas must contain `QRLTypedDataDomain` instead of `EIP712Domain`.
 - **Breaking:** Bare `uint`/`int` and the default bounds of `isUInt`/`isInt` now use 256 bits. Explicit integer widths up to 512 bits remain supported.
 
 ### Added

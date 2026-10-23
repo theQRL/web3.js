@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Account transaction signing now checks `from` against the signing seed and derives the sender from that seed when populating a missing nonce.
 - Snapshot mutable transaction signing seeds before asynchronous preparation so buffer changes cannot switch the signing account.
 
+### Removed
+
+- **Breaking:** Removed the `@theqrl/web3-qrl-iban` package integration and `web3.qrl.Iban`, `web3.qrl.iban`, and `Web3.modules.Iban`. QRL has no IBAN/ICAP address format.
+
 <!-- EXAMPLE
 
 ## [1.0.0]

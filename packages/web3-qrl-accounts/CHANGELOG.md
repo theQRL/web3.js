@@ -12,6 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Calculate contract creation's initcode gas surcharge using 64-byte words, matching go-qrl. This avoids overcharging intrinsic gas and rejecting deployments with a valid gas limit.
 - Keep account message signing tied to the imported seed snapshot when the caller mutates the original seed buffer.
 
+### Changed
+
+- **Breaking:** The `zond` hardfork gas table changes `depositroot` from 19,992 to 18,000 gas, adds `mldsa87Verify` at 125,000 gas, and raises `initialBaseFee` from 1 gwei to 100 gwei (`100000000000`).
+
+### Removed
+
+- **Breaking:** Removed Ethereum EC precompile gas parameters `ecAdd`, `ecMul`, `ecPairing`, and `ecPairingWord` from the `zond` hardfork.
+
 <!-- EXAMPLE
 
 ## [1.0.0]

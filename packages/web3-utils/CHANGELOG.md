@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Breaking:** `ValueTypes` and `toHex(value, true)` report `uint512` / `int512` for numeric inputs instead of `uint256` / `int256`. This type label is separate from the 256-bit default used by packed encoding.
+
 - **Breaking:** Packed encoding and `hyperionSha3` now treat bare `uint`, `int`, and inferred integers as 256-bit values. This changes their packed bytes and hashes. Use explicit `uint512` or `int512` to retain 512-bit scalar encoding.
 - Packed integer array elements now occupy 64-byte VM words, including sign extension for negative values.
 

@@ -10,3 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Encode indexed function filters as 64-byte hash topics, including OR filters, and match returned function hashes in `getPastEvents`.
+
+### Changed
+
+- **Breaking:** A decoded `EventLog.signature` is the 32-byte keccak event-signature hash extracted from the 64-byte log topic. Hashed indexed event parameters likewise decode to their 32-byte hash.
