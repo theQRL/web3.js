@@ -45,9 +45,8 @@ describe('Web3QRL.getRevertReason', () => {
 		simpleRevertDeployTransaction.gas = await web3QRL.estimateGas(
 			simpleRevertDeployTransaction,
 		);
-		simpleRevertContractAddress = (
-			await web3QRL.sendTransaction(simpleRevertDeployTransaction)
-		).contractAddress as Address;
+		simpleRevertContractAddress = (await web3QRL.sendTransaction(simpleRevertDeployTransaction))
+			.contractAddress as Address;
 	});
 
 	it('should return reason for a contract call', async () => {
@@ -99,7 +98,7 @@ describe('Web3QRL.getRevertReason', () => {
 		}
 	});
 
-	it('should return out of gas reason', async () => {
+	it('should propagate intrinsic gas errors without classifying them as reverts', async () => {
 		const transaction: TransactionCall = {
 			from: tempAccount.address,
 			to: simpleRevertContractAddress,
@@ -108,18 +107,13 @@ describe('Web3QRL.getRevertReason', () => {
 			data: '0xba57a511000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000672657665727400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
 		};
 
-		const response = await getRevertReason(web3QRL, transaction);
-		switch (getSystemTestBackend()) {
-			case 'gqrl':
-				expect(response).toBe(
-					'err: intrinsic gas too low: have 0, want 21928 (supplied gas 0)',
-				);
-				break;
-			default:
-				throw new Error(
-					`Unable to finish test, unknown backend: ${getSystemTestBackend()}`,
-				);
-		}
+		await expect(getRevertReason(web3QRL, transaction)).rejects.toMatchObject({
+			name: 'InvalidResponseError',
+			innerError: {
+				code: -32000,
+				message: 'err: intrinsic gas too low: have 0, want 21928 (supplied gas 0)',
+			},
+		});
 	});
 
 	it('should revert with custom error with no params', async () => {

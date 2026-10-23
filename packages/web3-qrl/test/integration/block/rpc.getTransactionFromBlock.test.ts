@@ -94,7 +94,7 @@ describe('rpc with block', () => {
 				blockData.transactionIndex,
 			))!;
 
-			validateTransaction(tx as TransactionInfo);
+			validateTransaction(tx as unknown as TransactionInfo);
 			expect(tx?.hash).toBe(blockData.transactionHash);
 		});
 	});

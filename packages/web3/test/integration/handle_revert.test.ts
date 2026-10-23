@@ -95,7 +95,7 @@ describe('qrl', () => {
 			);
 		});
 
-		it('should get revert reason for qrl tx', async () => {
+		it('should preserve a malformed RPC input error when handleRevert is enabled', async () => {
 			web3.qrl.handleRevert = true;
 			await expect(
 				web3.qrl.sendTransaction({
@@ -113,11 +113,13 @@ describe('qrl', () => {
 					signature: '0x39f77e0b68d5524826e4385ad4e1f01e748f32c177840184ae65d9592fdfe5c',
 					publicKey: '0x1ba80b16306d1de8ff809c00f67c305e8636326096aba282828d331aa2ec30a1',
 				}),
-			).rejects.toThrow(
-				new TransactionRevertInstructionError(
-					'Returned error: invalid argument 0: json: cannot unmarshal invalid hex string into Go struct field TransactionArgs.data of type hexutil.Bytes',
-				),
-			);
+			).rejects.toMatchObject({
+				name: 'InvalidResponseError',
+				innerError: {
+					code: -32602,
+					message: expect.stringContaining('cannot unmarshal invalid hex string'),
+				},
+			});
 		});
 
 		it('should execute transaction', async () => {

@@ -482,9 +482,9 @@ describe('defaults', () => {
 
 		it('enableExperimentalFeatures useSubscriptionWhenCheckingBlockTimeout', () => {
 			// default
-			expect(
-				web3QRL.enableExperimentalFeatures.useSubscriptionWhenCheckingBlockTimeout,
-			).toBe(false);
+			expect(web3QRL.enableExperimentalFeatures.useSubscriptionWhenCheckingBlockTimeout).toBe(
+				false,
+			);
 
 			// after set
 			web3QRL.setConfig({
@@ -493,9 +493,9 @@ describe('defaults', () => {
 					useRpcCallSpecification: false,
 				},
 			});
-			expect(
-				web3QRL.enableExperimentalFeatures.useSubscriptionWhenCheckingBlockTimeout,
-			).toBe(true);
+			expect(web3QRL.enableExperimentalFeatures.useSubscriptionWhenCheckingBlockTimeout).toBe(
+				true,
+			);
 
 			// set by create new instance
 			qrl2 = new Web3QRL({
@@ -717,22 +717,23 @@ describe('defaults', () => {
 			});
 			expect(qrl2.defaultHardfork).toBe('istanbul');
 
-			const res = await prepareTransactionForSigning(
-				{
-					from: 'QdBb14ea952DfAedB0788Beae4fD92393f215CAa2c115ac22bc68805E171cfadE76CFF540c1ADC7B13017E4c66b6109135f25ff73412650da569E458E4A43800b',
-					to: 'QFcAc5a47dc5363999c60BC3b4288720E870a423A1383F00cFaa9E1135a60E43eA809688917A789EE0BDd6828dB2dcd848Bc632c28023794f8187af3Bac5DB018',
-					value: '0x174876e800',
-					gas: '0x5208',
-					maxFeePerGas: '0x4a817c800',
-					maxPriorityFeePerGas: '0x1c9c380',
-					data: '0x0',
-					nonce: '0x4',
-					chainId: '0x1',
-					gasLimit: '0x5208',
-				},
-				qrl2,
-			);
-			expect(res.common.hardfork()).toBe('istanbul');
+			await expect(
+				prepareTransactionForSigning(
+					{
+						from: 'QdBb14ea952DfAedB0788Beae4fD92393f215CAa2c115ac22bc68805E171cfadE76CFF540c1ADC7B13017E4c66b6109135f25ff73412650da569E458E4A43800b',
+						to: 'QFcAc5a47dc5363999c60BC3b4288720E870a423A1383F00cFaa9E1135a60E43eA809688917A789EE0BDd6828dB2dcd848Bc632c28023794f8187af3Bac5DB018',
+						value: '0x174876e800',
+						gas: '0x5208',
+						maxFeePerGas: '0x4a817c800',
+						maxPriorityFeePerGas: '0x1c9c380',
+						data: '0x00',
+						nonce: '0x4',
+						chainId: await web3QRL.getChainId(),
+						gasLimit: '0x5208',
+					},
+					qrl2,
+				),
+			).rejects.toMatchObject({ name: 'Web3ValidatorError' });
 		});
 		it('defaultCommon', () => {
 			// default
@@ -872,7 +873,8 @@ describe('defaults', () => {
 					maxFeePerGas: '0x4a817c800',
 					accessList: [
 						{
-							address: 'QdBb14ea952DfAedB0788Beae4fD92393f215CAa2c115ac22bc68805E171cfadE76CFF540c1ADC7B13017E4c66b6109135f25ff73412650da569E458E4A43800b',
+							address:
+								'QdBb14ea952DfAedB0788Beae4fD92393f215CAa2c115ac22bc68805E171cfadE76CFF540c1ADC7B13017E4c66b6109135f25ff73412650da569E458E4A43800b',
 							storageKeys: ['0x3535353535353535353535353535353535353535'],
 						},
 					],

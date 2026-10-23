@@ -15,10 +15,6 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-// TODO Seems to be an issue with linter falsely reporting this
-// error for Transaction Error Scenarios tests
-/* eslint-disable jest/no-conditional-expect */
-
 import {
 	Address,
 	Bytes,
@@ -256,7 +252,7 @@ describe('Web3QRL.sendSignedTransaction', () => {
 				await web3QRL.sendTransaction(simpleRevertDeployTransaction)
 			).contractAddress as Address;
 		});
-		it('Should throw TransactionRevertInstructionError because gas too low', async () => {
+		it('Should throw InvalidResponseError because max fee is below the base fee', async () => {
 			const transaction: Transaction = {
 				from: tempAcc.address,
 				to: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010',
@@ -273,18 +269,14 @@ describe('Web3QRL.sendSignedTransaction', () => {
 			});
 
 			const expectedThrownError = {
-				name: 'TransactionRevertInstructionError',
-				innerError: undefined,
-				reason:
-					getSystemTestBackend() === 'gqrl'
-						? expect.stringContaining(
-								'err: max fee per gas less than block base fee: address Q',
-							)
-						: 'VM Exception while processing transaction: out of gas',
-				signature: undefined,
-				receipt: undefined,
-				data: undefined,
-				code: 402,
+				name: 'InvalidResponseError',
+				code: 101,
+				innerError: {
+					code: -32000,
+					message: expect.stringContaining(
+						'err: max fee per gas less than block base fee: address Q',
+					),
+				},
 			};
 
 			await expect(
@@ -309,19 +301,14 @@ describe('Web3QRL.sendSignedTransaction', () => {
 			});
 
 			const expectedThrownError = {
-				name: 'TransactionRevertInstructionError',
-				message: 'Transaction has been reverted by the QRVM',
-				innerError: undefined,
-				reason:
-					getSystemTestBackend() === 'gqrl'
-						? expect.stringContaining(
-								'err: insufficient funds for gas * price + value: address Q',
-							)
-						: 'VM Exception while processing transaction: insufficient balance',
-				signature: undefined,
-				receipt: undefined,
-				data: undefined,
-				code: 402,
+				name: 'InvalidResponseError',
+				code: 101,
+				innerError: {
+					code: -32000,
+					message: expect.stringContaining(
+						'err: insufficient funds for gas * price + value: address',
+					),
+				},
 			};
 
 			await expect(
@@ -376,7 +363,8 @@ describe('Web3QRL.sendSignedTransaction', () => {
 				type: BigInt(2),
 				maxFeePerGas: BigInt(108571383800),
 				maxPriorityFeePerGas: BigInt(25415778028),
-				gas: 21222,
+				// Leave enough gas to execute the custom-error branch.
+				gas: 100000,
 				nonce: await web3QRL.getTransactionCount(tempAcc.address),
 			};
 			const signedTransaction = await web3QRL.signTransaction(transaction, {

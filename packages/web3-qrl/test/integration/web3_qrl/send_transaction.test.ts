@@ -15,10 +15,6 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-// TODO Seems to be an issue with linter falsely reporting this
-// error for Transaction Error Scenarios tests
-/* eslint-disable jest/no-conditional-expect */
-
 import {
 	Transaction,
 	TransactionWithFromLocalWalletIndex,
@@ -399,8 +395,8 @@ describe('Web3QRL.sendTransaction', () => {
 
 		it('should listen to the confirmation event', async () => {
 			const expectedTransactionConfirmation = {
-				confirmationNumber: expect.any(BigInt),
-				receipt: {
+				confirmations: BigInt(1),
+				receipt: expect.objectContaining({
 					blockHash: expect.any(String),
 					blockNumber: expect.any(BigInt),
 					cumulativeGasUsed: expect.any(BigInt),
@@ -414,23 +410,20 @@ describe('Web3QRL.sendTransaction', () => {
 					to: transaction.to,
 					transactionHash: expect.any(String),
 					transactionIndex: BigInt(0),
-					type: BigInt(0),
-				},
+					type: BigInt(2),
+				}),
 				latestBlockHash: expect.any(String),
 			};
 
-			await web3QRL.sendTransaction(transaction).on('confirmation', data => {
-				expect(data).toEqual(expect.objectContaining(expectedTransactionConfirmation));
+			const sent = web3QRL.sendTransaction(transaction);
+			const confirmation = new Promise<unknown>((resolve, reject) => {
+				sent.once('confirmation', resolve);
+				sent.once('error', reject);
 			});
-
-			// TODO Confirmations are dependent on the next block being mined,
-			// this is manually triggering the next block to be created since both
-			// Some test clients wait for a transaction before mining a block.
-			// This should be revisited to implement a better solution.
-			await web3QRL.sendTransaction(transaction);
-
-			// TODO: Debug why the assertions are not being called
-			// expect.assertions(1);
+			await sent;
+			expect(await confirmation).toEqual(
+				expect.objectContaining(expectedTransactionConfirmation),
+			);
 		});
 	});
 
@@ -449,7 +442,7 @@ describe('Web3QRL.sendTransaction', () => {
 			).contractAddress as Address;
 		});
 
-		it('Should throw TransactionRevertInstructionError because gas too low', async () => {
+		it('Should throw InvalidResponseError because gas too low', async () => {
 			const transaction: Transaction = {
 				from: tempAcc.address,
 				to: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010',
@@ -459,12 +452,12 @@ describe('Web3QRL.sendTransaction', () => {
 			};
 
 			const expectedThrownError = {
-				name: 'TransactionRevertInstructionError',
-				code: 402,
-				reason:
-					getSystemTestBackend() === 'gqrl'
-						? 'err: intrinsic gas too low: have 1, want 21000 (supplied gas 1)'
-						: 'VM Exception while processing transaction: out of gas',
+				name: 'InvalidResponseError',
+				code: 101,
+				innerError: {
+					code: -32000,
+					message: 'err: intrinsic gas too low: have 1, want 21000 (supplied gas 1)',
+				},
 			};
 
 			await expect(
@@ -474,7 +467,7 @@ describe('Web3QRL.sendTransaction', () => {
 			).rejects.toMatchObject(expectedThrownError);
 		});
 
-		it('Should throw TransactionRevertInstructionError because insufficient funds', async () => {
+		it('Should throw InvalidResponseError because insufficient funds', async () => {
 			const transaction: Transaction = {
 				from: tempAcc.address,
 				to: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010',
@@ -483,15 +476,14 @@ describe('Web3QRL.sendTransaction', () => {
 			};
 
 			const expectedThrownError = {
-				name: 'TransactionRevertInstructionError',
-				message: 'Transaction has been reverted by the QRVM',
-				code: 402,
-				reason:
-					getSystemTestBackend() === 'gqrl'
-						? expect.stringContaining(
-								'err: insufficient funds for gas * price + value: address',
-							)
-						: 'VM Exception while processing transaction: insufficient balance',
+				name: 'InvalidResponseError',
+				code: 101,
+				innerError: {
+					code: -32000,
+					message: expect.stringContaining(
+						'err: insufficient funds for gas * price + value: address',
+					),
+				},
 			};
 
 			await expect(

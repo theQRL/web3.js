@@ -16,7 +16,8 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { AccessListResult, Transaction, TransactionForAccessList } from '@theqrl/web3-types';
-import { encodeParameter } from '@theqrl/web3-qrl-abi';
+import { encodeParameter, encodeFunctionCall } from '@theqrl/web3-qrl-abi';
+import { getStorageSlotNumForLongString } from '@theqrl/web3-utils';
 import { Web3QRL } from '../../../src';
 import { GreeterBytecode } from '../../shared_fixtures/build/Greeter';
 import {
@@ -68,9 +69,37 @@ describeIf(getSystemTestBackend() === 'gqrl')('Web3QRL.createAccessList', () => 
 					],
 				},
 			],
-			gasUsed: '0x731e',
+			// Hyperion 0.2.0 fixture on go-qrl 0.3.3.
+			gasUsed: '0x71fe',
 		};
 
 		expect(response).toStrictEqual(expectedResponse);
+	});
+
+	test('accepts the node-generated 32-byte keys for a long string in VM64 storage', async () => {
+		const transaction: TransactionForAccessList = {
+			from: tempAcc.address,
+			to: greeterContractAddress,
+			data: encodeFunctionCall(
+				{
+					type: 'function',
+					name: 'setGreeting',
+					inputs: [{ name: 'greeting', type: 'string' }],
+				},
+				['x'.repeat(130)],
+			),
+		};
+		const result = await web3QRL.createAccessList(transaction);
+		expect(result.accessList).toBeDefined();
+		const keys = result.accessList!.flatMap(entry => entry.storageKeys);
+		expect(keys).toContain(getStorageSlotNumForLongString(1));
+		for (const key of keys) expect(key).toMatch(/^0x[0-9a-f]{64}$/i);
+		const receipt = await web3QRL.sendTransaction({
+			...transaction,
+			type: 2,
+			accessList: result.accessList,
+			gas: result.gasUsed,
+		});
+		expect(receipt.status).toBe(BigInt(1));
 	});
 });

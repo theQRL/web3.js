@@ -110,8 +110,8 @@ describe('contract', () => {
 					'request',
 				);
 
-				// Forcefully delete this property from the contract instance
-				contract.defaultBlock = undefined;
+				// The call-level block must override a valid instance default.
+				contract.defaultBlock = 'latest';
 
 				await contract.methods.greet().call(undefined, 'pending');
 

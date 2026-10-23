@@ -60,6 +60,12 @@ describe('Web3QRL.estimateGas', () => {
 		};
 		const response = await web3QRL.estimateGas(transaction);
 
-		expect(response).toBe(BigInt(658346));
+		// Verify that the estimate actually covers this compiler's deployment bytecode.
+		expect(response).toBeGreaterThan(BigInt(21000));
+		expect(response).toBeLessThanOrEqual(BigInt(transaction.gas!));
+		const receipt = await web3QRL.sendTransaction({ ...transaction, gas: response });
+		expect(receipt.status).toBe(BigInt(1));
+		expect(receipt.gasUsed).toBeLessThanOrEqual(response);
+		expect(receipt.contractAddress).toBeDefined();
 	});
 });

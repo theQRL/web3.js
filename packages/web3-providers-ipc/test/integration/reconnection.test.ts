@@ -15,9 +15,10 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+import { MaxAttemptsReachedOnReconnectingError } from '@theqrl/web3-errors';
 import { IpcProvider } from '../../src';
 
-import { startGqrlServer } from '../fixtures/helpers';
+import { createIpcEndpointAlias } from '../fixtures/helpers';
 import {
 	describeIf,
 	getSystemTestProviderUrl,
@@ -85,11 +86,12 @@ describeIf(isIpc)('IpcSocketProvider - reconnection', () => {
 			// @ts-expect-error call protected function
 			web3Provider._socketConnection?.end();
 			expect(!!(await connectEvent)).toBe(true);
+			const disconnected = waitForEvent(web3Provider, 'disconnect');
 			web3Provider.disconnect();
-			await waitForEvent(web3Provider, 'disconnect');
+			await disconnected;
 		});
 		it('should connect, disconnect, try reconnect and reach max attempts', async () => {
-			const server = await startGqrlServer();
+			const server = createIpcEndpointAlias();
 			const web3Provider = new IpcProvider(
 				server.path,
 				{},
@@ -99,14 +101,24 @@ describeIf(isIpc)('IpcSocketProvider - reconnection', () => {
 					maxAttempts: 3,
 				},
 			);
-			expect(!!(await waitForEvent(web3Provider, 'connect'))).toBe(true);
-			server.close();
-			// @ts-expect-error call protected function
-			web3Provider._socketConnection?.end();
-			const errorEvent = waitForEvent(web3Provider, 'error');
-
-			const error = (await errorEvent) as Error;
-			expect(error.message).toBe(`Maximum number of reconnect attempts reached! (${3})`);
+			const exhausted = new Promise<Error>(resolve => {
+				web3Provider.on('error', error => {
+					// Failed connection attempts also emit transport errors before exhaustion.
+					if (error instanceof MaxAttemptsReachedOnReconnectingError) resolve(error);
+				});
+			});
+			try {
+				expect(!!(await waitForEvent(web3Provider, 'connect'))).toBe(true);
+				server.close();
+				// @ts-expect-error call protected function
+				web3Provider._socketConnection?.end();
+				expect((await exhausted).message).toBe(
+					'Maximum number of reconnect attempts reached! (3)',
+				);
+			} finally {
+				web3Provider.disconnect();
+				server.close();
+			}
 		});
 	});
 });

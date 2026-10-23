@@ -40,7 +40,9 @@ describe('Web3 net', () => {
 
 	it('should be able to get id', async () => {
 		const networkId = await web3Net.getId();
-		expect(networkId).toBe(BigInt(3151908));
+		const rawId = await web3Net.requestManager.send({ method: 'net_version', params: [] });
+		expect(typeof networkId).toBe('bigint');
+		expect(networkId).toBe(BigInt(rawId));
 	});
 
 	it('should be able to listen', async () => {

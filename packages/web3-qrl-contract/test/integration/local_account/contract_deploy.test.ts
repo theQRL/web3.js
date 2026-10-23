@@ -72,7 +72,7 @@ describe('contract', () => {
 			expect(deployedContract.options.address).toBeDefined();
 		});
 
-		it('deploy should fail with low baseFeeGas EIP1559', async () => {
+		it('rejects a deployment below the EIP-1559 intrinsic gas limit', async () => {
 			await expect(
 				contract.deploy(deployOptions).send({
 					type: '0x2',
@@ -81,7 +81,7 @@ describe('contract', () => {
 					maxPriorityFeePerGas: '0x1',
 					from: localAccount.address,
 				}),
-			).rejects.toThrow('Signer Error Signer Error  gasLimit is too low');
+			).rejects.toThrow('Signer Error: gasLimit is too low');
 		});
 
 		it.each(['0x2'])('should return estimated gas of contract method %p', async txType => {
