@@ -7,8 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- QRNS: `getText(name, key)`, `getName(address)` (reverse resolution, forward-verified) and `setAddress(name, address, txConfig)`.
+- `web3-errors`: `NodeChainIdMismatchError` (code 441), thrown when a supplied chain id does not match the connected node's.
+
 ### Changed
 
+- **Breaking, VM64 / Hyperion 0.2.0 alignment** (the type-level changes of this cycle, listed here in one place):
+  - Typed data: `Eip712TypedData` / `Eip712TypeDetails` are `QRLTypedData` / `QRLTypedDataTypeDetails`, `getEncodedEip712Data` is `getEncodedQRLTypedData`, the validator format `eip712TypedData` is `qrlTypedData`, and the required domain type is `QRLTypedDataDomain` instead of `EIP712Domain`. Typed-data hashes change accordingly.
+  - `Topic` is `HexString64Bytes` (a 64-byte QRVM log topic) and `logSchema.topics` is formatted as `bytes64`; `encodeEventSignature` returns the 64-byte topic (see Fixed). A decoded `EventLog.signature`, and `decodeLog` for hashed indexed parameters, return the 32-byte keccak hash.
+  - `FeeHistory.baseFeePerGas` is an array (one value per block of the window plus the next block), as `qrl_feeHistory` returns it.
+  - `TransactionReceipt.root` (the pre-Byzantium state root) was removed from the type and the receipt schema.
+  - `ValueTypes` and `toHex(value, true)` report `uint512` / `int512` for numbers (the QRVM word is 64 bytes); ABI address decoding returns checksummed `Q` addresses.
+  - QRNS: `getPubkey` returns `{ publicKey, descriptor }` (an ML-DSA-87 key) instead of `{ x, y }`, and the `PubkeyChanged` event carries the same fields; `normalize` and `namehash` are exported from the package root again (`normalizeWithSource` is gone).
+  - `web3-qrl-accounts` `Common` gas parameters for the `zond` hardfork: the Ethereum EC precompile entries (`ecAdd`, `ecMul`, `ecPairing`, `ecPairingWord`) were replaced by go-qrl's `depositroot` and `mldsa87Verify` precompiles, EIP-3860 initcode gas counts 64-byte words, and `initialBaseFee` is 100 gwei (`100000000000`), matching go-qrl's genesis fee math.
+- `@theqrl/qrl-contracts` (the Hyperion contract library the test fixtures are compiled against) is a devDependency pinned to GitHub commit `d3c84eedac4e051f6e99892397c5e42f0f0a2266` instead of npm `0.1.0`: the published release (2026-04-03) predates the VM64 / Hyperion 0.2.0 contract sources. The archive is pinned by SHA-512 integrity in the lockfile and checked by `pnpm run doctor`; the cost is that installs need `codeload.github.com` and Dependabot cannot track it. Exit plan: publish a tagged `@theqrl/qrl-contracts` release built from that commit (or later) and point `package.json` back at the npm version (`docs/supply-chain-security.md`).
+- QRNS `registryAddresses.main` is documented as a placeholder (the fixtures' sample address, not a verified deployment); replace it when the registry is deployed (issue 103).
 - Fixed-size ABI byte inputs (`bytesN`) must contain exactly N bytes; callers must pad deliberately instead of relying on implicit padding. Seed strings require a lowercase `0x` prefix.
 - Updated the fixture compiler to `@theqrl/hypc` 0.2.0 and regenerated contract ABIs and bytecode with optimization enabled (200 runs), keeping PublicResolver within go-qrl's deployed code size limit.
 - Limited `compile:contracts` to generating and formatting contract fixtures.
@@ -45,6 +60,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `InvalidPasswordError` reads "Password must be a string or a Uint8Array"; empty passwords stay accepted for go-qrl parity. (I-7)
 - `web3-types`: `SyncInput`/`SyncOutput` carry go-qrl's `SyncProgress` fields (`syncedAccounts` … `healingBytecode`) instead of Ethereum's `knownStates`/`pulledStates`; `FilterOption` admits byte arrays, object-form tuples, OR-lists of tuples and nested arrays as indexed filter values. (L-71, L-73)
 - Contract method sends pass the contract's error ABI to the send pipeline (`contractAbi`), which decodes custom errors before reporting a failure; the contract wrapper no longer attaches an internal `error` listener, so a send that is neither awaited nor listened to keeps the ordinary unhandled-rejection semantics instead of having its failure silently marked as handled. (M-7b)
+
+### Removed
+
+- The `@theqrl/web3-qrl-iban` package and the `Iban` exports of `@theqrl/web3` (`web3.qrl.Iban`, `web3.qrl.iban`, `Web3.modules.Iban`): IBAN/ICAP encoding is an Ethereum convention with no QRL counterpart. The last published version, `@theqrl/web3-qrl-iban@1.0.3`, is to be marked deprecated on npm (`npm deprecate @theqrl/web3-qrl-iban@1.0.3 "Removed: no QRL IBAN format"`).
+- `qrl_protocolVersion` (`getProtocolVersion`) and `qrl_getCompilers` / `qrl_compileHyperion` (`getCompilers`, `compileHyperion`, `CompileResultAPI`) from `web3-rpc-methods`, `web3-qrl` and `web3-types`: gqrl does not implement them.
+- `TransactionReceipt.root`, QRNS `normalizeWithSource`, and the dead `SendTransactionOptions.ignoreFillingGasLimit` option (see Fixed).
 
 ### Fixed
 
@@ -96,6 +117,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `sendTransaction`/`signTransaction` check a caller-supplied chain id (given directly, through `common.customChain` or through `defaultCommon`) against the connected node's `qrl_chainId` and reject a mismatch with the new `NodeChainIdMismatchError` (code 441) instead of signing a transaction the node would refuse while the signature stays valid on the other chain; without a provider (offline signing) the chain id is taken as given.
 - The revert reason of a mined-and-reverted transaction is simulated at the block that included it instead of at `defaultBlock`, falling back to `defaultBlock` when the node has pruned that state.
 - The confirmation watchers (polling and `newHeads`) re-fetch the receipt for every new block: a transaction that a reorg dropped from the chain is reported through the PromiEvent's `error` event as `TransactionMissingReceiptOrBlockHashError` and watching stops, and a transaction that was re-included in another block is confirmed from that block with the node's new receipt.
+- QRNS `getAddress` rejects a zero-address record for coin type 60 with a `Web3ContractError` ("the name has no address record") instead of returning the zero address, restoring the check of the first audit remediation; `getName` treats such a name as unverified (`''`).
+- `scripts/test/unit/compile_contracts.test.ts` compares sorted directory listings (directory order is filesystem-dependent); the root `package.json` declares `@types/jest` (used by `tsconfig.eslint.json`) instead of relying on hoisting; the dead `methodsInInterface.setPubkey` entry was removed; the `.trivyignore` entry for `braces` (CVE-2026-93687) was re-assessed on 2026-10-23 (no fixed release exists, exposure unchanged) with a new revisit date.
 - Socket providers (WebSocket, IPC) no longer crash the process on a `[null]` reply, no longer treat unparseable or non-object messages as a lost connection, reset their chunk parser on every (re)connection, and accept `0`/`""` as JSON-RPC ids. WebSocket frames are parsed independently, so one malformed frame can no longer poison every response that follows it.
 - IPC incomplete-message timeouts expire 15 seconds after the first chunk even under continuous traffic. Parser errors reject affected requests without detaching the live socket's listeners, allowing later replies to succeed.
 - `ResponseError`, `InvalidResponseError` and the JSON-RPC shape predicates tolerate `null` entries in batch responses instead of throwing a `TypeError`.

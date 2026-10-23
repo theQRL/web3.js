@@ -27,10 +27,9 @@ import { Address } from '@theqrl/web3-types';
 import { isAddressString } from '@theqrl/web3-validator';
 import { QRNSRegistryAbi } from './abi/qrns/QRNSRegistry.js';
 import { PublicResolverAbi } from './abi/qrns/PublicResolver.js';
-import { registryAddresses } from './config.js';
+import { registryAddresses, QRL_ZERO_ADDRESS } from './config.js';
 import { namehash } from './utils.js';
 
-const QRL_ZERO_ADDRESS = `Q${'0'.repeat(128)}`;
 
 /**
  * Maps a failed registry call to a typed error: a revert reported by the node becomes a

@@ -18,4 +18,6 @@
 # path filter. No shipped Web3 runtime dependency exposes braces to RPC input.
 # Upstream: https://github.com/micromatch/braces/issues/70
 # Remove this exception when a fix ships or the pattern input boundary changes.
-CVE-2026-93687  # unreachable: tooling-only, trusted glob patterns; revisit by 2026-11-04
+# Re-assessed 2026-10-23: braces 3.0.3 (2024-05-21) is still the latest release and no
+# fixed version exists; the exposure is unchanged (tooling-only, trusted glob patterns).
+CVE-2026-93687  # unreachable: tooling-only, trusted glob patterns; revisit by 2027-01-29

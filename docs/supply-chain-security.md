@@ -93,6 +93,24 @@ node scripts/git-dependency-digest.js @theqrl/qrl-contracts
 Run `pnpm run doctor` after recording both digests. Do not remove the archive
 integrity field when refreshing the lockfile.
 
+### Why a Git-hosted dependency, and the exit plan
+
+The npm release `@theqrl/qrl-contracts@0.1.0` (2026-04-03) predates the VM64 /
+Hyperion 0.2.0 contract sources the fixtures are compiled from, so `package.json`
+points at the GitHub archive of commit `d3c84eedac4e051f6e99892397c5e42f0f0a2266`
+(`github:theQRL/qrl-contracts#<commit>`). The price of that pin is operational:
+every install must reach `codeload.github.com` (an offline or registry-only
+sandbox fails with `ERR_PNPM_FETCH_403` on exactly that URL), Dependabot cannot
+track or update a Git dependency, and the integrity hash has to be maintained by
+hand as described above.
+
+Exit plan: publish a tagged `@theqrl/qrl-contracts` release built from that
+commit or a later one, change `package.json` back to the npm version, refresh
+the lockfile (npm supplies the integrity hash itself), remove the archive pin and
+the tree digest from `scripts/doctor.js`, and record the switch in
+`CHANGELOG.md`. Until then, bump the commit only through the review procedure
+above and never to a moving reference (a branch or a tag that can be re-pointed).
+
 ## Audit Gate
 
 The required local and CI audit command is:

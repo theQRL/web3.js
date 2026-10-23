@@ -88,6 +88,7 @@
 		"@theqrl/eslint-config-base-web3": "workspace:*",
 		"@theqrl/hypc": "0.2.0",
 		"@theqrl/qrl-contracts": "github:theQRL/qrl-contracts#d3c84eedac4e051f6e99892397c5e42f0f0a2266",
+		"@types/jest": "30.0.0",
 		"@types/node": "25.9.1",
 		"assert": "2.1.0",
 		"buffer": "6.0.3",

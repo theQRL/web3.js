@@ -63,7 +63,7 @@ describe('Contract compilation CLI', () => {
 		});
 
 	const expectPreviousBuild = () => {
-		expect(readdirSync(buildPath)).toEqual(['previous.json']);
+		expect(readdirSync(buildPath).sort()).toEqual(['previous.json']);
 		expect(readFileSync(join(buildPath, 'previous.json'), 'utf8')).toBe('{"previous":true}\n');
 	};
 
@@ -84,7 +84,7 @@ contract Sample is SQRCTF1 {
 		expect(result.status).toBe(0);
 		expect(result.stderr).toContain('Warning:');
 		expect(result.stdout).toContain('Compiled successfully');
-		expect(readdirSync(buildPath)).toEqual(['Sample.json', 'Sample.ts']);
+		expect(readdirSync(buildPath).sort()).toEqual(['Sample.json', 'Sample.ts']);
 		const artifact = JSON.parse(readFileSync(join(buildPath, 'Sample.json'), 'utf8'));
 		expect(artifact.abi).toContainEqual(
 			expect.objectContaining({ type: 'function', name: 'transfer' }),
@@ -114,8 +114,9 @@ contract Sample is SQRCTF1 {
 		expect(result.status).toBe(0);
 		expect(result.stdout).toContain(`Hyperion ${manifest.devDependencies['@theqrl/hypc']}+`);
 		const committedBuildPath = join(root, 'fixtures/build');
-		const fileNames = readdirSync(committedBuildPath);
-		expect(readdirSync(buildPath)).toEqual(fileNames);
+		// Directory order is filesystem-dependent: compare sorted listings.
+		const fileNames = readdirSync(committedBuildPath).sort();
+		expect(readdirSync(buildPath).sort()).toEqual(fileNames);
 		for (const fileName of fileNames) {
 			expect(readFileSync(join(buildPath, fileName), 'utf8')).toBe(
 				readFileSync(join(committedBuildPath, fileName), 'utf8'),

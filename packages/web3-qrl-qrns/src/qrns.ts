@@ -163,7 +163,7 @@ export class QRNS extends Web3Context<QRLExecutionAPI & Web3NetAPI> {
 	 * Resolves a QRNS name to an address.
 	 * @param QRNSName - The QRNS name to resolve
 	 * @param coinType - (Optional) The coin type, defaults to 60 (QRL)
-	 * @returns - For coin type 60 the checksummed QRL address of the name (`addr(bytes32)`; the zero address when unset); for any other coin type the raw address bytes as hex (`addr(bytes32,uint256)`).
+	 * @returns - For coin type 60 the checksummed QRL address of the name (`addr(bytes32)`); a name without an address record (the resolver answers the zero address) rejects with a `Web3ContractError`. For any other coin type the raw address bytes as hex (`addr(bytes32,uint256)`).
 	 * ```ts
 	 * const address = await web3.qrl.qrns.getAddress('qrl.qrns');
 	 * console.log(address);

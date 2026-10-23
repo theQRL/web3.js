@@ -27,7 +27,7 @@ import { Address, PayableCallOptions } from '@theqrl/web3-types';
 import { isNullish, sha3, toChecksumAddress } from '@theqrl/web3-utils';
 import { isAddressString, isHexStrict } from '@theqrl/web3-validator';
 import { PublicResolverAbi } from './abi/qrns/PublicResolver.js';
-import { interfaceIds, methodsInInterface } from './config.js';
+import { interfaceIds, methodsInInterface, QRL_ZERO_ADDRESS } from './config.js';
 import { Registry } from './registry.js';
 import { namehash, normalize } from './utils.js';
 
@@ -109,7 +109,8 @@ export class Resolver {
 	/**
 	 * Resolves the address record of a name. Coin type 60 (the default) is the QRL address:
 	 * the resolver must implement `addr(bytes32)` (interface `0x3b3b57de`) and a checksummed
-	 * `Q` address is returned (the zero address when the record is unset). Any other coin type
+	 * `Q` address is returned; an unset record (the zero address) is rejected with a
+	 * `Web3ContractError` instead of being returned as an address. Any other coin type
 	 * goes through `addr(bytes32,uint256)` (interface `0xf1cb7e06`) and returns the raw
 	 * address bytes as hex (L-63).
 	 */
@@ -124,6 +125,14 @@ export class Resolver {
 				.call();
 			if (typeof address !== 'string' || !isAddressString(address)) {
 				throw new Web3ContractError('QRNS resolver returned an invalid address');
+			}
+			// An unset record reads as the zero address; handing it to a caller as "the address
+			// of the name" would make a transfer to that name burn the funds (restores the
+			// check of the first audit remediation).
+			if (address.toLowerCase() === QRL_ZERO_ADDRESS.toLowerCase()) {
+				throw new Web3ContractError(
+					'QRNS resolver returned the zero address: the name has no address record',
+				);
 			}
 			return toChecksumAddress(address);
 		}
@@ -209,6 +218,7 @@ export class Resolver {
 		try {
 			forwardAddress = await this.getAddress(name);
 		} catch (error) {
+			// A name without an address record (zero address) cannot verify the claim either.
 			if (isUnverifiableName(error)) {
 				return '';
 			}

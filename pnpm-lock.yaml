@@ -106,6 +106,9 @@ importers:
       '@theqrl/qrl-contracts':
         specifier: github:theQRL/qrl-contracts#d3c84eedac4e051f6e99892397c5e42f0f0a2266
         version: https://codeload.github.com/theQRL/qrl-contracts/tar.gz/d3c84eedac4e051f6e99892397c5e42f0f0a2266
+      '@types/jest':
+        specifier: 30.0.0
+        version: 30.0.0
       '@types/node':
         specifier: 25.9.1
         version: 25.9.1

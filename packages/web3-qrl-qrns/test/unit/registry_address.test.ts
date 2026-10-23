@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { InvalidAddressError, QRNSUnsupportedNetworkError } from '@theqrl/web3-errors';
+import { InvalidAddressError, QRNSUnsupportedNetworkError, Web3ContractError } from '@theqrl/web3-errors';
 import { sha3Raw } from '@theqrl/web3-utils';
 import { isAddressString } from '@theqrl/web3-validator';
 import { registryAddresses } from '../../src/config';
@@ -137,6 +137,24 @@ describe('QRNS.getAddress through the resolver (L-63)', () => {
 		expect((interfaceCheck?.params[0] as { input: string }).input.slice(10, 18)).toBe('3b3b57de');
 	});
 
+	it('rejects the zero address for coin type 60: the name has no address record', async () => {
+		const provider = new FakeProvider((method, params) => {
+			if (method === 'qrl_syncing') return false;
+			if (method === 'net_version') return '1';
+			if (method !== 'qrl_call') return undefined;
+			const tx = params[0] as { input?: string; data?: string };
+			const selector = (tx.input ?? tx.data ?? '').slice(0, 10);
+			if (selector === sel('resolver(bytes32)')) return `0x${addrWord(RESOLVER)}`;
+			if (selector === sel('supportsInterface(bytes4)')) return `0x${boolWord(true)}`;
+			if (selector === sel('addr(bytes32)')) return `0x${addrWord(`Q${'0'.repeat(128)}`)}`;
+			return '0x';
+		});
+		const qrns = new QRNS(undefined, provider.asProvider());
+
+		await expect(qrns.getAddress('alice.qrl')).rejects.toThrow(Web3ContractError);
+		await expect(qrns.getAddress('alice.qrl')).rejects.toThrow(/zero address/);
+	});
+
 	it('returns the raw bytes for another coin type after checking 0xf1cb7e06 (L-63)', async () => {
 		const provider = resolverProvider('ab'.repeat(20));
 		const qrns = new QRNS(undefined, provider.asProvider());
@@ -153,7 +171,7 @@ describe('QRNS.getAddress through the resolver (L-63)', () => {
 		);
 	});
 
-	it('returns the zero address for an unset coin type 60 record (L-63)', async () => {
+	it('rejects an unset coin type 60 record (zero address) instead of returning it (L-63)', async () => {
 		const provider = new FakeProvider((method, params) => {
 			if (method !== 'qrl_call') return undefined;
 			const tx = params[0] as { input?: string };
@@ -165,6 +183,8 @@ describe('QRNS.getAddress through the resolver (L-63)', () => {
 		});
 		const qrns = new QRNS(undefined, provider.asProvider());
 
-		await expect(qrns.getAddress('nobody.qrl')).resolves.toBe(`Q${'0'.repeat(128)}`);
+		await expect(qrns.getAddress('nobody.qrl')).rejects.toThrow(
+			'QRNS resolver returned the zero address: the name has no address record',
+		);
 	});
 });
