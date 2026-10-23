@@ -39,11 +39,12 @@ import {
 } from '@theqrl/web3-types';
 import { Web3Context } from '@theqrl/web3-core';
 import { format } from '@theqrl/web3-utils';
-import { isBlockTag, isBytes, isNullish, isObject } from '@theqrl/web3-validator';
+import { isBlockTag, isNullish, isObject } from '@theqrl/web3-validator';
 import { qrlRpcMethods } from '@theqrl/web3-rpc-methods';
 
 import { blockSchema, transactionReceiptSchema } from '../schemas.js';
 import { formatTransaction } from './format_transaction.js';
+import { isBlockHash } from './hex_guards.js';
 import { expectQuantityReply, invalidResponseError } from './invalid_response_error.js';
 import { validateTransactionInput } from './transaction_input.js';
 
@@ -57,7 +58,13 @@ export async function getBlockNumber<ReturnFormat extends DataFormat>(
 ) {
 	const response = await qrlRpcMethods.getBlockNumber(web3Context.requestManager);
 
-	return format({ format: 'uint' }, response as Numbers, returnFormat);
+	// A reply that is not a quantity (`null`, `'abc'`) used to be handed back as it came; the
+	// block-timeout watchers then computed with `NaN` and never fired (P4-L-13).
+	return format(
+		{ format: 'uint' },
+		expectQuantityReply('qrl_blockNumber', response),
+		returnFormat,
+	);
 }
 
 /**
@@ -71,7 +78,8 @@ export async function getBlock<ReturnFormat extends DataFormat>(
 	returnFormat: ReturnFormat,
 ) {
 	let response;
-	if (isBytes(block)) {
+	// Only a 32-byte value is a block hash; `'0x10'` is a block number (P4-L-11).
+	if (isBlockHash(block)) {
 		const blockHashFormatted = format({ format: 'bytes32' }, block, QRL_DATA_FORMAT);
 		response = await qrlRpcMethods.getBlockByHash(
 			web3Context.requestManager,
@@ -142,7 +150,11 @@ export async function getTransactionCount<ReturnFormat extends DataFormat>(
 		blockNumberFormatted,
 	);
 
-	return format({ format: 'uint' }, response as Numbers, returnFormat);
+	return format(
+		{ format: 'uint' },
+		expectQuantityReply('qrl_getTransactionCount', response),
+		returnFormat,
+	);
 }
 
 // TODO - Investigate whether response is padded as 1.x docs suggest
@@ -168,7 +180,11 @@ export async function estimateGas<ReturnFormat extends DataFormat>(
 		blockNumberFormatted,
 	);
 
-	return format({ format: 'uint' }, response as Numbers, returnFormat);
+	return format(
+		{ format: 'uint' },
+		expectQuantityReply('qrl_estimateGas', response),
+		returnFormat,
+	);
 }
 
 /**

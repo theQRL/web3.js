@@ -14,13 +14,21 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { JsonRpcResponse } from '@theqrl/web3-types';
-import { InvalidResponseError } from '@theqrl/web3-errors';
+import { JsonRpcId, JsonRpcResponse } from '@theqrl/web3-types';
+import { InvalidResponseError, ResponseTooLargeError } from '@theqrl/web3-errors';
 import type { EventEmitterLike } from './event_emitter.js';
+import { DEFAULT_MAX_RESPONSE_BYTES, validatePositiveInteger } from './provider_bounds.js';
 import { isNullish } from './validation.js';
 
-const MAX_CHUNK_BYTES = 10 * 1024 * 1024;
 const CHUNK_TIMEOUT_MS = 15 * 1000;
+
+/**
+ * Longest prefix of an oversized message that is searched for request ids. JSON-RPC servers
+ * (go-qrl among them) write `jsonrpc` and `id` ahead of `result`, so the ids of a reply sit in
+ * its first few hundred characters; bounding the scan keeps the cost of a hostile message
+ * constant, and in stream mode the prefix is all that is kept of a message being discarded.
+ */
+const ID_SCAN_LIMIT = 64 * 1024;
 
 // Character codes the stream scanner needs. JSON structure is pure ASCII, so scanning
 // UTF-16 code units is exact: no multi-byte sequence can contain one of these.
@@ -35,6 +43,38 @@ const TAB = 0x09;
 const LINE_FEED = 0x0a;
 const CARRIAGE_RETURN = 0x0d;
 
+/**
+ * Collects the request ids an oversized, and therefore never parsed, JSON-RPC message carries,
+ * so that only the requests it answers are failed (P4-M-5). A batch reply yields several.
+ *
+ * One linear pass of a regular expression whose every part is bounded (`"id"`, optional
+ * whitespace, a JSON number or a string of at most 128 characters without escapes, which
+ * covers a UUID or a counter) over the first {@link ID_SCAN_LIMIT} characters. An `"id"` key
+ * nested inside a result matches as well; that only matters if its value equals the id of
+ * another in-flight request, one of the reasons request ids are UUIDs by default.
+ */
+const extractResponseIds = (text: string): JsonRpcId[] => {
+	const scanned = text.length > ID_SCAN_LIMIT ? text.slice(0, ID_SCAN_LIMIT) : text;
+	const idMember = /"id"\s*:\s*(\d+|"[^"]{1,128}")/g;
+	const ids = new Set<JsonRpcId>();
+	for (;;) {
+		const match = idMember.exec(scanned);
+		if (!match) break;
+		const raw = match[1];
+		if (raw.charCodeAt(0) === QUOTE) {
+			try {
+				ids.add(JSON.parse(raw) as string);
+			} catch {
+				// A string literal the pattern cut short (an escape inside): not an id.
+			}
+		} else {
+			const id = Number(raw);
+			if (Number.isSafeInteger(id)) ids.add(id);
+		}
+	}
+	return [...ids];
+};
+
 export interface ChunkResponseParserOptions {
 	/**
 	 * `true` for transports that deliver whole messages (WebSocket frames). Input is then never
@@ -45,7 +85,26 @@ export interface ChunkResponseParserOptions {
 	 * across several `data` events and the partial text has to be kept until it completes.
 	 */
 	framed?: boolean;
+	/**
+	 * Largest message accepted, measured in UTF-16 code units of the decoded text. That count
+	 * never exceeds the text's UTF-8 byte count, so a reply within the provider's
+	 * `maxResponseBytes` is never refused; the WebSocket transport enforces the same bound on
+	 * the wire through `maxPayload`.
+	 * @defaultValue {@link DEFAULT_MAX_RESPONSE_BYTES} (10 MiB)
+	 */
+	maxResponseBytes?: number;
 }
+
+/**
+ * Receives every protocol error the parser detects. `requestIds` is given for an oversized
+ * message and lists the ids it carried: the owner fails exactly those requests. Without ids
+ * (or with none found) the owner fails every outstanding request, since it cannot tell which
+ * reply was lost.
+ */
+export type ChunkResponseParserErrorHandler = (
+	error: InvalidResponseError | ResponseTooLargeError,
+	requestIds?: JsonRpcId[],
+) => void;
 
 /**
  * Splits the text a transport delivers into JSON-RPC messages.
@@ -57,20 +116,32 @@ export interface ChunkResponseParserOptions {
  * version split on `}{`-like delimiters and re-parsed the accumulated text after every
  * fragment, which let a peer block the event loop for minutes with a few hundred KB of
  * unparseable output.
+ *
+ * A message above `maxResponseBytes` is never parsed. It is reported as a
+ * `ResponseTooLargeError` against the request ids found in its text, so an unrelated request
+ * in flight on the same connection is unaffected (P4-M-5). In stream mode the structure of an
+ * oversized message is still followed while its text is dropped, so that the bytes completing
+ * it are not mistaken for the start of the next message; a message that never completes is
+ * bounded by the chunk timeout like any other.
  */
 export class ChunkResponseParser {
-	// Stream mode: the pieces (in arrival order) of the message that was still open at the end
-	// of the previous call, and the scanner state at the end of the last piece.
+	// Stream mode: the text kept of the message that was still open at the end of the previous
+	// call (all of it, or a bounded prefix while discarding), and the scanner state at the end
+	// of the last piece.
 	private pendingParts: string[] = [];
-	private pendingLength = 0;
+	/** Code units of the open message seen so far, kept or not. */
+	private messageLength = 0;
+	/** The open message exceeded the bound: only its boundaries are tracked, its text dropped. */
+	private discarding = false;
 	private depth = 0;
 	private inString = false;
 	private escaped = false;
 	private lastChunkTimeout: NodeJS.Timeout | undefined;
-	private _clearQueues: ((error: InvalidResponseError) => void) | undefined;
+	private _onProtocolError: ChunkResponseParserErrorHandler | undefined;
 	private readonly eventEmitter: EventEmitterLike;
 	private readonly autoReconnect: boolean;
 	private readonly framed: boolean;
+	private readonly maxBytes: number;
 
 	public constructor(
 		eventEmitter: EventEmitterLike,
@@ -80,10 +151,19 @@ export class ChunkResponseParser {
 		this.eventEmitter = eventEmitter;
 		this.autoReconnect = autoReconnect;
 		this.framed = options.framed ?? false;
+		// Validated here as well: an unusable bound must fail loudly, not disable the check.
+		this.maxBytes = validatePositiveInteger(
+			options.maxResponseBytes ?? DEFAULT_MAX_RESPONSE_BYTES,
+			'maxResponseBytes',
+		);
 	}
 
-	public onError(clearQueues?: (error: InvalidResponseError) => void) {
-		this._clearQueues = clearQueues;
+	/**
+	 * Registers the handler that fails requests on a protocol error; see
+	 * {@link ChunkResponseParserErrorHandler} for when it receives request ids.
+	 */
+	public onError(handler?: ChunkResponseParserErrorHandler) {
+		this._onProtocolError = handler;
 	}
 
 	/**
@@ -96,7 +176,8 @@ export class ChunkResponseParser {
 	public reset(): void {
 		this.clearChunkTimeout();
 		this.pendingParts = [];
-		this.pendingLength = 0;
+		this.messageLength = 0;
+		this.discarding = false;
 		this.depth = 0;
 		this.inString = false;
 		this.escaped = false;
@@ -125,15 +206,28 @@ export class ChunkResponseParser {
 			jsonrpc: '2.0',
 			error: { code: 2, message },
 		});
-		if (clearQueues) this._clearQueues?.(error);
+		if (clearQueues) this._onProtocolError?.(error);
+		if (this.eventEmitter.listenerCount('error') > 0) {
+			this.eventEmitter.emit('error', error);
+		}
+	}
+
+	/**
+	 * An oversized message is dropped unparsed and the requests it answers are failed by the
+	 * ids found in `text`; the handler falls back to failing every request when there is none.
+	 * `length` is the size of the whole message, in code units, kept or not.
+	 */
+	private reportOversized(text: string, length: number): void {
+		const error = new ResponseTooLargeError(this.maxBytes, length);
+		this._onProtocolError?.(error, extractResponseIds(text));
 		if (this.eventEmitter.listenerCount('error') > 0) {
 			this.eventEmitter.emit('error', error);
 		}
 	}
 
 	private parseFrame(data: string): JsonRpcResponse[] {
-		if (data.length > MAX_CHUNK_BYTES) {
-			this.emitError('Chunk size exceeds maximum', true);
+		if (data.length > this.maxBytes) {
+			this.reportOversized(data, data.length);
 			return [];
 		}
 		let result: unknown;
@@ -163,7 +257,6 @@ export class ChunkResponseParser {
 		let start = 0;
 		let garbage = false;
 		let malformed = false;
-		let oversized = false;
 
 		for (let i = 0; i < data.length; i += 1) {
 			const c = data.charCodeAt(i);
@@ -192,8 +285,12 @@ export class ChunkResponseParser {
 				this.depth -= 1;
 				if (this.depth === 0) {
 					const piece = data.slice(start, i + 1);
-					if (this.pendingLength + piece.length > MAX_CHUNK_BYTES) {
-						oversized = true;
+					const length = this.messageLength + piece.length;
+					if (this.discarding) {
+						// Only the retained prefix can still name the requests it answers.
+						this.reportOversized(this.pendingParts.join(''), length);
+					} else if (length > this.maxBytes) {
+						this.reportOversized(this.pendingParts.join('') + piece, length);
 					} else {
 						const text =
 							this.pendingParts.length > 0
@@ -211,19 +308,27 @@ export class ChunkResponseParser {
 					// opens later in this call gets a fresh deadline below.
 					this.clearChunkTimeout();
 					this.pendingParts = [];
-					this.pendingLength = 0;
+					this.messageLength = 0;
+					this.discarding = false;
 				}
 			}
 		}
 
 		if (this.depth > 0) {
 			const piece = data.slice(start);
-			this.pendingParts.push(piece);
-			this.pendingLength += piece.length;
-			if (this.pendingLength > MAX_CHUNK_BYTES) {
-				this.reset();
-				this.emitError('Chunk size exceeds maximum', true);
-				return results;
+			this.messageLength += piece.length;
+			if (this.discarding) {
+				// Only the boundary of the message is still of interest.
+			} else if (this.messageLength > this.maxBytes) {
+				// The open message is over the bound. It is not abandoned: its structure is still
+				// followed so that the bytes completing it are not taken for the start of the next
+				// message (the stream would otherwise be out of step until the peer happened to
+				// resynchronise it), but its text is dropped apart from the prefix that may name
+				// the requests it answers.
+				this.discarding = true;
+				this.pendingParts = [(this.pendingParts.join('') + piece).slice(0, ID_SCAN_LIMIT)];
+			} else {
+				this.pendingParts.push(piece);
 			}
 			// Bound the lifetime of the incomplete message, not the idle time between chunks.
 			// Subsequent traffic must not keep a poisoned prefix alive forever.
@@ -243,7 +348,6 @@ export class ChunkResponseParser {
 
 		// Report each kind of problem once per call: a peer that streams garbage must not be
 		// able to turn every byte into an `error` event with its own stack trace.
-		if (oversized) this.emitError('Chunk size exceeds maximum', true);
 		if (malformed) this.emitError('Malformed JSON-RPC message received from the node');
 		if (garbage) this.emitError('Non-object JSON-RPC message received from the node');
 		return results;

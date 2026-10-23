@@ -48,15 +48,14 @@ function getWebPackConfig(packagePath, filename, library, entry, tsconf) {
 		},
 		resolve: {
 			extensions: ['.ts', '.js'],
-			// The only Node core module the browser bundle may need a stand-in
-			// for. Runtime packages must not import other Node built-ins (the
-			// event emitter is the dependency-free one from @theqrl/web3-utils,
-			// not Node's `events`); scripts/check-package-dependencies.js fails
-			// the build inspection if one creeps back in, so nothing here may
-			// silently rely on webpack's own transitive polyfills.
-			fallback: {
-				stream: require.resolve('readable-stream'),
-			},
+			// No Node core module gets a browser stand-in: runtime packages must
+			// not import Node built-ins (the event emitter is the dependency-free
+			// one from @theqrl/web3-utils, not Node's `events`, and nothing under
+			// packages/*/src loads `stream`), and
+			// scripts/check-package-dependencies.js fails the build inspection if
+			// one creeps back in. Without a fallback, webpack 5 fails the bundle
+			// instead of silently pulling in a hoisted, undeclared polyfill.
+			fallback: {},
 			extensionAlias: {
 				'.js': ['.js', '.ts'],
 			},

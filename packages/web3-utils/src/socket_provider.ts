@@ -40,6 +40,7 @@ import {
 	Web3ProviderStatus,
 } from '@theqrl/web3-types';
 import {
+	BaseWeb3Error,
 	ConnectionError,
 	ConnectionNotOpenError,
 	ConnectionTimeoutError,
@@ -96,8 +97,11 @@ export interface SocketProviderDiagnostics {
 /**
  * Constructor options shared by the socket (WebSocket / IPC) providers.
  *
- * The bound names (`connectionTimeout`, `requestTimeout`, `maxInFlightRequests`) are the
- * same ones the HTTP provider accepts, so every transport presents one surface.
+ * The bound names (`connectionTimeout`, `requestTimeout`, `maxResponseBytes`,
+ * `maxInFlightRequests`) are the same ones the HTTP provider accepts, so every transport
+ * presents one surface. `maxResponseBytes` bounds every message the peer sends: a larger one
+ * is dropped unparsed and only the request(s) it answers fail with a `ResponseTooLargeError`
+ * (P4-M-5); the WebSocket provider also hands it to `ws` as the default `maxPayload`.
  */
 export interface SocketProviderOptions extends ProviderBoundsOptions {
 	/**
@@ -137,6 +141,22 @@ const DEFAULT_RECONNECTION_OPTIONS = {
 
 const NORMAL_CLOSE_CODE = 1000; // https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/close
 
+/**
+ * Names a transport error without echoing its message. `ws` formats the full URL, credentials
+ * and path included, into `Invalid URL: <url>` (P4-L-15), so only the error's class name and,
+ * when it carries one, its short `code` (`ERR_INVALID_URL`, `ECONNREFUSED`, ...) are kept.
+ * This library's own errors are the exception: their messages are built here, with any URL
+ * already redacted, and are kept whole.
+ */
+const describeTransportError = (error: unknown): string => {
+	if (error instanceof BaseWeb3Error) return error.message;
+	const { name, code } = (error ?? {}) as { name?: unknown; code?: unknown };
+	const safeName = typeof name === 'string' && name !== '' ? name : 'Error';
+	return typeof code === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(code)
+		? `${safeName} (${code})`
+		: safeName;
+};
+
 const unrefTimer = (timer: unknown): void => {
 	// A pending provider timer must not, by itself, keep a Node process alive.
 	if (typeof (timer as { unref?: () => void }).unref === 'function') {
@@ -160,7 +180,7 @@ export abstract class SocketProvider<
 	protected _reconnectAttempts!: number;
 	protected readonly _socketOptions?: unknown;
 	protected readonly _reconnectOptions: ReconnectOptions;
-	/** Validated `connectionTimeout` / `requestTimeout` / `maxInFlightRequests`. */
+	/** Validated `connectionTimeout` / `requestTimeout` / `maxResponseBytes` / `maxInFlightRequests`. */
 	protected readonly _providerBounds: ResolvedProviderBounds;
 	/**
 	 * Teardown state for every in-flight request, reachable from either queue map via the
@@ -233,11 +253,22 @@ export abstract class SocketProvider<
 		this.chunkResponseParser = new ChunkResponseParser(
 			this._eventEmitter,
 			this._reconnectOptions.autoReconnect,
-			{ framed: this._isFramedTransport() },
+			{
+				framed: this._isFramedTransport(),
+				maxResponseBytes: this._providerBounds.maxResponseBytes,
+			},
 		);
-		this.chunkResponseParser.onError(error => {
+		this.chunkResponseParser.onError((error, requestIds) => {
 			// A protocol error can fail requests without closing the live transport.
 			// Keep its listeners so replies received after the parser resets still work.
+			if (requestIds !== undefined && requestIds.length > 0) {
+				// An oversized reply names the requests it answers: only those fail, an
+				// unrelated request in flight on the same connection is unaffected (P4-M-5).
+				for (const id of requestIds) {
+					this._settleRequest(id, { reject: error });
+				}
+				return;
+			}
 			this._rejectAllRequests(error);
 		});
 		this.isReconnecting = false;
@@ -251,13 +282,19 @@ export abstract class SocketProvider<
 	}
 
 	/**
-	 * Try to establish a connection to the socket
+	 * Try to establish a connection to the socket.
+	 *
+	 * A request already written to the socket being replaced is failed with
+	 * `PendingRequestsOnReconnectingError` right away: its reply could only have arrived on
+	 * that socket, so waiting would only end at the request's deadline (P4-L-21). Requests still
+	 * waiting for a connection stay queued and are written once the new socket opens.
 	 */
 	public connect(): void {
 		try {
 			// Bytes left over from a previous connection must never prefix the first message of
 			// this one.
 			this.chunkResponseParser.reset();
+			this._rejectSentRequests();
 			this._openSocketConnection();
 			this._connectionStatus = 'connecting';
 			this._armConnectionTimer();
@@ -268,11 +305,12 @@ export abstract class SocketProvider<
 				this._connectionStatus = 'disconnected';
 				if (e && (e as Error).message) {
 					// The socket path may be a `ws://user:password@host/path` URL: credentials
-					// and path never belong in an error message (L-48).
+					// and path never belong in an error message (L-48), and neither does the
+					// transport's message, which may quote the URL in full (P4-L-15).
 					throw new ConnectionError(
-						`Error while connecting to ${redactClientUrl(this._socketPath)}. Reason: ${
-							(e as Error).message
-						}`,
+						`Error while connecting to ${redactClientUrl(
+							this._socketPath,
+						)}. Reason: ${describeTransportError(e)}`,
 					);
 				} else {
 					throw new InvalidClientError(this._socketPath);
@@ -299,6 +337,11 @@ export abstract class SocketProvider<
 	 * the provider is `disconnected` and the next {@link request} opens a fresh socket. A peer
 	 * that accepts TCP but never completes the handshake used to wedge the provider for the
 	 * lifetime of the process (M-8).
+	 *
+	 * The timer belongs to one attempt. {@link _reconnect} clears it when that attempt fails,
+	 * and the callback stands down while a reconnect is pending: it used to survive a fast
+	 * socket failure, fire during the back-off and reject the requests parked for the reconnect
+	 * with a `ConnectionTimeoutError` (P4-L-16).
 	 */
 	private _armConnectionTimer(): void {
 		this._clearConnectionTimer();
@@ -308,7 +351,7 @@ export abstract class SocketProvider<
 		this._connectionTimer = setTimeout(() => {
 			this._connectionTimer = undefined;
 
-			if (this.getStatus() === 'connected') return;
+			if (this.getStatus() === 'connected' || this.isReconnecting) return;
 
 			const error = new ConnectionTimeoutError(duration);
 			this._connectionStatus = 'disconnected';
@@ -626,6 +669,20 @@ export abstract class SocketProvider<
 	}
 
 	/**
+	 * Rejects every request already written to the socket with
+	 * `PendingRequestsOnReconnectingError`, leaving requests that still wait for a connection
+	 * queued. Called whenever the socket a request was written to is given up (a reconnect, a
+	 * caller's {@link connect}): its reply can only arrive on that socket (P4-L-21).
+	 */
+	private _rejectSentRequests(): void {
+		if (this._sentRequestsQueue.size === 0) return;
+		const error = new PendingRequestsOnReconnectingError();
+		for (const id of [...this._sentRequestsQueue.keys()]) {
+			this._settleRequest(id, { reject: error });
+		}
+	}
+
+	/**
 	 * Removes all listeners for the specified event type.
 	 * @param type - The event type to remove the listeners for
 	 */
@@ -668,14 +725,10 @@ export abstract class SocketProvider<
 			return;
 		}
 		this.isReconnecting = true;
+		// The attempt that just failed must not time out during the back-off (P4-L-16).
+		this._clearConnectionTimer();
 		this.chunkResponseParser.reset();
-
-		if (this._sentRequestsQueue.size > 0) {
-			const error = new PendingRequestsOnReconnectingError();
-			for (const id of [...this._sentRequestsQueue.keys()]) {
-				this._settleRequest(id, { reject: error });
-			}
-		}
+		this._rejectSentRequests();
 
 		if (this._reconnectAttempts < this._reconnectOptions.maxAttempts) {
 			this._reconnectAttempts += 1;
@@ -976,8 +1029,11 @@ export abstract class SocketProvider<
 			jsonRpc.isResponseWithResult(response) ||
 			jsonRpc.isResponseWithError(response)
 		) {
-			this._eventEmitter.emit('message', response);
+			// Settled before the event goes out: a `message` listener that throws must not
+			// leave the request to fail by deadline although its reply arrived (P4-L-20). The
+			// throw is reported by the caller's per-response catch.
 			this._settleRequest(requestId, { resolve: response });
+			this._eventEmitter.emit('message', response);
 		} else {
 			// Malformed but id-matching. This used to drop the map entry without
 			// settling, stranding the caller's promise permanently.

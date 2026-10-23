@@ -17,7 +17,14 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 import { BaseWeb3Error, ResponseError } from '@theqrl/web3-errors';
 import { encodeFunctionSignature } from '@theqrl/web3-qrl-abi';
-import { AbiEventFragment, ContractAbi, DEFAULT_RETURN_FORMAT, LogsInput } from '@theqrl/web3-types';
+import {
+	AbiEventFragment,
+	ContractAbi,
+	DEFAULT_RETURN_FORMAT,
+	FMT_BYTES,
+	FMT_NUMBER,
+	LogsInput,
+} from '@theqrl/web3-types';
 import { keccak256, rightPad } from '@theqrl/web3-utils';
 import { Contract, EventLog, decodeEventABI } from '../../src';
 import { ADDR, ADDR2, FakeProvider, addrWord, topicOf, uintWord } from '../fixtures/fake_provider';
@@ -173,7 +180,10 @@ describe('getPastEvents', () => {
 			contract.getPastEvents('Transfer' as never, { fromBlock: 0, filter: { value: [21, '0x14'] } }),
 		).resolves.toHaveLength(1);
 		await expect(
-			contract.getPastEvents('Transfer' as never, { fromBlock: 0, filter: { to: ADDR2.toLowerCase() } }),
+			contract.getPastEvents('Transfer' as never, {
+				fromBlock: 0,
+				filter: { to: `Q${ADDR2.slice(1).toLowerCase()}` },
+			}),
 		).resolves.toHaveLength(1);
 		await expect(
 			contract.getPastEvents('Transfer' as never, { fromBlock: 0, filter: { to: ADDR } }),
@@ -194,6 +204,58 @@ describe('getPastEvents', () => {
 		await expect(
 			contract.getPastEvents('Named' as never, { fromBlock: 0, filter: { tag: 'world' } }),
 		).resolves.toHaveLength(0);
+	});
+
+	it('skips a nullish client-side filter value, the wildcard it was sent as (F-9)', async () => {
+		logs = [transferLog];
+		await expect(
+			contract.getPastEvents('Transfer' as never, { fromBlock: 0, filter: { from: undefined } }),
+		).resolves.toHaveLength(1);
+
+		const sent = provider.lastCall('qrl_getLogs')?.params[0] as { topics: unknown[] };
+		// eslint-disable-next-line no-null/no-null -- the wire form of a wildcard topic
+		expect(sent.topics).toEqual([transferTopic, null, null]);
+	});
+
+	it('fetches the logs in the wire format and formats the events with the caller format (P4-L-29)', async () => {
+		logs = [transferLog];
+		const events = (await contract.getPastEvents(
+			'Transfer' as never,
+			{ fromBlock: 0 },
+			{ number: FMT_NUMBER.NUMBER, bytes: FMT_BYTES.UINT8ARRAY },
+		)) as EventLog[];
+
+		expect(events).toHaveLength(1);
+		expect(events[0].event).toBe('Transfer');
+		expect(events[0].returnValues.value).toBe(BigInt(20));
+		expect(events[0].blockNumber).toBe(1);
+		expect(events[0].data).toBeInstanceOf(Uint8Array);
+		expect(events[0].raw?.data).toBe(transferLog.data);
+	});
+
+	it('backfills a subscription of a contract constructed with FMT_BYTES.UINT8ARRAY (P4-L-29)', async () => {
+		const subscribing = new FakeProvider(method => {
+			if (method === 'qrl_subscribe') return '0x1';
+			if (method === 'qrl_getLogs') return [transferLog];
+			return undefined;
+		}, true);
+		const bytesContract = new Contract(
+			abi,
+			ADDR,
+			{ provider: subscribing.asProvider() },
+			{ number: FMT_NUMBER.BIGINT, bytes: FMT_BYTES.UINT8ARRAY },
+		);
+
+		const sub = bytesContract.events.Transfer({ fromBlock: 0 });
+		const received: EventLog[] = [];
+		sub.on('data', event => {
+			received.push(event);
+		});
+
+		await expect(sub.subscribed).resolves.toBe('0x1');
+		expect(received).toHaveLength(1);
+		expect(received[0].returnValues.value).toBe(BigInt(20));
+		expect(received[0].data).toBeInstanceOf(Uint8Array);
 	});
 
 	it('reports a null log entry with a typed error (L-26)', async () => {

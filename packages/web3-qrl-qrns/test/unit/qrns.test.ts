@@ -205,6 +205,14 @@ describe('qrns', () => {
 			expect(getNameMock).toHaveBeenCalledWith(mockAddress, false);
 			expect(getTextMock).toHaveBeenCalledWith(QRNS_NAME, 'url');
 		});
+
+		it('getText from an address without a verified name is an empty string (P4-L-31)', async () => {
+			jest.spyOn(qrns['_resolver'], 'getName').mockResolvedValue('');
+			const getTextMock = jest.spyOn(qrns['_resolver'], 'getText').mockResolvedValue('value');
+
+			await expect(qrns.getText(mockAddress, 'url')).resolves.toBe('');
+			expect(getTextMock).not.toHaveBeenCalled();
+		});
 	});
 
 	describe('name', () => {

@@ -33,9 +33,11 @@ import {
 	uint8ArrayConcat,
 } from '@theqrl/web3-utils';
 import {
+	BaseWeb3Error,
 	ConnectionNotOpenError,
 	ProviderError,
 	RequestSerializationError,
+	Web3WSProviderError,
 } from '@theqrl/web3-errors';
 
 export type { ClientRequestArgs } from 'http';
@@ -64,15 +66,27 @@ const serializePayload = (payload: unknown): string => {
  * Use WebSocketProvider to connect to a Node using a WebSocket connection, i.e. over the `ws` or `wss` protocol.
  *
  * Credentials belong in `socketOptions.headers` (an `authorization` or an `x-api-key`
- * header, as in the example below), not in the URL: `ws://user:password@host` is accepted
- * (the WebSocket client sends it as Basic authentication), but the URL is redacted to its
- * `host:port` in every error this provider raises (L-48).
+ * header, as in the example below), not in the URL: `ws://user:password@host` is rejected at
+ * construction with an `InvalidClientError` (a browser's WebSocket refuses such a URL and `ws`
+ * would send the credentials as Basic authentication without being asked), and the URL is
+ * redacted to its `host:port` in every error this provider raises (L-48).
  *
  * The opening handshake is bounded by `providerOptions.connectionTimeout` (30 s by default,
  * also passed to `ws` as `handshakeTimeout`): a peer that accepts the TCP connection but never
  * completes the upgrade is abandoned, the socket closed and, with `autoReconnect`, a
  * reconnect scheduled (M-8). Both `socketOptions.handshakeTimeout` and the provider option
  * can be set; the shorter one wins.
+ *
+ * `providerOptions.maxResponseBytes` (10 MiB by default) bounds every message the node sends.
+ * It is handed to `ws` as the default `maxPayload`, so a larger frame is refused on the wire
+ * (`ws` closes the connection with code 1009 and the provider reconnects), and it bounds the
+ * parser as well, which matters when `socketOptions.maxPayload` is set above it: such a
+ * message is dropped unparsed and only the request it answers fails, with a
+ * `ResponseTooLargeError` (P4-M-5).
+ *
+ * `disconnect(code, reason)` accepts the close codes every WebSocket client lets an endpoint
+ * send, 1000 or 3000-4999, and a reason of at most 123 UTF-8 bytes; anything else is refused
+ * with a `Web3WSProviderError` before the connection is touched (P4-L-17).
  *
  * @example
  * ```ts
@@ -113,9 +127,32 @@ export default class WebSocketProvider<
 
 	protected _socketConnection?: WebSocket;
 
+	/**
+	 * `ws://` or `wss://`, a URL the WHATWG parser accepts, and no credentials. A URL that `ws`
+	 * would refuse when connecting (a port above 65535, a space in the host, an unbalanced IPv6
+	 * literal) or that carries `user:password@` fails at construction with an
+	 * `InvalidClientError`, which carries the URL with its credentials and path removed; `ws`
+	 * quotes the full URL in its own error (P4-L-15).
+	 */
 	// eslint-disable-next-line class-methods-use-this
 	protected _validateProviderPath(providerUrl: string): boolean {
-		return typeof providerUrl === 'string' ? /^ws(s)?:\/\//i.test(providerUrl) : false;
+		if (typeof providerUrl !== 'string' || !/^ws(s)?:\/\//i.test(providerUrl)) {
+			return false;
+		}
+		let parsed: URL;
+		try {
+			parsed = new URL(providerUrl);
+		} catch {
+			return false;
+		}
+		if (parsed.protocol !== 'ws:' && parsed.protocol !== 'wss:') {
+			return false;
+		}
+		// Credentials belong in `socketOptions.headers`, not in the URL: a browser's WebSocket
+		// constructor refuses such a URL, `ws` would send the credentials as Basic
+		// authentication without being asked, and a URL is copied into logs and error reports
+		// far more readily than a header.
+		return parsed.username === '' && parsed.password === '';
 	}
 
 	// A WebSocket frame is a whole message: nothing is carried over between frames.
@@ -144,15 +181,10 @@ export default class WebSocketProvider<
 
 	private static warnIfCleartext(socketPath: string): void {
 		if (!/^ws:\/\//i.test(socketPath)) return;
-		let host: string;
-		try {
-			// The parsed hostname: credentials, a port or a path can no longer be mistaken
-			// for the host (I-15). IPv6 literals keep their brackets.
-			host = new URL(socketPath).hostname.toLowerCase();
-		} catch {
-			// `ws` reports an unparseable URL itself; nothing to warn about here.
-			return;
-		}
+		// The parsed hostname: credentials, a port or a path can no longer be mistaken for
+		// the host (I-15). IPv6 literals keep their brackets. `_validateProviderPath` has
+		// already parsed the URL once, so this cannot throw.
+		const host = new URL(socketPath).hostname.toLowerCase();
 		const loopbacks = new Set(['localhost', '127.0.0.1', '[::1]', '::1', '0.0.0.0']);
 		if (loopbacks.has(host)) return;
 		console.warn(
@@ -189,7 +221,8 @@ export default class WebSocketProvider<
 		// overwrite the reference and leave the previous socket open (M-8, L-44).
 		this._discardSocket(this._socketConnection);
 		const defaults: ClientOptions = {
-			maxPayload: 10 * 1024 * 1024,
+			// The same bound the parser enforces, applied on the wire (P4-M-5).
+			maxPayload: this._providerBounds.maxResponseBytes,
 			perMessageDeflate: false,
 			// `ws` has no handshake deadline of its own: without one a peer that accepts the
 			// TCP connection but never completes the upgrade keeps the socket CONNECTING
@@ -205,16 +238,18 @@ export default class WebSocketProvider<
 	}
 
 	/**
-	 * Closes a socket this provider is about to replace. Its listeners are detached first so
-	 * that its close and error events are not taken for the new connection's; `ws` reports
-	 * an aborted handshake through `'error'`, which must keep a listener or it would crash
-	 * the process.
+	 * Closes a socket this provider is about to replace. Its listeners are detached first,
+	 * whatever its state, so that its close and error events are not taken for the new
+	 * connection's: a CLOSING socket still fires `close` once the peer ends the TCP connection,
+	 * and that event used to reject the requests parked for the replacement and strip the
+	 * replacement's listeners (P4-L-18). `ws` reports an aborted handshake through `'error'`,
+	 * which must keep a listener or it would crash the process.
+	 *
+	 * A socket in the middle of a close handshake is terminated rather than waited for: the
+	 * peer may never end the connection, and nothing else would ever close it (P4-L-17).
 	 */
 	private _discardSocket(socket: WebSocket | undefined): void {
-		if (isNullish(socket) || typeof socket.close !== 'function') {
-			return;
-		}
-		if (socket.readyState === socket.CLOSING || socket.readyState === socket.CLOSED) {
+		if (isNullish(socket)) {
 			return;
 		}
 		socket.removeEventListener('open', this._onOpenHandler);
@@ -222,11 +257,68 @@ export default class WebSocketProvider<
 		socket.removeEventListener('close', this._onCloseHandler);
 		socket.removeEventListener('error', this._onErrorHandler);
 		socket.addEventListener('error', () => undefined);
-		socket.close();
+		if (socket.readyState === socket.CLOSED) {
+			return;
+		}
+		if (socket.readyState === socket.CLOSING) {
+			if (typeof socket.terminate === 'function') socket.terminate();
+			return;
+		}
+		if (typeof socket.close === 'function') socket.close();
 	}
 
 	protected _closeSocketConnection(code?: number, data?: string) {
-		this._socketConnection?.close(code, data);
+		const socket = this._socketConnection;
+		if (!isNullish(socket) && socket.readyState === socket.CONNECTING) {
+			// `ws` reports an abandoned handshake through `'error'` ("WebSocket was closed
+			// before the connection was established"). A close this provider asked for is not
+			// a transport error, so that report goes to a listener that drops it (I-F12).
+			socket.removeEventListener('error', this._onErrorHandler);
+			socket.addEventListener('error', () => undefined);
+		}
+		socket?.close(code, data);
+	}
+
+	/**
+	 * Closes the connection with a WebSocket close code and reason.
+	 *
+	 * `code` must be 1000 or in 3000-4999 and `data` at most 123 UTF-8 bytes, the values every
+	 * WebSocket client accepts in a close frame; anything else is refused with a
+	 * `Web3WSProviderError` before any teardown. `ws` used to refuse the frame only after it
+	 * had marked the socket CLOSING, which left a connection that could never be closed and
+	 * in-flight requests that failed by deadline (P4-L-17).
+	 *
+	 * @param code - The code to be sent to the server
+	 * @param data - The reason to be sent to the server
+	 */
+	public disconnect(code?: number, data?: string): void {
+		WebSocketProvider._assertCloseArguments(code, data);
+		super.disconnect(code, data);
+	}
+
+	private static _assertCloseArguments(code?: number, data?: string): void {
+		if (
+			!isNullish(code) &&
+			!(Number.isInteger(code) && (code === 1000 || (code >= 3000 && code <= 4999)))
+		) {
+			throw new Web3WSProviderError(
+				`Invalid WebSocket close code ${BaseWeb3Error.convertToString(
+					code,
+				)}: expected 1000 or a code in the range 3000-4999`,
+			);
+		}
+		if (isNullish(data)) {
+			return;
+		}
+		if (typeof data !== 'string') {
+			throw new Web3WSProviderError('Invalid WebSocket close reason: expected a string');
+		}
+		const bytes = new TextEncoder().encode(data).length;
+		if (bytes > 123) {
+			throw new Web3WSProviderError(
+				`Invalid WebSocket close reason: ${bytes} UTF-8 bytes exceed the 123-byte limit of a close frame`,
+			);
+		}
 	}
 
 	protected _sendToSocket<Method extends Web3APIMethod<API>>(
@@ -281,6 +373,11 @@ export default class WebSocketProvider<
 	}
 
 	protected _onCloseEvent(event: CloseEvent): void {
+		// A close reported by a socket this provider has already replaced says nothing about
+		// the current connection (P4-L-18).
+		if (!isNullish(event.target) && event.target !== this._socketConnection) {
+			return;
+		}
 		if (
 			this._reconnectOptions.autoReconnect &&
 			(![1000, 1001].includes(event.code) || !event.wasClean)

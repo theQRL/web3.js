@@ -37,6 +37,13 @@ describe('getTransactionFromOrToAttr', () => {
 
 			expect(getTransactionFromOrToAttr(role, web3Context, transaction)).toEqual(output);
 		});
+
+		it('treats a null `to` as "no receiver", like an absent one (P4-L-12)', () => {
+			// eslint-disable-next-line no-null/no-null
+			const transaction = { to: null } as never;
+			expect(getTransactionFromOrToAttr('to', web3Context, transaction)).toBeUndefined();
+			expect(getTransactionFromOrToAttr('to', web3Context, {} as never)).toBeUndefined();
+		});
 	});
 
 	describe('invalid data', () => {

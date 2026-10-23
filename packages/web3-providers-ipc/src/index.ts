@@ -70,6 +70,11 @@ const socketsWithErrorListener = new WeakSet<Socket>();
  * `maxAttempts` and end in a `MaxAttemptsReachedOnReconnectingError`, after which the next
  * `request()` tries to connect again (L-43).
  *
+ * `providerOptions.maxResponseBytes` (10 MiB by default) bounds every message the node sends.
+ * A larger message is dropped unparsed, its structure still followed so the stream stays in
+ * step, and only the request it answers fails with a `ResponseTooLargeError`; an unrelated
+ * request in flight on the same socket is unaffected (P4-M-5).
+ *
  * @example
  * ```ts
  * const provider = new IpcProvider(
@@ -173,10 +178,13 @@ export default class IpcProvider<API extends Web3APISpec = QRLExecutionAPI> exte
 		this._socketConnection.connect({ path: this._socketPath });
 	}
 
-	protected _closeSocketConnection(code: number, data?: string) {
-		this._socketConnection?.end(() => {
-			this._onDisconnect(code, data);
-		});
+	/**
+	 * Ends the socket. The `disconnect` event is emitted by the base class's `disconnect()`;
+	 * emitting it again once the socket had ended made every `disconnect()` report twice
+	 * (I-F13).
+	 */
+	protected _closeSocketConnection() {
+		this._socketConnection?.end();
 	}
 
 	protected _sendToSocket<Method extends Web3APIMethod<API>>(

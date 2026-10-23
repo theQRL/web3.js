@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { bytesToUtf8, utf8ToBytes } from '@theqrl/qrl-cryptography/utils.js';
+import { utf8ToBytes } from '@theqrl/qrl-cryptography/utils.js';
 
 import { Reader, Writer } from './abstract-coder.js';
 import { DynamicBytesCoder } from './bytes.js';
@@ -50,6 +50,10 @@ export class StringCoder extends DynamicBytesCoder {
 		// invalid UTF-8. Silent U+FFFD replacement would let two distinct invalid
 		// byte sequences decode to the same string, a hash-collision hazard for a
 		// decoder feeding a signing library.
-		return bytesToUtf8(super.decode(reader), { fatal: true });
+		// `ignoreBOM: true` keeps a leading U+FEFF: the default decoder dropped it, so two distinct
+		// byte strings decoded to the same text (P4-L-33). go-qrl returns the bytes unchanged.
+		return new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(
+			super.decode(reader),
+		);
 	}
 }

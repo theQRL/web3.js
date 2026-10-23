@@ -16,8 +16,9 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { BaseWeb3Error, ERR_INVALID_RESPONSE, InvalidResponseError } from '@theqrl/web3-errors';
-import { Numbers } from '@theqrl/web3-types';
-import { isUInt, ValidInputTypes } from '@theqrl/web3-validator';
+import { Bytes, HexString, Numbers } from '@theqrl/web3-types';
+import { isBytes, isNullish, isUInt, ValidInputTypes } from '@theqrl/web3-validator';
+import { isHash32 } from './hex_guards.js';
 
 /** Longest excerpt of a malformed reply that is quoted in the error message. */
 const MAX_REPLY_EXCERPT_LENGTH = 128;
@@ -69,4 +70,49 @@ export const expectQuantityReply = (method: string, reply: unknown): Numbers => 
 		throw invalidResponseError(method, 'a hex quantity', reply);
 	}
 	return reply as Numbers;
+};
+
+/**
+ * Returns `reply` when it is hex encoded bytes (a `0x`-prefixed, even-length hex string; `'0x'`
+ * stands for no bytes) or a byte array, and throws the {@link invalidResponseError} otherwise.
+ * `format({ format: 'bytes' }, x)` hands an unparseable `x` back unchanged, so `getCode()` used
+ * to resolve with `'abc'` (P4-L-13).
+ */
+export const expectBytesReply = (method: string, reply: unknown): Bytes => {
+	if ((typeof reply !== 'string' && !(reply instanceof Uint8Array)) || !isBytes(reply)) {
+		throw invalidResponseError(method, 'hex encoded bytes', reply);
+	}
+	return reply;
+};
+
+/**
+ * Returns the transaction hash a send method continues with. The node's reply must be a 32-byte
+ * hash and, when the hash is known locally (it is `keccak256` of the raw transaction), equal to
+ * it ignoring letter case: go-qrl always answers `keccak256(canonical encoding)`, so any other
+ * value means the node is not reporting the transaction that was sent. The LOCAL hash is
+ * returned, so the receipt is awaited for the transaction that was actually broadcast (P4-L-9).
+ *
+ * @param method - `qrl_sendRawTransaction`, or `qrl_sendTransaction` (no local hash: the node signs).
+ * @param reply - The node's result.
+ * @param localHash - The locally computed hash, when the raw transaction is known.
+ */
+export const expectTransactionHashReply = (
+	method: string,
+	reply: unknown,
+	localHash?: HexString,
+): HexString => {
+	if (!isHash32(reply)) {
+		throw invalidResponseError(method, 'a 32-byte transaction hash', reply);
+	}
+	if (isNullish(localHash)) {
+		return reply;
+	}
+	if (reply.toLowerCase() !== localHash.toLowerCase()) {
+		throw invalidResponseError(
+			method,
+			`the hash of the transaction that was sent (${localHash})`,
+			reply,
+		);
+	}
+	return localHash;
 };

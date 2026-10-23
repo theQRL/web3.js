@@ -32,8 +32,9 @@ export interface HttpProviderOptions extends ProviderBoundsOptions {
 	 * rather than used directly.
 	 *
 	 * `headers` is the place for credentials (`authorization`, `x-api-key`, ...): a URL of
-	 * the form `http://user:password@host/` works, but a header never ends up in an error
-	 * message, whereas the URL used to. Per-request `headers` passed to `request()` are
+	 * the form `http://user:password@host/` is rejected by the constructor (a WHATWG `fetch`
+	 * refuses it, node-fetch would send the credentials as Basic authentication, and a header
+	 * never ends up in an error message or a log line, whereas a URL does). Per-request `headers` passed to `request()` are
 	 * merged on top of these, header names compared case-insensitively so that one name is
 	 * sent once; `Content-Type: application/json` is added unless a `content-type` header
 	 * (any letter case) is supplied explicitly here or per request.

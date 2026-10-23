@@ -113,10 +113,21 @@ export class EventEmitter implements EventEmitterLike {
 		if (!registered || registered.length === 0) return false;
 		// Iterate over a snapshot so listeners may add or remove listeners while emitting.
 		for (const entry of [...registered]) {
-			if (entry.once) this.off(eventName, entry.listener);
+			// The fired entry itself is removed, not the latest entry with the same function:
+			// a function registered with both `once()` and `on()` keeps its `on()` registration,
+			// as with Node's emitter (P4-L-22).
+			if (entry.once) this._removeEntry(eventName, entry);
 			entry.listener(...args);
 		}
 		return true;
+	}
+
+	private _removeEntry(eventName: EventEmitterEventName, entry: RegisteredListener): void {
+		const registered = this._events.get(eventName);
+		if (!registered) return;
+		const index = registered.indexOf(entry);
+		if (index !== -1) registered.splice(index, 1);
+		if (registered.length === 0) this._events.delete(eventName);
 	}
 
 	public listenerCount(eventName: EventEmitterEventName): number {

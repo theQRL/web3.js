@@ -234,6 +234,20 @@ export const abiSchemaToJsonSchema = (
 
 		const { baseType, baseTypeSize, isArray, arraySizes } = parseBaseType(abiType);
 
+		// A tuple without `components` used to reach `abiSchemaToJsonSchema(undefined)` and die
+		// with a raw `TypeError`; it is a schema error and is reported as one.
+		if (baseType === 'tuple' && !Array.isArray(abiComponents)) {
+			throw new Web3ValidatorError([
+				{
+					keyword: 'components',
+					message: `Tuple type "${abiType}" at "${level}/${index}" requires "components"`,
+					params: { eth: abiType },
+					instancePath: '',
+					schemaPath: '',
+				},
+			]);
+		}
+
 		// Schema for the element type, i.e. the ABI type with every array
 		// dimension stripped off (`uint` for `uint[2][3]`, the tuple for `tuple[3][5]`).
 		let elementSchema: JsonSchema;
@@ -342,37 +356,17 @@ export const transformJsonDataToAbiFormat = (
 				),
 			);
 		} else if (baseType === 'tuple' && isArray) {
-			const tupleData = [];
-			for (const tupleItem of dataItem as Array<unknown>) {
-				// Nested array
-				if (arraySizes.length > 1) {
-					const nestedItems = fetchArrayElement(
-						tupleItem as Array<unknown>,
-						arraySizes.length - 1,
-					);
-					const nestedData = [];
-
-					for (const nestedItem of nestedItems as Array<unknown>) {
-						nestedData.push(
-							transformJsonDataToAbiFormat(
-								abiComponents as FullValidationSchema,
-								nestedItem as Array<unknown>,
-								transformedData,
-							),
-						);
-					}
-					tupleData.push(nestedData);
-				} else {
-					tupleData.push(
-						transformJsonDataToAbiFormat(
-							abiComponents as FullValidationSchema,
-							tupleItem as Array<unknown>,
-							transformedData,
-						),
-					);
-				}
-			}
-			newData.push(tupleData);
+			// One recursion per array dimension: `tuple[][][]` used to follow `data[0]` only and
+			// lost every other element of the outer dimensions (P4-L-40).
+			newData.push(
+				// eslint-disable-next-line no-use-before-define
+				transformTupleArray(
+					abiComponents as FullValidationSchema,
+					dataItem,
+					arraySizes.length,
+					transformedData,
+				),
+			);
 		} else {
 			newData.push(dataItem);
 		}
@@ -383,6 +377,27 @@ export const transformJsonDataToAbiFormat = (
 	transformedData.push(...newData);
 
 	return transformedData;
+};
+
+/**
+ * Transforms every element of a (possibly multi-dimensional) array of tuples into the
+ * positional ABI form, one recursion level per array dimension.
+ */
+const transformTupleArray = (
+	components: FullValidationSchema,
+	data: unknown,
+	dimensions: number,
+	transformedData?: Array<unknown>,
+): unknown => {
+	if (!Array.isArray(data)) {
+		return data;
+	}
+	if (dimensions <= 1) {
+		return data.map(item =>
+			transformJsonDataToAbiFormat(components, item as Array<unknown>, transformedData),
+		);
+	}
+	return data.map(item => transformTupleArray(components, item, dimensions - 1, transformedData));
 };
 
 /**

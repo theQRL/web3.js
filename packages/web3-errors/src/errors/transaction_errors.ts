@@ -28,6 +28,7 @@ import {
 	ERR_TX_BLOCK_TIMEOUT,
 	ERR_TX_CONTRACT_NOT_STORED,
 	ERR_TX_CHAIN_ID_MISMATCH,
+	ERR_TX_NODE_CHAIN_ID_MISMATCH,
 	ERR_TX_DATA_AND_INPUT,
 	ERR_TX_CHAIN_MISMATCH,
 	ERR_TX_HARDFORK_MISMATCH,
@@ -266,6 +267,22 @@ export class ChainIdMismatchError extends InvalidValueError {
 		super(
 			BaseWeb3Error.convertToString(value),
 			'Chain Id doesnt match in tx.chainId tx.common.customChain.chainId',
+		);
+	}
+}
+
+/**
+ * The transaction names a chain id that is not the one the connected node serves. The node
+ * would reject the signed transaction, while the signature would be valid on the other chain:
+ * the transaction is not signed.
+ */
+export class NodeChainIdMismatchError extends InvalidValueError {
+	public code = ERR_TX_NODE_CHAIN_ID_MISMATCH;
+
+	public constructor(value: { txChainId: unknown; nodeChainId: unknown }) {
+		super(
+			BaseWeb3Error.convertToString(value),
+			'the transaction names a chain id (txChainId) that the connected node does not serve (nodeChainId)',
 		);
 	}
 }

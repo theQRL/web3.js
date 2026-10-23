@@ -1,9 +1,9 @@
 {
 	"description": "Per-package ESLint warning budget enforced by scripts/lint-budget.js. A package that emits more warnings than its budget fails CI. Lower a budget with `pnpm run lint:budget -- --update` after removing warnings; never raise one to hide a new warning.",
 	"budgets": {
-		"packages/abi": 457,
+		"packages/abi": 439,
 		"packages/web3": 60,
-		"packages/web3-core": 45,
+		"packages/web3-core": 42,
 		"packages/web3-errors": 0,
 		"packages/web3-net": 35,
 		"packages/web3-providers-http": 37,
@@ -17,7 +17,7 @@
 		"packages/web3-rpc-methods": 5,
 		"packages/web3-types": 36,
 		"packages/web3-utils": 24,
-		"packages/web3-validator": 12,
+		"packages/web3-validator": 11,
 		"tools/eslint-config-base-web3": 0,
 		"tools/web3-packagetemplate": 0,
 		"tools/web3-plugin-example": 0

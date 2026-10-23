@@ -19,12 +19,14 @@ import { Address, KeyStore } from '@theqrl/web3-types';
 import { Web3ValidatorError, isAddressString } from '@theqrl/web3-validator';
 import { bytesToHex, hexToBytes, uint8ArrayConcat } from '@theqrl/web3-utils';
 import {
+	InvalidBytesError,
 	InvalidCipherError,
 	InvalidKdfError,
 	InvalidPasswordError,
 	InvalidSeedError,
 	IVLengthError,
 	KeyStoreDecryptionError,
+	KeyStoreMismatchError,
 	SeedLengthError,
 	TransactionSigningError,
 } from '@theqrl/web3-errors';
@@ -364,7 +366,7 @@ describe('accounts', () => {
 						cipher: 'aes-256-gcm',
 						kdf: 'argon2id',
 						kdfparams: {
-							// exceeds ARGON2ID_BOUNDS.m.max (1_048_576)
+							// exceeds ARGON2ID_BOUNDS.m.max (524_288)
 							m: 2_097_152,
 							t: 8,
 							p: 1,
@@ -581,6 +583,27 @@ describe('accounts', () => {
 			);
 		});
 
+		it.each(['-0x1234', 'hello', '0xzz', '0x12g4', 'Q1234'])(
+			'hashes %j as UTF-8 text because it is not a strict 0x hex string (P4-L-43)',
+			message => {
+				expect(hashMessage(message)).toBe(goTextHash(message));
+			},
+		);
+
+		it('hashes a 0x or 0X prefixed hex string as bytes and rejects an odd length (P4-L-43)', () => {
+			const asBytes = '0x2a0eeed79c5f517afc69e4c075f26b37b8a470e4bba020b76ecfd3fd1fea7364';
+			expect(hashMessage('0x1234')).toBe(asBytes);
+			expect(hashMessage('0X1234')).toBe(asBytes);
+			expect(() => hashMessage('0x123')).toThrow(InvalidBytesError);
+			expect(() => hashMessage('0X123')).toThrow(InvalidBytesError);
+		});
+
+		it('sign() classifies the message exactly like hashMessage (P4-L-43)', () => {
+			const seed = validSeedtoAccountData[0][0].address as string;
+			expect(sign('-0x1234', seed).messageHash).toBe(goTextHash('-0x1234'));
+			expect(() => sign('0x123', seed)).toThrow(InvalidBytesError);
+		});
+
 		it('a signature over "abc" is not a signature over "\\u0000abc"', () => {
 			const result = sign('abc', validSeedtoAccountData[0][0].address as string);
 			expect(result.messageHash).toBe(hashMessage('abc'));
@@ -599,6 +622,30 @@ describe('accounts', () => {
 
 		beforeAll(async () => {
 			keystore = await encrypt(seed, 'pw', argon2);
+		});
+
+		it.each(['X', 'q', 'x'])(
+			'decrypt rejects an address label with the prefix %j although its body matches (P4-L-44)',
+			async prefix => {
+				const label = `${prefix}${keystore.address.slice(1)}`;
+				await expect(decrypt({ ...keystore, address: label }, 'pw')).rejects.toThrow(
+					KeyStoreMismatchError,
+				);
+			},
+		);
+
+		it('decrypt accepts a Q-prefixed label in any letter case (P4-L-44)', async () => {
+			const body = keystore.address.slice(1);
+			await expect(
+				decrypt({ ...keystore, address: `Q${body.toUpperCase()}` }, 'pw'),
+			).resolves.toMatchObject({ seed });
+			await expect(
+				decrypt({ ...keystore, address: `Q${body.toLowerCase()}` }, 'pw'),
+			).resolves.toMatchObject({ seed });
+			// `nonStrict` lower-cases the whole JSON document, the label's `Q` included.
+			await expect(decrypt(JSON.stringify(keystore), 'pw', true)).resolves.toMatchObject({
+				seed,
+			});
 		});
 
 		it.each([16, 24, 31, 33, 64])(

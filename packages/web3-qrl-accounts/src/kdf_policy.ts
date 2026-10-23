@@ -20,15 +20,18 @@ import { InvalidKdfError } from '@theqrl/web3-errors';
 /**
  * Argon2id parameter bounds applied when a keystore is *created* (`encrypt`).
  *
- * - `m` (KiB) floor is the OWASP Argon2id minimum (19 MiB); the ceiling keeps a keystore from
- *   demanding more than 1 GiB on decrypt.
+ * - `m` (KiB) floor is the OWASP Argon2id minimum (19 MiB); the ceiling (512 MiB) keeps a
+ *   hostile keystore from demanding more than twice go-qrl's standard profile
+ *   (`StandardArgon2idM = 1 << 18` KiB = 256 MiB, `StandardArgon2idT = 8`, `StandardArgon2idP = 1`)
+ *   on decrypt, and `t` is capped at 16 passes for the same reason: the worst case a keystore
+ *   file can force is 512 MiB × 16 passes instead of 1 GiB × 50. go-qrl itself applies no bound.
  * - `dklen` is pinned to 32: the keystore cipher is AES-256-GCM, whose key is 32 bytes, and
  *   go-qrl hard-codes `argon2idDKLen = 32`. Any other value can never produce a usable
  *   keystore, so it is rejected before the (expensive) key derivation runs.
  */
 export const ARGON2ID_BOUNDS = {
-	m: { min: 19456, max: 1_048_576 },
-	t: { min: 2, max: 50 },
+	m: { min: 19456, max: 524_288 },
+	t: { min: 2, max: 16 },
 	p: { min: 1, max: 16 },
 	dklen: { min: 32, max: 32 },
 } as const;

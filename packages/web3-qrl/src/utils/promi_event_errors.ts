@@ -16,8 +16,9 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { Web3PromiEvent } from '@theqrl/web3-core';
-import { BaseWeb3Error, TransactionError } from '@theqrl/web3-errors';
-import { DataFormat, TransactionReceipt } from '@theqrl/web3-types';
+import { BaseWeb3Error, ContractExecutionError, TransactionError } from '@theqrl/web3-errors';
+import { decodeContractErrorData, isAbiErrorFragment } from '@theqrl/web3-qrl-abi';
+import { ContractAbi, DataFormat, TransactionReceipt } from '@theqrl/web3-types';
 import { SendSignedTransactionEvents, SendTransactionEvents } from '../types.js';
 
 /** The PromiEvent returned by `sendTransaction` and `sendSignedTransaction`. */
@@ -60,6 +61,70 @@ export const reportWatcherError = <ReturnFormat extends DataFormat, ResolveType>
 	}
 	console.warn(
 		'An error happened while watching a transaction for confirmations; attach an "error" listener to the PromiEvent to receive it',
+		error,
+	);
+};
+
+/**
+ * Reports a terminal failure of the send pipeline on the event channel. It is called right after
+ * the PromiEvent has been rejected, so neither a failing custom-error decode nor a throwing
+ * `error` listener can leave the PromiEvent pending any more (P4-L-10): the rejection is the
+ * primary report and anything that goes wrong here is logged.
+ *
+ * With an `error` listener attached (the documented event form) the failure is delivered there as
+ * a typed error and the internal promise is marked as handled, so an event-only consumer is not
+ * terminated by an unhandled rejection; without one the rejection is the only report, so the
+ * PromiEvent has to be awaited or `.catch`ed (M-7b). Custom errors are decoded against the
+ * caller's error ABI first, so contract wrappers need no internal `error` listener of their own.
+ */
+export const reportSendFailure = <ReturnFormat extends DataFormat, ResolveType>(
+	promiEvent: SendPromiEvent<ReturnFormat, ResolveType>,
+	error: unknown,
+	contractAbi?: ContractAbi,
+): void => {
+	const hasErrorListener = promiEvent.listenerCount('error') > 0;
+	if (hasErrorListener) {
+		void promiEvent.catch(() => undefined);
+	}
+	try {
+		if (error instanceof ContractExecutionError && contractAbi) {
+			decodeContractErrorData(contractAbi.filter(isAbiErrorFragment), error.innerError);
+		}
+		if (hasErrorListener) {
+			promiEvent.emit('error', toTransactionError(error));
+		}
+	} catch (listenerError) {
+		console.warn(
+			'An "error" listener of the transaction PromiEvent threw; the PromiEvent was already rejected with the original failure',
+			listenerError,
+		);
+	}
+};
+
+/**
+ * Reports an exception thrown by a listener of `sent`, `transactionHash` or `receipt` once the
+ * transaction has been broadcast. The transaction is in the node's hands by then, so the
+ * listener's failure must not reject the PromiEvent as if the send had failed: like a watcher
+ * error it is delivered to an `error` listener when there is one and logged otherwise (P4-L-10).
+ */
+export const reportListenerError = <ReturnFormat extends DataFormat, ResolveType>(
+	promiEvent: SendPromiEvent<ReturnFormat, ResolveType>,
+	event: string,
+	error: unknown,
+): void => {
+	if (promiEvent.listenerCount('error') > 0) {
+		try {
+			promiEvent.emit('error', toTransactionError(error));
+		} catch (errorListenerError) {
+			console.warn(
+				'An "error" listener of the transaction PromiEvent threw while a listener failure was being reported',
+				errorListenerError,
+			);
+		}
+		return;
+	}
+	console.warn(
+		`A "${event}" listener of the transaction PromiEvent threw after the transaction was broadcast; the transaction itself is unaffected. Attach an "error" listener to receive such failures`,
 		error,
 	);
 };

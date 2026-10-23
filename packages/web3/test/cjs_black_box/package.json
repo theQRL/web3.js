@@ -8,7 +8,7 @@
 	"type": "commonjs",
 	"scripts": {
 		"test:gqrl:http": "WEB3_SYSTEM_TEST_BACKEND=gqrl WEB3_SYSTEM_TEST_PROVIDER=http://localhost:8545 jest",
-		"test:gqrl:ws": "WEB3_SYSTEM_TEST_BACKEND=gqrl WEB3_SYSTEM_TEST_PROVIDER=ws://localhost:8545 jest --forceExit"
+		"test:gqrl:ws": "WEB3_SYSTEM_TEST_BACKEND=gqrl WEB3_SYSTEM_TEST_PROVIDER=ws://localhost:8546 jest --forceExit"
 	},
 	"dependencies": {
 		"@theqrl/web3": "0.5.0"

@@ -25,7 +25,10 @@ import {
 } from '../utils.js';
 
 /**
- * Encodes the error name to its ABI signature, which are the sha3 hash of the error name including input types.
+ * Encodes the error name to its ABI signature: the 32-byte keccak256 hash of the canonical error
+ * signature (name and input types). Revert data starts with the first 4 bytes of it, the
+ * selector. Unlike an event signature this is not a log topic, so it keeps the 32-byte form
+ * (`encodeEventSignature` returns the 64-byte QRVM topic).
  */
 export const encodeErrorSignature = (functionName: string | AbiErrorFragment): string => {
 	if (typeof functionName !== 'string' && !isAbiErrorFragment(functionName)) {

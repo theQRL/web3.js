@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import { Web3Context, Web3PromiEvent } from '@theqrl/web3-core';
-import { format } from '@theqrl/web3-utils';
+import { format, sha3Raw } from '@theqrl/web3-utils';
 import {
 	DEFAULT_RETURN_FORMAT,
 	TransactionReceipt,
@@ -131,8 +131,11 @@ describe('watchTransactionForConfirmations', () => {
 					WaitForTransactionReceipt.waitForTransactionReceipt as jest.Mock
 				).mockResolvedValueOnce(expectedTransactionReceipt);
 
-				(qrlRpcMethods.sendRawTransaction as jest.Mock).mockResolvedValueOnce(
-					expectedTransactionHash,
+				// The send pipeline checks the node's replies: the block number must be a quantity
+				// (P4-L-13) and `qrl_sendRawTransaction` must answer the local hash (P4-L-9).
+				(qrlRpcMethods.getBlockNumber as jest.Mock).mockResolvedValue('0x1');
+				(qrlRpcMethods.sendRawTransaction as jest.Mock).mockImplementation(
+					(_requestManager: unknown, raw: string) => sha3Raw(raw),
 				);
 
 				const promiEvent = rpcMethodWrappers.sendSignedTransaction(
@@ -196,8 +199,11 @@ describe('watchTransactionForConfirmations', () => {
 					WaitForTransactionReceipt.waitForTransactionReceipt as jest.Mock
 				).mockResolvedValueOnce(expectedTransactionReceipt);
 
-				(qrlRpcMethods.sendRawTransaction as jest.Mock).mockResolvedValueOnce(
-					expectedTransactionHash,
+				// The send pipeline checks the node's replies: the block number must be a quantity
+				// (P4-L-13) and `qrl_sendRawTransaction` must answer the local hash (P4-L-9).
+				(qrlRpcMethods.getBlockNumber as jest.Mock).mockResolvedValue('0x1');
+				(qrlRpcMethods.sendRawTransaction as jest.Mock).mockImplementation(
+					(_requestManager: unknown, raw: string) => sha3Raw(raw),
 				);
 
 				const promiEvent = rpcMethodWrappers.sendSignedTransaction(

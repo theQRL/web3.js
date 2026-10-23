@@ -219,7 +219,12 @@ export abstract class Web3BaseProvider<API extends Web3APISpec = QRLExecutionAPI
 		newObj.request = async function request(
 			args: Web3APIPayload<API, Web3APIMethod<API>>,
 		): Promise<unknown> {
-			const response = (await originalRequest(args)) as JsonRpcResponseWithResult<unknown>;
+			// The provider's `request` is a prototype method that reads `this` (bounds, socket
+			// state): calling it unbound broke every built-in provider (P4-L-38).
+			const response = (await originalRequest.call(
+				newObj,
+				args,
+			)) as JsonRpcResponseWithResult<unknown>;
 			return response.result;
 		} as typeof newObj.request;
 		// @ts-expect-error the property should not be available in the new object because of using Object.create(this).

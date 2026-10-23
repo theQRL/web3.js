@@ -44,7 +44,6 @@ import {
 	toBigInt,
 	toHex,
 	toNumber,
-	utf8ToHex,
 	addressToHex,
 } from './converters.js';
 import { leftPad, toTwosComplement } from './string_manipulation.js';
@@ -172,6 +171,10 @@ export { keccak256Wrapper as keccak256 };
  * @returns - the type and value of the input
  */
 const getType = (arg: Sha3Input): [string, EncodingTypes] => {
+	// `null`/`undefined` used to reach the `'t' in arg` probe and die with a raw `TypeError`.
+	if (isNullish(arg)) {
+		throw new InvalidTypeError(arg);
+	}
 	if (Array.isArray(arg)) {
 		throw new Error('Autodetection of array types is not supported.');
 	}
@@ -194,6 +197,11 @@ const getType = (arg: Sha3Input): [string, EncodingTypes] => {
 	// otherwise try to guess the type
 	else {
 		type = toHex(arg, true);
+		// Text is packed as its raw UTF-8 bytes: routing it through `toHex` trimmed a leading and
+		// a trailing NUL character (P4-L-36).
+		if (type === 'string' && typeof arg === 'string') {
+			return ['string', arg];
+		}
 		value = toHex(arg);
 		// Numeric autodetection follows the same aliases as explicit ABI types.
 		type = type.replace(/^(u?int)512$/, '$1');
@@ -235,11 +243,13 @@ const elementaryName = (name: string): string => {
 };
 
 /**
- * returns the size of the value of type 'byte'
+ * The size of an elementary type name: `uint8` → 8, `bytes32` → 32. Only `<prefix><digits>` is
+ * a type; `uint8x` used to parse as `uint8` and `int256[2]x` as `int256`, so a typo changed
+ * what was hashed without an error (P4-L-42).
  */
-const parseTypeN = (value: string, typeLength: number): number => {
-	const typesize = /^(\d+)/.exec(value.slice(typeLength));
-	return typesize ? parseInt(typesize[1], 10) : 0;
+const parseTypeN = (value: string, prefix: string): number | undefined => {
+	const typesize = new RegExp(`^${prefix}(\\d+)$`).exec(value);
+	return typesize ? parseInt(typesize[1], 10) : undefined;
 };
 
 /**
@@ -268,7 +278,9 @@ const hyperionPack = (type: string, val: EncodingTypes): string => {
 	}
 	const value = val.toString();
 	if (type === 'string') {
-		if (typeof val === 'string') return utf8ToHex(val);
+		// The raw UTF-8 bytes, exactly like Hyperion's `abi.encodePacked(string)`: `utf8ToHex`
+		// trims a leading and a trailing NUL for 1.x compatibility (P4-L-36).
+		if (typeof val === 'string') return bytesToHex(utf8ToBytes(val));
 		throw new InvalidStringError(val);
 	}
 	if (type === 'bool' || type === 'boolean') {
@@ -284,8 +296,10 @@ const hyperionPack = (type: string, val: EncodingTypes): string => {
 	}
 	const name = elementaryName(type);
 	if (type.startsWith('uint')) {
-		const size = parseTypeN(name, 'uint'.length);
-
+		const size = parseTypeN(name, 'uint');
+		if (size === undefined) {
+			throw new InvalidTypeError(type);
+		}
 		if (size % 8 || size < 8 || size > 512) {
 			throw new InvalidSizeError(value);
 		}
@@ -301,7 +315,10 @@ const hyperionPack = (type: string, val: EncodingTypes): string => {
 	}
 
 	if (type.startsWith('int')) {
-		const size = parseTypeN(name, 'int'.length);
+		const size = parseTypeN(name, 'int');
+		if (size === undefined) {
+			throw new InvalidTypeError(type);
+		}
 		if (size % 8 || size < 8 || size > 512) {
 			throw new InvalidSizeError(type);
 		}
@@ -329,9 +346,11 @@ const hyperionPack = (type: string, val: EncodingTypes): string => {
 			return hex;
 		}
 
-		const size = parseTypeN(type, 'bytes'.length);
-
-		if (!size || size < 1 || size > 64 || size < hex.length / 2) {
+		const size = parseTypeN(type, 'bytes');
+		if (size === undefined) {
+			throw new InvalidTypeError(type);
+		}
+		if (size < 1 || size > 64 || size < hex.length / 2) {
 			throw new InvalidBytesError(value);
 		}
 
@@ -352,6 +371,10 @@ export const processHyperionEncodePackedArgs = (arg: Sha3Input): string => {
 	const [type, val] = getType(arg);
 
 	const arrayType = /\[(\d*)\]$/.exec(type);
+	if (!arrayType && Array.isArray(val)) {
+		// A scalar type with an array value used to be packed as if the type were `T[]` (P4-L-42).
+		throw new InvalidTypeError(type);
+	}
 	if (arrayType) {
 		// `T[]` and `T[n]` take an array; `T[n]` takes exactly `n` elements. A declared size
 		// used to be ignored, so `uint8[2]` happily packed three values (L-29).

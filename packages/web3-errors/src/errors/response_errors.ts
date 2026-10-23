@@ -21,7 +21,7 @@ import {
 	JsonRpcResponse,
 	JsonRpcResponseWithError,
 } from '@theqrl/web3-types';
-import { BaseWeb3Error } from '../web3_error_base.js';
+import { BaseWeb3Error, truncateEchoedText } from '../web3_error_base.js';
 import { ERR_INVALID_RESPONSE, ERR_RESPONSE, ERR_RESPONSE_TOO_LARGE } from '../error_codes.js';
 
 // To avoid circular package dependency, copied to code here. If you update this please update same function in `json_rpc.ts`
@@ -50,9 +50,14 @@ const errorOf = (value: unknown): JsonRpcError | undefined =>
 		? (value as { error?: JsonRpcError }).error
 		: undefined;
 
+/**
+ * The node's `error.message`, bounded to the cap every echoed value gets: it used to be copied
+ * verbatim, so an HTTP 500 carrying a 2 MiB message produced a 2 MiB error message (P4-L-24).
+ * The full text stays reachable through `innerError`.
+ */
 const buildErrorMessage = (response: JsonRpcResponse<unknown, unknown>): string =>
 	isResponseWithError(response) && typeof response.error.message === 'string'
-		? response.error.message
+		? truncateEchoedText(response.error.message)
 		: '';
 
 /**
@@ -72,9 +77,9 @@ const describeIdMismatch = (response: unknown, request: unknown): string | undef
 	const requestId = (request as { id?: unknown }).id;
 	const responseId = (response as { id?: unknown }).id;
 	if (requestId === undefined || responseId === requestId) return undefined;
-	return `Invalid JSON-RPC response: response id ${BaseWeb3Error.convertToString(
-		responseId,
-	)} does not match request id ${BaseWeb3Error.convertToString(requestId)}`;
+	return `Invalid JSON-RPC response: response id ${truncateEchoedText(
+		BaseWeb3Error.convertToString(responseId),
+	)} does not match request id ${truncateEchoedText(BaseWeb3Error.convertToString(requestId))}`;
 };
 
 export class ResponseError<ErrorType = unknown, RequestType = unknown> extends BaseWeb3Error {

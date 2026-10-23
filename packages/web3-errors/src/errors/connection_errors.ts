@@ -27,7 +27,7 @@ import {
 	ERR_REQ_ALREADY_SENT,
 	ERR_CONN_HTTP_STATUS,
 } from '../error_codes.js';
-import { BaseWeb3Error } from '../web3_error_base.js';
+import { BaseWeb3Error, truncateEchoedText } from '../web3_error_base.js';
 
 export class ConnectionError extends BaseWeb3Error {
 	public code = ERR_CONN;
@@ -153,7 +153,16 @@ export class HttpStatusError extends ConnectionError {
 			`HTTP STATUS ERROR: the JSON-RPC endpoint answered with HTTP ${status}${
 				statusText ? ` (${statusText})` : ''
 			}${retryAfter === undefined ? '' : `, retry after ${retryAfter}s`}${
-				innerError?.message ? `. ${innerError.message}` : ''
+				// The inner error usually wraps the node's reply. One of this library's errors
+				// has bounded the node's text itself; any other error's message is bounded here
+				// like every echoed, node-supplied text (P4-L-24).
+				typeof innerError?.message === 'string' && innerError.message
+					? `. ${
+							innerError instanceof BaseWeb3Error
+								? innerError.message
+								: truncateEchoedText(innerError.message)
+						}`
+					: ''
 			}`,
 			{ code: status, reason: statusText },
 		);

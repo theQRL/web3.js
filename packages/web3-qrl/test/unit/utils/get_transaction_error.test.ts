@@ -119,7 +119,36 @@ describe('getTransactionError', () => {
 
 		web3Context.handleRevert = true;
 		await getTransactionError(web3Context, transaction);
-		expect(getRevertReasonSpy).toHaveBeenCalledWith(web3Context, transaction, undefined);
+		expect(getRevertReasonSpy).toHaveBeenCalledWith(
+			web3Context,
+			transaction,
+			undefined,
+			undefined,
+			undefined,
+		);
+	});
+
+	it('simulates the revert at the block that included the transaction when a receipt is given (round 2)', async () => {
+		const getRevertReasonSpy = jest
+			.spyOn(GetRevertReasonUtils, 'getRevertReason')
+			.mockImplementation();
+
+		const transaction = {
+			from: 'Q2CCeCC72b4C8C0d943bEcFb1E67c4d8996D2F24d138E62dd19Dde2dA366C4faFff063A86501141d64AC7f273CCAE5053fD059722A4E9453170cb40F569872A02',
+			to: 'Q224D6a535f8991Cf611b3447F8DfE1059dbEd07c540A53e9E36D37b2ecEEA19013F66E973b207B0467a5A793203b27456B7aa1CEE00dF1e385D1eC5272718eb7',
+			data: '0x819f48fe',
+		};
+		const receipt = { status: BigInt(0), blockNumber: BigInt(16738176) } as never;
+
+		web3Context.handleRevert = true;
+		await getTransactionError(web3Context, transaction, receipt);
+		expect(getRevertReasonSpy).toHaveBeenCalledWith(
+			web3Context,
+			transaction,
+			undefined,
+			undefined,
+			BigInt(16738176),
+		);
 	});
 
 	it('should call getRevertReason to get error from transactionFormatted with contractAbi', async () => {
@@ -137,7 +166,13 @@ describe('getTransactionError', () => {
 
 		web3Context.handleRevert = true;
 		await getTransactionError(web3Context, transaction, undefined, undefined, SimpleRevertAbi);
-		expect(getRevertReasonSpy).toHaveBeenCalledWith(web3Context, transaction, SimpleRevertAbi);
+		expect(getRevertReasonSpy).toHaveBeenCalledWith(
+			web3Context,
+			transaction,
+			SimpleRevertAbi,
+			undefined,
+			undefined,
+		);
 	});
 
 	describe('TransactionRevertedWithoutReasonError', () => {

@@ -48,18 +48,10 @@ import {
 	QRLTypedData,
 } from '@theqrl/web3-types';
 import { Web3Context, Web3PromiEvent } from '@theqrl/web3-core';
-import { format, hexToBytes, bytesToUint8Array } from '@theqrl/web3-utils';
+import { format, hexToBytes, bytesToUint8Array, sha3Raw } from '@theqrl/web3-utils';
 import { TransactionFactory } from '@theqrl/web3-qrl-accounts';
-import {
-	isBlockTag,
-	isBytes,
-	isHexStrict,
-	isNullish,
-	isObject,
-	isString,
-} from '@theqrl/web3-validator';
+import { isBlockTag, isHexStrict, isNullish, isObject, isString } from '@theqrl/web3-validator';
 import { ContractExecutionError, SignatureError } from '@theqrl/web3-errors';
-import { decodeContractErrorData, isAbiErrorFragment } from '@theqrl/web3-qrl-abi';
 import { qrlRpcMethods } from '@theqrl/web3-rpc-methods';
 
 import { decodeSignedTransaction } from './utils/decode_signed_transaction.js';
@@ -88,8 +80,18 @@ import { getTransactionError } from './utils/get_transaction_error.js';
 import { getRevertReason } from './utils/get_revert_reason.js';
 import { isTransactionStatusSuccessful } from './validation.js';
 import { validateTransactionInput } from './utils/transaction_input.js';
-import { reportWatcherError, toTransactionError } from './utils/promi_event_errors.js';
-import { expectQuantityReply, invalidResponseError } from './utils/invalid_response_error.js';
+import {
+	reportListenerError,
+	reportSendFailure,
+	reportWatcherError,
+} from './utils/promi_event_errors.js';
+import {
+	expectBytesReply,
+	expectQuantityReply,
+	expectTransactionHashReply,
+	invalidResponseError,
+} from './utils/invalid_response_error.js';
+import { isBlockHash } from './utils/hex_guards.js';
 
 /** A block number given as a number, bigint or decimal string is sent as a hex quantity. */
 const toBlockNumberOrTag = (
@@ -169,7 +171,12 @@ export async function getBalance<ReturnFormat extends DataFormat>(
 		address,
 		blockNumberFormatted,
 	);
-	return format({ format: 'uint' }, response as Numbers, returnFormat);
+	// An object or `'abc'` used to be returned as the balance (P4-L-13).
+	return format(
+		{ format: 'uint' },
+		expectQuantityReply('qrl_getBalance', response),
+		returnFormat,
+	);
 }
 
 /**
@@ -193,7 +200,7 @@ export async function getStorageAt<ReturnFormat extends DataFormat>(
 		storageSlotFormatted,
 		blockNumberFormatted,
 	);
-	return format({ format: 'bytes' }, response as Bytes, returnFormat);
+	return format({ format: 'bytes' }, expectBytesReply('qrl_getStorageAt', response), returnFormat);
 }
 
 /**
@@ -214,7 +221,7 @@ export async function getCode<ReturnFormat extends DataFormat>(
 		address,
 		blockNumberFormatted,
 	);
-	return format({ format: 'bytes' }, response as Bytes, returnFormat);
+	return format({ format: 'bytes' }, expectBytesReply('qrl_getCode', response), returnFormat);
 }
 
 /**
@@ -227,13 +234,17 @@ export async function getBlockTransactionCount<ReturnFormat extends DataFormat>(
 	returnFormat: ReturnFormat,
 ) {
 	let response;
-	if (isBytes(block)) {
+	let method: 'qrl_getBlockTransactionCountByHash' | 'qrl_getBlockTransactionCountByNumber';
+	// Only a 32-byte value is a block hash; `'0x10'` is a block number (P4-L-11).
+	if (isBlockHash(block)) {
+		method = 'qrl_getBlockTransactionCountByHash';
 		const blockHashFormatted = format({ format: 'bytes32' }, block, QRL_DATA_FORMAT);
 		response = await qrlRpcMethods.getBlockTransactionCountByHash(
 			web3Context.requestManager,
 			blockHashFormatted as HexString,
 		);
 	} else {
+		method = 'qrl_getBlockTransactionCountByNumber';
 		const blockNumberFormatted = isBlockTag(block as string)
 			? (block as BlockTag)
 			: format({ format: 'uint' }, block as Numbers, QRL_DATA_FORMAT);
@@ -243,7 +254,8 @@ export async function getBlockTransactionCount<ReturnFormat extends DataFormat>(
 		);
 	}
 
-	return format({ format: 'uint' }, response as Numbers, returnFormat);
+	// A reply that is not a quantity used to be returned as it came (P4-L-13).
+	return format({ format: 'uint' }, expectQuantityReply(method, response), returnFormat);
 }
 
 /**
@@ -326,7 +338,8 @@ export async function getTransactionFromBlock<ReturnFormat extends DataFormat>(
 	);
 
 	let response;
-	if (isBytes(block)) {
+	// Only a 32-byte value is a block hash; `'0x10'` is a block number (P4-L-11).
+	if (isBlockHash(block)) {
 		const blockHashFormatted = format({ format: 'bytes32' }, block, QRL_DATA_FORMAT);
 		response = await qrlRpcMethods.getTransactionByBlockHashAndIndex(
 			web3Context.requestManager,
@@ -377,11 +390,13 @@ export function sendTransaction<
 		(resolve, reject) => {
 			setImmediate(() => {
 				// Terminal outcome contract: the PromiEvent settles exactly once and the
-				// `error` event is emitted at most once. Rejecting an already settled
-				// Promise is a no-op, but emitting an event is not, so every terminal
-				// branch goes through one of the guarded helpers below and returns
-				// immediately. The Promise always rejects on failure; the `error` event
-				// carries the same failure (as a typed error) to an attached listener.
+				// failure of the send is emitted as an `error` event at most once. Rejecting
+				// an already settled Promise is a no-op, but emitting an event is not, so
+				// every terminal branch goes through one of the guarded helpers below and
+				// returns immediately. The Promise always rejects on failure; the `error`
+				// event carries the same failure (as a typed error) to an attached listener.
+				// (An exception thrown by one of the caller's own listeners after the
+				// broadcast is reported there as well, see `reportListenerError`.)
 				let settled = false;
 
 				const succeedOnce = (value: ResolveType) => {
@@ -393,27 +408,27 @@ export function sendTransaction<
 				const failOnce = (error: unknown) => {
 					if (settled) return;
 					settled = true;
-
-					// Custom errors are decoded against the caller's error ABI before the failure is
-					// reported, so contract wrappers need no internal `error` listener of their own.
-					if (error instanceof ContractExecutionError && options?.contractAbi) {
-						decodeContractErrorData(
-							options.contractAbi.filter(isAbiErrorFragment),
-							error.innerError,
-						);
-					}
-
-					// With an `error` listener attached (the documented event form) every
-					// failure is reported there as a typed error, and the internal promise is
-					// marked as handled: an event-only consumer must not be terminated by an
-					// unhandled rejection. Without a listener the rejection is the only
-					// report, so the PromiEvent has to be awaited or `.catch`ed (M-7b).
-					if (promiEvent.listenerCount('error') > 0) {
-						promiEvent.emit('error', toTransactionError(error));
-						void promiEvent.catch(() => undefined);
-					}
-
+					// The rejection is the primary report and comes first: neither a failing
+					// custom-error decode nor a throwing `error` listener can leave the PromiEvent
+					// pending any more (P4-L-10). The event-side reporting follows (M-7b).
 					reject(error);
+					reportSendFailure(promiEvent, error, options?.contractAbi);
+				};
+
+				// A listener that throws after the transaction was broadcast must not reject a
+				// transaction the node already holds; its failure is reported on the side
+				// (P4-L-10). `sending` is emitted before the broadcast inside the `try`, so a
+				// throwing `sending` listener still aborts the send through the error path.
+				const emitAfterBroadcast = <K extends keyof SendTransactionEvents<ReturnFormat>>(
+					event: K,
+					value: SendTransactionEvents<ReturnFormat>[K],
+				) => {
+					if (promiEvent.listenerCount(event) === 0) return;
+					try {
+						promiEvent.emit(event, value);
+					} catch (listenerError) {
+						reportListenerError(promiEvent, event, listenerError);
+					}
 				};
 
 				const execute = async () => {
@@ -493,23 +508,35 @@ export function sendTransaction<
 								transactionFormatted,
 							);
 
-							transactionHash = await trySendTransaction(
-								web3Context,
-								async (): Promise<string> =>
-									qrlRpcMethods.sendRawTransaction(
-										web3Context.requestManager,
-										signedTransaction.rawTransaction,
-									),
+							// The hash is known before the node answers: it is `keccak256` of the raw
+							// transaction. The node's reply must be that hash, and the local value is
+							// the one emitted and polled for, so a node cannot hand back the receipt
+							// of a different transaction (P4-L-9).
+							transactionHash = expectTransactionHashReply(
+								'qrl_sendRawTransaction',
+								await trySendTransaction(
+									web3Context,
+									async (): Promise<string> =>
+										qrlRpcMethods.sendRawTransaction(
+											web3Context.requestManager,
+											signedTransaction.rawTransaction,
+										),
+									signedTransaction.transactionHash,
+								),
 								signedTransaction.transactionHash,
 							);
 						} else {
-							transactionHash = await trySendTransaction(
-								web3Context,
-								async (): Promise<string> =>
-									qrlRpcMethods.sendTransaction(
-										web3Context.requestManager,
-										transactionFormatted as Partial<TransactionWithSenderAPI>,
-									),
+							// The node signs, so only the shape of its reply can be checked.
+							transactionHash = expectTransactionHashReply(
+								'qrl_sendTransaction',
+								await trySendTransaction(
+									web3Context,
+									async (): Promise<string> =>
+										qrlRpcMethods.sendTransaction(
+											web3Context.requestManager,
+											transactionFormatted as Partial<TransactionWithSenderAPI>,
+										),
+								),
 							);
 						}
 
@@ -519,13 +546,8 @@ export function sendTransaction<
 							returnFormat,
 						);
 
-						if (promiEvent.listenerCount('sent') > 0) {
-							promiEvent.emit('sent', transactionFormatted);
-						}
-
-						if (promiEvent.listenerCount('transactionHash') > 0) {
-							promiEvent.emit('transactionHash', transactionHashFormatted);
-						}
+						emitAfterBroadcast('sent', transactionFormatted);
+						emitAfterBroadcast('transactionHash', transactionHashFormatted);
 
 						// The receipt is awaited in the wire format and its `status` is decided
 						// on that: the caller's `returnFormat` must not be able to influence the
@@ -542,9 +564,7 @@ export function sendTransaction<
 							returnFormat,
 						);
 
-						if (promiEvent.listenerCount('receipt') > 0) {
-							promiEvent.emit('receipt', transactionReceiptFormatted);
-						}
+						emitAfterBroadcast('receipt', transactionReceiptFormatted);
 
 						if (options?.transactionResolver) {
 							succeedOnce(
@@ -631,11 +651,13 @@ export function sendSignedTransaction<
 		(resolve, reject) => {
 			setImmediate(() => {
 				// Terminal outcome contract: the PromiEvent settles exactly once and the
-				// `error` event is emitted at most once. Rejecting an already settled
-				// Promise is a no-op, but emitting an event is not, so every terminal
-				// branch goes through one of the guarded helpers below and returns
-				// immediately. The Promise always rejects on failure; the `error` event
-				// carries the same failure (as a typed error) to an attached listener.
+				// failure of the send is emitted as an `error` event at most once. Rejecting
+				// an already settled Promise is a no-op, but emitting an event is not, so
+				// every terminal branch goes through one of the guarded helpers below and
+				// returns immediately. The Promise always rejects on failure; the `error`
+				// event carries the same failure (as a typed error) to an attached listener.
+				// (An exception thrown by one of the caller's own listeners after the
+				// broadcast is reported there as well, see `reportListenerError`.)
 				let settled = false;
 
 				const succeedOnce = (value: ResolveType) => {
@@ -647,23 +669,22 @@ export function sendSignedTransaction<
 				const failOnce = (error: unknown) => {
 					if (settled) return;
 					settled = true;
-
-					// Custom errors are decoded against the caller's error ABI before the failure is
-					// reported, so contract wrappers need no internal `error` listener of their own.
-					if (error instanceof ContractExecutionError && options?.contractAbi) {
-						decodeContractErrorData(
-							options.contractAbi.filter(isAbiErrorFragment),
-							error.innerError,
-						);
-					}
-
-					// See `sendTransaction` (M-7b).
-					if (promiEvent.listenerCount('error') > 0) {
-						promiEvent.emit('error', toTransactionError(error));
-						void promiEvent.catch(() => undefined);
-					}
-
+					// See `sendTransaction` (P4-L-10, M-7b): reject first, report on the side after.
 					reject(error);
+					reportSendFailure(promiEvent, error, options?.contractAbi);
+				};
+
+				// See `sendTransaction` (P4-L-10).
+				const emitAfterBroadcast = <K extends keyof SendSignedTransactionEvents<ReturnFormat>>(
+					event: K,
+					value: SendSignedTransactionEvents<ReturnFormat>[K],
+				) => {
+					if (promiEvent.listenerCount(event) === 0) return;
+					try {
+						promiEvent.emit(event, value);
+					} catch (listenerError) {
+						reportListenerError(promiEvent, event, listenerError);
+					}
 				};
 
 				const execute = async () => {
@@ -738,18 +759,25 @@ export function sendSignedTransaction<
 							promiEvent.emit('sending', signedTransactionFormattedHex);
 						}
 
-						const transactionHash = await trySendTransaction(
-							web3Context,
-							async (): Promise<string> =>
-								qrlRpcMethods.sendRawTransaction(
-									web3Context.requestManager,
-									signedTransactionFormattedHex,
-								),
+						// The hash of a raw transaction is `keccak256` of its bytes and is computed
+						// here; the node's reply must equal it, and the local value is the one
+						// emitted and polled for (P4-L-9).
+						const localTransactionHash = sha3Raw(signedTransactionFormattedHex);
+						const transactionHash = expectTransactionHashReply(
+							'qrl_sendRawTransaction',
+							await trySendTransaction(
+								web3Context,
+								async (): Promise<string> =>
+									qrlRpcMethods.sendRawTransaction(
+										web3Context.requestManager,
+										signedTransactionFormattedHex,
+									),
+								localTransactionHash,
+							),
+							localTransactionHash,
 						);
 
-						if (promiEvent.listenerCount('sent') > 0) {
-							promiEvent.emit('sent', signedTransactionFormattedHex);
-						}
+						emitAfterBroadcast('sent', signedTransactionFormattedHex);
 
 						const transactionHashFormatted = format(
 							{ format: 'bytes32' },
@@ -757,9 +785,7 @@ export function sendSignedTransaction<
 							returnFormat,
 						);
 
-						if (promiEvent.listenerCount('transactionHash') > 0) {
-							promiEvent.emit('transactionHash', transactionHashFormatted);
-						}
+						emitAfterBroadcast('transactionHash', transactionHashFormatted);
 
 						// See `sendTransaction` (H-1): the status is decided on the wire format.
 						const transactionReceipt = await waitForTransactionReceipt(
@@ -774,9 +800,7 @@ export function sendSignedTransaction<
 							returnFormat,
 						);
 
-						if (promiEvent.listenerCount('receipt') > 0) {
-							promiEvent.emit('receipt', transactionReceiptFormatted);
-						}
+						emitAfterBroadcast('receipt', transactionReceiptFormatted);
 
 						if (options?.transactionResolver) {
 							succeedOnce(
@@ -872,7 +896,7 @@ export async function sign<ReturnFormat extends DataFormat>(
 		messageFormatted,
 	);
 
-	return format({ format: 'bytes' }, response as Bytes, returnFormat);
+	return format({ format: 'bytes' }, expectBytesReply('qrl_sign', response), returnFormat);
 }
 
 /**
@@ -1069,5 +1093,5 @@ export async function signTypedData<ReturnFormat extends DataFormat>(
 		typedData,
 	);
 
-	return format({ format: 'bytes' }, response, returnFormat);
+	return format({ format: 'bytes' }, expectBytesReply('qrl_signTypedData', response), returnFormat);
 }

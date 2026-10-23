@@ -27,6 +27,7 @@ import {
 	HttpStatusError,
 	InvalidClientError,
 	InvalidConnectionError,
+	ProviderError,
 	RequestSerializationError,
 	ResponseError,
 } from '@theqrl/web3-errors';
@@ -79,7 +80,11 @@ const fakeResponse = ({
 const fetchError = (message: string, type: string, code?: string) =>
 	Object.assign(new Error(message), { name: 'FetchError', type, code, errno: code });
 
-const secretUrl = 'http://alice:hunter2@127.0.0.1:1/v3/API-KEY-0123456789abcdef';
+// A URL with a secret in its path: credentials in the URL are rejected at construction (see the
+// URL validation tests), so only the path can carry something worth redacting.
+const secretUrl = 'http://127.0.0.1:1/v3/API-KEY-0123456789abcdef';
+// The credentialed form a fetch implementation may quote in its own error text.
+const credentialedUrl = 'http://alice:hunter2@127.0.0.1:1/v3/API-KEY-0123456789abcdef';
 
 const sentInit = () => mockFetch.mock.calls[0][1] as RequestInit;
 
@@ -203,7 +208,7 @@ describe('HttpProvider - error mapping and request hygiene', () => {
 		it('wraps a refused connection without the URL credentials or path', async () => {
 			mockFetch.mockRejectedValueOnce(
 				fetchError(
-					`request to ${secretUrl} failed, reason: connect ECONNREFUSED 127.0.0.1:1`,
+					`request to ${credentialedUrl} failed, reason: connect ECONNREFUSED 127.0.0.1:1`,
 					'system',
 					'ECONNREFUSED',
 				),
@@ -227,7 +232,7 @@ describe('HttpProvider - error mapping and request hygiene', () => {
 		it('wraps a refused redirect into a ConnectionError that names only the endpoint', async () => {
 			mockFetch.mockRejectedValueOnce(
 				fetchError(
-					`uri requested responds with a redirect, redirect mode is set to error: ${secretUrl}`,
+					`uri requested responds with a redirect, redirect mode is set to error: ${credentialedUrl}`,
 					'no-redirect',
 				),
 			);
@@ -260,6 +265,57 @@ describe('HttpProvider - error mapping and request hygiene', () => {
 			);
 		});
 
+		it.each([
+			[
+				'an invalid header value',
+				new TypeError("Headers.append: 'secret-key\\r\\nx' is an invalid header value."),
+				'secret-key',
+			],
+			[
+				'a URL with credentials',
+				new TypeError(
+					`Request cannot be constructed from a URL that includes credentials: ${credentialedUrl}`,
+				),
+				'hunter2',
+			],
+			[
+				'node-fetch rejecting a header value',
+				new TypeError('secret-key\\r\\nx is not a legal HTTP header value'),
+				'secret-key',
+			],
+		])(
+			'reports a TypeError for %s as a refused request, not as a connection failure (P4-L-23)',
+			async (_label, thrown, secret) => {
+				mockFetch.mockRejectedValueOnce(thrown);
+				const provider = new HttpProvider(secretUrl);
+
+				const error = (await provider.request(payload).catch((e: unknown) => e)) as Error;
+				expect(error).toBeInstanceOf(ProviderError);
+				expect(error).not.toBeInstanceOf(ConnectionError);
+				expect(error.message).toContain('REQUEST REJECTED');
+				expect(error.message).toContain('127.0.0.1:1');
+				expect(error.message).toContain('providerOptions.headers');
+				expect(error.message).not.toContain(secret);
+				expect(error.message).not.toContain('API-KEY');
+				expect(JSON.stringify((error as ProviderError).toJSON())).not.toContain(secret);
+			},
+		);
+
+		it('still treats a TypeError with a cause as a transport failure (P4-L-23)', async () => {
+			mockFetch.mockRejectedValueOnce(
+				Object.assign(new TypeError('something else'), {
+					cause: Object.assign(new Error('connect ECONNREFUSED'), { code: 'ECONNREFUSED' }),
+				}),
+			);
+			const provider = new HttpProvider('http://localhost:8545');
+
+			const error = (await provider.request(payload).catch((e: unknown) => e)) as Error;
+			expect(error).toBeInstanceOf(InvalidConnectionError);
+			expect(error.message).toBe(
+				"CONNECTION ERROR: Couldn't connect to node localhost:8545. Reason: ECONNREFUSED",
+			);
+		});
+
 		it('leaves an unknown error from a custom fetch untouched', async () => {
 			mockFetch.mockRejectedValueOnce(new Error('network down'));
 			const provider = new HttpProvider('http://localhost:8545');
@@ -279,28 +335,42 @@ describe('HttpProvider - error mapping and request hygiene', () => {
 		it.each([
 			'http://[::1]:8545',
 			'HTTP://127.0.0.1:8545/auth',
-			'http://user:pw@localhost:8545/',
+			'http://localhost:8545/',
 			'https://node.example/v3/KEY',
 		])('accepts %s', url => {
 			expect(() => new HttpProvider(url)).not.toThrow();
+		});
+
+		it.each([
+			'http://user:pw@localhost:8545/',
+			'https://alice:hunter2@node.example/v3/KEY',
+			'http://token@127.0.0.1:8545/',
+			'http://:pw@127.0.0.1:8545/',
+		])('rejects credentials in the URL (%s) at construction', url => {
+			// Credentials belong in providerOptions.headers: WHATWG fetch refuses such a URL and
+			// node-fetch would send them as Basic authentication unasked.
+			expect(() => new HttpProvider(url)).toThrow(InvalidClientError);
 		});
 
 		it('keeps credentials and the path out of InvalidClientError', () => {
 			expect(() => new HttpProvider('http://alice:hunter2@127.0.0.1:99999/v3/KEY')).toThrow(
 				'Client URL "http://***@127.0.0.1:99999/[redacted]" is invalid.',
 			);
+			expect(() => new HttpProvider('http://alice:hunter2@127.0.0.1:8545/v3/KEY')).toThrow(
+				'Client URL "http://***@127.0.0.1:8545/[redacted]" is invalid.',
+			);
 		});
 
 		it('warns about cleartext using the parsed hostname only', () => {
 			const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
 
-			new HttpProvider('http://user:pw@127.0.0.1:8545/v3/KEY');
+			new HttpProvider('http://127.0.0.1:8545/v3/KEY');
 			new HttpProvider('http://[::1]:8545');
 			new HttpProvider('http://localhost:8545');
 			expect(warn).not.toHaveBeenCalled();
 
-			new HttpProvider('http://user:pw@node.example:8545/v3/KEY');
-			new HttpProvider('http://localhost@evil.example/');
+			new HttpProvider('http://node.example:8545/v3/KEY');
+			new HttpProvider('http://evil.example/');
 			expect(warn).toHaveBeenCalledTimes(2);
 			expect(warn.mock.calls[0][0]).toBe(
 				'web3-providers-http: cleartext http:// URL to non-loopback host "node.example". Use https:// for production.',

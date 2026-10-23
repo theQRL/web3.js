@@ -15,17 +15,20 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import { Web3Context, Web3PromiEvent } from '@theqrl/web3-core';
-import { format } from '@theqrl/web3-utils';
+import { format, numberToHex, sha3Raw } from '@theqrl/web3-utils';
 import { DEFAULT_RETURN_FORMAT, TransactionReceipt, Web3QRLExecutionAPI } from '@theqrl/web3-types';
 import { qrlRpcMethods } from '@theqrl/web3-rpc-methods';
-import { BaseWeb3Error, TransactionError } from '@theqrl/web3-errors';
+import {
+	BaseWeb3Error,
+	TransactionError,
+	TransactionMissingReceiptOrBlockHashError,
+} from '@theqrl/web3-errors';
 import * as rpcMethodWrappers from '../../../src/rpc_method_wrappers';
 import * as WaitForTransactionReceipt from '../../../src/utils/wait_for_transaction_receipt';
 
 import * as WatchTransactionByPolling from '../../../src/utils/watch_transaction_by_pooling';
 import {
 	expectedTransactionReceipt,
-	expectedTransactionHash,
 	testData,
 } from '../rpc_method_wrappers/fixtures/send_signed_transaction';
 import { transactionReceiptSchema } from '../../../src/schemas';
@@ -70,8 +73,11 @@ describe('watchTransactionByPolling', () => {
 					WaitForTransactionReceipt.waitForTransactionReceipt as jest.Mock
 				).mockResolvedValueOnce(expectedTransactionReceipt);
 
-				(qrlRpcMethods.sendRawTransaction as jest.Mock).mockResolvedValueOnce(
-					expectedTransactionHash,
+				// The send pipeline checks the node's replies: the block number must be a quantity
+				// (P4-L-13) and `qrl_sendRawTransaction` must answer the local hash (P4-L-9).
+				(qrlRpcMethods.getBlockNumber as jest.Mock).mockResolvedValue('0x1');
+				(qrlRpcMethods.sendRawTransaction as jest.Mock).mockImplementation(
+					(_requestManager: unknown, raw: string) => sha3Raw(raw),
 				);
 
 				const promiEvent = rpcMethodWrappers.sendSignedTransaction(
@@ -186,6 +192,50 @@ describe('watchTransactionByPolling', () => {
 			expect(errorListener.mock.calls[0][0]).toBeInstanceOf(TransactionError);
 			expect(errorListener.mock.calls[0][0].innerError).toBe(pollingError);
 			expect(confirmations).toStrictEqual([]);
+		});
+
+		it('stops and reports a transaction that a reorg dropped from the chain (round 2)', async () => {
+			(qrlRpcMethods.getBlockByNumber as jest.Mock).mockResolvedValue(mockBlockData);
+			// eslint-disable-next-line no-null/no-null
+			(qrlRpcMethods.getTransactionReceipt as jest.Mock).mockResolvedValue(null);
+			const errorListener = jest.fn<void, [BaseWeb3Error]>();
+			promiEvent.on('error', errorListener);
+
+			start();
+			await jest.advanceTimersByTimeAsync(1_000);
+
+			expect(confirmations).toStrictEqual([]);
+			expect(qrlRpcMethods.getBlockByNumber).toHaveBeenCalledTimes(1);
+			expect(errorListener).toHaveBeenCalledTimes(1);
+			const reported = errorListener.mock.calls[0][0];
+			expect(
+				reported instanceof TransactionMissingReceiptOrBlockHashError ||
+					reported.innerError instanceof TransactionMissingReceiptOrBlockHashError,
+			).toBe(true);
+		});
+
+		it('follows a transaction that a reorg moved to another block (round 2)', async () => {
+			const movedBlockHash = `0x${'ee'.repeat(32)}`;
+			const movedReceipt = {
+				...expectedTransactionReceipt,
+				blockHash: movedBlockHash,
+				blockNumber: numberToHex(BigInt(formattedTransactionReceipt.blockNumber) + BigInt(1)),
+			};
+			(qrlRpcMethods.getBlockByNumber as jest.Mock).mockResolvedValue(mockBlockData);
+			(qrlRpcMethods.getTransactionReceipt as jest.Mock).mockResolvedValue(movedReceipt);
+			const receipts: TransactionReceipt[] = [];
+			promiEvent.on('confirmation', ({ receipt }) => {
+				receipts.push(receipt);
+			});
+
+			start();
+			await jest.advanceTimersByTimeAsync(1_000);
+
+			// The first block found is the one the transaction moved to (depth 1, nothing new);
+			// the next two are confirmations 2 and 3 of the new block, carrying the new receipt.
+			expect(confirmations).toStrictEqual([BigInt(2), BigInt(3)]);
+			expect(receipts.map(r => r.blockHash)).toStrictEqual([movedBlockHash, movedBlockHash]);
+			expect(qrlRpcMethods.getBlockByNumber).toHaveBeenCalledTimes(3);
 		});
 
 		it('warns instead of throwing when no error listener is attached (M-7c)', async () => {

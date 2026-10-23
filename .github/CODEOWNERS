@@ -6,5 +6,12 @@
 /packages/web3-qrl-accounts/ @theQRL/crypto
 /packages/web3-qrl-contract/ @theQRL/crypto
 
-# CI/CD changes
+# CI/CD and repository automation (docs/repository-governance.md): workflows,
+# release scripts and configuration, and the workspace/dependency manifests
+# that decide what the release pipeline installs and publishes.
 /.github/ @theQRL/devops
+/scripts/release/ @theQRL/devops
+/.releaserc.json @theQRL/devops
+/package.json @theQRL/devops
+/pnpm-workspace.yaml @theQRL/devops
+/pnpm-lock.yaml @theQRL/devops

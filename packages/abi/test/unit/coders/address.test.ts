@@ -200,17 +200,14 @@ describe('AddressCoder', () => {
 			expect(() => encodeData(`${prefix}${abBody}`)).toThrow();
 		});
 
-		it('accepts a lowercase "q" prefix as an alias for "Q"', () => {
-			// The validator regex is /^Q[0-9a-f]{128}$/i, so the prefix is matched
-			// case-insensitively and addressToHex strips it with /^q/i. Both forms
-			// therefore denote the same 64 bytes.
-			expect(encodeData(`q${abBody}`)).toBe(`0x${abBody}`);
-			expect(encodeData(`q${abBody}`)).toBe(encodeData(`Q${abBody}`));
+		it('rejects a lowercase "q" prefix, as go-qrl does (P4-L-44)', () => {
+			// go-qrl's `hasQPrefix` accepts a capital `Q` only; the validator regex used to carry
+			// the `i` flag and let `q…` through every address check while the node rejected it.
+			expect(() => encodeData(`q${abBody}`)).toThrow();
 		});
 
-		it('normalises the prefix to uppercase "Q" on decode', () => {
-			// Asymmetry: "q..." is accepted on the way in, but decode always emits "Q...".
-			expect(decodeData(encodeData(`q${abBody}`))).toBe(toChecksumAddress(`Q${abBody}`));
+		it('emits the checksummed uppercase "Q" form on decode', () => {
+			expect(decodeData(encodeData(`Q${abBody}`))).toBe(toChecksumAddress(`Q${abBody}`));
 		});
 	});
 

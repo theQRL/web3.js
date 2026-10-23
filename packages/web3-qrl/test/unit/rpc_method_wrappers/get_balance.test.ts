@@ -55,6 +55,7 @@ describe('getBalance', () => {
 				);
 			}
 
+			(qrlRpcMethods.getBalance as jest.Mock).mockResolvedValueOnce(mockRpcResponse);
 			await getBalance(web3Context, ...inputParameters, DEFAULT_RETURN_FORMAT);
 			expect(qrlRpcMethods.getBalance).toHaveBeenCalledWith(
 				web3Context.requestManager,

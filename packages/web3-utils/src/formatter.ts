@@ -24,7 +24,7 @@ import {
 	ValidationSchemaInput,
 } from '@theqrl/web3-validator';
 import { bytesToUint8Array, bytesToHex, numberToHex, toBigInt } from './converters.js';
-import { MAX_NESTING_DEPTH, mergeDeep } from './objects.js';
+import { deepCopy, MAX_NESTING_DEPTH } from './objects.js';
 import { padLeft } from './string_manipulation.js';
 import { uint8ArrayConcat } from './uint8array.js';
 
@@ -183,6 +183,15 @@ const resolveArraySchema = (schemaProp: JsonSchema, value: unknown[]): JsonSchem
 		return schemaProp;
 	}
 
+	// An empty array has no first element to pick the alternative by: it takes the first
+	// alternative that describes array items, so `transactions: []` stays an empty array
+	// instead of vanishing from every empty block (P4-M-6).
+	if (value.length === 0) {
+		return (
+			schemaProp.oneOf.find(alternative => !isNullish(alternative?.items)) ?? schemaProp
+		);
+	}
+
 	let resolved = schemaProp;
 	for (const alternative of schemaProp.oneOf) {
 		const itemsType = (alternative?.items as JsonSchema | undefined)?.type;
@@ -199,7 +208,9 @@ const resolveArraySchema = (schemaProp: JsonSchema, value: unknown[]): JsonSchem
 
 /**
  * Formats an object in place against the schema node that describes it. Keys without a
- * schema are removed.
+ * schema are removed; a `null` under a schema key is kept as `null` (the node said so);
+ * schema lookups are own-property lookups so a node-supplied key such as `toString` or
+ * `constructor` never resolves to an `Object.prototype` member.
  */
 const convertObject = (
 	object: Record<string, unknown>,
@@ -216,7 +227,10 @@ const convertObject = (
 		(isObject(nodeSchema.items) ? nodeSchema.items.properties : undefined);
 
 	for (const [key, value] of Object.entries(object)) {
-		const schemaProp = properties?.[key];
+		const schemaProp =
+			!isNullish(properties) && Object.prototype.hasOwnProperty.call(properties, key)
+				? properties[key]
+				: undefined;
 
 		if (isNullish(schemaProp)) {
 			delete object[key];
@@ -232,7 +246,11 @@ const convertObject = (
 			const arraySchema = resolveArraySchema(schemaProp, value);
 
 			if (isNullish(arraySchema.items)) {
-				// Can not find schema for array item, delete that item
+				// No item schema: an empty array is kept as the empty array it is (P4-M-6); a
+				// non-empty one cannot be formatted and is dropped.
+				if (value.length === 0) {
+					continue;
+				}
 				delete object[key];
 				continue;
 			}
@@ -317,7 +335,7 @@ const convertArray = (
 /**
  * Converts the data to the specified format
  *
- * The data is formatted in place. Prefer {@link format}, which copies the data first.
+ * The data is formatted in place. Prefer the exported `format()` function, which copies the data first.
  *
  * @param data - data to convert
  * @param schema - The JSON schema that describes the structure of the data
@@ -362,7 +380,9 @@ export const convert = (
  *
  * The caller's data is never modified: objects, arrays and the objects nested inside arrays
  * are deep-copied first (L-20). Nested arrays (`uint[][]`, `feeHistory.reward`) and top-level
- * arrays of objects are formatted like any other value (L-21).
+ * arrays of objects are formatted like any other value (L-21). A `null` member under a schema
+ * key is kept as `null`, and an empty array under a `oneOf` of array schemas stays `[]`
+ * (P4-M-6).
  *
  * @throws FormatterError for a schema without `properties`, `items` or `format`, for data
  * nested deeper than {@link MAX_NESTING_DEPTH} (L-31), and for a number that does not fit a
@@ -385,12 +405,14 @@ export const format = <
 	let result: unknown;
 
 	if (isObject(data)) {
-		const copy = mergeDeep({}, data);
+		// `deepCopy` keeps `null` members, so a reply's `to: null` or `blockNumber: null`
+		// survives formatting (pass-3 follow-up on null preservation).
+		const copy = deepCopy(data);
 		convertObject(copy, jsonSchema, returnFormat, 0);
 		result = copy;
 	} else if (Array.isArray(data)) {
-		// `mergeDeep` deep-copies array elements, so the copy shares nothing with the caller.
-		const copy = (mergeDeep({}, { data }) as { data: unknown[] }).data;
+		// Array elements are deep-copied too, so the copy shares nothing with the caller.
+		const copy = deepCopy(data);
 		const arraySchema = resolveArraySchema(jsonSchema, copy);
 		if (!isNullish(arraySchema.items)) {
 			convertArray(copy, arraySchema, returnFormat, 0);

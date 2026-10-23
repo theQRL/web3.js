@@ -35,6 +35,7 @@ import {
 	InvalidValueError,
 	MAX_ECHOED_VALUE_LENGTH,
 	redactClientUrl,
+	truncateEchoedText,
 } from '../../src/web3_error_base';
 import {
 	ERR_CONN_HTTP_STATUS,
@@ -559,6 +560,14 @@ describe('errors', () => {
 					}),
 			],
 			[
+				'NodeChainIdMismatchError',
+				() =>
+					new transactionErrors.NodeChainIdMismatchError({
+						txChainId: BigInt(1),
+						nodeChainId: BigInt(2),
+					}),
+			],
+			[
 				'ChainMismatchError',
 				() =>
 					new transactionErrors.ChainMismatchError({
@@ -818,6 +827,91 @@ describe('errors', () => {
 			expect(error.toJSON()).toMatchObject({
 				reason: 'Do not know how to serialize a BigInt',
 			});
+		});
+	});
+
+	describe('node-supplied messages are bounded (P4-L-24)', () => {
+		const hugeMessage = 'x'.repeat(2 * 1024 * 1024);
+		const hugeReply = {
+			jsonrpc: '2.0',
+			id: 42,
+			error: { code: -32000, message: hugeMessage, data: '0x' },
+		};
+		const truncatedSuffix = `... [truncated, ${hugeMessage.length} characters]`;
+
+		it('truncateEchoedText keeps short text and cuts long text at the shared cap', () => {
+			expect(truncateEchoedText('short')).toBe('short');
+			expect(truncateEchoedText('a'.repeat(MAX_ECHOED_VALUE_LENGTH))).toBe(
+				'a'.repeat(MAX_ECHOED_VALUE_LENGTH),
+			);
+			expect(truncateEchoedText('a'.repeat(MAX_ECHOED_VALUE_LENGTH + 1))).toBe(
+				`${'a'.repeat(MAX_ECHOED_VALUE_LENGTH)}... [truncated, ${
+					MAX_ECHOED_VALUE_LENGTH + 1
+				} characters]`,
+			);
+		});
+
+		it('ResponseError bounds the message and keeps the full text on innerError', () => {
+			const error = new responseErrors.ResponseError(hugeReply as never);
+			expect(error.message.length).toBeLessThan(MAX_ECHOED_VALUE_LENGTH + 100);
+			expect(error.message).toBe(
+				`Returned error: ${'x'.repeat(MAX_ECHOED_VALUE_LENGTH)}${truncatedSuffix}`,
+			);
+			expect((error.innerError as unknown as JsonRpcError).message).toHaveLength(
+				hugeMessage.length,
+			);
+			expect(error.data).toBe('0x');
+		});
+
+		it('ResponseError bounds every entry of a batch', () => {
+			const error = new responseErrors.ResponseError([
+				hugeReply,
+				{ ...hugeReply, id: 43 },
+			] as never);
+			expect(error.message.length).toBeLessThan(2 * (MAX_ECHOED_VALUE_LENGTH + 100));
+			expect(error.message.split(truncatedSuffix)).toHaveLength(3);
+		});
+
+		it('InvalidResponseError bounds the message, the returned error and the ids', () => {
+			const hugeId = 'i'.repeat(10_000);
+			const error = new responseErrors.InvalidResponseError(
+				{ ...hugeReply, id: hugeId } as never,
+				{ jsonrpc: '2.0', id: 42, method: 'qrl_blockNumber', params: [] } as never,
+			);
+			expect(error.message.length).toBeLessThan(2 * (MAX_ECHOED_VALUE_LENGTH + 100));
+			expect(error.message).toContain('does not match request id 42');
+			expect(error.message).toContain(truncatedSuffix);
+			expect(error.message).toContain(`[truncated, ${hugeId.length + 2} characters]`);
+			expect(
+				new responseErrors.InvalidResponseError(hugeReply as never).message.length,
+			).toBeLessThan(MAX_ECHOED_VALUE_LENGTH + 100);
+		});
+
+		it('HttpStatusError bounds the inner message it appends', () => {
+			const body = new responseErrors.ResponseError(hugeReply as never);
+			const error = new connectionErrors.HttpStatusError(500, 'Internal Server Error', 1, body);
+			expect(error.message.length).toBeLessThan(MAX_ECHOED_VALUE_LENGTH + 200);
+			// Bounded once, by the inner ResponseError; not cut a second time here.
+			expect(error.message).toBe(
+				`HTTP STATUS ERROR: the JSON-RPC endpoint answered with HTTP 500 (Internal Server Error), retry after 1s. ${body.message}`,
+			);
+			expect(error.message).toContain(truncatedSuffix);
+			expect(error.innerError).toBe(body);
+			// An inner error that is not one of ours is bounded as well.
+			const foreign = new connectionErrors.HttpStatusError(
+				502,
+				undefined,
+				undefined,
+				new Error(hugeMessage),
+			);
+			expect(foreign.message.length).toBeLessThan(MAX_ECHOED_VALUE_LENGTH + 200);
+			expect(foreign.message).toContain(truncatedSuffix);
+			// A non-string message is not echoed at all.
+			expect(
+				new connectionErrors.HttpStatusError(502, undefined, undefined, {
+					message: { toString: () => 'x' },
+				} as unknown as Error).message,
+			).toBe('HTTP STATUS ERROR: the JSON-RPC endpoint answered with HTTP 502');
 		});
 	});
 });

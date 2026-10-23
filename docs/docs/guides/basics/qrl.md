@@ -143,9 +143,9 @@ async function interact() {
 		value: web3.utils.toPlanck('1', 'quanta'), // value should be passed in planck. For easier use and to avoid mistakes we utilize the auxiliary `toPlanck` function.
 	};
 
-	//send the actual transaction
-	const transactionHash = await web3.qrl.sendTransaction(transaction);
-	console.log('transactionHash', transactionHash);
+	//send the actual transaction; the promise resolves with the receipt of the mined transaction
+	const receipt = await web3.qrl.sendTransaction(transaction);
+	console.log('transactionHash', receipt.transactionHash);
 
 	balance1 = await web3.qrl.getBalance(accounts[0]);
 	balance2 = await web3.qrl.getBalance(accounts[1]);
@@ -190,19 +190,7 @@ If everything is working correctly, you should see something like the following:
 ]
 100000000000000000000n 100000000000000000000n
 
-transactionHash {
-  transactionHash: '0xf685b64ccf5930d3779a33335ca22195b68901dbdc439f79dfc65d87c7ae88b0',
-  transactionIndex: 0n,
-  blockHash: '0x5bc044ad949cfd32ea4cbb249f0292e7dded44c3b0f599236c6d20ddaa96cc06',
-  blockNumber: 1n,
-  from: 'Qc68863f36c48ec168ad45a86c96347d520eac1cf',
-  to: 'Q80c05939b307f9833d905a685575b45659d3ea70',
-  gasUsed: 21000n,
-  cumulativeGasUsed: 21000n,
-  logs: [],
-  status: 1n,
-  logsBloom: '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
-}
+transactionHash 0xf685b64ccf5930d3779a33335ca22195b68901dbdc439f79dfc65d87c7ae88b0
 
 98999580000000000000n 101000000000000000000n
 

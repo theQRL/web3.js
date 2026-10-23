@@ -291,7 +291,7 @@ export const inValidFunctionsCalls: { input: any; output: string }[] = [
 export const validEventsSignatures: { input: any; output: string }[] = [
 	{
 		input: 'myEvent(uint256,bytes32)',
-		output: '0xf2eeb729e636a8cb783be044acf6b7b1e2c5863735b60d6daae84c366ee87d97',
+		output: '0xf2eeb729e636a8cb783be044acf6b7b1e2c5863735b60d6daae84c366ee87d970000000000000000000000000000000000000000000000000000000000000000',
 	},
 	{
 		input: {
@@ -308,7 +308,7 @@ export const validEventsSignatures: { input: any; output: string }[] = [
 				},
 			],
 		},
-		output: '0xf2eeb729e636a8cb783be044acf6b7b1e2c5863735b60d6daae84c366ee87d97',
+		output: '0xf2eeb729e636a8cb783be044acf6b7b1e2c5863735b60d6daae84c366ee87d970000000000000000000000000000000000000000000000000000000000000000',
 	},
 ];
 

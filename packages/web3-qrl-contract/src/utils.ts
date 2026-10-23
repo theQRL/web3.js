@@ -217,6 +217,13 @@ export const getEstimateGasParams = ({
 	return txParams as TransactionWithSenderAPI;
 };
 
+/**
+ * Whether `options` is a {@link ContractInitOptions} object: one carrying at least one of the
+ * init-option keys. `address` is accepted there as an alternative to the positional address
+ * argument (P4-L-28). The JSON interface is always the first constructor argument, so a
+ * `jsonInterface` member alone does not make an object init options (it used to be a recognised
+ * key that was then ignored).
+ */
 export const isContractInitOptions = (options: unknown): options is ContractInitOptions =>
 	typeof options === 'object' &&
 	!isNullish(options) &&
@@ -229,10 +236,43 @@ export const isContractInitOptions = (options: unknown): options is ContractInit
 		'maxPriorityFeePerGas',
 		'gasLimit',
 		'address',
-		'jsonInterface',
 		'syncWithContext',
 		'dataInputFill',
 	].some(key => key in options);
+
+/**
+ * Whether a log the node returned belongs to the expected address and event (I-13): a log
+ * whose `address` differs (case-insensitively) from `expectedAddress`, or whose `topics[0]`
+ * differs from `expectedTopic` (the lowercased 64-byte signature topic), is not the event asked
+ * for. A string entry (a hash), an entry that is not an object or one without the member is kept
+ * and left to the decoder. Shared by `getPastEvents` and the live `LogsSubscription` (P4-L-25).
+ */
+export const isLogOf = (
+	log: unknown,
+	expectedAddress?: string,
+	expectedTopic?: string,
+): boolean => {
+	if (typeof log !== 'object' || isNullish(log) || Array.isArray(log)) {
+		return true;
+	}
+	const { address, topics } = log as { address?: unknown; topics?: unknown };
+	if (
+		expectedAddress &&
+		typeof address === 'string' &&
+		address.toLowerCase() !== expectedAddress
+	) {
+		return false;
+	}
+	if (
+		expectedTopic &&
+		Array.isArray(topics) &&
+		typeof topics[0] === 'string' &&
+		topics[0].toLowerCase() !== expectedTopic
+	) {
+		return false;
+	}
+	return true;
+};
 
 /**
  * The keys that identify a {@link Web3ContractContext} (a `Web3Context` instance or its

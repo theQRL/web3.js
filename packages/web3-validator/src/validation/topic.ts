@@ -49,5 +49,6 @@ export const isTopicInBloom = (bloom: string, topic: string): boolean => {
 		return false;
 	}
 
-	return isInBloom(bloom, topic);
+	// `isTopic` accepts an unprefixed topic but `isInBloom` needs strict hex (P4-L-41).
+	return isInBloom(bloom, topic.startsWith('0x') ? topic : `0x${topic}`);
 };

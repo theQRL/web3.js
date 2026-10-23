@@ -82,6 +82,12 @@ export async function waitWithTimeout<T>(
 /**
  * Repeatedly calls an async function with a given interval until the result of the function is defined (not undefined or null),
  * or until a timeout is reached. It returns promise and intervalId.
+ *
+ * Each call is awaited in full: a call that takes longer than `interval` is neither abandoned
+ * nor overlapped by the next tick (ticks that fall while a call is in flight are skipped), so a
+ * slow node cannot make the poll discard every reply it receives (P4-M-3). Terminating the poll
+ * is the caller's business (a polling or block timeout, or `clearInterval` on the returned id).
+ *
  * @param func - The function to call.
  * @param interval - The interval in milliseconds.
  */
@@ -90,26 +96,38 @@ export function pollTillDefinedAndReturnIntervalId<T>(
 	interval: number,
 ): [Promise<Exclude<T, undefined>>, Timer] {
 	let intervalId: Timer | undefined;
+	let inFlight = false;
+	let settled = false;
 	const polledRes = new Promise<Exclude<T, undefined>>((resolve, reject) => {
-		intervalId = setInterval(
-			(function intervalCallbackFunc() {
-				(async () => {
-					try {
-						const res = await waitWithTimeout(func, interval);
+		const poll = () => {
+			if (inFlight || settled) {
+				return;
+			}
+			inFlight = true;
+			(async () => {
+				try {
+					const res = await func();
 
-						if (!isNullish(res)) {
-							clearInterval(intervalId);
-							resolve(res as unknown as Exclude<T, undefined>);
-						}
-					} catch (error) {
+					if (!settled && !isNullish(res)) {
+						settled = true;
+						clearInterval(intervalId);
+						resolve(res as unknown as Exclude<T, undefined>);
+					}
+				} catch (error) {
+					if (!settled) {
+						settled = true;
 						clearInterval(intervalId);
 						reject(error);
 					}
-				})() as unknown;
-				return intervalCallbackFunc;
-			})(), // this will immediate invoke first call
-			interval,
-		);
+				} finally {
+					inFlight = false;
+				}
+			})() as unknown;
+		};
+
+		intervalId = setInterval(poll, interval);
+		// The first attempt is made immediately.
+		poll();
 	});
 
 	return [polledRes as unknown as Promise<Exclude<T, undefined>>, intervalId!];

@@ -64,6 +64,7 @@ interface ListenableProvider {
 	off?(eventName: string, listener: ProviderListener): unknown;
 	request?: unknown;
 	supportsSubscriptions?: () => boolean;
+	getStatus?: () => string;
 }
 
 /** The members of a registered subscription the manager relies on. */
@@ -101,7 +102,20 @@ export class Web3SubscriptionManager<
 		provider: ListenableProvider;
 		eventName: 'message' | 'data';
 		listener: ProviderListener;
+		connectListener?: () => void;
+		disconnectListener?: () => void;
 	};
+
+	/** `qrl_subscribe` requests sent but not yet answered; they keep the provider listener attached (P4-M-4). */
+	private _subscribesInFlight = 0;
+	/** Set when the provider disconnected while subscriptions were live; the next `connect` re-subscribes them (P4-L-3). */
+	private _resubscribeOnConnect = false;
+	/**
+	 * Whether the attached provider has been seen connected. A `connect` event from a provider that
+	 * was already connected is a reconnection: the socket providers' auto-reconnect path re-opens
+	 * the socket without emitting `disconnect` first (P4-L-3).
+	 */
+	private _providerConnected = false;
 
 	private readonly _beforeProviderChangeListener: () => void;
 	private readonly _providerChangedListener: () => void;
@@ -128,8 +142,11 @@ export class Web3SubscriptionManager<
 		super();
 
 		this._beforeProviderChangeListener = () => {
-			// Every failure is reported from inside; the promise can never reject (M-7f).
-			void this._unsubscribeAllForProviderChange();
+			// Every failure is reported from inside, and whatever still escapes is reported here:
+			// nothing on this path may become an unhandled rejection (M-7f, P4-M-1).
+			this._unsubscribeAllForProviderChange().catch((error: unknown) => {
+				this._reportManagerError(error);
+			});
 		};
 		this._providerChangedListener = () => {
 			this.clear();
@@ -176,7 +193,44 @@ export class Web3SubscriptionManager<
 			this.messageListener(data);
 		};
 		provider.on(eventName, listener);
-		this._providerListener = { provider, eventName, listener };
+
+		// A socket provider that drops the connection and reconnects comes back without any
+		// server-side subscription: the ids the node handed out are gone, so every live
+		// subscription is re-subscribed on the next `connect` (P4-L-3). Two signals mark the
+		// connection as lost: a `disconnect` event (an explicit `disconnect()`), and a `connect`
+		// event from a provider this manager has already seen connected, because the socket
+		// providers' auto-reconnect path re-opens the socket without emitting `disconnect`. The
+		// `connect` that completes the initial connection (provider still connecting when the
+		// listener was attached) re-subscribes nothing.
+		this._providerConnected =
+			typeof provider.getStatus === 'function' && provider.getStatus() === 'connected';
+		const disconnectListener = () => {
+			this._providerConnected = false;
+			if (this._subscriptions.size > 0) {
+				this._resubscribeOnConnect = true;
+			}
+		};
+		const connectListener = () => {
+			const reconnected = this._providerConnected || this._resubscribeOnConnect;
+			this._providerConnected = true;
+			this._resubscribeOnConnect = false;
+			if (!reconnected || this._subscriptions.size === 0) {
+				return;
+			}
+			this._resubscribeAll().catch((error: unknown) => {
+				this._reportManagerError(error);
+			});
+		};
+		provider.on('disconnect', disconnectListener as unknown as ProviderListener);
+		provider.on('connect', connectListener as unknown as ProviderListener);
+
+		this._providerListener = {
+			provider,
+			eventName,
+			listener,
+			connectListener,
+			disconnectListener,
+		};
 	}
 
 	private _detachProviderListener(): void {
@@ -185,18 +239,69 @@ export class Web3SubscriptionManager<
 			return;
 		}
 		this._providerListener = undefined;
+		this._resubscribeOnConnect = false;
+		this._providerConnected = false;
 
-		const { provider, eventName, listener } = attached;
-		if (typeof provider.removeListener === 'function') {
-			provider.removeListener(eventName, listener);
-		} else if (typeof provider.off === 'function') {
-			provider.off(eventName, listener);
+		const { provider, eventName, listener, connectListener, disconnectListener } = attached;
+		const remove = (name: string, fn: ProviderListener) => {
+			if (typeof provider.removeListener === 'function') {
+				provider.removeListener(name, fn);
+			} else if (typeof provider.off === 'function') {
+				provider.off(name, fn);
+			}
+		};
+		remove(eventName, listener);
+		if (disconnectListener) {
+			remove('disconnect', disconnectListener as unknown as ProviderListener);
+		}
+		if (connectListener) {
+			remove('connect', connectListener as unknown as ProviderListener);
 		}
 	}
 
+	/**
+	 * Detaches the provider listener when nothing needs it: no subscription is registered and
+	 * no `qrl_subscribe` is in flight. Counting the in-flight requests closes the race in which
+	 * a removal emptied the map while another subscribe was pending, which detached the listener
+	 * and registered the pending subscription deaf (P4-M-4).
+	 */
 	private _detachProviderListenerWhenIdle(): void {
-		if (this._subscriptions.size === 0) {
+		if (this._subscriptions.size === 0 && this._subscribesInFlight === 0) {
 			this._detachProviderListener();
+		}
+	}
+
+	/**
+	 * Re-subscribes every registered subscription after the provider reconnected. Each one is
+	 * re-keyed under the id the node hands out now; a failure is reported through the
+	 * subscription's (or the manager's) `error` event and that subscription is dropped.
+	 */
+	private async _resubscribeAll(): Promise<void> {
+		const entries = [...this._subscriptions.entries()];
+		for (const [oldId, sub] of entries) {
+			const managed = sub as unknown as ManagedSubscription;
+			this._subscriptions.delete(oldId);
+			// Best effort and not awaited, so a node that never answers cannot stall the recovery:
+			// after a real reconnect the node no longer knows the id and its error reply is
+			// ignored; if the connection never dropped (a `connect` event the manager could not
+			// tell from a reconnection) this releases the old server-side subscription instead
+			// of leaking it. The id is captured before `_markUnsubscribed` clears it.
+			void managed.sendUnsubscribeRequest().catch(() => undefined);
+			managed._markUnsubscribed();
+			try {
+				// eslint-disable-next-line no-await-in-loop -- one subscribe at a time keeps the ids ordered
+				await managed.sendSubscriptionRequest();
+				if (!isNullish(sub.id) && !this._subscriptions.has(sub.id)) {
+					this._subscriptions.set(sub.id, sub);
+				}
+			} catch (error) {
+				this._reportSubscriptionError(managed, oldId, error);
+			}
+		}
+		if (this._subscriptions.size > 0) {
+			this._attachProviderListener();
+		} else {
+			this._detachProviderListenerWhenIdle();
 		}
 	}
 
@@ -206,10 +311,12 @@ export class Web3SubscriptionManager<
 		if (isNullish(data)) {
 			return;
 		}
+		const legacyId = (data as JsonRpcSubscriptionResult).id;
 		const subscriptionId =
 			(data as JsonRpcNotification).params?.subscription ||
 			(data as JsonRpcSubscriptionResultOld).data?.subscription ||
-			(data as JsonRpcSubscriptionResult).id?.toString(16);
+			// Only a number has a radix conversion; `{ toString: 1 }` from the node must not throw.
+			(typeof legacyId === 'number' ? legacyId.toString(16) : undefined);
 
 		// Process if the received data is related to a subscription
 		if (typeof subscriptionId === 'string') {
@@ -280,13 +387,27 @@ export class Web3SubscriptionManager<
 		}
 
 		const managed = sub as unknown as ManagedSubscription;
+		// The provider the request goes to. If it is replaced while the request is in flight, the
+		// id the old node answers with is worthless on the new one (P4-L-1).
+		const providerAtRequest = this.requestManager.provider;
 		this._attachProviderListener();
+		this._subscribesInFlight += 1;
 
 		try {
 			await managed.sendSubscriptionRequest();
 		} catch (error) {
+			this._subscribesInFlight -= 1;
 			this._detachProviderListenerWhenIdle();
 			throw error;
+		}
+		this._subscribesInFlight -= 1;
+
+		if (this.requestManager.provider !== providerAtRequest) {
+			managed._markUnsubscribed();
+			this._detachProviderListenerWhenIdle();
+			throw new SubscriptionError(
+				'The provider was replaced while subscribing; the subscription was not registered. Subscribe again on the new provider.',
+			);
 		}
 
 		if (isNullish(sub.id)) {
@@ -304,6 +425,8 @@ export class Web3SubscriptionManager<
 		}
 
 		this._subscriptions.set(sub.id, sub);
+		// Idempotent: re-attaches the listener if a concurrent removal detached it meanwhile.
+		this._attachProviderListener();
 
 		return sub.id;
 	}
@@ -369,33 +492,55 @@ export class Web3SubscriptionManager<
 	private async _unsubscribeAllForProviderChange(): Promise<void> {
 		const pending: Promise<void>[] = [];
 
-		for (const [id, sub] of this._subscriptions.entries()) {
+		for (const [id, sub] of [...this._subscriptions.entries()]) {
 			const managed = sub as unknown as ManagedSubscription;
-			// The request reads the id synchronously and goes to the provider that is still
-			// current at this point, i.e. the one being replaced; a synchronous throw becomes a
-			// rejection like any other failure.
-			const request: Promise<void> = (async () => managed.sendUnsubscribeRequest())();
-			this._subscriptions.delete(id);
-			managed._markUnsubscribed();
+			// Nothing in this loop may throw: one bad entry must not skip the others (P4-M-1).
+			try {
+				// The request reads the id synchronously and goes to the provider that is still
+				// current at this point, i.e. the one being replaced; a synchronous throw becomes a
+				// rejection like any other failure.
+				const request: Promise<void> = (async () => managed.sendUnsubscribeRequest())();
+				this._subscriptions.delete(id);
+				managed._markUnsubscribed();
 
-			pending.push(
-				waitWithTimeout(
-					request,
-					UNSUBSCRIBE_ON_PROVIDER_CHANGE_TIMEOUT,
-					new SubscriptionError(
-						`Timed out after ${UNSUBSCRIBE_ON_PROVIDER_CHANGE_TIMEOUT}ms waiting for the previous provider to unsubscribe "${id}"`,
+				pending.push(
+					waitWithTimeout(
+						request,
+						UNSUBSCRIBE_ON_PROVIDER_CHANGE_TIMEOUT,
+						new SubscriptionError(
+							`Timed out after ${UNSUBSCRIBE_ON_PROVIDER_CHANGE_TIMEOUT}ms waiting for the previous provider to unsubscribe "${BaseWeb3Error.convertToString(
+								id,
+								true,
+							)}"`,
+						),
+					).then(
+						() => undefined,
+						(error: unknown) => {
+							this._reportSubscriptionError(managed, id, error);
+						},
 					),
-				).then(
-					() => undefined,
-					(error: unknown) => {
-						this._reportSubscriptionError(managed, id, error);
-					},
-				),
-			);
+				);
+			} catch (error) {
+				this._subscriptions.delete(id);
+				this._reportSubscriptionError(managed, id, error);
+			}
 		}
 
 		this._detachProviderListener();
 		await Promise.all(pending);
+	}
+
+	/** Reports a failure that has no subscription to attach to: the manager's `error` listeners, or nowhere. */
+	private _reportManagerError(error: unknown): void {
+		if (this.listenerCount('error') === 0) {
+			return;
+		}
+		this.emit(
+			'error',
+			error instanceof Error
+				? error
+				: new SubscriptionError(BaseWeb3Error.convertToString(error)),
+		);
 	}
 
 	private _reportSubscriptionError(sub: ManagedSubscription, id: string, error: unknown): void {
@@ -403,7 +548,10 @@ export class Web3SubscriptionManager<
 			error instanceof Error
 				? error
 				: new SubscriptionError(
-						`Failed to unsubscribe "${id}": ${BaseWeb3Error.convertToString(error)}`,
+						`Failed to unsubscribe "${BaseWeb3Error.convertToString(
+							id,
+							true,
+						)}": ${BaseWeb3Error.convertToString(error)}`,
 					);
 
 		if (sub.listenerCount('error') > 0) {
@@ -422,6 +570,7 @@ export class Web3SubscriptionManager<
 	 */
 	public clear() {
 		this._subscriptions.clear();
+		this._resubscribeOnConnect = false;
 		this._detachProviderListener();
 	}
 

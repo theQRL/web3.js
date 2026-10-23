@@ -242,6 +242,68 @@ describe('waitForTransactionReceipt', () => {
 		expect(jest.getTimerCount()).toBe(0);
 	});
 
+	describe('malformed newHeads headers (P4-L-14)', () => {
+		let subscription: EventEmitter & { id: string };
+
+		beforeEach(() => {
+			const provider = web3Context.requestManager.provider as Web3BaseProvider;
+			jest.spyOn(provider, 'supportsSubscriptions').mockReturnValue(true);
+			web3Context.enableExperimentalFeatures = {
+				...web3Context.enableExperimentalFeatures,
+				useSubscriptionWhenCheckingBlockTimeout: true,
+			};
+			web3Context.transactionPollingTimeout = 5_000;
+			web3Context.transactionBlockTimeout = 1;
+			web3Context.blockHeaderTimeout = 1;
+			subscription = Object.assign(new EventEmitter(), { id: 'block-subscription' });
+			jest.spyOn(web3Context.subscriptionManager, 'subscribe').mockResolvedValue(
+				subscription as never,
+			);
+			jest.spyOn(web3Context.subscriptionManager, 'removeSubscription').mockResolvedValue(
+				undefined as never,
+			);
+		});
+
+		it('skips a header whose number is not a quantity and still fires the block timeout on the next good one', async () => {
+			const outcome = waitForTransactionReceipt(
+				web3Context,
+				transactionHash,
+				DEFAULT_RETURN_FORMAT,
+			).catch((error: unknown) => error);
+			await jest.advanceTimersByTimeAsync(1);
+
+			// `BigInt('abc')` used to throw out of the listener, after which the watcher was dead.
+			expect(() => subscription.emit('data', { number: 'abc' })).not.toThrow();
+			expect(() => subscription.emit('data', { number: '-0x5' })).not.toThrow();
+			expect(() => subscription.emit('data', { number: '0x' })).not.toThrow();
+			expect(() => subscription.emit('data', {})).not.toThrow();
+			subscription.emit('data', { number: '0x5' });
+			await jest.advanceTimersByTimeAsync(10);
+
+			await expect(outcome).resolves.toBeInstanceOf(TransactionBlockTimeoutError);
+			expect(jest.getTimerCount()).toBe(0);
+		});
+
+		it('does not count a malformed header as a received header: the polling fallback still starts', async () => {
+			(rpcMethodWrappersReaders.getBlockNumber as jest.Mock)
+				.mockResolvedValueOnce(BigInt(1))
+				.mockResolvedValue(BigInt(2));
+			const outcome = waitForTransactionReceipt(
+				web3Context,
+				transactionHash,
+				DEFAULT_RETURN_FORMAT,
+			).catch((error: unknown) => error);
+			await jest.advanceTimersByTimeAsync(1);
+
+			subscription.emit('data', { number: 'abc' });
+			await jest.advanceTimersByTimeAsync(1_100);
+
+			await expect(outcome).resolves.toBeInstanceOf(TransactionBlockTimeoutError);
+			expect(rpcMethodWrappersReaders.getBlockNumber).toHaveBeenCalledTimes(2);
+			expect(jest.getTimerCount()).toBe(0);
+		});
+	});
+
 	describe('transient receipt errors (L-49)', () => {
 		it('retries a failed receipt poll and resolves with the receipt', async () => {
 			const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);

@@ -786,7 +786,7 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 * @param transaction - The {@link Transaction}, {@link TransactionWithFromLocalWalletIndex}, {@link TransactionWithToLocalWalletIndex} or {@link TransactionWithFromAndToLocalWalletIndex} to send. __Note:__ In the `to` and `from` fields a string is an address and must be a QRL (`Q`-prefixed) address; a non-negative integer `number` is the index of an account in the local wallet (`web3.qrl.accounts.wallet`). Any other value (a hex string, a decimal string, a bigint) is rejected.
 	 * @param returnFormat ({@link DataFormat} defaults to {@link DEFAULT_RETURN_FORMAT}) Specifies how the return data should be formatted.
 	 * @param options A configuration object used to change the behavior of the `sendTransaction` method.
-	 * @returns If `await`ed or `.then`d (i.e. the promise resolves), the {@link TransactionReceipt} of the mined transaction is returned. The promise resolves only for a receipt with `status` 1; a reverted transaction rejects with a `TransactionRevertedWithoutReasonError`, `TransactionRevertInstructionError` or `TransactionRevertWithCustomError`, whatever `returnFormat` is.
+	 * @returns If `await`ed or `.then`d (i.e. the promise resolves), the {@link TransactionReceipt} of the mined transaction is returned. The promise resolves only for a receipt with `status` 1; a reverted transaction rejects with a `TransactionRevertedWithoutReasonError`, `TransactionRevertInstructionError` or `TransactionRevertWithCustomError`, whatever `returnFormat` is. When `options.transactionResolver` is given, the resolver decides the outcome from the receipt and this `status` check is bypassed.
 	 *
 	 * __Note:__ Every failure rejects the returned promise. Either `await` (or `.catch`) the returned {@link Web3PromiEvent}, or attach an `error` listener with `.on('error', ...)`: with a listener attached the failure is delivered to it as a typed error and the rejection is marked as handled, without one an unobserved rejection is reported by the runtime as an unhandled rejection.
 	 * ```ts
@@ -917,7 +917,7 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	/**
 	 * @param transaction Signed transaction in one of the valid {@link Bytes} format.
 	 * @param returnFormat ({@link DataFormat} defaults to {@link DEFAULT_RETURN_FORMAT}) Specifies how the return data should be formatted.
-	 * @returns If `await`ed or `.then`d (i.e. the promise resolves), the {@link TransactionReceipt} of the mined transaction is returned. The promise resolves only for a receipt with `status` 1; a reverted transaction rejects, whatever `returnFormat` is.
+	 * @returns If `await`ed or `.then`d (i.e. the promise resolves), the {@link TransactionReceipt} of the mined transaction is returned. The promise resolves only for a receipt with `status` 1; a reverted transaction rejects, whatever `returnFormat` is. When `options.transactionResolver` is given, the resolver decides the outcome from the receipt and this `status` check is bypassed.
 	 *
 	 * __Note:__ As for {@link Web3QRL.sendTransaction}, either `await` (or `.catch`) the returned {@link Web3PromiEvent} or attach an `error` listener; an unobserved failure is an unhandled rejection.
 	 * ```ts

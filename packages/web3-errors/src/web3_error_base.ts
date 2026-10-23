@@ -24,6 +24,17 @@ import { Web3Error } from '@theqrl/web3-types';
 export const MAX_ECHOED_VALUE_LENGTH = 256;
 
 /**
+ * Cuts a caller- or node-supplied text to {@link MAX_ECHOED_VALUE_LENGTH} characters for use in
+ * an error message, naming the original length. Only what is echoed in `message` is bounded: the
+ * full text stays wherever the caller keeps it (an `innerError`, a `data` member), so a
+ * multi-megabyte `error.message` from a node cannot dictate the size of the error (P4-L-24).
+ */
+export const truncateEchoedText = (text: string): string =>
+	text.length <= MAX_ECHOED_VALUE_LENGTH
+		? text
+		: `${text.slice(0, MAX_ECHOED_VALUE_LENGTH)}... [truncated, ${text.length} characters]`;
+
+/**
  * Strips the user-info (`user:password@`) and everything after the authority (path, query,
  * fragment) from a URL-looking string, so that a credential or an API key embedded in a
  * client URL never ends up in an error message or a log line (L-48).
@@ -118,10 +129,6 @@ export abstract class InvalidValueError extends BaseWeb3Error {
 	 * its size must not dictate the size of the message (I-15).
 	 */
 	private static describeValue(value: unknown): string {
-		const text = BaseWeb3Error.convertToString(value, true);
-		if (text.length <= MAX_ECHOED_VALUE_LENGTH) return text;
-		return `${text.slice(0, MAX_ECHOED_VALUE_LENGTH)}... [truncated, ${
-			text.length
-		} characters]`;
+		return truncateEchoedText(BaseWeb3Error.convertToString(value, true));
 	}
 }

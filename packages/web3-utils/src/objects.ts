@@ -89,7 +89,9 @@ const mergeDeepAt = (
 					depth + 1,
 					src[key] as Record<string, unknown>,
 				);
-			} else if (!isNullish(src[key])) {
+			} else if (src[key] !== undefined) {
+				// `null` is a value (a node reply's `to: null` means "no receiver") and is kept;
+				// only `undefined` means "not given" and leaves the destination's member alone.
 				result[key] = cloneValue(src[key], depth + 1);
 			}
 		}
@@ -103,7 +105,9 @@ const mergeDeepAt = (
  * Deep merge two objects.
  *
  * The result shares nothing with the sources: nested objects, arrays and the objects inside
- * arrays are copied, typed arrays are duplicated. Prototype-polluting keys are skipped.
+ * arrays are copied, typed arrays are duplicated. Prototype-polluting keys are skipped. A
+ * `null` member of a source is merged as `null` (it is a value: a reply's `to: null` means "no
+ * receiver"); an `undefined` member is skipped and leaves the destination's member in place.
  *
  * @param destination - The destination object.
  * @param sources - An array of source objects.
@@ -114,3 +118,37 @@ export const mergeDeep = (
 	destination: Record<string, unknown>,
 	...sources: Record<string, unknown>[]
 ): Record<string, unknown> => mergeDeepAt(destination, 0, ...sources);
+
+const deepCopyAt = (value: unknown, depth: number): unknown => {
+	assertDepth(depth);
+	if (Array.isArray(value)) {
+		return value.map(element => deepCopyAt(element, depth + 1));
+	}
+	if (value instanceof TypedArray) {
+		return (value as Uint8Array).slice(0);
+	}
+	if (isIterable(value)) {
+		const copy: Record<string, unknown> = {};
+		for (const [key, item] of Object.entries(value)) {
+			if (FORBIDDEN_KEYS.has(key)) {
+				continue;
+			}
+			copy[key] = deepCopyAt(item, depth + 1);
+		}
+		return copy;
+	}
+	return value;
+};
+
+/**
+ * Deep-copies a value (plain objects, arrays, typed arrays and primitives) without changing
+ * its shape: like {@link mergeDeep}, `null` members are kept as `null`, and `undefined`
+ * members stay `undefined`, so a node reply such as `{ to: null, blockNumber: null }` keeps the
+ * fields the node sent. Prototype-polluting keys are skipped and the nesting depth is bounded
+ * by {@link MAX_NESTING_DEPTH}.
+ *
+ * @param value - The value to copy.
+ * @returns A copy that shares nothing with `value`.
+ * @throws FormatterError when the input is nested deeper than {@link MAX_NESTING_DEPTH}.
+ */
+export const deepCopy = <T>(value: T): T => deepCopyAt(value, 0) as T;

@@ -196,8 +196,13 @@ export const formatParam = (type: string, _param: unknown): unknown => {
 		paramTypeNumberArray.exec(type) ||
 		paramTypeBoolArray.exec(type)
 	) {
-		const paramClone = [...(param as Array<unknown>)];
-		return paramClone.map(p => formatParam(type.replace('[]', ''), p));
+		// Only an array is mapped element-wise: spreading a string split `'123'` into
+		// `['1', '2', '3']` and encoded a value the caller never wrote (P4-L-34). Anything else
+		// is left to the coder, which rejects it.
+		if (!Array.isArray(param)) {
+			return param;
+		}
+		return (param as unknown[]).map(p => formatParam(type.replace('[]', ''), p));
 	}
 
 	// Format correct width for u?int[0-9]*

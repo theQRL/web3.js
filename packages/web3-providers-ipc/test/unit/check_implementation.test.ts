@@ -84,9 +84,7 @@ describe('IPCProvider', () => {
 		});
 		it('socketConnection.end', () => {
 			const ipc = new IpcProvider(socketPath);
-			const end = jest.fn((cb: () => void) => {
-				cb();
-			});
+			const end = jest.fn();
 			const _onDisconnect = jest.fn();
 			// @ts-expect-error mock method
 			ipc._socketConnection.end = end;
@@ -101,8 +99,12 @@ describe('IPCProvider', () => {
 			expect(ipc.getStatus()).toBe('connected');
 			ipc.disconnect(code, data);
 
+			// Reported once, by the base class; the socket's end callback used to repeat it
+			// (I-F13).
+			expect(_onDisconnect).toHaveBeenCalledTimes(1);
 			expect(_onDisconnect).toHaveBeenCalledWith(code, data);
-			expect(end).toHaveBeenCalled();
+			expect(end).toHaveBeenCalledTimes(1);
+			expect(end).toHaveBeenCalledWith();
 		});
 
 		it('connection error', async () => {

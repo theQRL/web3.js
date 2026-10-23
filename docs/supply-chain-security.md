@@ -11,9 +11,19 @@ The workspace install policy is defined in `pnpm-workspace.yaml`:
 
 - `minimumReleaseAge: 10080` prevents installing package versions published in
   the last seven days.
-- `minimumReleaseAgeExclude` is the reviewed list of packages exempt from that
-  quarantine: `@theqrl/*` (first-party releases) plus individual packages whose
-  security-only patch releases are needed before the window elapses.
+- `minimumReleaseAgeExclude` is the reviewed list of exemptions from that
+  quarantine: `@theqrl/*` (first-party releases) plus the exact security patch
+  releases the overrides below resolve to (`name@x.y.z`, several joined with
+  `||`). An exemption never names a package without a version — that would
+  exempt every future release of it — and `pnpm run doctor` fails on a
+  name-only entry. Remove an exemption once its release is older than the
+  quarantine window.
+- The quarantine applies to pnpm installs. The release smoke test installs the
+  packed tarballs with `npm ci` from a lockfile the `prepare` job resolves and
+  ships inside the release-candidate artifact (`scripts/release/smoke-tarballs.js`),
+  so the smoke install is pinned and integrity-checked, but it is not
+  quarantined: first-party siblings released inside the window must remain
+  installable.
 - `blockExoticSubdeps: true` blocks transitive dependencies that resolve through
   exotic specifiers.
 - `strictDepBuilds: true` fails installs when dependencies have unreviewed build
@@ -93,7 +103,11 @@ pnpm run audit:supply-chain
 
 npm's `/security/audits` endpoint is retired and answers HTTP 410, so `pnpm
 audit` cannot be the gate. The gate scans `pnpm-lock.yaml` with Trivy instead
-and fails on high and critical vulnerabilities.
+and fails on high and critical vulnerabilities in production *and* development
+dependencies: Trivy's pnpm analyzer drops dev-only importers unless
+`--include-dev-deps` is passed, and the development toolchain (semantic-release,
+typedoc, webpack, Docusaurus) executes in CI, in the docs build and in the
+release job with write-capable tokens.
 
 Local and CI runs are pinned to the same scanner:
 
@@ -104,10 +118,14 @@ Local and CI runs are pinned to the same scanner:
   of failing with `command not found`.
 - `.github/workflows/ci.yml` runs the same Trivy release through a digest-pinned
   `aquasecurity/trivy-action` step with `version: v0.70.0`, the same
-  `--severity HIGH,CRITICAL` gate, and the same `.trivyignore`.
-- `pnpm run doctor` fails if the pinned version in the script and the pinned
-  version in the workflow stop agreeing, so the two cannot drift apart. Bump
-  them together, along with the constants in `scripts/doctor.js`.
+  `--severity HIGH,CRITICAL` gate, the same `.trivyignore`, and the same scope
+  (`TRIVY_INCLUDE_DEV_DEPS: "true"` in the step's environment, the action's
+  equivalent of `--include-dev-deps`).
+- `pnpm run doctor` parses the Trivy step of the workflow (not a substring
+  search a comment could satisfy) and fails if the pinned version or the
+  dev-dependency scope stops agreeing with the local script, so the two cannot
+  drift apart. Bump them together, along with the constants in
+  `scripts/doctor.js`.
 - `pnpm run doctor` also *warns*, without failing, when the scanner cannot run
   on the current machine, and prints how to obtain the pinned version.
 
@@ -122,9 +140,10 @@ dependencies. High and critical findings are release blockers unless a
 maintainer documents why the affected dependency is unreachable and records a
 time-bounded follow-up; accepted advisories are recorded in `.trivyignore` with
 that reasoning and a `revisit by YYYY-MM-DD` marker. `pnpm run doctor` fails
-when the marker is missing or the date has passed, so an exception cannot
-silently become permanent: re-assess the advisory and either drop the entry or
-record a new date. A development-only vulnerability that can execute in CI, release
+when the marker is missing, the date is not a real calendar day, has passed, or
+lies more than two years ahead, so an exception cannot silently become
+permanent: re-assess the advisory and either drop the entry or record a new
+date. A development-only vulnerability that can execute in CI, release
 packaging, docs generation, or local developer install/build paths is
 release-relevant even though it is not part of package runtime dependencies.
 
@@ -170,12 +189,13 @@ one once every dependent has released a compatible fixed version.
 | `brace-expansion@<1.1.20` | `1.1.20` | CVE-2026-102276 / CVE-2026-102278 recursion DoS (high), brace-expansion 1 line. |
 | `brace-expansion@>=2.0.0 <2.1.6` | `2.1.6` | CVE-2026-102276 / CVE-2026-102278 recursion DoS (high), brace-expansion 2 line. |
 | `brace-expansion@>=5.0.0 <5.0.11` | `5.0.11` | CVE-2026-102276 / CVE-2026-102278 recursion DoS (high), brace-expansion 5 line. |
-| `undici@<6.27.0` | `6.27.0` | Patch floor for the Undici 6 line (reached through `@actions/http-client` in the semantic-release npm plugin). |
-| `undici@>=7.0.0 <7.28.0` | `7.28.0` | Patch floor for the Undici 7 line; also the version required for Node 20 compatibility in CI. |
+| `undici@<6.28.1` | `6.28.1` | CVE-2026-19534 request handling (high) and the earlier Undici 6 advisories (reached through `@actions/http-client` in the semantic-release npm plugin). |
+| `undici@>=7.0.0 <7.29.1` | `7.29.1` | CVE-2026-13697 / CVE-2026-19534 / CVE-2026-84961 incl. TLS certificate validation bypass in `BalancedPool` (high), Undici 7 line via `@semantic-release/github`; also the version required for Node 20 compatibility in CI. |
 | `fast-uri@<3.1.7` | `3.1.7` | CVE-2026-84292 / CVE-2026-84394 authority injection and host confusion (high), plus the earlier URI parsing fixes; also quarantine-excluded so a fix can land inside the seven-day window. |
 | `postcss@<8.5.18` | `8.5.18` | Patched release for GHSA-r28c-9q8g-f849; quarantine-excluded for the security update. |
 | `svgo@>=3.0.0 <3.3.5` | `3.3.5` | Patched 3.x release for GHSA-2p49-hgcm-8545 and GHSA-w27v-7q3p-w38r (removeScripts executable links, high); quarantine-excluded for the security update. |
 | `shell-quote@<1.11.0` | `1.11.0` | CVE-2026-102422 command injection through a line terminator after a comment token (critical). |
+| `handlebars@<4.7.10` | `4.7.10` | CVE-2026-106445 / CVE-2026-106446 JavaScript injection (critical); release tooling via `conventional-changelog-writer` in the semantic-release commit analyzer and release-notes generator. |
 | `ws@>=7.0.0 <7.5.11` | `7.5.11` | Memory-exhaustion DoS advisory (high), ws 7 line. |
 | `ws@>=8.0.0 <8.21.0` | `8.21.0` | Memory-exhaustion DoS advisory (high), ws 8 line. |
 | `serialize-javascript` | `7.0.5` | Patched version for GHSA-5c6j-r48x-rmvq in the Docusaurus/webpack graph. |
@@ -197,7 +217,7 @@ they execute on developer and CI machines, so they are remediated the same way.
 | `@babel/core@<7.29.6` | `7.29.7` | Patch floor. |
 | `qs@>=6.11.1 <6.15.2` | `6.15.3` | Patch floor. |
 | `cookie@<0.7.0` | `0.7.2` | Patch floor. |
-| `markdown-it@<14.2.0` | `14.3.0` | Patch floor. |
+| `markdown-it@>=14.0.0 <14.3.3` | `14.3.3` | CVE-2026-111758 / CVE-2026-111759 DoS (high); docs build via `typedoc`. |
 | `joi@<17.13.7` | `17.13.7` | CVE-2026-92599 validation DoS (high), retaining the Joi 17 line. |
 | `launch-editor@<2.14.2` | `2.14.2` | CVE-2026-112942 command injection through an unvalidated file path (high); patch floor. |
 | `webpack-dev-server@<5.2.5` | `5.2.6` | Patch floor. |

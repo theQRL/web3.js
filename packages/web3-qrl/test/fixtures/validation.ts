@@ -143,7 +143,19 @@ export const isTransactionCallValidData: [TransactionCall, true][] = [
 	],
 ];
 
-export const validateTransactionCallInvalidData = (): [any, InvalidTransactionCall][] =>
-	validateTransactionWithSenderInvalidData().map(transaction => {
-		return [transaction[0], new InvalidTransactionCall(transaction[0])];
-	});
+// A call may set `type` and the fee-market fields (they only have to be well-formed), so the
+// sender-invalid data above (complete 1559 transactions without `from`) are valid calls; the
+// invalid calls are the ones with a missing or malformed field.
+export const validateTransactionCallInvalidData = (): [any, InvalidTransactionCall][] => {
+	const { to } = isTransactionCallValidData[0][0];
+	const invalidCalls = [
+		{},
+		{ to: '0x1' },
+		{ to, from: 'Q1' },
+		{ to, gas: 'abc' },
+		{ to, value: 'abc' },
+		{ to, type: 'ab' },
+		{ to, maxFeePerGas: 'abc' },
+	];
+	return invalidCalls.map(call => [call, new InvalidTransactionCall(call)]);
+};

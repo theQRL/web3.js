@@ -5,7 +5,13 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const { checkPackageDependencies } = require('./check-package-dependencies');
-const { allowBuildsFailures, listWorkspaceBlockKeys, trivyIgnoreFailures } = require('./doctor-checks');
+const {
+	allowBuildsFailures,
+	listWorkspaceBlockKeys,
+	minimumReleaseAgeExcludeFailures,
+	trivyActionSettings,
+	trivyIgnoreFailures,
+} = require('./doctor-checks');
 const { digestInstalledPackage, installedPackageRoot } = require('./git-dependency-digest');
 
 const root = path.resolve(__dirname, '..');
@@ -17,11 +23,15 @@ const expectedNodeRange = `>=${expectedNodeFloor}`;
 const expectedPackageManager = 'pnpm@10.27.0';
 const expectedPnpmMajor = '10.';
 
-// The supply-chain gate must run the same scanner locally and in CI. The image
-// digest is what `pnpm run audit:supply-chain` executes; the version string is
-// what the pinned trivy-action step in ci.yml is told to install. Bump all three
-// together — the checks below fail if any of them stops agreeing.
+// The supply-chain gate must run the same scanner, with the same scope, locally
+// and in CI. The image digest is what `pnpm run audit:supply-chain` executes;
+// the version string is what the pinned trivy-action step in ci.yml is told to
+// install; both must scan devDependencies (`--include-dev-deps` locally,
+// `TRIVY_INCLUDE_DEV_DEPS` in the action's env). Bump all three together — the
+// checks below fail if any of them stops agreeing.
 const expectedTrivyVersion = '0.70.0';
+const trivyScanFlags =
+	'fs --scanners vuln --include-dev-deps --severity HIGH,CRITICAL --exit-code 1 --ignorefile .trivyignore pnpm-lock.yaml';
 const expectedTrivyImage =
 	'ghcr.io/aquasecurity/trivy:0.70.0@sha256:be1190afcb28352bfddc4ddeb71470835d16462af68d310f9f4bca710961a41e';
 
@@ -178,6 +188,12 @@ if (exists('pnpm-workspace.yaml') && exists('pnpm-lock.yaml')) {
 	}
 }
 
+// Quarantine exclusions are reviewed per release: a name-only entry would let
+// every future version of the package bypass the seven-day minimum release age.
+if (exists('pnpm-workspace.yaml')) {
+	for (const message of minimumReleaseAgeExcludeFailures(readText('pnpm-workspace.yaml'))) fail(message);
+}
+
 // Accepted advisories are time-bounded exceptions; a passed revisit date fails
 // the toolchain check until the advisory is re-assessed.
 if (!exists('.trivyignore')) {
@@ -187,17 +203,37 @@ if (!exists('.trivyignore')) {
 }
 
 // The supply-chain gate is only reproducible if the local script and the CI step
-// name the same scanner. Both assertions are offline string checks, so they are
-// safe to fail on; scanner availability is checked separately and only warns.
+// name the same scanner and scan the same scope. All assertions are offline
+// string checks, so they are safe to fail on; scanner availability is checked
+// separately and only warns.
 const auditScript = (rootPackage.scripts && rootPackage.scripts['audit:supply-chain']) || '';
 if (!auditScript.includes(expectedTrivyImage)) {
 	fail(`audit:supply-chain must run the pinned Trivy image ${expectedTrivyImage}`);
 }
+if (!auditScript.includes(`scan ${trivyScanFlags}`)) {
+	fail(
+		`audit:supply-chain must scan with "${trivyScanFlags}": devDependencies are in scope (--include-dev-deps) because the release, docs and CI toolchain executes them`,
+	);
+}
 
 if (!exists('.github/workflows/ci.yml')) {
 	fail('Missing .github/workflows/ci.yml');
-} else if (!readText('.github/workflows/ci.yml').includes(`version: v${expectedTrivyVersion}`)) {
-	fail(`.github/workflows/ci.yml must pin the Trivy action to version: v${expectedTrivyVersion} to match pnpm run audit:supply-chain`);
+} else {
+	const trivyStep = trivyActionSettings(readText('.github/workflows/ci.yml'));
+	if (!trivyStep) {
+		fail('.github/workflows/ci.yml must run the Supply Chain Audit through an aquasecurity/trivy-action step');
+	} else {
+		if (trivyStep.version !== `v${expectedTrivyVersion}`) {
+			fail(
+				`.github/workflows/ci.yml must pin the Trivy action input version: v${expectedTrivyVersion} to match pnpm run audit:supply-chain (found ${trivyStep.version ?? 'no version input'})`,
+			);
+		}
+		if (!trivyStep.includeDevDeps) {
+			fail(
+				'.github/workflows/ci.yml must set TRIVY_INCLUDE_DEV_DEPS: "true" in the env of the Trivy step so the CI scan covers devDependencies like pnpm run audit:supply-chain',
+			);
+		}
+	}
 }
 
 if (!exists('.npmrc')) {
@@ -294,7 +330,7 @@ for (const [packageName, { tarball, integrity, treeDigest }] of Object.entries(e
 const dockerVersion = checkCommand('docker', ['--version'], 'docker', false);
 if (!dockerVersion) {
 	warn(
-		`Supply-chain scanner unavailable: pnpm run audit:supply-chain runs Trivy ${expectedTrivyVersion} from ${expectedTrivyImage} and needs Docker. Install Docker, or install Trivy ${expectedTrivyVersion} yourself and run: trivy fs --scanners vuln --severity HIGH,CRITICAL --exit-code 1 --ignorefile .trivyignore pnpm-lock.yaml`,
+		`Supply-chain scanner unavailable: pnpm run audit:supply-chain runs Trivy ${expectedTrivyVersion} from ${expectedTrivyImage} and needs Docker. Install Docker, or install Trivy ${expectedTrivyVersion} yourself and run: trivy ${trivyScanFlags}`,
 	);
 }
 

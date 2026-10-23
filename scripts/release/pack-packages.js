@@ -17,13 +17,16 @@ const releasedPackages = publishablePackages().map(pkg => ({
 	tarballName: tarballName(pkg),
 }));
 
-// Sibling ranges in the packed manifests come from two places. In the release
-// workflow `multi-semantic-release --deps.prefix=^` has already rewritten the
-// `workspace:^` entries of released siblings to `^<version>`; for siblings that
-// were not released in that run (and for every entry when this script runs
-// outside a release, e.g. in CI's package inspection) `pnpm pack` substitutes
-// `workspace:^` with `^<current version>`. Either way the tarballs carry caret
-// ranges and install under any package manager; see RELEASE.md.
+// Sibling ranges in the packed manifests. In the release workflow
+// `multi-semantic-release --deps.prefix=^` has already rewritten EVERY
+// `workspace:^` entry of a released package to a caret range: `^<new version>`
+// for a sibling released in the same run and `^<sibling's last release tag>`
+// for one that was not (it derives both from git tags, never from the committed
+// `version` field — node_modules/multi-semantic-release/lib/updateDeps.js).
+// Outside a release (CI's package inspection, local evidence runs, this script)
+// the manifests still carry `workspace:^`, which `pnpm pack` substitutes with
+// `^<committed sibling version>`; those tarballs are inspected and smoke-tested
+// but never published. See RELEASE.md, "Cross-Package Version Ranges".
 for (const pkg of releasedPackages) {
 	console.info(`Packing ${pkg.name}@${pkg.version}`);
 	execFileSync('pnpm', ['pack', '--pack-destination', tarballDirectory], {

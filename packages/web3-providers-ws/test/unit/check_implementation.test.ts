@@ -43,7 +43,8 @@ describe('WebSocketProvider', () => {
 			const _closeSocketConnection = jest.fn();
 			const _removeSocketListeners = jest.fn();
 			const _onDisconnect = jest.fn();
-			const code = 1002;
+			// 1002 (protocol error) is not a code a client may send: refused since P4-L-17.
+			const code = 4000;
 			const data = 'data';
 			// @ts-expect-error mock method
 			jest.spyOn(WebSocketProvider.prototype, '_closeSocketConnection').mockImplementation(
@@ -82,7 +83,7 @@ describe('WebSocketProvider', () => {
 			const close = jest.fn();
 			// @ts-expect-error mock method
 			ws._socketConnection.close = close;
-			const code = 1002;
+			const code = 4000;
 			const data = 'data';
 			ws.disconnect(code, data);
 			expect(close).toHaveBeenCalledWith(code, data);

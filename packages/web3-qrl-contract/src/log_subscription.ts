@@ -17,8 +17,12 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 import { AbiEventFragment, LogsInput, HexString, Topic, DataFormat } from '@theqrl/web3-types';
 import { Web3RequestManager, Web3Subscription, Web3SubscriptionManager } from '@theqrl/web3-core';
+import { SubscriptionError } from '@theqrl/web3-errors';
+import { rightPad } from '@theqrl/web3-utils';
+import { ALL_EVENTS, TOPIC_HEX_LENGTH } from './constants.js';
 import { decodeEventABI } from './encoding.js';
 import { EventLog, ContractAbiWithSignature } from './types.js';
+import { isLogOf } from './utils.js';
 
 /**
  * LogSubscription to be used to subscribe to events logs.
@@ -29,6 +33,11 @@ import { EventLog, ContractAbiWithSignature } from './types.js';
  * - **data**: Fires on each incoming event with the event object as argument.
  * - **changed**: Fires on each event which was removed from the blockchain. The event will have the additional property `removed: true`.
  * - **error**: Fires on each error.
+ *
+ * A notification for another address, or (for a named, non-anonymous event subscribed through
+ * its ABI-derived topics) for another event signature, is not this subscription's event and is
+ * never emitted on `data`: it is reported on `error` when an `error` listener exists and ignored
+ * silently otherwise (I-13, P4-L-25).
  *
  * ```ts
  * const subscription = await myContract.events.MyEvent({
@@ -145,5 +154,62 @@ export class LogsSubscription extends Web3Subscription<
 
 	protected formatSubscriptionResult(data: EventLog) {
 		return decodeEventABI(this.abi, data as LogsInput, this.jsonInterface, super.returnFormat);
+	}
+
+	/**
+	 * Dispatches a notification. A log of another address or event is dropped (see the class
+	 * description); a log the node reports as `removed` (reorged out) is emitted on `changed`
+	 * instead of `data`, as documented (P4-L-25).
+	 */
+	public _processSubscriptionResult(data: unknown) {
+		if (!isLogOf(data, this.expectedAddress, this.expectedTopic)) {
+			if (this.listenerCount('error') > 0) {
+				this.emit(
+					'error',
+					new SubscriptionError(
+						'Dropped a log that does not belong to the subscribed address or event',
+					),
+				);
+			}
+			return;
+		}
+		let formatted: EventLog;
+		try {
+			formatted = this.formatSubscriptionResult(data as EventLog);
+		} catch (error) {
+			this._processSubscriptionError(error as Error);
+			return;
+		}
+		if ((formatted as { removed?: unknown }).removed === true) {
+			this.emit('changed', formatted as EventLog & { removed: true });
+			return;
+		}
+		this.emit('data', formatted);
+	}
+
+	/** The lowercased address every log must carry, when the subscription is bound to one. */
+	private get expectedAddress(): string | undefined {
+		return typeof this.address === 'string' ? this.address.toLowerCase() : undefined;
+	}
+
+	/**
+	 * The lowercased 64-byte signature topic every log must carry: set for a named,
+	 * non-anonymous event unless custom `topics` replaced the ABI-derived ones, in which case
+	 * the node's filter is the caller's choice (as in `getPastEvents`).
+	 */
+	private get expectedTopic(): string | undefined {
+		const { abi, topics } = this;
+		if (abi.name === ALL_EVENTS || abi.anonymous || !abi.signature) {
+			return undefined;
+		}
+		const signatureTopic = rightPad(abi.signature, TOPIC_HEX_LENGTH).toLowerCase();
+		if (
+			Array.isArray(topics) &&
+			topics.length > 0 &&
+			!(typeof topics[0] === 'string' && topics[0].toLowerCase() === signatureTopic)
+		) {
+			return undefined;
+		}
+		return signatureTopic;
 	}
 }

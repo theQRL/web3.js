@@ -23,6 +23,11 @@ import { version } from './_version.js';
 
 const logger = new Logger(version);
 
+// Brands identifying instances created by these constructors. Registered symbols are shared
+// across copies of the package, cannot appear in JSON and are not enumerable (P4-M-2).
+const PARAM_TYPE_BRAND: unique symbol = Symbol.for('@theqrl/abi.ParamType') as never;
+const FRAGMENT_BRAND: unique symbol = Symbol.for('@theqrl/abi.Fragment') as never;
+
 export interface JsonFragmentType {
 	readonly name?: string;
 	readonly indexed?: boolean;
@@ -384,6 +389,7 @@ export class ParamType {
 		}
 
 		this._isParamType = true;
+		Object.defineProperty(this, PARAM_TYPE_BRAND, { value: true, enumerable: false });
 
 		Object.freeze(this);
 	}
@@ -480,7 +486,14 @@ export class ParamType {
 	}
 
 	static isParamType(value: any): value is ParamType {
-		return !!(value != null && value._isParamType);
+		// Diff vs ethers v5 (P4-M-2): the brand is a symbol-keyed, non-enumerable property set by
+		// the constructor. ABI JSON is untrusted and a forged `_isParamType: true` skipped every
+		// ParamType check (type verification, array-length bounds) and reached the decoder.
+		return (
+			value != null &&
+			(typeof value === 'object' || typeof value === 'function') &&
+			value[PARAM_TYPE_BRAND] === true
+		);
 	}
 }
 
@@ -518,6 +531,7 @@ export abstract class Fragment {
 		populate(this, params);
 
 		this._isFragment = true;
+		Object.defineProperty(this, FRAGMENT_BRAND, { value: true, enumerable: false });
 
 		Object.freeze(this);
 	}
@@ -583,7 +597,13 @@ export abstract class Fragment {
 	}
 
 	static isFragment(value: any): value is Fragment {
-		return !!(value && value._isFragment);
+		// Same brand as `ParamType.isParamType` (P4-M-2): a `_isFragment: true` from JSON must not
+		// bypass `checkForbidden` and the other fragment checks.
+		return (
+			value != null &&
+			(typeof value === 'object' || typeof value === 'function') &&
+			value[FRAGMENT_BRAND] === true
+		);
 	}
 }
 
@@ -685,7 +705,7 @@ export class EventFragment extends Fragment {
 	}
 
 	static isEventFragment(value: any): value is EventFragment {
-		return value && value._isFragment && value.type === 'event';
+		return Fragment.isFragment(value) && value.type === 'event';
 	}
 }
 
@@ -922,7 +942,7 @@ export class ConstructorFragment extends Fragment {
 	}
 
 	static isConstructorFragment(value: any): value is ConstructorFragment {
-		return value && value._isFragment && value.type === 'constructor';
+		return Fragment.isFragment(value) && value.type === 'constructor';
 	}
 }
 
@@ -1061,7 +1081,7 @@ export class FunctionFragment extends ConstructorFragment {
 	}
 
 	static isFunctionFragment(value: any): value is FunctionFragment {
-		return value && value._isFragment && value.type === 'function';
+		return Fragment.isFragment(value) && value.type === 'function';
 	}
 }
 
@@ -1151,7 +1171,7 @@ export class ErrorFragment extends Fragment {
 	}
 
 	static isErrorFragment(value: any): value is ErrorFragment {
-		return value && value._isFragment && value.type === 'error';
+		return Fragment.isFragment(value) && value.type === 'error';
 	}
 }
 

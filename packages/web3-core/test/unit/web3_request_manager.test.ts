@@ -1186,8 +1186,14 @@ describe('Web3RequestManager', () => {
 		])('maps a revert with %s to ContractExecutionError', async (_, rpcError) => {
 			const manager = new Web3RequestManager(undefined, undefined);
 			const myProvider = {
+				// The reply must carry the request's id: an id mismatch is an InvalidResponseError
+				// and is no longer re-classified as a revert by its message (P4-L-8).
 				// eslint-disable-next-line @typescript-eslint/require-await
-				request: async () => ({ id: 1, jsonrpc: '2.0', error: rpcError }),
+				request: async (payload: { id: unknown }) => ({
+					id: payload.id,
+					jsonrpc: '2.0',
+					error: rpcError,
+				}),
 			} as any;
 			jest.spyOn(manager, 'provider', 'get').mockReturnValue(myProvider);
 

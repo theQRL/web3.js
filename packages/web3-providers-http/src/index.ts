@@ -35,6 +35,7 @@ import {
 	InvalidConnectionError,
 	MethodNotImplementedError,
 	ProviderCapabilityError,
+	ProviderError,
 	RequestSerializationError,
 	RequestTimeoutError,
 	ResponseError,
@@ -42,6 +43,7 @@ import {
 } from '@theqrl/web3-errors';
 import {
 	composeAbortSignal,
+	isNullish,
 	resolveProviderBounds,
 	validateTimeout,
 	type ResolvedProviderBounds,
@@ -72,7 +74,18 @@ const isAsyncIterable = (body: unknown): body is AsyncIterable<unknown> =>
 	'function';
 
 /** Error names of the transport layer (node-fetch v2 and undici) that are wrapped (L-47, L-48). */
-const TRANSPORT_ERROR_NAMES = new Set(['FetchError', 'AbortError', 'TypeError']);
+const TRANSPORT_ERROR_NAMES = new Set(['FetchError', 'AbortError']);
+
+/**
+ * Whether a `TypeError` thrown by `fetch` reports a transport failure. Undici (Node's `fetch`)
+ * does so with the message `fetch failed` and the network error as `cause`. Any other
+ * `TypeError` means `fetch` refused the request itself, before anything was sent: an invalid
+ * header name or value, or credentials in the URL, which WHATWG `fetch` rejects (P4-L-23).
+ */
+const isTransportTypeError = (error: unknown): boolean => {
+	const { message, cause } = (error ?? {}) as { message?: unknown; cause?: unknown };
+	return message === 'fetch failed' || (typeof cause === 'object' && !isNullish(cause));
+};
 
 /** node-fetch's `FetchError.type` values for a redirect it did not follow. */
 const REDIRECT_ERROR_TYPES = new Set(['no-redirect', 'max-redirect', 'invalid-redirect']);
@@ -99,9 +112,12 @@ const serializePayload = (payload: unknown): string => {
  * Use HttpProvider to connect to a node over HTTP(S).
  *
  * Credentials belong in `providerOptions.headers` (an `authorization` or an `x-api-key`
- * header), not in the URL: a URL of the form `http://user:password@host/` is accepted, but
- * every error raised by this provider names the endpoint by its `host:port` only, so that
- * neither the credentials nor an API key embedded in the path can reach a log line (L-48).
+ * header), not in the URL: a URL of the form `http://user:password@host/` is rejected at
+ * construction with an `InvalidClientError`. A WHATWG `fetch` (browsers, undici) refuses such a
+ * URL anyway, node-fetch would send the credentials as Basic authentication without being asked,
+ * and a URL is copied into logs and error reports far more readily than a header. Every error
+ * raised by this provider names the endpoint by its `host:port` only, so that an API key
+ * embedded in the path cannot reach a log line either (L-48).
  *
  * A non-2xx reply is reported as {@link HttpStatusError} (status, status text, `Retry-After`
  * and, when the body was a JSON-RPC error reply, that reply as `innerError`); a transport
@@ -131,15 +147,22 @@ export default class HttpProvider<
 	}
 
 	/**
-	 * Accepts `http://` and `https://` URLs that the WHATWG parser accepts. A URL that
-	 * `fetch` would reject at request time (`http://`, a port above 65535) therefore fails at
-	 * construction with the typed {@link InvalidClientError} instead (I-15).
+	 * Accepts `http://` and `https://` URLs that the WHATWG parser accepts and that carry no
+	 * credentials. A URL that `fetch` would reject at request time (`http://`, a port above
+	 * 65535, `http://user:password@host/`) therefore fails at construction with the typed
+	 * {@link InvalidClientError} instead (I-15); the error names the URL with its credentials
+	 * and path removed.
 	 */
 	private static parseClientUrl(clientUrl: unknown): URL | undefined {
 		if (typeof clientUrl !== 'string' || !/^http(s)?:\/\//i.test(clientUrl)) return undefined;
 		try {
 			const url = new URL(clientUrl);
-			return url.protocol === 'http:' || url.protocol === 'https:' ? url : undefined;
+			if (url.protocol !== 'http:' && url.protocol !== 'https:') return undefined;
+			// Credentials belong in a header, not in the URL: a WHATWG `fetch` refuses such a
+			// URL, node-fetch would silently send them as Basic authentication, and a URL is
+			// copied into logs and error reports far more readily than a header.
+			if (url.username !== '' || url.password !== '') return undefined;
+			return url;
 		} catch {
 			return undefined;
 		}
@@ -403,8 +426,14 @@ export default class HttpProvider<
 				totalBytes += chunk.byteLength;
 
 				if (totalBytes > maxResponseBytes) {
-					// eslint-disable-next-line no-await-in-loop
-					await reader.cancel();
+					// Not awaited and never allowed to throw: a failing or stalled cancellation
+					// must not mask the size error, which request() also answers by aborting
+					// the transport (P4-L-19).
+					try {
+						void Promise.resolve(reader.cancel()).catch(() => undefined);
+					} catch {
+						// Preserve the size error.
+					}
 					throw new ResponseTooLargeError(maxResponseBytes, totalBytes);
 				}
 
@@ -432,7 +461,11 @@ export default class HttpProvider<
 		let totalBytes = 0;
 
 		const destroy = () => {
-			(body as { destroy?: () => void }).destroy?.();
+			try {
+				(body as { destroy?: () => void }).destroy?.();
+			} catch {
+				// A failing teardown must not mask the error being reported (P4-L-19).
+			}
 		};
 		const onAbort = () => destroy();
 		signal.addEventListener('abort', onAbort, { once: true });
@@ -621,6 +654,14 @@ export default class HttpProvider<
 			if (error instanceof BaseWeb3Error) throw error;
 			// Anything the transport threw embeds the full URL in its message (L-48).
 			const errorName = (error as { name?: unknown } | undefined)?.name;
+			if (errorName === 'TypeError') {
+				if (isTransportTypeError(error)) throw this.wrapTransportError(error);
+				// `fetch` refused the request itself. Its message quotes the offending header
+				// value or the URL, credentials included, so it is not echoed (P4-L-23).
+				throw new ProviderError(
+					`REQUEST REJECTED: fetch refused the request to ${this.endpoint} before sending it (TypeError). Check the header names and values in providerOptions.headers, and move credentials from the URL into an authorization header: a WHATWG fetch rejects a URL that carries them.`,
+				);
+			}
 			if (typeof errorName === 'string' && TRANSPORT_ERROR_NAMES.has(errorName)) {
 				throw this.wrapTransportError(error);
 			}

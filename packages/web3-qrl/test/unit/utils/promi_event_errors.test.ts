@@ -15,10 +15,15 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import { Web3PromiEvent } from '@theqrl/web3-core';
-import { InvalidResponseError, TransactionError } from '@theqrl/web3-errors';
+import { BaseWeb3Error, InvalidResponseError, TransactionError } from '@theqrl/web3-errors';
 import { DEFAULT_RETURN_FORMAT, TransactionReceipt } from '@theqrl/web3-types';
 
-import { reportWatcherError, toTransactionError } from '../../../src/utils/promi_event_errors';
+import {
+	reportListenerError,
+	reportSendFailure,
+	reportWatcherError,
+	toTransactionError,
+} from '../../../src/utils/promi_event_errors';
 import { SendTransactionEvents } from '../../../src/types';
 
 describe('PromiEvent error helpers', () => {
@@ -78,6 +83,98 @@ describe('PromiEvent error helpers', () => {
 
 			expect(warn).toHaveBeenCalledTimes(1);
 			expect(warn.mock.calls[0][1]).toBe(error);
+		});
+	});
+
+	describe('reportSendFailure (P4-L-10)', () => {
+		let promiEvent: Web3PromiEvent<
+			TransactionReceipt,
+			SendTransactionEvents<typeof DEFAULT_RETURN_FORMAT>
+		>;
+
+		beforeEach(() => {
+			promiEvent = new Web3PromiEvent(() => undefined);
+		});
+
+		it('delivers the typed error to an attached error listener', () => {
+			const listener = jest.fn<void, [BaseWeb3Error]>();
+			promiEvent.on('error', listener);
+			const error = new TypeError('malformed reply');
+
+			reportSendFailure(promiEvent, error);
+
+			expect(listener).toHaveBeenCalledTimes(1);
+			expect(listener.mock.calls[0][0]).toBeInstanceOf(TransactionError);
+			expect(listener.mock.calls[0][0].innerError).toBe(error);
+		});
+
+		it('emits nothing when no error listener is attached', () => {
+			const emit = jest.spyOn(promiEvent, 'emit');
+
+			reportSendFailure(promiEvent, new Error('boom'));
+
+			expect(emit).not.toHaveBeenCalled();
+		});
+
+		it('logs a throwing error listener instead of letting it escape', () => {
+			const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+			const listenerError = new Error('listener boom');
+			promiEvent.on('error', () => {
+				throw listenerError;
+			});
+
+			expect(() => reportSendFailure(promiEvent, new Error('boom'))).not.toThrow();
+
+			expect(warn).toHaveBeenCalledTimes(1);
+			expect(warn.mock.calls[0][1]).toBe(listenerError);
+		});
+	});
+
+	describe('reportListenerError (P4-L-10)', () => {
+		let promiEvent: Web3PromiEvent<
+			TransactionReceipt,
+			SendTransactionEvents<typeof DEFAULT_RETURN_FORMAT>
+		>;
+
+		beforeEach(() => {
+			promiEvent = new Web3PromiEvent(() => undefined);
+		});
+
+		it('delivers the listener failure as a typed error to an attached error listener', () => {
+			const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+			const listener = jest.fn<void, [BaseWeb3Error]>();
+			promiEvent.on('error', listener);
+			const error = new Error('receipt listener boom');
+
+			reportListenerError(promiEvent, 'receipt', error);
+
+			expect(listener).toHaveBeenCalledTimes(1);
+			expect(listener.mock.calls[0][0]).toBeInstanceOf(TransactionError);
+			expect(listener.mock.calls[0][0].innerError).toBe(error);
+			expect(warn).not.toHaveBeenCalled();
+		});
+
+		it('names the event in the warning when no error listener is attached', () => {
+			const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+			const error = new Error('receipt listener boom');
+
+			expect(() => reportListenerError(promiEvent, 'receipt', error)).not.toThrow();
+
+			expect(warn).toHaveBeenCalledTimes(1);
+			expect(warn.mock.calls[0][0]).toContain('"receipt" listener');
+			expect(warn.mock.calls[0][1]).toBe(error);
+		});
+
+		it('does not throw when the error listener itself throws', () => {
+			const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+			promiEvent.on('error', () => {
+				throw new Error('error listener boom');
+			});
+
+			expect(() =>
+				reportListenerError(promiEvent, 'transactionHash', new Error('boom')),
+			).not.toThrow();
+			expect(warn).toHaveBeenCalledTimes(1);
 		});
 	});
 });

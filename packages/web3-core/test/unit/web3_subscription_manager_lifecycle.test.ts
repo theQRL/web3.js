@@ -48,7 +48,7 @@ class FakeProvider extends EventEmitter {
 		this.sent.push(payload.method);
 		if (payload.method === 'qrl_subscribe') {
 			this._counter += 1;
-			return { jsonrpc: '2.0', id: payload.id, result: this.sameId ?? `0xsub${this._counter}` };
+			return { jsonrpc: '2.0', id: payload.id, result: this.sameId ?? `0x5ab${this._counter}` };
 		}
 		if (payload.method === 'qrl_unsubscribe') {
 			if (this.hangUnsubscribe) {
@@ -291,11 +291,11 @@ describe('Web3SubscriptionManager lifecycle', () => {
 			await flush();
 
 			expect(provider.sent).not.toContain('qrl_unsubscribe');
-			expect(sub.id).toBe('0xsub1');
+			expect(sub.id).toBe('0x5ab1');
 			expect(context.subscriptionManager.subscriptions.size).toBe(1);
 			expect(provider.listenerCount('message')).toBe(1);
 
-			provider.notify('0xsub1', { number: '0x2' });
+			provider.notify('0x5ab1', { number: '0x2' });
 			expect(received).toEqual([{ number: '0x2' }]);
 		});
 
@@ -311,7 +311,7 @@ describe('Web3SubscriptionManager lifecycle', () => {
 			await flush();
 
 			expect(provider.sent).not.toContain('qrl_unsubscribe');
-			expect(sub.id).toBe('0xsub1');
+			expect(sub.id).toBe('0x5ab1');
 			expect(provider.listenerCount('message')).toBe(1);
 		});
 	});
@@ -319,15 +319,15 @@ describe('Web3SubscriptionManager lifecycle', () => {
 	describe('subscription id handed out twice by the node (I-14)', () => {
 		it('rejects the second subscription and keeps the first intact (I-14)', async () => {
 			const { provider, manager } = setup();
-			provider.sameId = '0xsame';
+			provider.sameId = '0x5a3e';
 			const first = await subscribe(manager);
 
 			await expect(manager.subscribe('example')).rejects.toBeInstanceOf(SubscriptionError);
 			await expect(manager.subscribe('example')).rejects.toThrow(
-				'Subscription with id "0xsame" already exists',
+				'Subscription with id "0x5a3e" already exists',
 			);
-			expect(manager.subscriptions.get('0xsame')).toBe(first);
-			expect(first.id).toBe('0xsame');
+			expect(manager.subscriptions.get('0x5a3e')).toBe(first);
+			expect(first.id).toBe('0x5a3e');
 			expect(provider.sent).not.toContain('qrl_unsubscribe');
 			expect(provider.listenerCount('message')).toBe(1);
 		});

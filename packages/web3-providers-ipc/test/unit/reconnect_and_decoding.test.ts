@@ -25,6 +25,7 @@ import {
 	InvalidClientError,
 	MaxAttemptsReachedOnReconnectingError,
 	RequestSerializationError,
+	ResponseTooLargeError,
 } from '@theqrl/web3-errors';
 import { IpcProvider } from '../../src/index';
 
@@ -72,9 +73,13 @@ interface TestServer {
 	close: () => Promise<void>;
 }
 
+/** 10 MiB + 1 KiB of payload: above the default `maxResponseBytes`, within a raised one. */
+const OVERSIZED_RESULT_LENGTH = 10 * 1024 * 1024 + 1024;
+
 /**
  * Answers the EIP-1193 probes and `qrl_blockNumber`; a request for method `split` is answered
- * with `"é"` written as two chunks cut inside the two-byte character.
+ * with `"é"` written as two chunks cut inside the two-byte character, `big` with a result of
+ * {@link OVERSIZED_RESULT_LENGTH} characters and `slow` 200 ms later.
  */
 const startServer = async (socketPath: string): Promise<TestServer> => {
 	const clients: net.Socket[] = [];
@@ -87,6 +92,26 @@ const startServer = async (socketPath: string): Promise<TestServer> => {
 				const request = JSON.parse(text) as { id: number; method: string };
 				// `silent` is answered by the test itself.
 				if (request.method === 'silent') continue;
+				if (request.method === 'big') {
+					client.write(
+						JSON.stringify({
+							jsonrpc: '2.0',
+							id: request.id,
+							result: 'a'.repeat(OVERSIZED_RESULT_LENGTH),
+						}),
+					);
+					continue;
+				}
+				if (request.method === 'slow') {
+					setTimeout(
+						() =>
+							client.write(
+								JSON.stringify({ jsonrpc: '2.0', id: request.id, result: '0x5' }),
+							),
+						200,
+					);
+					continue;
+				}
 				if (request.method === 'split') {
 					const reply = Buffer.from(
 						JSON.stringify({ jsonrpc: '2.0', id: request.id, result: 'é' }),
@@ -191,6 +216,88 @@ describe('IpcProvider over real sockets', () => {
 				expect(counts()).toEqual({ error: 1, data: 1, close: 1, end: 1 });
 			} finally {
 				provider.disconnect();
+				await server.close();
+			}
+		});
+	});
+
+	describe('oversized replies (P4-M-5)', () => {
+		it('accepts a 10 MiB + 1 KiB reply when maxResponseBytes is raised to 64 MiB', async () => {
+			const socketPath = path.join(dir, 's.ipc');
+			const server = await startServer(socketPath);
+			const provider = new IpcProvider(
+				socketPath,
+				{},
+				{ autoReconnect: false },
+				{ maxResponseBytes: 64 * 1024 * 1024, requestTimeout: 10_000 },
+			);
+			provider.on('error', () => undefined);
+			try {
+				await until(() => provider.getStatus() === 'connected', 2000, 'connect');
+				const response = await provider.request(payload(2, 'big') as never);
+				expect((response.result as string).length).toBe(OVERSIZED_RESULT_LENGTH);
+			} finally {
+				provider.disconnect();
+				await server.close();
+			}
+		}, 20_000);
+
+		it('fails only the request an oversized reply answers with the default bound', async () => {
+			const socketPath = path.join(dir, 's.ipc');
+			const server = await startServer(socketPath);
+			const provider = new IpcProvider(
+				socketPath,
+				{},
+				{ autoReconnect: false },
+				{ requestTimeout: 10_000 },
+			);
+			const errors: unknown[] = [];
+			provider.on('error', (error: unknown) => {
+				errors.push(error);
+			});
+			try {
+				await until(() => provider.getStatus() === 'connected', 2000, 'connect');
+				const slow = provider.request(payload(1, 'slow') as never);
+				const big = provider.request(payload(2, 'big') as never);
+
+				await expect(big).rejects.toThrow(ResponseTooLargeError);
+				await expect(big).rejects.toMatchObject({ maxResponseBytes: 10 * 1024 * 1024 });
+				// The unrelated request, answered later on the same socket, is unaffected and
+				// the connection stays usable.
+				expect((await slow).result).toBe('0x5');
+				expect(provider.getStatus()).toBe('connected');
+				expect((await provider.request(payload(3, 'qrl_blockNumber') as never)).result).toBe(
+					'0x5',
+				);
+				// Reported by the parser and once more by the rejected request, which re-emits
+				// its rejection reason like every failed request does; nothing else.
+				expect(errors.length).toBeGreaterThanOrEqual(1);
+				expect(errors.every(error => error instanceof ResponseTooLargeError)).toBe(true);
+			} finally {
+				provider.disconnect();
+				await server.close();
+			}
+		}, 20_000);
+	});
+
+	describe('disconnect (I-F13)', () => {
+		it('emits disconnect exactly once', async () => {
+			const socketPath = path.join(dir, 's.ipc');
+			const server = await startServer(socketPath);
+			const provider = new IpcProvider(socketPath, {}, { autoReconnect: false });
+			provider.on('error', () => undefined);
+			const disconnects: unknown[] = [];
+			provider.on('disconnect', (event: unknown) => {
+				disconnects.push(event);
+			});
+			try {
+				await until(() => provider.getStatus() === 'connected', 2000, 'connect');
+				provider.disconnect();
+				await until(() => server.clients[0].destroyed, 2000, 'the server-side close');
+				await wait(50);
+				expect(disconnects).toHaveLength(1);
+				expect(provider.getStatus()).toBe('disconnected');
+			} finally {
 				await server.close();
 			}
 		});

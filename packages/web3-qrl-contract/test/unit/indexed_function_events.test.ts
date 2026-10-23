@@ -30,7 +30,8 @@ const eventAbi = {
 	type: 'event',
 } as const;
 const event = { ...eventAbi, signature: encodeEventSignature(eventAbi) };
-const eventTopic = `${event.signature}${'00'.repeat(32)}`;
+// `encodeEventSignature` already returns the 64-byte QRVM topic.
+const eventTopic = event.signature;
 const address = `Q${'44'.repeat(64)}`;
 const contractOptions = { address, jsonInterface: [event] };
 

@@ -56,9 +56,19 @@ describe.each([
 	const request = jest.fn();
 
 	beforeEach(() => {
-		request.mockReset().mockResolvedValue('0x7');
+		// `qrl_chainId` answers the chain the transaction names (the builder checks it, round
+		// 2); every other request (the nonce lookup) answers 0x7.
+		request
+			.mockReset()
+			// eslint-disable-next-line @typescript-eslint/require-await -- a provider answers with a promise
+			.mockImplementation(async ({ method }: { method: string }) =>
+				method === 'qrl_chainId' ? '0x1' : '0x7',
+			);
 		web3 = new Web3({ provider: { request } });
 	});
+
+	const methodsRequested = () =>
+		request.mock.calls.map(call => (call[0] as { method: string }).method).sort();
 
 	it('rejects a mismatched from address before making any RPC requests', async () => {
 		await expect(
@@ -67,7 +77,7 @@ describe.each([
 		expect(request).not.toHaveBeenCalled();
 	});
 
-	it('signs a matching from address and an explicit nonce without RPC requests', async () => {
+	it('signs a matching from address and an explicit nonce with the chain-id check as the only RPC request', async () => {
 		const signed = await sign(web3, { ...transaction, from: signerAddress, nonce: 0 });
 		const decoded = FeeMarketEIP1559Transaction.fromSerializedTx(
 			hexToBytes(signed.rawTransaction),
@@ -78,7 +88,7 @@ describe.each([
 		expect(decoded.getSenderAddress().toString().toLowerCase()).toBe(
 			signerAddress.toLowerCase(),
 		);
-		expect(request).not.toHaveBeenCalled();
+		expect(methodsRequested()).toEqual(['qrl_chainId']);
 	});
 
 	it.each([
@@ -91,8 +101,11 @@ describe.each([
 
 		const signed = await sign(web3, { ...transaction });
 
-		expect(request).toHaveBeenCalledTimes(1);
-		expect(request.mock.calls[0][0]).toMatchObject({
+		expect(methodsRequested()).toEqual(['qrl_chainId', 'qrl_getTransactionCount']);
+		const nonceRequest = request.mock.calls.find(
+			call => (call[0] as { method: string }).method === 'qrl_getTransactionCount',
+		);
+		expect(nonceRequest?.[0]).toMatchObject({
 			method: 'qrl_getTransactionCount',
 			params: [signerAddress, 'latest'],
 		});
@@ -121,12 +134,17 @@ describe.each([
 		const nonce = new Promise<string>(resolve => {
 			resolveNonce = resolve;
 		});
-		const request = jest.fn().mockReturnValue(nonce);
+		const request = jest
+			.fn()
+			.mockImplementation(async ({ method }: { method: string }) =>
+				method === 'qrl_chainId' ? '0x1' : nonce,
+			);
 		const web3 = new Web3({ provider: { request } });
 		web3.defaultAccount = otherAddress;
 
 		const pending = web3.qrl.accounts.signTransaction({ ...transaction, from }, seedBytes);
 
+		// The nonce lookup is in flight (the chain-id check follows it once it resolves).
 		expect(request).toHaveBeenCalledTimes(1);
 		expect(request.mock.calls[0][0]).toMatchObject({
 			method: 'qrl_getTransactionCount',

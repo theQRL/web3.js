@@ -21,6 +21,7 @@ import {
 } from '@theqrl/qrl-cryptography/aes.js';
 import { argon2idSync } from '@theqrl/qrl-cryptography/argon2id.js';
 import {
+	InvalidBytesError,
 	InvalidCipherError,
 	InvalidKdfError,
 	InvalidPasswordError,
@@ -55,7 +56,7 @@ import {
 	uuidV4,
 } from '@theqrl/web3-utils';
 
-import { isHexStrict, isNullish, isString, validator } from '@theqrl/web3-validator';
+import { isHexStrict, isNullish, isObject, isString, validator } from '@theqrl/web3-validator';
 import { keyStoreSchema } from './schemas.js';
 import { validateArgon2idParams, validateArgon2idSalt } from './kdf_policy.js';
 import { keystoreContainerError, keystoreHexToBytes } from './keystore_utils.js';
@@ -143,17 +144,22 @@ export const parseAndValidateSeed = (data: Bytes, ignoreLength?: boolean): Uint8
 	return seedUint8Array;
 };
 
+/** Whether a string stands for the bytes it encodes rather than for text: the rule `sha3` applies. */
+const isHexBytesInput = (data: string): boolean => /^0x/i.test(data) && isHexStrict(data);
+
 /**
  *
  * Hashes the given message. The message is enveloped as "\\x19QRL Signed Message:\\n" + message.length + message and hashed using keccak256,
  * exactly like go-qrl's `accounts.TextHash`.
  *
- * A `0x`-prefixed hex string is hashed as the bytes it encodes (as `qrl_sign` does); every other string is hashed as its
- * raw UTF-8 bytes and `message.length` is the byte length. Nothing is trimmed: a leading or trailing NUL character is part
- * of the message, so `hashMessage("\\u0000abc")` differs from `hashMessage("abc")`.
+ * A `0x`/`0X`-prefixed strict hex string is hashed as the bytes it encodes (as `qrl_sign` does), with the same rule as
+ * `sha3`; every other string, `-0x…` included, is hashed as its raw UTF-8 bytes and `message.length` is the byte length.
+ * Nothing is trimmed: a leading or trailing NUL character is part of the message, so `hashMessage("\\u0000abc")` differs
+ * from `hashMessage("abc")`.
  *
  * @param message - A message to hash, if its HEX it will be UTF8 decoded.
  * @returns The hashed message
+ * @throws InvalidBytesError for a `0x`-prefixed hex string of odd length, which encodes no byte sequence (P4-L-43).
  *
  * ```ts
  * hashMessage("Hello world")
@@ -163,9 +169,18 @@ export const parseAndValidateSeed = (data: Bytes, ignoreLength?: boolean): Uint8
  * ```
  */
 export const hashMessage = (message: string): string => {
-	const messageBytes = isHexStrict(message)
-		? hexToBytes(message)
-		: new TextEncoder().encode(message);
+	// The classifier `sha3` applies: only a `0x`/`0X`-prefixed strict hex string is hashed as the
+	// bytes it encodes. `isHexStrict` alone also matched `-0x…`, which then failed inside `hexToBytes`
+	// with a validator error quoting the message, as did an odd-length hex string (P4-L-43).
+	let messageBytes: Uint8Array;
+	if (isHexBytesInput(message)) {
+		if (message.length % 2 !== 0) {
+			throw new InvalidBytesError(message);
+		}
+		messageBytes = hexToBytes(message);
+	} else {
+		messageBytes = new TextEncoder().encode(message);
+	}
 
 	const preamble = new TextEncoder().encode(
 		`\x19QRL Signed Message:\n${messageBytes.byteLength}`,
@@ -327,7 +342,7 @@ export type EncryptOptions = Omit<CipherOptions, 'iv'>;
  * a server event loop SHOULD run it in a worker thread (as the QRL wallet
  * does).
  *
- * **Parameters:** the Argon2id parameters are bounded (`m` 19456..1048576 KiB, `t` 2..50, `p` 1..16, see
+ * **Parameters:** the Argon2id parameters are bounded (`m` 19456..524288 KiB, `t` 2..16, `p` 1..16, see
  * `ARGON2ID_BOUNDS`) and `dklen` must be 32, the AES-256-GCM key length (go-qrl pins the same value).
  * Out-of-range values throw {@link InvalidKdfError} before any key derivation runs. The default
  * parameters match go-qrl's standard keystore profile.
@@ -565,7 +580,7 @@ export const create = (): Web3Account => {
  *
  * @param keystore - the encrypted Keystore object or string to decrypt
  * @param password - The password that was used for encryption
- * @param nonStrict - if true and given a json string, the keystore will be parsed as lowercase.
+ * @param nonStrict - if true and given a json string, the keystore will be parsed as lowercase (the `Q` of the address label is restored before the label is checked).
  * @returns Returns the decrypted Web3Account object
  * Decrypting argon2id
  *
@@ -618,6 +633,17 @@ export const decrypt = async (
 			json = JSON.parse(nonStrict ? keystore.toLowerCase() : keystore) as KeyStore;
 		} catch (error) {
 			throw keystoreContainerError('keystore string is not valid JSON', error);
+		}
+		// `nonStrict` lower-cases the whole document, the `Q` of the address label included. The
+		// prefix is restored here, so the label check below can require the upper-case letter
+		// go-qrl requires without rejecting every keystore read this way (P4-L-44).
+		if (
+			nonStrict &&
+			isObject(json) &&
+			typeof json.address === 'string' &&
+			json.address.startsWith('q')
+		) {
+			json = { ...json, address: `Q${json.address.slice(1)}` };
 		}
 	}
 
@@ -684,9 +710,14 @@ export const decrypt = async (
 	// Parity with go-qrl (accounts/keystore/passphrase.go GetKey): confirm the address derived
 	// from the decrypted seed matches the address recorded in the keystore. This is a local sanity
 	// check on the (unauthenticated) `address` label — it does NOT bind metadata as GCM AAD, so it
-	// keeps keystores interoperable with go-qrl (see C18 explainer). Case-insensitive because the
-	// stored address is lower-cased while a derived address is checksum-cased.
-	if (account.address.toLowerCase() !== `q${json.address.slice(1).toLowerCase()}`) {
+	// keeps keystores interoperable with go-qrl (see C18 explainer). The `Q` prefix is compared as
+	// it is (go-qrl requires the upper-case letter, so `X…`, `q…` or `0x…` labels are mismatches)
+	// and the hex body case-insensitively, because the stored address is lower-cased while a
+	// derived address is checksum-cased (P4-L-44).
+	if (
+		!json.address.startsWith('Q') ||
+		json.address.slice(1).toLowerCase() !== account.address.slice(1).toLowerCase()
+	) {
 		throw new KeyStoreMismatchError(json.address, account.address);
 	}
 

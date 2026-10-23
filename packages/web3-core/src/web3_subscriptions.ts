@@ -29,7 +29,7 @@ import {
 	Web3APISpec,
 } from '@theqrl/web3-types';
 import { jsonRpc } from '@theqrl/web3-utils';
-import { SubscriptionError } from '@theqrl/web3-errors';
+import { BaseWeb3Error, SubscriptionError } from '@theqrl/web3-errors';
 
 import { Web3SubscriptionManager } from './web3_subscription_manager.js';
 import { Web3EventEmitter, Web3EventMap } from './web3_event_emitter.js';
@@ -114,11 +114,23 @@ export abstract class Web3Subscription<
 	}
 
 	public async sendSubscriptionRequest(): Promise<string> {
-		this._id = await this._subscriptionManager.requestManager.send({
+		const result: unknown = await this._subscriptionManager.requestManager.send({
 			method: 'qrl_subscribe',
 			params: this._buildSubscriptionParams(),
 		});
 
+		// The node is untrusted: only a non-empty `0x` hex string is a subscription id (go-qrl
+		// hands out `"0x" + hex`). Anything else used to be stored as it came and string-converted
+		// later in a path nobody awaited, where `{ toString: 1 }` terminated the process (P4-M-1).
+		if (typeof result !== 'string' || !/^0x[0-9a-f]+$/i.test(result)) {
+			throw new SubscriptionError(
+				`Invalid subscription id in the qrl_subscribe reply: expected a 0x hex string, got ${BaseWeb3Error.convertToString(
+					result,
+				)}`,
+			);
+		}
+
+		this._id = result;
 		this.emit('connected', this._id);
 		return this._id;
 	}
@@ -131,8 +143,17 @@ export abstract class Web3Subscription<
 		return this._subscriptionManager;
 	}
 
+	/**
+	 * Unsubscribes and subscribes again. A failed `qrl_unsubscribe` (the node no longer knows
+	 * the id, for example after a reconnect) does not abort the re-subscription: the
+	 * subscription is already dropped locally in that case (P4-L-3).
+	 */
 	public async resubscribe() {
-		await this.unsubscribe();
+		try {
+			await this.unsubscribe();
+		} catch {
+			this._markUnsubscribed();
+		}
 		await this.subscribe();
 	}
 
@@ -145,11 +166,16 @@ export abstract class Web3Subscription<
 	}
 
 	public async sendUnsubscribeRequest() {
+		const { id } = this;
 		await this._subscriptionManager.requestManager.send({
 			method: 'qrl_unsubscribe',
-			params: [this.id] as Web3APIParams<API, 'qrl_unsubscribe'>,
+			params: [id] as Web3APIParams<API, 'qrl_unsubscribe'>,
 		});
-		this._id = undefined;
+		// A late acknowledgement from a replaced provider must not wipe the id of a
+		// subscription that was re-subscribed meanwhile (P4-L-2).
+		if (this._id === id) {
+			this._id = undefined;
+		}
 	}
 
 	/**
@@ -176,7 +202,8 @@ export abstract class Web3Subscription<
 			// A notification the subclass cannot decode (a malformed log, for example) is this
 			// subscription's problem: report it on the subscription's `error` event so the
 			// subscriber learns that an item was dropped. Without an `error` listener the
-			// emit throws and the provider reports it, as before.
+			// emitter drops the event silently; subclasses that want it logged override
+			// `_processSubscriptionError` (as the QRL subscriptions do).
 			this._processSubscriptionError(error as Error);
 			return;
 		}

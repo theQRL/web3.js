@@ -17,6 +17,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 import { OperationTimeoutError } from '@theqrl/web3-errors';
 import { Web3DeferredPromiseInterface } from '@theqrl/web3-types';
+import { validateTimeout } from './provider_bounds.js';
 
 /**
  * The class is a simple implementation of a deferred promise with optional timeout functionality,
@@ -57,6 +58,11 @@ export class Web3DeferredPromise<T> implements Promise<T>, Web3DeferredPromiseIn
 			this._resolve = resolve;
 			this._reject = reject;
 		});
+
+		// A delay a timer cannot hold would fire after 1 ms instead of "never" (P4-L-5).
+		if (timeout) {
+			validateTimeout(timeout, 'timeout');
+		}
 
 		this._timeoutMessage = timeoutMessage;
 		this._timeoutInterval = timeout;

@@ -111,6 +111,10 @@ export class FeeMarketEIP1559Transaction extends BaseTransaction<FeeMarketEIP155
 	 *
 	 * Format: `[chainId, nonce, maxPriorityFeePerGas, maxFeePerGas, gasLimit, to, value, data,
 	 * accessList, descriptor, extraParams, signature, publicKey ]`
+	 *
+	 * The 11-element form (no `signature`/`publicKey`) and the 13-element form with empty
+	 * authentication fields are this library's own encodings of an *unsigned* transaction (see
+	 * {@link FeeMarketEIP1559Transaction.serialize}); go-qrl's RLP decoder accepts neither (I-3).
 	 */
 	public static fromValuesArray(values: FeeMarketEIP1559ValuesArray, opts: TxOptions = {}) {
 		if (values.length !== 11 && values.length !== 13) {
@@ -294,7 +298,11 @@ export class FeeMarketEIP1559Transaction extends BaseTransaction<FeeMarketEIP155
 	 * with {@link Block.fromValuesArray}.
 	 *
 	 * For an unsigned tx this method uses the empty Uint8Array values for the
-	 * authentication fields. For the signing preimage used by external signers use
+	 * authentication fields `descriptor`, `extraParams`, `signature` and `publicKey`. That
+	 * encoding is library-internal: it round-trips through
+	 * {@link FeeMarketEIP1559Transaction.fromValuesArray}, but go-qrl's RLP decoder rejects it
+	 * (its `Descriptor` is a fixed 3-byte field), so it must never be broadcast (I-3). For the
+	 * signing preimage used by external signers use
 	 * {@link FeeMarketEIP1559Transaction.getMessageToSign}.
 	 */
 	public raw(): FeeMarketEIP1559ValuesArray {
@@ -324,6 +332,12 @@ export class FeeMarketEIP1559Transaction extends BaseTransaction<FeeMarketEIP155
 	 * Note that in contrast to the legacy tx serialization format this is not
 	 * valid RLP any more due to the raw tx type preceding and concatenated to
 	 * the RLP encoding of the values.
+	 *
+	 * Only the encoding of a *signed* transaction is the wire format `qrl_sendRawTransaction`
+	 * accepts. An unsigned transaction serializes with empty authentication fields, which this
+	 * library decodes again but go-qrl does not (see {@link FeeMarketEIP1559Transaction.raw}); the
+	 * unsigned preimage for external signers is {@link FeeMarketEIP1559Transaction.getMessageToSign}
+	 * (I-3).
 	 */
 	public serialize(): Uint8Array {
 		const base = this.raw();
@@ -386,7 +400,11 @@ export class FeeMarketEIP1559Transaction extends BaseTransaction<FeeMarketEIP155
 	}
 
 	/**
-	 * Returns the public key of the sender
+	 * Returns the public key attached to the transaction.
+	 *
+	 * **Precondition:** {@link FeeMarketEIP1559Transaction.verifySignature} must have returned `true`.
+	 * The key is a plain field of the (possibly untrusted) raw transaction: this method only checks
+	 * that the authentication fields are present, not that the signature was made with this key (I-4).
 	 */
 	public getSenderPublicKey(): Uint8Array {
 		if (!this.isSigned()) {

@@ -4,8 +4,10 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
+# Generated output only. `.secrets.json` is developer-owned state (written by
+# `pnpm run init:secrets`, read by the e2e suites) and is never removed here;
+# it is gitignored and `pnpm run hygiene` fails only if it is tracked.
 paths=(
-	".secrets.json"
 	"tmp"
 	".coverage"
 	".nyc_output"

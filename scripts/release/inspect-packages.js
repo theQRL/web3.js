@@ -8,7 +8,7 @@ const { execFileSync } = require('child_process');
 const { checkPackageDependencies } = require('../check-package-dependencies');
 const { publishablePackages } = require('./packages');
 
-const npmCache = process.env.npm_config_cache || mkdtempSync(resolve(tmpdir(), 'web3-pack-npm-cache-'));
+const npmCache = () => process.env.npm_config_cache || mkdtempSync(resolve(tmpdir(), 'web3-pack-npm-cache-'));
 
 const normalizePackagePath = packagePath => packagePath.replace(/^\.\//, '').replace(/\\/g, '/');
 
@@ -33,16 +33,26 @@ const declaredEntrypoints = manifest => {
 		.map(([key, target]) => [key, normalizePackagePath(target)]);
 };
 
+// Matched against every path npm would pack, at any depth: the `files`
+// allowlists are `lib/**`, `src/**` and `dist/**`, so a stray secret or
+// dependency-manager file lands below one of those directories, never at the
+// tarball root (audit P4-L-46).
 const forbiddenPatterns = [
-	[/^node_modules\//, 'node_modules'],
-	[/^coverage\//, 'coverage'],
-	[/^\.turbo\//, '.turbo'],
-	[/^\.secrets\.json$/, '.secrets.json'],
-	[/\byarn\.lock$/, 'yarn.lock'],
-	[/\bpnpm-lock\.yaml$/, 'pnpm-lock.yaml'],
-	[/\bpackage-lock\.json$/, 'package-lock.json'],
+	[/(^|\/)node_modules\//, 'node_modules'],
+	[/(^|\/)\.?coverage\//, 'coverage'],
+	[/(^|\/)\.turbo\//, '.turbo'],
+	[/(^|\/)\.secrets\.json$/, '.secrets.json'],
+	[/(^|\/)\.env(\.|$)/, '.env'],
+	[/\.pem$/, 'PEM key or certificate'],
+	[/\.key$/, 'private key'],
+	[/(^|\/)yarn\.lock$/, 'yarn.lock'],
+	[/(^|\/)pnpm-lock\.yaml$/, 'pnpm-lock.yaml'],
+	[/(^|\/)package-lock\.json$/, 'package-lock.json'],
 	[/ copy\./, 'copy file'],
 ];
+
+// Labels of every forbidden pattern a packed path matches (empty when allowed).
+const forbiddenLabels = file => forbiddenPatterns.filter(([pattern]) => pattern.test(file)).map(([, label]) => label);
 
 const provenanceRepositoryUrl = 'https://github.com/theQRL/web3.js';
 
@@ -55,13 +65,14 @@ const packDryRun = packagePath => {
 			npm_config_audit: 'false',
 			npm_config_fund: 'false',
 			npm_config_ignore_scripts: 'true',
-			npm_config_cache: npmCache,
+			npm_config_cache: npmCache(),
 		},
 	});
 	const [pack] = JSON.parse(output);
 	return pack;
 };
 
+const main = () => {
 const errors = [];
 const summaries = [];
 
@@ -100,10 +111,8 @@ for (const pkg of publishablePackages()) {
 	}
 
 	for (const file of files) {
-		for (const [pattern, label] of forbiddenPatterns) {
-			if (pattern.test(file)) {
-				errors.push(`${pkg.name}: forbidden ${label} file in npm pack output: ${file}`);
-			}
+		for (const label of forbiddenLabels(file)) {
+			errors.push(`${pkg.name}: forbidden ${label} file in npm pack output: ${file}`);
 		}
 	}
 
@@ -124,3 +133,8 @@ if (errors.length > 0) {
 }
 
 console.info(`Inspected ${summaries.length} publishable package dry-runs`);
+};
+
+if (require.main === module) main();
+
+module.exports = { forbiddenLabels, forbiddenPatterns };

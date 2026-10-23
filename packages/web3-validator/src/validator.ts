@@ -19,6 +19,7 @@ import { Web3ValidationErrorObject } from '@theqrl/web3-types';
 import { z, ZodType, ZodIssue, ZodIssueCode, ZodTypeAny } from 'zod';
 
 import { RawCreateParams } from 'zod/lib/types';
+import { BaseWeb3Error } from '@theqrl/web3-errors';
 import { Web3ValidatorError } from './errors.js';
 import { Json, JsonSchema } from './types.js';
 import formats from './formats.js';
@@ -40,6 +41,20 @@ const convertToZod = (schema: JsonSchema): ZodType => {
 				.required(schema.required.reduce((acc, v: string) => ({ ...acc, [v]: true }), {}));
 		}
 		return z.object(obj).partial();
+	}
+
+	if (schema?.type === 'array' && !schema?.items) {
+		// Zod would build an array schema around `undefined` and fail later with a raw
+		// `TypeError` (`_parseSync`); a schema that names no element type is a schema error.
+		throw new Web3ValidatorError([
+			{
+				keyword: 'items',
+				message: 'An array schema requires "items" (the element schema)',
+				params: { type: 'array' },
+				instancePath: '',
+				schemaPath: '',
+			},
+		]);
 	}
 
 	if (schema?.type === 'array' && schema?.items) {
@@ -172,9 +187,15 @@ export class Validator {
 					if (typeof value === 'undefined') {
 						message = `value at "/${schemaPath}" is required`;
 					} else {
+						// `convertToString` never throws: a bigint or a circular object used to turn
+						// the validation error into a raw `TypeError` (P4-L-39).
 						message = `value "${
-							// eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-							typeof value === 'object' ? JSON.stringify(value) : value
+							// eslint-disable-next-line no-null/no-null -- `null` is reported as the node sent it
+							value === null
+								? 'null'
+								: typeof value === 'string'
+								? value
+								: BaseWeb3Error.convertToString(value, true)
 						}" at "/${schemaPath}" must pass "${format}" validation`;
 					}
 

@@ -44,7 +44,8 @@ describe('getTransactionFromBlock', () => {
 		`should call rpcMethods.getTransactionFromBlock with expected parameters\nTitle: %s\nInput parameters: %s\n`,
 		async (_, inputParameters) => {
 			const [inputBlock, inputTransactionIndex] = inputParameters;
-			const inputBlockIsBytes = isBytes(inputBlock as Bytes);
+			// Only a 32-byte value is a block hash (P4-L-11).
+			const inputBlockIsBytes = isBytes(inputBlock as Bytes, { size: 32 });
 			const inputTransactionIndexFormatted = format(
 				{ format: 'uint' },
 				inputTransactionIndex,
@@ -84,7 +85,8 @@ describe('getTransactionFromBlock', () => {
 				expectedReturnFormat,
 				{ transactionSchema: transactionInfoSchema },
 			);
-			const inputBlockIsBytes = isBytes(inputBlock as Bytes);
+			// Only a 32-byte value is a block hash (P4-L-11).
+			const inputBlockIsBytes = isBytes(inputBlock as Bytes, { size: 32 });
 			(
 				(inputBlockIsBytes
 					? qrlRpcMethods.getTransactionByBlockHashAndIndex

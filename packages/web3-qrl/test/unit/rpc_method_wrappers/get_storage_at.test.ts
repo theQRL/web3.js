@@ -60,6 +60,7 @@ describe('getStorageAt', () => {
 				);
 			}
 
+			(qrlRpcMethods.getStorageAt as jest.Mock).mockResolvedValueOnce(mockRpcResponse);
 			await getStorageAt(web3Context, ...inputParameters, DEFAULT_RETURN_FORMAT);
 			expect(qrlRpcMethods.getStorageAt).toHaveBeenCalledWith(
 				web3Context.requestManager,

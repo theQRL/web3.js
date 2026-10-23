@@ -24,16 +24,26 @@ import { qrlRpcMethods } from '@theqrl/web3-rpc-methods';
 
 import Web3QRL from '../../../src/index';
 import {
+	estimateGas,
+	getBalance,
+	getBlockNumber,
+	getBlockTransactionCount,
 	getChainId,
+	getCode,
 	getLogs,
 	getMaxPriorityFeePerGas,
 	getPendingTransactions,
+	getStorageAt,
 	getTransaction,
+	getTransactionCount,
 	getTransactionReceipt,
+	sign,
 	signTransaction,
+	signTypedData,
 } from '../../../src/rpc_method_wrappers';
 import { getTransactionGasPricing } from '../../../src/utils/get_transaction_gas_pricing';
 import { mockRpcResponse as mockLogs } from './fixtures/get_logs';
+import { testData as signTypedDataTestData } from './fixtures/sign_typed_data';
 
 jest.mock('@theqrl/web3-rpc-methods');
 
@@ -172,6 +182,142 @@ describe('malformed node replies are reported as InvalidResponseError (L-26)', (
 			await expect(
 				getTransactionReceipt(web3Context, HASH, DEFAULT_RETURN_FORMAT),
 			).rejects.toThrow(InvalidResponseError);
+		});
+	});
+
+	describe('quantity replies (P4-L-13)', () => {
+		const transaction = { from: Q_ADDRESS, to: Q_ADDRESS, value: '0x1' };
+		const malformed: [string, unknown][] = [
+			["'abc'", 'abc'],
+			['null', NULL_REPLY],
+			['{}', {}],
+			["'0x'", '0x'],
+			["'-0x1'", '-0x1'],
+		];
+
+		it.each(malformed)('getBlockNumber rejects %s', async (_, reply) => {
+			(qrlRpcMethods.getBlockNumber as jest.Mock).mockResolvedValueOnce(reply);
+			await expect(getBlockNumber(web3Context, DEFAULT_RETURN_FORMAT)).rejects.toThrow(
+				InvalidResponseError,
+			);
+		});
+
+		it.each(malformed)('getBalance rejects %s', async (_, reply) => {
+			(qrlRpcMethods.getBalance as jest.Mock).mockResolvedValueOnce(reply);
+			await expect(
+				getBalance(web3Context, Q_ADDRESS, 'latest', DEFAULT_RETURN_FORMAT),
+			).rejects.toThrow(InvalidResponseError);
+		});
+
+		it.each(malformed)('getTransactionCount rejects %s', async (_, reply) => {
+			(qrlRpcMethods.getTransactionCount as jest.Mock).mockResolvedValueOnce(reply);
+			await expect(
+				getTransactionCount(web3Context, Q_ADDRESS, 'latest', DEFAULT_RETURN_FORMAT),
+			).rejects.toThrow(InvalidResponseError);
+		});
+
+		it.each(malformed)('estimateGas rejects %s', async (_, reply) => {
+			(qrlRpcMethods.estimateGas as jest.Mock).mockResolvedValueOnce(reply);
+			await expect(
+				estimateGas(web3Context, transaction, 'latest', DEFAULT_RETURN_FORMAT),
+			).rejects.toThrow(InvalidResponseError);
+		});
+
+		it.each(malformed)(
+			'getBlockTransactionCount rejects %s for a block number and for a block hash',
+			async (_, reply) => {
+				(
+					qrlRpcMethods.getBlockTransactionCountByNumber as jest.Mock
+				).mockResolvedValueOnce(reply);
+				await expect(
+					getBlockTransactionCount(web3Context, '0x10', DEFAULT_RETURN_FORMAT),
+				).rejects.toThrow(InvalidResponseError);
+				(qrlRpcMethods.getBlockTransactionCountByHash as jest.Mock).mockResolvedValueOnce(
+					reply,
+				);
+				await expect(
+					getBlockTransactionCount(web3Context, HASH, DEFAULT_RETURN_FORMAT),
+				).rejects.toThrow(InvalidResponseError);
+			},
+		);
+
+		it('accepts hex quantities', async () => {
+			(qrlRpcMethods.getBlockNumber as jest.Mock).mockResolvedValueOnce('0x10');
+			await expect(getBlockNumber(web3Context, DEFAULT_RETURN_FORMAT)).resolves.toBe(
+				BigInt(16),
+			);
+			(qrlRpcMethods.getBalance as jest.Mock).mockResolvedValueOnce('0x1');
+			await expect(
+				getBalance(web3Context, Q_ADDRESS, 'latest', DEFAULT_RETURN_FORMAT),
+			).resolves.toBe(BigInt(1));
+			(qrlRpcMethods.getTransactionCount as jest.Mock).mockResolvedValueOnce('0x2');
+			await expect(
+				getTransactionCount(web3Context, Q_ADDRESS, 'latest', DEFAULT_RETURN_FORMAT),
+			).resolves.toBe(BigInt(2));
+			(qrlRpcMethods.estimateGas as jest.Mock).mockResolvedValueOnce('0x5208');
+			await expect(
+				estimateGas(web3Context, transaction, 'latest', DEFAULT_RETURN_FORMAT),
+			).resolves.toBe(BigInt(21000));
+			(qrlRpcMethods.getBlockTransactionCountByHash as jest.Mock).mockResolvedValueOnce('0x3');
+			await expect(
+				getBlockTransactionCount(web3Context, HASH, DEFAULT_RETURN_FORMAT),
+			).resolves.toBe(BigInt(3));
+		});
+	});
+
+	describe('bytes replies (P4-L-13)', () => {
+		const [, [, typedData]] = signTypedDataTestData[0];
+		const malformed: [string, unknown][] = [
+			["'abc'", 'abc'],
+			['null', NULL_REPLY],
+			['{}', {}],
+			["'0x123' (odd length)", '0x123'],
+			["'-0x12'", '-0x12'],
+			['42', 42],
+		];
+
+		it.each(malformed)('getCode rejects %s', async (_, reply) => {
+			(qrlRpcMethods.getCode as jest.Mock).mockResolvedValueOnce(reply);
+			await expect(
+				getCode(web3Context, Q_ADDRESS, 'latest', DEFAULT_RETURN_FORMAT),
+			).rejects.toThrow(InvalidResponseError);
+		});
+
+		it.each(malformed)('getStorageAt rejects %s', async (_, reply) => {
+			(qrlRpcMethods.getStorageAt as jest.Mock).mockResolvedValueOnce(reply);
+			await expect(
+				getStorageAt(web3Context, Q_ADDRESS, 0, 'latest', DEFAULT_RETURN_FORMAT),
+			).rejects.toThrow(InvalidResponseError);
+		});
+
+		it.each(malformed)('sign rejects %s', async (_, reply) => {
+			(qrlRpcMethods.sign as jest.Mock).mockResolvedValueOnce(reply);
+			await expect(
+				sign(web3Context, '0x1234', Q_ADDRESS, DEFAULT_RETURN_FORMAT),
+			).rejects.toThrow(InvalidResponseError);
+		});
+
+		it.each(malformed)('signTypedData rejects %s', async (_, reply) => {
+			(qrlRpcMethods.signTypedData as jest.Mock).mockResolvedValueOnce(reply);
+			await expect(
+				signTypedData(web3Context, Q_ADDRESS, typedData, DEFAULT_RETURN_FORMAT),
+			).rejects.toThrow(InvalidResponseError);
+		});
+
+		it('accepts hex bytes, the empty code of a plain account included', async () => {
+			(qrlRpcMethods.getCode as jest.Mock).mockResolvedValueOnce('0x');
+			await expect(
+				getCode(web3Context, Q_ADDRESS, 'latest', DEFAULT_RETURN_FORMAT),
+			).resolves.toBe('0x');
+			const slot = `0x${'00'.repeat(31)}01`;
+			(qrlRpcMethods.getStorageAt as jest.Mock).mockResolvedValueOnce(slot);
+			await expect(
+				getStorageAt(web3Context, Q_ADDRESS, 0, 'latest', DEFAULT_RETURN_FORMAT),
+			).resolves.toBe(slot);
+			(qrlRpcMethods.sign as jest.Mock).mockResolvedValueOnce('0xabcd');
+			await expect(
+				sign(web3Context, '0x1234', Q_ADDRESS, DEFAULT_RETURN_FORMAT),
+			).resolves.toBe('0xabcd');
 		});
 	});
 

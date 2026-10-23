@@ -25,10 +25,13 @@ import {
 import {
 	ConnectionNotOpenError,
 	ConnectionTimeoutError,
+	InvalidClientError,
+	PendingRequestsOnReconnectingError,
 	ProviderError,
 	RequestQueueFullError,
 	RequestTimeoutError,
 	ResponseError,
+	ResponseTooLargeError,
 } from '@theqrl/web3-errors';
 import { sleep } from '../../../../fixtures/utils';
 import { SocketProvider, SocketProviderOptions } from '../../src/socket_provider';
@@ -239,7 +242,7 @@ describe('SocketProvider', () => {
 					throw dummyError;
 				});
 				expect(() => provider.connect()).toThrow(
-					`Error while connecting to ${socketPath}. Reason: ${dummyError.message}`,
+					`Error while connecting to ${socketPath}. Reason: ${dummyError.name}`,
 				);
 			});
 			it('redacts credentials and path of the socket URL in the connect error (L-48)', () => {
@@ -260,11 +263,58 @@ describe('SocketProvider', () => {
 				}
 
 				expect(message).toBe(
-					'Error while connecting to ws://***@host.example:8546/[redacted]. Reason: refused',
+					'Error while connecting to ws://***@host.example:8546/[redacted]. Reason: Error',
 				);
 				expect(message).not.toContain('password');
 				expect(message).not.toContain('secret');
 				expect(message).not.toContain('token');
+			});
+
+			it('names the transport error without echoing its message, which may quote the URL (P4-L-15)', () => {
+				const url = 'ws://alice:hunter2@127.0.0.1:99999/v3/API-KEY-0123';
+				const provider = new TestProvider(url, socketOption);
+				const connectError = (thrown: unknown) => {
+					// @ts-expect-error run protected method
+					jest.spyOn(provider, '_openSocketConnection').mockImplementation(() => {
+						throw thrown;
+					});
+					let message = '';
+					try {
+						provider.connect();
+					} catch (error) {
+						message = (error as Error).message;
+					}
+					return message;
+				};
+
+				// What `ws` throws for a URL it cannot parse.
+				const withCode = connectError(
+					Object.assign(new SyntaxError(`Invalid URL: ${url}`), { code: 'ERR_INVALID_URL' }),
+				);
+				expect(withCode).toBe(
+					'Error while connecting to ws://***@127.0.0.1:99999/[redacted]. Reason: SyntaxError (ERR_INVALID_URL)',
+				);
+				// A code that is not a short identifier is not echoed either.
+				expect(
+					connectError(
+						Object.assign(new TypeError(`bad ${url}`), { code: `code ${url}` }),
+					),
+				).toBe(
+					'Error while connecting to ws://***@127.0.0.1:99999/[redacted]. Reason: TypeError',
+				);
+				expect(
+					connectError(Object.assign(new Error(url), { name: '', code: 42 })),
+				).toBe('Error while connecting to ws://***@127.0.0.1:99999/[redacted]. Reason: Error');
+				// One of this library's errors is already safe to echo (the IPC provider refuses
+				// a bad socket path with one).
+				expect(connectError(new InvalidClientError(url))).toBe(
+					'Error while connecting to ws://***@127.0.0.1:99999/[redacted]. Reason: Client URL "ws://***@127.0.0.1:99999/[redacted]" is invalid.',
+				);
+				for (const message of [withCode]) {
+					expect(message).not.toContain('hunter2');
+					expect(message).not.toContain('API-KEY');
+					expect(message).not.toContain('v3');
+				}
 			});
 
 			it('should throw "Client URL ... is invalid" in case of error with no message inside `connect()`', () => {
@@ -614,6 +664,91 @@ describe('SocketProvider', () => {
 
 			await expect(promise).rejects.toThrow(ResponseError);
 			expectNoResidue(provider);
+		});
+
+		it('settles the request although a message listener throws (P4-L-20)', async () => {
+			const provider = makeConnectedProvider();
+			const errors: unknown[] = [];
+			provider.on('error', (error: unknown) => {
+				errors.push(error);
+			});
+			provider.on('message', () => {
+				throw new Error('consumer listener bug');
+			});
+			const promise = provider.request({ id: 1, method: 'qrl_blockNumber' });
+
+			provider.message([{ jsonrpc: '2.0', id: 1, result: '0x1' }]);
+
+			await expect(promise).resolves.toMatchObject({ result: '0x1' });
+			expect(errors).toEqual([expect.objectContaining({ message: 'consumer listener bug' })]);
+			expectNoResidue(provider);
+		});
+
+		it('fails requests written to the socket connect() replaces and keeps queued ones (P4-L-21)', async () => {
+			const provider = makeConnectedProvider();
+			const sent = provider.request({ id: 1, method: 'qrl_blockNumber' });
+			const assertion = expect(sent).rejects.toThrow(PendingRequestsOnReconnectingError);
+
+			provider.connect();
+
+			await assertion;
+			expect(provider.getStatus()).toBe('connecting');
+			// A request waiting for the new connection survives a further connect().
+			const parked = provider.request({ id: 2, method: 'qrl_blockNumber' });
+			provider.connect();
+			expect(provider.getDiagnostics()).toMatchObject({ pendingRequests: 1, sentRequests: 0 });
+
+			provider.simulateOpen();
+			expect(provider.sentPayloads).toHaveLength(2);
+			provider.message([{ jsonrpc: '2.0', id: 2, result: '0x2' }]);
+			await expect(parked).resolves.toMatchObject({ result: '0x2' });
+			expectNoResidue(provider);
+		});
+
+		describe('oversized replies (P4-M-5)', () => {
+			const oversizedReply = (id: number) =>
+				JSON.stringify({ jsonrpc: '2.0', id, result: 'x'.repeat(2048) });
+
+			it('fails only the request an oversized reply answers', async () => {
+				const provider = makeConnectedProvider({ maxResponseBytes: 1024 });
+				const errors: unknown[] = [];
+				provider.on('error', (error: unknown) => {
+					errors.push(error);
+				});
+				const big = provider.request({ id: 1, method: 'big' });
+				const small = provider.request({ id: 2, method: 'small' });
+				const assertion = expect(big).rejects.toThrow(ResponseTooLargeError);
+
+				// What the transport hands the parser: one complete message above the bound.
+				// @ts-expect-error read protected member
+				expect(provider.chunkResponseParser.parseResponse(oversizedReply(1))).toEqual([]);
+
+				await assertion;
+				expect(provider.getDiagnostics()).toMatchObject({ inFlight: 1, sentRequests: 1 });
+				expect(errors.every(error => error instanceof ResponseTooLargeError)).toBe(true);
+
+				provider.message([{ jsonrpc: '2.0', id: 2, result: '0x2' }]);
+				await expect(small).resolves.toMatchObject({ result: '0x2' });
+				expectNoResidue(provider);
+			});
+
+			it('fails every request when an oversized reply names none of them', async () => {
+				const provider = makeConnectedProvider({ maxResponseBytes: 1024 });
+				provider.on('error', () => undefined);
+				const first = provider.request({ id: 1, method: 'big' });
+				const second = provider.request({ id: 2, method: 'small' });
+
+				// @ts-expect-error read protected member
+				provider.chunkResponseParser.parseResponse(`{"a":"${'x'.repeat(2048)}"}`);
+
+				await expect(first).rejects.toThrow(ResponseTooLargeError);
+				await expect(second).rejects.toThrow(ResponseTooLargeError);
+				expectNoResidue(provider);
+			});
+
+			it('rejects an invalid maxResponseBytes at construction', () => {
+				expect(() => makeProvider({ maxResponseBytes: 0 })).toThrow(ProviderError);
+			});
 		});
 
 		describe('in-flight cap', () => {
@@ -1171,6 +1306,64 @@ describe('SocketProvider', () => {
 			expect(addListeners).not.toHaveBeenCalled();
 			// @ts-expect-error read protected member
 			expect(provider._reconnectAttempts).toBe(0);
+		});
+
+		it('does not let the connection timer of a failed attempt fire during the back-off (P4-L-16)', async () => {
+			const provider = new TestProvider(
+				socketPath,
+				socketOption,
+				{ autoReconnect: true, delay: 1_500, maxAttempts: 2 },
+				{ connectionTimeout: 300 },
+			);
+			const errors: unknown[] = [];
+			provider.on('error', (error: unknown) => {
+				errors.push(error);
+			});
+			// No jitter, so the back-off is exactly 1.5 s.
+			const random = jest.spyOn(Math, 'random').mockReturnValue(0.5);
+			try {
+				// The constructor's attempt armed the 300 ms connection deadline; the socket
+				// fails at once and the transport schedules a reconnect.
+				expect(jest.getTimerCount()).toBe(1);
+				provider.setStatus('disconnected');
+				// @ts-expect-error run protected method
+				provider._reconnect();
+				// Only the back-off timer is left.
+				expect(jest.getTimerCount()).toBe(1);
+
+				const parked = provider.request({ id: 1, method: 'qrl_blockNumber' });
+				jest.advanceTimersByTime(300);
+				await Promise.resolve();
+				// The deadline of the failed attempt used to fire here and reject the parked
+				// request.
+				expect(provider.getDiagnostics().pendingRequests).toBe(1);
+				expect(errors).toEqual([]);
+
+				// The back-off elapses and the reconnect opens a socket with a deadline of its own.
+				jest.advanceTimersByTime(1_200);
+				expect(provider.getStatus()).toBe('connecting');
+				expect(provider.getDiagnostics().pendingRequests).toBe(1);
+				provider.simulateOpen();
+				provider.message([{ jsonrpc: '2.0', id: 1, result: '0x1' }]);
+				await expect(parked).resolves.toMatchObject({ result: '0x1' });
+				expect(errors).toEqual([]);
+			} finally {
+				random.mockRestore();
+			}
+		});
+
+		it('stands down a connection timer that fires while a reconnect is pending (P4-L-16)', () => {
+			const provider = makeReconnectingProvider();
+			const parked = provider.request({ id: 1, method: 'qrl_blockNumber' });
+			parked.catch(() => undefined);
+			// A reconnect armed by a path that left the deadline of the failed attempt running.
+			// @ts-expect-error write protected member
+			provider.isReconnecting = true;
+
+			jest.advanceTimersByTime(CONNECTION_TIMEOUT);
+
+			expect(provider.getDiagnostics().pendingRequests).toBe(1);
+			expect(provider.getStatus()).toBe('connecting');
 		});
 
 		it('parks a request issued during the backoff instead of opening a socket of its own (L-44)', async () => {

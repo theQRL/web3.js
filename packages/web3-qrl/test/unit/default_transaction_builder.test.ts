@@ -32,6 +32,7 @@ import {
 	TransactionDataAndInputError,
 	UnableToPopulateNonceError,
 	UnsupportedTransactionTypeError,
+	NodeChainIdMismatchError,
 } from '@theqrl/web3-errors';
 import { getId } from '@theqrl/web3-net';
 import { defaultTransactionBuilder } from '../../src/utils/transaction_builder';
@@ -403,7 +404,10 @@ describe('defaultTransactionBuilder', () => {
 			expect(result.hardfork).toBeUndefined();
 		});
 
-		it('should take chainId from web3Context.defaultCommon instead of asking the node', async () => {
+		it('takes chainId from web3Context.defaultCommon and checks it against the node', async () => {
+			// The node is asked once, to confirm it serves the chain the common names.
+			(qrlRpcMethods.getChainId as jest.Mock).mockClear();
+			(qrlRpcMethods.getChainId as jest.Mock).mockResolvedValue('0x7');
 			web3Context = new Web3Context<QRLExecutionAPI>({
 				provider: new HttpProvider('http://127.0.0.1'),
 				config: {
@@ -429,7 +433,30 @@ describe('defaultTransactionBuilder', () => {
 				fillGasPrice: true,
 			});
 			expect(result.chainId).toBe('0x7');
-			expect(qrlRpcMethods.getChainId).not.toHaveBeenCalled();
+			expect(qrlRpcMethods.getChainId).toHaveBeenCalledTimes(1);
+		});
+
+		it('rejects a defaultCommon chainId the connected node does not serve', async () => {
+			(qrlRpcMethods.getChainId as jest.Mock).mockResolvedValue('0x1');
+			web3Context = new Web3Context<QRLExecutionAPI>({
+				provider: new HttpProvider('http://127.0.0.1'),
+				config: {
+					defaultCommon: {
+						customChain: { name: 'custom', networkId: '0x3', chainId: '0x7' },
+						baseChain: 'mainnet',
+						hardfork: 'zond',
+					},
+				},
+			});
+			const input = { ...transaction };
+			delete input.common;
+			delete input.chain;
+			delete input.hardfork;
+			delete input.chainId;
+
+			await expect(
+				defaultTransactionBuilder({ transaction: input, web3Context, fillGasPrice: true }),
+			).rejects.toThrow(NodeChainIdMismatchError);
 		});
 
 		it('should prefer an explicit chain/hardfork pair over web3Context.defaultCommon', async () => {
@@ -457,6 +484,50 @@ describe('defaultTransactionBuilder', () => {
 			expect(result.common).toBeUndefined();
 			expect(result.chain).toBe('mainnet');
 			expect(result.hardfork).toBe('zond');
+		});
+	});
+
+	describe('chainId cross-check against the node (round 2)', () => {
+		beforeEach(() => {
+			(qrlRpcMethods.getChainId as jest.Mock).mockClear();
+		});
+
+		it('rejects a caller-supplied chainId the connected node does not serve', async () => {
+			(qrlRpcMethods.getChainId as jest.Mock).mockResolvedValue('0x1');
+			const input = { ...transaction, chainId: '0x2' };
+			delete input.common;
+
+			await expect(
+				defaultTransactionBuilder({ transaction: input, web3Context, fillGasPrice: true }),
+			).rejects.toThrow(NodeChainIdMismatchError);
+		});
+
+		it('accepts a caller-supplied chainId the node serves, whatever its spelling', async () => {
+			(qrlRpcMethods.getChainId as jest.Mock).mockResolvedValue('0x1');
+			const input = { ...transaction, chainId: 1 };
+			delete input.common;
+
+			const result = await defaultTransactionBuilder({
+				transaction: input,
+				web3Context,
+				fillGasPrice: true,
+			});
+			expect(BigInt(result.chainId as string)).toBe(BigInt(1));
+			expect(qrlRpcMethods.getChainId).toHaveBeenCalledTimes(1);
+		});
+
+		it('does not ask the node when no provider is set (offline signing)', async () => {
+			const offlineContext = new Web3Context<QRLExecutionAPI>();
+			const input = { ...transaction, chainId: '0x2' };
+			delete input.common;
+
+			const result = await defaultTransactionBuilder({
+				transaction: input,
+				web3Context: offlineContext,
+				fillGasPrice: true,
+			});
+			expect(BigInt(result.chainId as string)).toBe(BigInt(2));
+			expect(qrlRpcMethods.getChainId).not.toHaveBeenCalled();
 		});
 	});
 

@@ -75,7 +75,7 @@ exports[`Web3Context getContextObject should return correct context object 1`] =
       "endpoint": "test",
       "httpProviderOptions": undefined,
     },
-    "useRpcCallSpecification": undefined,
+    "useRpcCallSpecification": false,
   },
   "subscriptionManager": Web3SubscriptionManager {
     "_beforeProviderChangeListener": [Function],
@@ -84,6 +84,9 @@ exports[`Web3Context getContextObject should return correct context object 1`] =
       "_warned": Set {},
     },
     "_providerChangedListener": [Function],
+    "_providerConnected": false,
+    "_resubscribeOnConnect": false,
+    "_subscribesInFlight": 0,
     "_subscriptions": Map {},
     "registeredSubscriptions": {},
     "requestManager": Web3RequestManager {
@@ -115,7 +118,7 @@ exports[`Web3Context getContextObject should return correct context object 1`] =
         "endpoint": "test",
         "httpProviderOptions": undefined,
       },
-      "useRpcCallSpecification": undefined,
+      "useRpcCallSpecification": false,
     },
   },
   "wallet": undefined,

@@ -22,6 +22,7 @@ import {
 	TransactionRevertWithCustomError,
 } from '@theqrl/web3-errors';
 import {
+	BlockNumberOrTag,
 	DataFormat,
 	FormatType,
 	ContractAbi,
@@ -46,7 +47,15 @@ export async function getTransactionError<ReturnFormat extends DataFormat>(
 			_reason = parseTransactionError(receivedError);
 		} else if (web3Context.handleRevert && transactionFormatted !== undefined) {
 			try {
-				_reason = await getRevertReason(web3Context, transactionFormatted, contractAbi);
+				// With a receipt the reason is simulated at the block that included the
+				// transaction (the state it ran against), otherwise at `defaultBlock`.
+				_reason = await getRevertReason(
+					web3Context,
+					transactionFormatted,
+					contractAbi,
+					undefined,
+					transactionReceiptFormatted?.blockNumber as BlockNumberOrTag | undefined,
+				);
 			} catch (error) {
 				// Without a receipt nothing proves a revert, so the error of the failed call is
 				// the result. With a receipt the revert is a fact and a failed reason lookup

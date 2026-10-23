@@ -176,21 +176,34 @@ export class QRNS extends Web3Context<QRLExecutionAPI & Web3NetAPI> {
 
 	/**
 	 * ERC-634 - Returns the text content stored in the resolver for the specified key.
+	 *
+	 * For an address the name is obtained by reverse resolution (see {@link QRNS.getName}): only
+	 * a name that forward-resolves to the address is used, and `''` (the value of an unset
+	 * ERC-634 key) is returned when the address has no verified name (P4-L-31).
 	 * @param QRNSNameOrAddr - The QRNS name to resolve, or a QRL address for reverse resolution
 	 * @param key - The key to resolve https://github.com/ethereum/ercs/blob/master/ERCS/erc-634.md#global-keys
 	 * @returns - The value content stored in the resolver for the specified key
 	 */
 	public async getText(QRNSNameOrAddr: string, key: string): Promise<string> {
-		if (isAddressString(QRNSNameOrAddr))
-			return this.resolver.getText(await this.resolver.getName(QRNSNameOrAddr, false), key);
+		if (isAddressString(QRNSNameOrAddr)) {
+			const name = await this.resolver.getName(QRNSNameOrAddr, false);
+			if (name === '') {
+				return '';
+			}
+			return this.resolver.getText(name, key);
+		}
 		return this.resolver.getText(QRNSNameOrAddr, key);
 	}
 
 	/**
-	 * Reverse-resolves an address to its name (`<address>.addr.reverse`).
+	 * Reverse-resolves an address to its name (`<address>.addr.reverse`). The name is returned
+	 * only when it forward-resolves to the same address again; otherwise, and when there is no
+	 * reverse record, `''` is returned (P4-L-31; this is what ethers' `lookupAddress` reports as
+	 * `null`).
 	 * @param address - The QRL address to reverse-resolve
 	 * @param checkInterfaceSupport - Whether to check that the resolver implements `name(bytes32)` first
-	 * @returns - The name
+	 * @returns - The verified name, or `''`
+	 * @throws InvalidAddressError - when `address` is not a QRL address
 	 */
 	public async getName(address: string, checkInterfaceSupport = true): Promise<string> {
 		return this.resolver.getName(address, checkInterfaceSupport);

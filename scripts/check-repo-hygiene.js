@@ -1,13 +1,45 @@
 #!/usr/bin/env node
 
-const { execFileSync } = require('node:child_process');
+const { execFileSync, spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
 const failures = [];
 
+// Real directories the walk does not descend into. A symlink carrying one of
+// these names is NOT excluded: it is checked like every other symlink, because
+// `.gitignore`'s `dist/` does not match a symlink and `git add` tracks it
+// (audit P4-L-45).
 const excludedDirs = new Set(['.git', 'node_modules', '.pnpm-store', 'dist']);
+
+// Where a tracked symlink may resolve to (docs/symlink-template-policy.md):
+// shared configs, templates, shared fixtures, and package-local test fixture
+// directories. Generated output is never an acceptable target.
+const allowedSymlinkTargetPrefixes = ['config', 'templates', 'scripts', 'fixtures'];
+const packageLocalFixturePattern = /^(packages|tools)\/[^/]+\/test\//;
+// `fixtures/build` holds the committed compiled contract fixtures and is not
+// generated output; the docs build directories are.
+const generatedOutputPattern = /(^|\/)(lib|dist|coverage|\.coverage|node_modules|\.turbo)(\/|$)/;
+const docsOutputPattern = /^docs\/(build|\.docusaurus)(\/|$)/;
+
+const isAllowedSymlinkTarget = relativeTarget =>
+	!generatedOutputPattern.test(relativeTarget) &&
+	!docsOutputPattern.test(relativeTarget) &&
+	(allowedSymlinkTargetPrefixes.some(
+		prefix => relativeTarget === prefix || relativeTarget.startsWith(`${prefix}/`),
+	) ||
+		packageLocalFixturePattern.test(relativeTarget));
+
+// Local secret files: never tracked, and always covered by .gitignore so that
+// `git add -A` cannot pick them up. An untracked, ignored `.secrets.json` is
+// the normal developer state (`pnpm run init:secrets`) and passes.
+const isLocalSecretFile = baseName => baseName === '.secrets.json' || /^\.env(\.|$)/.test(baseName);
+
+function isGitIgnored(relativePath) {
+	const result = spawnSync('git', ['check-ignore', '-q', '--', relativePath], { cwd: root, encoding: 'utf8' });
+	return result.status === 0;
+}
 
 const fail = message => failures.push(message);
 
@@ -46,7 +78,9 @@ function walk(relativeDir, visitor) {
 	}
 
 	for (const entry of entries) {
-		if (excludedDirs.has(entry.name)) continue;
+		// Only a real directory is skipped; a symlink named `dist` or
+		// `node_modules` is visited (and never descended into).
+		if (excludedDirs.has(entry.name) && entry.isDirectory()) continue;
 
 		const relativePath = path.join(relativeDir, entry.name);
 		visitor(relativePath, entry);
@@ -76,19 +110,19 @@ function checkTrackedForbiddenFiles() {
 			fail(`${posixPath} must not be tracked`);
 		}
 
-		if (baseName === '.secrets.json') {
-			fail(`${posixPath} must not be tracked`);
+		if (isLocalSecretFile(baseName)) {
+			fail(`${posixPath} is a local secret file and must not be tracked`);
 		}
 
 		if (baseName === '.yarnrc' || baseName === 'yarn.lock') {
 			fail(`${posixPath} is a Yarn artifact in a pnpm-managed repo`);
 		}
 
-		if (/(^|\/)coverage\//.test(posixPath)) {
+		if (/(^|\/)\.?coverage\//.test(posixPath)) {
 			fail(`${posixPath} is generated coverage output and must not be tracked`);
 		}
 
-		if (/^packages\/[^/]+\/(lib|dist)\//.test(posixPath)) {
+		if (/^(packages|tools)\/[^/]+\/(lib|dist)(\/|$)/.test(posixPath)) {
 			fail(`${posixPath} is generated package output and must not be tracked`);
 		}
 
@@ -150,14 +184,54 @@ function checkTrackedFileContents() {
 	}
 }
 
+function checkSymlink(relativePath, absolutePath, posixPath) {
+	const target = fs.readlinkSync(absolutePath);
+	const absoluteTarget = path.isAbsolute(target)
+		? target
+		: path.resolve(path.dirname(absolutePath), target);
+
+	if (path.isAbsolute(target)) {
+		fail(`${posixPath} must use a relative symlink target, not ${target}`);
+	}
+
+	const relativeTarget = path.relative(root, absoluteTarget);
+	const outside = relativeTarget.startsWith('..') || path.isAbsolute(relativeTarget);
+	if (outside) {
+		fail(`${posixPath} points outside the repository -> ${target}`);
+	}
+
+	if (/\.eslint(ignore|rc)(\.|$)/.test(target)) {
+		fail(`${posixPath} points at a removed ESLint legacy template -> ${target}`);
+	}
+
+	if (!outside && !isAllowedSymlinkTarget(toPosix(relativeTarget))) {
+		fail(
+			`${posixPath} points outside the allowed symlink targets (config/, templates/, scripts/, fixtures/ or a package-local test fixture directory; never generated output) -> ${target}`,
+		);
+	}
+
+	if (!fs.existsSync(absoluteTarget)) {
+		fail(`${posixPath} is a broken symlink -> ${target}`);
+	}
+}
+
 function checkWorkspaceTree() {
 	walk('', (relativePath, entry) => {
 		const absolutePath = path.join(root, relativePath);
 		const posixPath = toPosix(relativePath);
 		const baseName = path.posix.basename(posixPath);
 
-		if (baseName === '.secrets.json') {
-			fail(`${posixPath} must not exist in the repository tree`);
+		// Symlinks first, before any name-based rule: a link named like an
+		// excluded directory or a generated file is still a link.
+		if (entry.isSymbolicLink()) {
+			checkSymlink(relativePath, absolutePath, posixPath);
+			return;
+		}
+
+		if (isLocalSecretFile(baseName) && !isGitIgnored(relativePath)) {
+			fail(
+				`${posixPath} is a local secret file that .gitignore does not cover; it would be tracked by the next git add`,
+			);
 		}
 
 		if (baseName === '.yarnrc' || baseName === 'yarn.lock') {
@@ -166,30 +240,6 @@ function checkWorkspaceTree() {
 
 		if (/ copy\.[^/]+$/.test(baseName)) {
 			fail(`${posixPath} looks like an accidental copied file`);
-		}
-
-		if (!entry.isSymbolicLink()) return;
-
-		const target = fs.readlinkSync(absolutePath);
-		const absoluteTarget = path.isAbsolute(target)
-			? target
-			: path.resolve(path.dirname(absolutePath), target);
-
-		if (path.isAbsolute(target)) {
-			fail(`${posixPath} must use a relative symlink target, not ${target}`);
-		}
-
-		const relativeTarget = path.relative(root, absoluteTarget);
-		if (relativeTarget.startsWith('..') || path.isAbsolute(relativeTarget)) {
-			fail(`${posixPath} points outside the repository -> ${target}`);
-		}
-
-		if (/\.eslint(ignore|rc)(\.|$)/.test(target)) {
-			fail(`${posixPath} points at a removed ESLint legacy template -> ${target}`);
-		}
-
-		if (!fs.existsSync(absoluteTarget)) {
-			fail(`${posixPath} is a broken symlink -> ${target}`);
 		}
 	});
 }

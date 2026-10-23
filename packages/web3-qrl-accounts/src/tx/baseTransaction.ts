@@ -300,7 +300,14 @@ export abstract class BaseTransaction<TransactionObject> {
 	}
 
 	/**
-	 * Returns the sender's address
+	 * Returns the sender's address, derived from the attached `publicKey` and `descriptor`.
+	 *
+	 * **Precondition:** the signature must have been verified with
+	 * {@link BaseTransaction.verifySignature} first. The public key is a plain field of the (possibly
+	 * untrusted) raw transaction and this method does not authenticate it: for a raw transaction
+	 * whose `publicKey` was swapped it returns the attacker-chosen address, while `verifySignature()`
+	 * is `false` and `recoverTransaction()` throws. go-qrl's `Sender()` verifies before returning;
+	 * callers here must do the same (I-4).
 	 */
 	public getSenderAddress(): Address {
 		const { descriptor, publicKey } = this;
@@ -308,7 +315,8 @@ export abstract class BaseTransaction<TransactionObject> {
 	}
 
 	/**
-	 * Returns the public key of the sender
+	 * Returns the public key attached to the transaction. Like {@link BaseTransaction.getSenderAddress}
+	 * it does not authenticate the key: call {@link BaseTransaction.verifySignature} first (I-4).
 	 */
 	public abstract getSenderPublicKey(): Uint8Array;
 

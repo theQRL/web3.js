@@ -55,9 +55,9 @@ describe('kdf_policy', () => {
 
 		it.each([
 			['m', 1],
-			['m', 1_048_577],
+			['m', 524_289],
 			['t', 0],
-			['t', 51],
+			['t', 17],
 			['p', 0],
 			['p', 17],
 			['dklen', 0],
@@ -94,9 +94,9 @@ describe('kdf_policy', () => {
 			it('keeps every other bound on decrypt', () => {
 				const valid = { m: 4096, t: 8, p: 1, dklen: 32 };
 				expect(() => validateArgon2idParams({ ...valid, m: 4095 }, 'decrypt')).toThrow(
-					/Argon2id m out of range \[4096, 1048576\]/,
+					/Argon2id m out of range \[4096, 524288\]/,
 				);
-				expect(() => validateArgon2idParams({ ...valid, m: 1_048_577 }, 'decrypt')).toThrow(
+				expect(() => validateArgon2idParams({ ...valid, m: 524_289 }, 'decrypt')).toThrow(
 					InvalidKdfError,
 				);
 				expect(() => validateArgon2idParams({ ...valid, t: 1 }, 'decrypt')).toThrow(

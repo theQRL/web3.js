@@ -15,7 +15,13 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { ResolverMethodMissingError, Web3ContractError } from '@theqrl/web3-errors';
+import {
+	AbiError,
+	InvalidAddressError,
+	ResolverMethodMissingError,
+	TransactionRevertInstructionError,
+	Web3ContractError,
+} from '@theqrl/web3-errors';
 import { Contract } from '@theqrl/web3-qrl-contract';
 import { Address, PayableCallOptions } from '@theqrl/web3-types';
 import { isNullish, sha3, toChecksumAddress } from '@theqrl/web3-utils';
@@ -23,7 +29,7 @@ import { isAddressString, isHexStrict } from '@theqrl/web3-validator';
 import { PublicResolverAbi } from './abi/qrns/PublicResolver.js';
 import { interfaceIds, methodsInInterface } from './config.js';
 import { Registry } from './registry.js';
-import { namehash } from './utils.js';
+import { namehash, normalize } from './utils.js';
 
 //  Default public resolver
 //  https://github.com/ensdomains/resolvers/blob/master/contracts/PublicResolver.sol
@@ -38,6 +44,18 @@ const isQrlCoinType = (coinType: unknown): boolean => {
 		return false;
 	}
 };
+
+/**
+ * Whether a failed forward resolution of a claimed name means that the name does not resolve
+ * to a verifiable address (no resolver, a resolver without `addr`, a revert, undecodable return
+ * data, a name the registry call rejected), as opposed to a transport failure or a malformed
+ * reply, which is reported to the caller (P4-L-31).
+ */
+const isUnverifiableName = (error: unknown): boolean =>
+	error instanceof Web3ContractError ||
+	error instanceof ResolverMethodMissingError ||
+	error instanceof TransactionRevertInstructionError ||
+	error instanceof AbiError;
 
 export class Resolver {
 	private readonly registry: Registry;
@@ -146,7 +164,26 @@ export class Resolver {
 		return resolverContract.methods.text(namehash(QRNSName), key).call();
 	}
 
-	public async getName(address: string, checkInterfaceSupport = true) {
+	/**
+	 * Reverse-resolves an address: reads `name(bytes32)` of `<address>.addr.reverse` and returns
+	 * the name only when it forward-resolves (`addr(bytes32)`) to the queried address again. The
+	 * owner of the reverse node can claim any name, so an unverified name is worthless (P4-L-31;
+	 * ethers' `lookupAddress` applies the same check). `''` is returned when there is no reverse
+	 * record, when the claimed name does not resolve to a verifiable address (no resolver, a
+	 * resolver without `addr`, a revert, undecodable data, a name the normalizer rejects) and
+	 * when the forward resolution yields another address; a transport failure or a malformed
+	 * node reply is thrown.
+	 *
+	 * @param address - The QRL address to reverse-resolve.
+	 * @param checkInterfaceSupport - Whether to check that the reverse resolver implements `name(bytes32)` first.
+	 * @returns The verified name, or `''`.
+	 * @throws InvalidAddressError - when `address` is not a QRL address.
+	 */
+	public async getName(address: string, checkInterfaceSupport = true): Promise<string> {
+		// A non-address used to become a nonsense reverse name.
+		if (typeof address !== 'string' || !isAddressString(address)) {
+			throw new InvalidAddressError(address);
+		}
 		const reverseName = `${address.toLowerCase().substring(1)}.addr.reverse`;
 
 		const resolverContract = await this.getResolverContractAdapter(reverseName);
@@ -154,6 +191,29 @@ export class Resolver {
 		if (checkInterfaceSupport)
 			await this.checkInterfaceSupport(resolverContract, methodsInInterface.name);
 
-		return resolverContract.methods.name(namehash(reverseName)).call();
+		const name: unknown = await resolverContract.methods.name(namehash(reverseName)).call();
+		if (typeof name !== 'string') {
+			throw new Web3ContractError('QRNS resolver returned an invalid name');
+		}
+		if (name === '') {
+			return '';
+		}
+		// The claimed name is node supplied: one the normalizer rejects cannot be a QRNS name.
+		try {
+			normalize(name);
+		} catch {
+			return '';
+		}
+
+		let forwardAddress: string;
+		try {
+			forwardAddress = await this.getAddress(name);
+		} catch (error) {
+			if (isUnverifiableName(error)) {
+				return '';
+			}
+			throw error;
+		}
+		return forwardAddress.toLowerCase() === address.toLowerCase() ? name : '';
 	}
 }

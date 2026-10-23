@@ -78,7 +78,8 @@ export const isTransactionStatusSuccessful = (status: unknown): boolean => {
 
 export function isBaseTransaction(value: BaseTransactionAPI): boolean {
 	if (!isNullish(value.to) && !isAddressString(value.to)) return false;
-	if (!isHexStrict(value.type) && !isNullish(value.type) && value.type.length !== 2) return false;
+	// `type` must be a hex quantity; the previous check let any two-character string through.
+	if (!isNullish(value.type) && !isHexStrict(value.type)) return false;
 	if (!isHexStrict(value.nonce)) return false;
 	if (!isHexStrict(value.gas)) return false;
 	if (!isHexStrict(value.value)) return false;
@@ -137,8 +138,13 @@ export function isTransactionCall(value: TransactionCall): boolean {
 	if (!isNullish(value.value) && !isHexStrict(value.value)) return false;
 	if (!isNullish(value.data) && !isHexStrict(value.data)) return false;
 	if (!isNullish(value.input) && !isHexStrict(value.input)) return false;
-	if (!isNullish(value.type)) return false;
-	if (isTransaction1559Unsigned(value as Transaction1559UnsignedAPI)) return false;
+	// A call may carry a `type` and the fee-market fields; they only have to be well-formed. The
+	// previous checks rejected every call that set `type` or looked like a 1559 transaction.
+	if (!isNullish(value.type) && !isHexStrict(value.type)) return false;
+	if (!isNullish(value.maxFeePerGas) && !isHexStrict(value.maxFeePerGas)) return false;
+	if (!isNullish(value.maxPriorityFeePerGas) && !isHexStrict(value.maxPriorityFeePerGas))
+		return false;
+	if (!isNullish(value.accessList) && !isAccessList(value.accessList)) return false;
 
 	return true;
 }

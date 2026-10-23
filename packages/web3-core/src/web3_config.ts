@@ -22,7 +22,7 @@ import {
 	ConfigChainMismatchError,
 	InvalidMethodParamsError,
 } from '@theqrl/web3-errors';
-import { isNullish, toHex } from '@theqrl/web3-utils';
+import { isNullish, MAX_TIMER_DELAY_MS, toHex } from '@theqrl/web3-utils';
 import { TransactionTypeParser } from './types.js';
 import { TransactionBuilder } from './web3_context.js';
 import { Web3EventEmitter } from './web3_event_emitter.js';
@@ -109,8 +109,17 @@ const EXPERIMENTAL_FEATURE_FLAGS = [
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
 	typeof value === 'object' && !isNullish(value) && !Array.isArray(value);
 
+// A positive number of milliseconds a JavaScript timer can hold: above 2^31 - 1 ms the
+// platform clamps the delay to 1 ms, so a "never time out" value timed out at once (P4-L-5).
 const isPositiveNumber = (value: unknown): boolean =>
-	typeof value === 'number' && Number.isFinite(value) && value > 0;
+	typeof value === 'number' && Number.isFinite(value) && value > 0 && value <= MAX_TIMER_DELAY_MS;
+
+// The same bound for an option counted in seconds (`blockHeaderTimeout` is multiplied by 1000).
+const isPositiveSeconds = (value: unknown): boolean =>
+	typeof value === 'number' &&
+	Number.isFinite(value) &&
+	value > 0 &&
+	value * 1000 <= MAX_TIMER_DELAY_MS;
 
 const isNonNegativeInteger = (value: unknown): boolean =>
 	typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
@@ -124,9 +133,9 @@ const isUnsignedNumberLike = (value: unknown): boolean =>
 const isBlockNumberOrTag = (value: unknown): boolean =>
 	(typeof value === 'string' && BLOCK_TAGS.has(value)) || isUnsignedNumberLike(value);
 
-/** Format check only (`Q` + 128 hex digits); the checksum is verified where the address is used. */
+/** Format check only (capital `Q` + 128 hex digits, as go-qrl requires); the checksum is verified where the address is used. */
 const isAddressLike = (value: unknown): boolean =>
-	typeof value === 'string' && /^[Qq][0-9a-f]{128}$/i.test(value);
+	typeof value === 'string' && /^Q[0-9a-fA-F]{128}$/.test(value);
 
 const isNonEmptyString = (value: unknown): boolean =>
 	typeof value === 'string' && value.trim() !== '';
@@ -177,7 +186,10 @@ const CONFIG_RULES: {
 		expected: 'undefined or a positive number of milliseconds',
 		test: value => value === undefined || isPositiveNumber(value),
 	},
-	blockHeaderTimeout: { expected: 'a positive number of seconds', test: isPositiveNumber },
+	blockHeaderTimeout: {
+		expected: 'a positive number of seconds (at most 2147483 seconds)',
+		test: isPositiveSeconds,
+	},
 	maxListenersWarningThreshold: {
 		expected: 'a non-negative integer',
 		test: isNonNegativeInteger,
@@ -233,6 +245,9 @@ export abstract class Web3Config
 		super();
 
 		this.setConfig(options ?? {});
+		// The emitter's own default is Node's 10; the configured threshold applies from the
+		// start, not only once `maxListenersWarningThreshold` is assigned explicitly.
+		this.setMaxListenerWarningThreshold(this.config.maxListenersWarningThreshold);
 	}
 
 	/**
@@ -252,13 +267,24 @@ export abstract class Web3Config
 			);
 		}
 
-		for (const key of Object.keys(options)) {
+		const keys = Object.keys(options);
+		for (const key of keys) {
 			if (key === '__proto__') {
 				continue;
 			}
 			if (!CONFIG_KEYS.has(key)) {
 				throw new InvalidMethodParamsError(`Unknown configuration option "${key}"`);
 			}
+		}
+
+		// `transactionPollingInterval` also resets the receipt and confirmation intervals, so it
+		// is applied first: an explicit `transactionReceiptPollingInterval` given in the same
+		// object must win whatever the key order (P4-L-6).
+		const ordered = [
+			...keys.filter(key => key === 'transactionPollingInterval'),
+			...keys.filter(key => key !== 'transactionPollingInterval' && key !== '__proto__'),
+		];
+		for (const key of ordered) {
 			// Assigning through `this` runs the option's setter (validation and CONFIG_CHANGE).
 			(this as unknown as Record<string, unknown>)[key] =
 				options[key as keyof Web3ConfigOptions];

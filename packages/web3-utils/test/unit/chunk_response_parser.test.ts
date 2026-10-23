@@ -16,7 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { EventEmitter } from 'events';
-import { InvalidResponseError } from '@theqrl/web3-errors';
+import { InvalidResponseError, ProviderError, ResponseTooLargeError } from '@theqrl/web3-errors';
 import { ChunkResponseParser } from '../../src/chunk_response_parser';
 
 describe('ChunkResponseParser', () => {
@@ -161,19 +161,188 @@ describe('ChunkResponseParser', () => {
 		});
 	});
 
-	describe('oversized input', () => {
-		it('rejects a chunk above the size bound, clears queues and resets', () => {
+	describe('oversized input (P4-M-5)', () => {
+		const DEFAULT_MAX = 10 * 1024 * 1024;
+		type Handler = Parameters<ChunkResponseParser['onError']>[0] & jest.Mock;
+		/** The request ids each report named, in order. */
+		const reportedIds = (handler: jest.Mock) =>
+			(handler as Handler).mock.calls.map(([, ids]: [unknown, unknown]) => ids);
+		const framedParser = (emitter: EventEmitter, maxResponseBytes?: number) =>
+			new ChunkResponseParser(emitter, true, { framed: true, maxResponseBytes });
+		const streamParser = (emitter: EventEmitter, maxResponseBytes?: number) =>
+			new ChunkResponseParser(emitter, true, { maxResponseBytes });
+
+		it('defaults the bound to 10 MiB and lets maxResponseBytes raise it', () => {
 			const emitter = new EventEmitter();
 			const errors = collectErrors(emitter);
-			const cleared = jest.fn();
-			const parser = new ChunkResponseParser(emitter, false);
-			parser.onError(cleared);
+			const handler = jest.fn();
+			const strict = framedParser(emitter);
+			strict.onError(handler);
+			// 10 MiB + 1 KiB of payload.
+			const message = JSON.stringify({ ...response(1), result: 'x'.repeat(DEFAULT_MAX + 1024) });
 
-			expect(parser.parseResponse(`{"a":"${'x'.repeat(10 * 1024 * 1024)}`)).toEqual([]);
+			expect(strict.parseResponse(message)).toEqual([]);
+			expect(handler).toHaveBeenCalledTimes(1);
+			expect(handler).toHaveBeenCalledWith(expect.any(ResponseTooLargeError), [1]);
+			expect(errors).toHaveLength(1);
+			expect(errors[0]).toMatchObject({
+				maxResponseBytes: DEFAULT_MAX,
+				receivedBytes: message.length,
+			});
 
-			expect(cleared).toHaveBeenCalledTimes(1);
-			expect(errors[0]).toBeInstanceOf(InvalidResponseError);
-			expect(parser.parseResponse(JSON.stringify(response(1)))).toEqual([response(1)]);
+			const relaxed = framedParser(new EventEmitter(), 64 * 1024 * 1024);
+			expect(relaxed.parseResponse(message)).toEqual([JSON.parse(message)]);
+		});
+
+		it.each([0, -1, 1.5, NaN, Infinity])(
+			'rejects maxResponseBytes %p at construction',
+			maxResponseBytes => {
+				expect(() => framedParser(new EventEmitter(), maxResponseBytes)).toThrow(
+					ProviderError,
+				);
+			},
+		);
+
+		it('names every id an oversized frame carries, number or string, single or batch', () => {
+			const handler = jest.fn();
+			const parser = framedParser(new EventEmitter(), 256);
+			parser.onError(handler);
+			const padding = 'x'.repeat(300);
+			const uuid = 'c3f1d7a8-1d4b-4b8e-9f3a-5d2e7c6b1a90';
+
+			parser.parseResponse(JSON.stringify({ ...response(3), result: padding }));
+			parser.parseResponse(JSON.stringify({ ...response(0), id: uuid, result: padding }));
+			parser.parseResponse(`{"jsonrpc":"2.0", "id" : 12 ,"result":"${padding}"}`);
+			parser.parseResponse(
+				JSON.stringify([
+					{ ...response(5), result: padding },
+					{ ...response(6), result: padding },
+					{ ...response(5), result: padding },
+				]),
+			);
+
+			expect(reportedIds(handler)).toEqual([[3], [uuid], [12], [5, 6]]);
+			expect(handler.mock.calls.every(([error]) => error instanceof ResponseTooLargeError)).toBe(
+				true,
+			);
+		});
+
+		it('skips ids it cannot read and reports none when a message carries no id', () => {
+			const handler = jest.fn();
+			const parser = framedParser(new EventEmitter(), 256);
+			parser.onError(handler);
+			const padding = 'x'.repeat(300);
+
+			// A string id with an escape the bounded pattern cuts short, an unsafe integer and
+			// a message without an id at all.
+			parser.parseResponse(`{"jsonrpc":"2.0","id":"a\\"b","result":"${padding}"}`);
+			parser.parseResponse(`{"jsonrpc":"2.0","id":99999999999999999999,"result":"${padding}"}`);
+			parser.parseResponse(`{"a":"${padding}"}`);
+
+			expect(reportedIds(handler)).toEqual([[], [], []]);
+		});
+
+		it('scans a bounded prefix only, so an id after a large result is not found', () => {
+			const handler = jest.fn();
+			const parser = framedParser(new EventEmitter(), 1024);
+			parser.onError(handler);
+
+			parser.parseResponse(`{"jsonrpc":"2.0","result":"${'x'.repeat(70 * 1024)}","id":9}`);
+
+			expect(handler).toHaveBeenCalledWith(expect.any(ResponseTooLargeError), []);
+		});
+
+		it('does not throw for an oversized frame when nobody listens for errors', () => {
+			const parser = framedParser(new EventEmitter(), 16);
+			expect(() => parser.parseResponse(JSON.stringify(response(1)))).not.toThrow();
+		});
+
+		it('stream mode: reports a complete oversized message with its id and keeps parsing', () => {
+			const emitter = new EventEmitter();
+			const errors = collectErrors(emitter);
+			const handler = jest.fn();
+			const parser = streamParser(emitter, 256);
+			parser.onError(handler);
+			const big = JSON.stringify({ ...response(4), result: 'x'.repeat(300) });
+
+			expect(parser.parseResponse(`${big}${JSON.stringify(response(1))}`)).toEqual([
+				response(1),
+			]);
+
+			expect(handler).toHaveBeenCalledTimes(1);
+			expect(handler).toHaveBeenCalledWith(expect.any(ResponseTooLargeError), [4]);
+			expect(errors).toHaveLength(1);
+			expect(errors[0]).toMatchObject({ maxResponseBytes: 256, receivedBytes: big.length });
+		});
+
+		it('stream mode: follows an oversized message across chunks, keeps the stream in step and fails only its request', () => {
+			const emitter = new EventEmitter();
+			const errors = collectErrors(emitter);
+			const handler = jest.fn();
+			const parser = streamParser(emitter, 1024);
+			parser.onError(handler);
+			// Brackets, quotes and escapes inside the value: a parser that gave up on the
+			// message would take them for the start of new messages.
+			const big = JSON.stringify({ ...response(7), result: `}{]["\\"{`.repeat(400) });
+			const text = `${big}${JSON.stringify(response(8))}`;
+
+			const results = [];
+			for (let cut = 0; cut < text.length; cut += 300) {
+				results.push(...parser.parseResponse(text.slice(cut, cut + 300)));
+			}
+
+			expect(results).toEqual([response(8)]);
+			expect(handler).toHaveBeenCalledTimes(1);
+			expect(handler).toHaveBeenCalledWith(expect.any(ResponseTooLargeError), [7]);
+			expect(errors).toHaveLength(1);
+			expect(errors[0]).toMatchObject({ maxResponseBytes: 1024, receivedBytes: big.length });
+			// Nothing is kept of the message once it is complete.
+			// @ts-expect-error read private member
+			expect(parser.pendingParts).toEqual([]);
+			// @ts-expect-error read private member
+			expect(parser.discarding).toBe(false);
+		});
+
+		it('stream mode: keeps no more than the id prefix of a message being discarded', () => {
+			const parser = streamParser(new EventEmitter(), 1024);
+			const opening = `{"jsonrpc":"2.0","id":2,"result":"${'x'.repeat(2048)}`;
+
+			expect(parser.parseResponse(opening)).toEqual([]);
+			// @ts-expect-error read private member
+			expect(parser.discarding).toBe(true);
+			// @ts-expect-error read private member
+			expect(parser.pendingParts.join('')).toBe(opening);
+			for (let index = 0; index < 100; index += 1) {
+				expect(parser.parseResponse('y'.repeat(1024))).toEqual([]);
+			}
+			// @ts-expect-error read private member
+			expect(parser.pendingParts.join('')).toBe(opening);
+			// @ts-expect-error read private member
+			expect(parser.messageLength).toBe(opening.length + 100 * 1024);
+		});
+
+		it('stream mode: a discarded message that never completes is bounded by the chunk timeout', () => {
+			jest.useFakeTimers();
+			try {
+				const emitter = new EventEmitter();
+				const errors = collectErrors(emitter);
+				const handler = jest.fn();
+				const parser = new ChunkResponseParser(emitter, false, { maxResponseBytes: 64 });
+				parser.onError(handler);
+
+				expect(parser.parseResponse(`{"id":1,"result":"${'x'.repeat(100)}`)).toEqual([]);
+				expect(handler).not.toHaveBeenCalled();
+				jest.advanceTimersByTime(15_000);
+
+				expect(errors).toHaveLength(1);
+				expect(errors[0]).toBeInstanceOf(InvalidResponseError);
+				expect(handler).toHaveBeenCalledTimes(1);
+				// @ts-expect-error read private member
+				expect(parser.discarding).toBe(false);
+				expect(parser.parseResponse(JSON.stringify(response(3)))).toEqual([response(3)]);
+			} finally {
+				jest.useRealTimers();
+			}
 		});
 	});
 
@@ -249,7 +418,7 @@ describe('ChunkResponseParser', () => {
 			expect(errors).toHaveLength(1);
 		});
 
-		it('rejects a complete message above the size bound and clears queues', () => {
+		it('rejects a complete message above the size bound and, lacking an id, clears queues', () => {
 			const emitter = new EventEmitter();
 			const errors = collectErrors(emitter);
 			const cleared = jest.fn();
@@ -258,8 +427,9 @@ describe('ChunkResponseParser', () => {
 			const text = `{"a":"${'x'.repeat(10 * 1024 * 1024)}"}${JSON.stringify(response(1))}`;
 			expect(parser.parseResponse(text)).toEqual([response(1)]);
 			expect(cleared).toHaveBeenCalledTimes(1);
+			expect(cleared).toHaveBeenCalledWith(expect.any(ResponseTooLargeError), []);
 			expect(errors).toHaveLength(1);
-			expect(errors[0]).toBeInstanceOf(InvalidResponseError);
+			expect(errors[0]).toBeInstanceOf(ResponseTooLargeError);
 		});
 
 		it('gives a message that opens after another completed a fresh deadline', () => {

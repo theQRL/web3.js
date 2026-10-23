@@ -42,6 +42,12 @@ describe('prepareTransactionForSigning', () => {
 		config: { defaultNetworkId: '0x1' },
 	});
 
+	beforeEach(() => {
+		// The builder checks a supplied chainId against the node (round 2); every fixture
+		// signs for chain 1, and the HTTP provider above must never be hit for real.
+		jest.spyOn(qrlRpcMethods, 'getChainId').mockResolvedValue('0x1');
+	});
+
 	describe('web3Context.defaultCommon', () => {
 		it('signs with a Common built from defaultCommon and never mutates it', async () => {
 			const [mockBlock, expectedTransaction, expectedSeed] = validTransactions[0];

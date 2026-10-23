@@ -100,6 +100,8 @@ describe('Web3Config validation', () => {
 			['defaultAccount', 'not-an-address'],
 			['defaultAccount', `Q${'ab'.repeat(63)}`],
 			['defaultAccount', `0x${'ab'.repeat(20)}`],
+			// go-qrl requires a capital `Q`; a lowercase prefix is not an address (P4-L-44).
+			['defaultAccount', `q${'ab'.repeat(64)}`],
 			['defaultBlock', 'bogus'],
 			['defaultBlock', -1],
 			['defaultBlock', 1.5],
@@ -163,7 +165,6 @@ describe('Web3Config validation', () => {
 			['defaultBlock', BigInt(5)],
 			['defaultAccount', undefined],
 			['defaultAccount', address],
-			['defaultAccount', `q${'ab'.repeat(64)}`],
 			['defaultNetworkId', '0x1'],
 			['defaultNetworkId', BigInt(3)],
 			['defaultNetworkId', undefined],

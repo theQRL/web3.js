@@ -90,8 +90,17 @@ jobs:
       # and `pnpm run audit:supply-chain` (which runs the same Trivy release from
       # a digest-pinned image) cannot drift apart. scripts/doctor.js fails if the
       # two stop agreeing; bump both together.
+      #
+      # devDependencies are in scope: the release, docs and CI toolchain executes
+      # them with write-capable tokens, and Trivy's pnpm analyzer drops dev-only
+      # importers unless told otherwise. The action exposes no input for the
+      # flag, so it is set through Trivy's environment (TRIVY_INCLUDE_DEV_DEPS
+      # == --include-dev-deps); scripts/doctor.js checks parity with the
+      # --include-dev-deps flag of the local script.
       - name: Trivy vulnerability scan (high/critical)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        env:
+          TRIVY_INCLUDE_DEV_DEPS: "true"
         with:
           version: v0.70.0
           scan-type: fs

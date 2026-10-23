@@ -177,6 +177,13 @@ export function unpack(reader: Reader, coders: Array<Coder>): Result {
 			name = '_length';
 		}
 
+		// A name that is a canonical integer (`'1'`, `'0'`) would land in the positional slots
+		// of the result (and extend its `length`), and `__length__` is the consumer's own
+		// counter: such outputs stay reachable by position only.
+		if (/^(0|[1-9][0-9]*)$/.test(name) || name === '__length__') {
+			return;
+		}
+
 		if (values[name] != null) {
 			return;
 		}
@@ -215,6 +222,11 @@ export class ArrayCoder extends Coder {
 	readonly length: number;
 
 	constructor(coder: Coder, length: number, localName: string) {
+		// Diff vs ethers v5 (P4-M-2): the length comes from the ABI; anything but -1 (dynamic) or
+		// a non-negative safe integer would corrupt the element budget and the allocations below.
+		if (length !== -1 && !(Number.isSafeInteger(length) && length >= 0)) {
+			logger.throwArgumentError('invalid array length', 'length', length);
+		}
 		const type = `${coder.type}[${length >= 0 ? length : ''}]`;
 		const dynamic = length === -1 || coder.dynamic;
 		super('array', type, localName, dynamic);

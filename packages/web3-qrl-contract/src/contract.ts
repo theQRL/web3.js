@@ -16,6 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import {
+	createInvalidResponseError,
 	Web3Context,
 	Web3EventEmitter,
 	Web3PromiEvent,
@@ -80,6 +81,7 @@ import {
 	PayableCallOptions,
 	DataFormat,
 	DEFAULT_RETURN_FORMAT,
+	QRL_DATA_FORMAT,
 	SupportedProviders,
 	Web3ValidationErrorObject,
 } from '@theqrl/web3-types';
@@ -92,7 +94,7 @@ import {
 	ValidationSchemaInput,
 	Web3ValidatorError,
 } from '@theqrl/web3-validator';
-import { ALL_EVENTS, ALL_EVENTS_ABI } from './constants.js';
+import { ALL_EVENTS, ALL_EVENTS_ABI, TOPIC_HEX_LENGTH } from './constants.js';
 import {
 	decodeEventABI,
 	decodeMethodReturn,
@@ -122,6 +124,7 @@ import {
 	getSendTxParams,
 	isContractInitOptions,
 	isExactAbiValue,
+	isLogOf,
 	isWeb3ContractContext,
 } from './utils.js';
 
@@ -196,6 +199,18 @@ export type ContractEventsInterface<
 	[key: string]: ContractBoundEvent;
 };
 
+/**
+ * The keys {@link Contract.getPastEvents} accepts for an event: its name (for an overloaded
+ * event the first overload of that name), its canonical signature such as
+ * `Transfer(address,uint256)` or its signature hash (the keys of `contract.events`), or
+ * `allEvents` (P4-L-26).
+ */
+export type ContractEventKey<Abi extends ContractAbi> =
+	| keyof ContractEvents<Abi>
+	| 'allEvents'
+	| `${string}(${string})`
+	| `0x${string}`;
+
 // To avoid circular dependency between types and encoding, declared these types here.
 export type ContractEventEmitterInterface<Abi extends ContractAbi> = {
 	[EventAbi in FilterAbis<
@@ -250,6 +265,11 @@ const cloneAbiParameters = (
 };
 
 const inputCount = (abi: AbiFunctionFragment): number => (abi.inputs ?? []).length;
+
+/** The return data of `qrl_call`: a `0x`-prefixed hex string, possibly empty (P4-L-30). */
+const HEX_RETURN_DATA = /^0x[0-9a-f]*$/i;
+
+type EventAbiWithSignature = AbiEventFragment & { signature: string };
 
 /**
  * The class designed to interact with smart contracts on the QRL blockchain.
@@ -320,7 +340,7 @@ export class Contract<Abi extends ContractAbi>
 	 *
 	 * @param jsonInterface - The JSON interface for the contract to instantiate. It must be an array of ABI fragment objects; a copy of it is kept.
 	 * @param address - The address of the smart contract to call. A mixed-case address must carry a valid checksum (an `InvalidAddressError` is thrown otherwise); `null`, `undefined` and `''` mean "no address yet".
-	 * @param options - The options of the contract. Some are used as fallbacks for calls and transactions. `dataInputFill` must be `'data'`, `'input'` or `'both'`.
+	 * @param options - The options of the contract. Some are used as fallbacks for calls and transactions. `dataInputFill` must be `'data'`, `'input'` or `'both'`. `address` may be given here instead of the positional argument (the positional address wins).
 	 * @param context - The context of the contract used for customizing the behavior of the contract: a `Web3Context` instance or its `getContextObject()`. The contract then shares the request manager, subscription manager, wallet and config of that context. An empty object is not a context.
 	 * @returns - The contract instance with all its methods and events.
 	 *
@@ -431,8 +451,16 @@ export class Contract<Abi extends ContractAbi>
 			? optionsOrContextOrReturnFormat
 			: returnFormat ?? DEFAULT_RETURN_FORMAT;
 
+		// `address` is also accepted as an init option (`new Contract(abi, {address, from})`); a
+		// positional address wins. The option used to be a recognised key that was then
+		// ignored, which left the contract without an address (P4-L-28).
+		const optionsAddress = (
+			options as (ContractInitOptions & { address?: Address }) | undefined
+		)?.address;
 		const address =
-			typeof addressOrOptionsOrContext === 'string' ? addressOrOptionsOrContext : undefined;
+			typeof addressOrOptionsOrContext === 'string'
+				? addressOrOptionsOrContext
+				: optionsAddress;
 
 		this._dataInputFillOption = assertDataInputFill(options?.dataInputFill);
 		this._parseAndSetJsonInterface(jsonInterface, returnDataFormat);
@@ -684,6 +712,10 @@ export class Contract<Abi extends ContractAbi>
 	 * });
 	 * ```
 	 *
+	 * The bytecode is taken from `input`, else from `data`, else from the contract's
+	 * `options.input` / `options.data`; a bytecode given here never combines with one set on the
+	 * contract, so `send()`, `estimateGas()` and `encodeABI()` use the same bytes (P4-L-27).
+	 *
 	 * The promise returned by `send()` rejects with a `Web3ContractError` when the receipt
 	 * reports a failed creation and with a `NoContractAddressFoundError` when a successful
 	 * receipt carries no `contractAddress`.
@@ -710,17 +742,23 @@ export class Contract<Abi extends ContractAbi>
 			} as AbiConstructorFragment;
 		}
 
-		const _input = format(
-			{ format: 'bytes' },
-			deployOptions?.input ?? this.options.input,
-			DEFAULT_RETURN_FORMAT,
-		);
-
-		const _data = format(
-			{ format: 'bytes' },
-			deployOptions?.data ?? this.options.data,
-			DEFAULT_RETURN_FORMAT,
-		);
+		// The bytecode comes from exactly one place: `deployOptions.input`, else
+		// `deployOptions.data`, else the contract's `options.input` / `options.data`. An
+		// explicit `input` used to be combined with `options.data` (and vice versa), so
+		// `encodeABI()` used one while `send()` and `estimateGas()` rejected the pair with a
+		// `TransactionDataAndInputError` (P4-L-27).
+		let inputSource: Bytes | undefined;
+		let dataSource: Bytes | undefined;
+		if (!isNullish(deployOptions?.input)) {
+			inputSource = deployOptions?.input;
+		} else if (!isNullish(deployOptions?.data)) {
+			dataSource = deployOptions?.data;
+		} else {
+			inputSource = this.options.input;
+			dataSource = this.options.data;
+		}
+		const _input = format({ format: 'bytes' }, inputSource, DEFAULT_RETURN_FORMAT);
+		const _data = format({ format: 'bytes' }, dataSource, DEFAULT_RETURN_FORMAT);
 
 		if ((!_input || _input.trim() === '0x') && (!_data || _data.trim() === '0x')) {
 			throw new Web3ContractError('contract creation without any data provided.');
@@ -805,11 +843,14 @@ export class Contract<Abi extends ContractAbi>
 	 * Logs the node returns for another address, or (when an event is named and no custom
 	 * `topics` are given) with another signature topic, are dropped. The `filter` values are
 	 * compared through the ABI type of the input, so `{value: 20}`, `{value: '20'}` and
-	 * `{value: '0x14'}` match the same log; indexed `string`, `bytes`, `function`, array and
-	 * tuple values are compared through their keccak256 topic. A log entry that is not an
-	 * object, or a reply that is not an array, is reported with a `ResponseError`.
+	 * `{value: '0x14'}` match the same log, and a nullish filter value is a wildcard, as it is in
+	 * the topics sent to the node; indexed `string`, `bytes`, `function`, array and tuple values
+	 * are compared through their keccak256 topic. A log entry that is not an object, or a reply
+	 * that is not an array, is reported with a `ResponseError`. The logs are fetched in the node's
+	 * wire format and the decoded events are formatted with `returnFormat`, so
+	 * `FMT_BYTES.UINT8ARRAY` is usable here (P4-L-29).
 	 *
-	 * @param eventName - The name of the event in the contract, or `allEvents` to get all events.
+	 * @param eventName - The event to get: its name (for an overloaded event the first overload of that name, the one `contract.events.<name>` subscribes to), its canonical signature such as `Transfer(address,address,uint256,bytes)` or its signature hash (the other keys of `contract.events`), or `allEvents` to get all events.
 	 * @param filter - The filter options used to get events.
 	 * @param returnFormat - Return format
 	 * @returns - An array with the past event `Objects`, matching the given event name and filter.
@@ -818,7 +859,7 @@ export class Contract<Abi extends ContractAbi>
 		returnFormat?: ReturnFormat,
 	): Promise<(string | EventLog)[]>;
 	public async getPastEvents<ReturnFormat extends DataFormat = typeof DEFAULT_RETURN_FORMAT>(
-		eventName: keyof ContractEvents<Abi> | 'allEvents',
+		eventName: ContractEventKey<Abi>,
 		returnFormat?: ReturnFormat,
 	): Promise<(string | EventLog)[]>;
 	public async getPastEvents<ReturnFormat extends DataFormat = typeof DEFAULT_RETURN_FORMAT>(
@@ -826,16 +867,16 @@ export class Contract<Abi extends ContractAbi>
 		returnFormat?: ReturnFormat,
 	): Promise<(string | EventLog)[]>;
 	public async getPastEvents<ReturnFormat extends DataFormat = typeof DEFAULT_RETURN_FORMAT>(
-		eventName: keyof ContractEvents<Abi> | 'allEvents',
+		eventName: ContractEventKey<Abi>,
 		filter: Omit<Filter, 'address'>,
 		returnFormat?: ReturnFormat,
 	): Promise<(string | EventLog)[]>;
 	public async getPastEvents<ReturnFormat extends DataFormat = typeof DEFAULT_RETURN_FORMAT>(
-		param1?: keyof ContractEvents<Abi> | 'allEvents' | Omit<Filter, 'address'> | ReturnFormat,
+		param1?: ContractEventKey<Abi> | Omit<Filter, 'address'> | ReturnFormat,
 		param2?: Omit<Filter, 'address'> | ReturnFormat,
 		param3?: ReturnFormat,
 	): Promise<(string | EventLog)[]> {
-		const eventName = typeof param1 === 'string' ? param1 : 'allEvents';
+		const eventName: string = typeof param1 === 'string' ? param1 : 'allEvents';
 
 		const options =
 			typeof param1 !== 'string' && !isDataFormat(param1)
@@ -850,25 +891,58 @@ export class Contract<Abi extends ContractAbi>
 			? param2
 			: param3 ?? DEFAULT_RETURN_FORMAT;
 
-		// Only an event fragment can be the event: a same-named function used to be picked
-		// (L-60).
 		const abi =
 			eventName === 'allEvents' || eventName === ALL_EVENTS
 				? ALL_EVENTS_ABI
-				: (this._jsonInterface.find(
-						j => isAbiEventFragment(j) && j.name === eventName,
-				  ) as AbiEventFragment & { signature: string });
+				: this._findEventAbi(eventName);
 
 		if (!abi) {
 			throw new Web3ContractError(`Event ${String(eventName)} not found.`);
 		}
 		const eventOptions = (options && typeof options === 'object' ? options : {}) as Filter;
+		return this._getPastEventsForAbi(abi, eventOptions, returnFormat);
+	}
+
+	/**
+	 * The event fragment a `getPastEvents` key names: the event name (the first overload of that
+	 * name, as `contract.events.<name>`), the canonical signature, or the signature hash as the
+	 * 32-byte hash or the 64-byte topic (P4-L-26). Only event fragments qualify: a same-named
+	 * function used to be picked (L-60).
+	 */
+	private _findEventAbi(key: string): EventAbiWithSignature | undefined {
+		const events = this._jsonInterface.filter(isAbiEventFragment) as EventAbiWithSignature[];
+		// The hash key is accepted in both spellings: the 32-byte keccak of the signature and the
+		// 64-byte QRVM topic `encodeEventSignature` returns (the keccak right-padded with zeros).
+		const hashKey = /^0x[0-9a-fA-F]{64}$/.test(key)
+			? rightPad(key, TOPIC_HEX_LENGTH).toLowerCase()
+			: key.toLowerCase();
+		return (
+			events.find(event => event.name === key) ??
+			events.find(event => jsonInterfaceMethodToString(event) === key) ??
+			events.find(
+				event => rightPad(event.signature, TOPIC_HEX_LENGTH).toLowerCase() === hashKey,
+			)
+		);
+	}
+
+	/**
+	 * Fetches and decodes the past logs of one event fragment. The backfill of
+	 * `contract.events.<Event>({fromBlock})` uses it with the fragment the subscription is bound
+	 * to, so that an overloaded event is replayed and streamed with the same fragment (P4-L-26).
+	 */
+	private async _getPastEventsForAbi(
+		abi: EventAbiWithSignature,
+		eventOptions: Filter,
+		returnFormat: DataFormat,
+	): Promise<(string | EventLog)[]> {
 		const { fromBlock, toBlock, topics, address } = encodeEventABI(
 			this.options,
 			abi,
 			eventOptions,
 		);
-		const logs = await getLogs(this, { fromBlock, toBlock, topics, address }, returnFormat);
+		// The logs are fetched in the wire format: `decodeEventABI` needs hex `data` and `topics`
+		// and formats the decoded event with the caller's format itself (P4-L-29).
+		const logs = await getLogs(this, { fromBlock, toBlock, topics, address }, QRL_DATA_FORMAT);
 		if (!Array.isArray(logs)) {
 			throw new Web3ContractError('qrl_getLogs did not return an array of logs');
 		}
@@ -879,29 +953,34 @@ export class Contract<Abi extends ContractAbi>
 		const expectedTopic =
 			Array.isArray(eventOptions.topics) || abi.name === ALL_EVENTS || abi.anonymous
 				? undefined
-				: rightPad(abi.signature, 128).toLowerCase();
+				: rightPad(abi.signature, TOPIC_HEX_LENGTH).toLowerCase();
 		const decodedLogs = logs
-			.filter(log => Contract._isLogOf(log, expectedAddress, expectedTopic))
+			.filter(log => isLogOf(log, expectedAddress, expectedTopic))
 			.map(log =>
 				typeof log === 'string'
 					? log
 					: decodeEventABI(abi, log as LogsInput, this._jsonInterface, returnFormat),
 			);
 
-		const filter = eventOptions?.filter ?? {};
-		const filterKeys = Object.keys(filter);
+		const filter = eventOptions.filter ?? {};
+		// A nullish filter value is a wildcard, like the `null` topic it was sent as (F-9).
+		const filterKeys = Object.keys(filter).filter(key => !isNullish(filter[key]));
 
 		if (filterKeys.length > 0) {
 			return decodedLogs.filter(log => {
 				if (typeof log === 'string') return true;
 
 				// allEvents has no inputs; resolve its event ABI to identify indexed types that require hashing.
+				// A decoded log carries the 32-byte signature hash, a fragment the 64-byte topic
+				// `encodeEventSignature` returns: compare both as topics.
 				const logAbi =
 					abi.name === ALL_EVENTS
 						? this._jsonInterface.find(
 								item =>
 									isAbiEventFragment(item) &&
-									item.signature === log.signature,
+									typeof log.signature === 'string' &&
+									rightPad(item.signature, TOPIC_HEX_LENGTH).toLowerCase() ===
+										rightPad(log.signature, TOPIC_HEX_LENGTH).toLowerCase(),
 						  )
 						: abi;
 
@@ -943,33 +1022,6 @@ export class Contract<Abi extends ContractAbi>
 		}
 
 		return decodedLogs;
-	}
-
-	/**
-	 * Whether a log the node returned belongs to the requested address and event (I-13). A
-	 * string entry (a hash) or an entry without the member is kept and left to the decoder.
-	 */
-	private static _isLogOf(log: unknown, expectedAddress?: string, expectedTopic?: string) {
-		if (typeof log !== 'object' || isNullish(log) || Array.isArray(log)) {
-			return true;
-		}
-		const { address, topics } = log as { address?: unknown; topics?: unknown };
-		if (
-			expectedAddress &&
-			typeof address === 'string' &&
-			address.toLowerCase() !== expectedAddress
-		) {
-			return false;
-		}
-		if (
-			expectedTopic &&
-			Array.isArray(topics) &&
-			typeof topics[0] === 'string' &&
-			topics[0].toLowerCase() !== expectedTopic
-		) {
-			return false;
-		}
-		return true;
 	}
 
 	/** Where the calldata of a call or transaction goes: the option, else the config (L-58). */
@@ -1038,6 +1090,13 @@ export class Contract<Abi extends ContractAbi>
 
 			if (isAbiFunctionFragment(abi)) {
 				const methodName = jsonInterfaceMethodToString(abi);
+				// An identical fragment listed twice (a hand-merged proxy and implementation
+				// ABI, for example) is registered once, first occurrence wins: both copies used
+				// to count as overloads and made every call by name ambiguous (P4-M-8). The
+				// duplicate is left out of `options.jsonInterface` as well.
+				if (methodName in this._functions) {
+					continue;
+				}
 				const methodSignature = encodeFunctionSignature(methodName);
 				abi.signature = methodSignature;
 
@@ -1084,16 +1143,20 @@ export class Contract<Abi extends ContractAbi>
 					exactContractMethod as never;
 			} else if (isAbiEventFragment(abi)) {
 				const eventName = jsonInterfaceMethodToString(abi);
+				// An identical event fragment is registered once as well (P4-M-8).
+				if (eventName in this._events) {
+					continue;
+				}
 				const eventSignature = encodeEventSignature(eventName);
 				const event = this._createContractEvent(abi, returnFormat);
 				abi.signature = eventSignature;
 
-				if (!(eventName in this._events) || abi.name === 'bound') {
-					// It's a private type and we don't want to expose it and no need to check
-					this._events[eventName as keyof ContractEventsInterface<Abi>] = event as never;
-				}
-				if (!RESERVED_INTERFACE_KEYS.has(abi.name)) {
-					// It's a private type and we don't want to expose it and no need to check
+				// It's a private type and we don't want to expose it and no need to check
+				this._events[eventName as keyof ContractEventsInterface<Abi>] = event as never;
+				if (!RESERVED_INTERFACE_KEYS.has(abi.name) && !(abi.name in this._events)) {
+					// The name key is the first overload: the one `getPastEvents(name)` resolves,
+					// so a subscription and its backfill agree (P4-L-26). The other overloads
+					// stay reachable through their signature and hash keys.
 					this._events[abi.name as keyof ContractEventsInterface<Abi>] = event as never;
 				}
 				// It's a private type and we don't want to expose it and no need to check
@@ -1287,7 +1350,13 @@ export class Contract<Abi extends ContractAbi>
 			},
 		});
 		try {
-			const result = await call(this, tx, block, DEFAULT_RETURN_FORMAT);
+			const result: unknown = await call(this, tx, block, DEFAULT_RETURN_FORMAT);
+			// The reply is the return data, a `0x` hex string. `null`, `false`, `0` or `''`
+			// used to resolve the call with `null`, as if the function had no outputs; a
+			// non-hex reply is not return data either (P4-L-30).
+			if (typeof result !== 'string' || !HEX_RETURN_DATA.test(result)) {
+				throw createInvalidResponseError('qrl_call', 'a 0x-prefixed hex string', result);
+			}
 			return decodeMethodReturn(abi, result);
 		} catch (error: unknown) {
 			if (error instanceof ContractExecutionError) {
@@ -1458,9 +1527,11 @@ export class Contract<Abi extends ContractAbi>
 			sub.subscribed = new Promise<string>((resolve, reject) => {
 				// Deferred to the next microtask so the caller can attach listeners first.
 				queueMicrotask(() => {
+					// The bound fragment is replayed, not whichever overload the name resolves
+					// to (P4-L-26).
 					const backfill = isNullish(fromBlock)
 						? Promise.resolve()
-						: this.getPastEvents(abi.name, { fromBlock, topics }, returnFormat).then(
+						: this._getPastEventsForAbi(abi, { fromBlock, topics }, returnFormat).then(
 								logs => {
 									logs.forEach(log => sub.emit('data', log as EventLog));
 								},

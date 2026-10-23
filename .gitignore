@@ -3,8 +3,10 @@
 *.swp
 *.orig
 
-# Secrets
+# Secrets (developer-owned local state; never tracked, kept by `pnpm run clean`)
 .secrets.json
+.env
+.env.*
 
 # Ephemeral TLS fixtures generated for Firefox system tests
 templates/cypress/.cert/

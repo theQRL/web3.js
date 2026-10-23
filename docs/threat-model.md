@@ -110,8 +110,13 @@ Current controls:
   constructors.
 - Local key operations are concentrated in `@theqrl/web3-qrl-accounts`, making
   audit and defensive review tractable.
-- Repository hygiene rejects local `.secrets.json`, Yarn artefacts, copied
-  files, broken symlinks, and tracked generated artefacts.
+- Repository hygiene rejects tracked `.secrets.json` and `.env` files (an
+  untracked, gitignored `.secrets.json` is the expected developer state and a
+  local secret file that `.gitignore` does not cover fails), Yarn artefacts,
+  copied files, tracked generated artefacts under `packages/*` and `tools/*`,
+  and symlinks that are broken, absolute, point outside the repository or
+  outside the allowed targets — including links named `dist` or
+  `node_modules`.
 
 Residual risks:
 
@@ -224,30 +229,48 @@ Threats:
 
 Current controls:
 
-- pnpm install policy enforces a seven-day minimum release age, blocks exotic
+- pnpm install policy enforces a seven-day minimum release age (exceptions are
+  pinned to exact versions and checked by `pnpm run doctor`), blocks exotic
   subdependencies, enables strict dependency-build handling, and uses an
-  allowlist for reviewed build-script dependencies.
-- `pnpm run audit:supply-chain` (a pinned Trivy lockfile scan failing on
-  `HIGH,CRITICAL`), Dependabot, and GitHub Dependency Review gate high/critical
-  dependency changes.
+  allowlist for reviewed build-script dependencies. The quarantine applies to
+  pnpm installs; the release smoke install runs `npm ci` from a lockfile the
+  `prepare` job resolved and ships with the artifact, so it is pinned and
+  integrity-checked but not quarantined (first-party siblings released inside
+  the window must stay installable).
+- `pnpm run audit:supply-chain` (a pinned Trivy scan of the whole lockfile,
+  production and development dependencies, failing on `HIGH,CRITICAL`),
+  Dependabot, and GitHub Dependency Review gate high/critical dependency
+  changes.
 - Pull requests that change package manager or dependency files must document
   lockfile review and install/audit outputs.
-- Package inspection rejects forbidden dependency-manager, secret, generated, and
-  copied-file artefacts in npm pack output, and cross-checks the built output
-  against each manifest so a package never depends on hoisting to resolve a
-  module it does not declare.
+- Package inspection rejects forbidden dependency-manager, secret (`.secrets.json`,
+  `.env*`, `.pem`, `.key`), generated, and copied-file artefacts at any depth
+  of the npm pack output, and cross-checks the built output against each
+  manifest so a package never depends on hoisting to resolve a module it does
+  not declare.
 - `pnpm run doctor` rejects `allowBuilds` entries for packages absent from the
   lockfile and `.trivyignore` exceptions without a current revisit date.
 - The release pipeline publishes the GitHub releases only after every tarball
   is on npm; the npm publish loop is idempotent so a failed run is re-driven
-  rather than recovered by hand (`RELEASE.md`).
+  rather than recovered by hand, and tagged versions an earlier run left
+  unpublished are completed by a manual run of the same workflow
+  (`RELEASE.md`). A version that already exists on the registry is skipped only
+  when its `dist.integrity` equals the SHA-512 of the tarball the run built.
+- Every job that consumes the release-candidate artifact verifies it against
+  SHA-256 digests the `prepare` job recorded as job outputs, and the SLSA
+  subjects come from the same record; the artifact store of a running workflow
+  is treated as writable by any step of the run. The npm trusted-publishing
+  identity is confined to a job that only verifies and publishes; SBOM
+  generation runs without an OIDC token and attestations run outside the
+  `npm-publish` environment.
 
 Residual risks:
 
 - Dependency audit databases are incomplete and time-lagged.
-- Development dependencies can still affect docs, CI, package inspection, and
-  release packaging, so they must be treated as release-relevant when executable
-  in those paths.
+- Development dependencies affect docs, CI, package inspection, and release
+  packaging, where they run with write-capable tokens; they are in the Trivy
+  scope (`--include-dev-deps` locally, `TRIVY_INCLUDE_DEV_DEPS` in CI) and are
+  remediated like runtime dependencies.
 
 ### Release Pipeline
 
@@ -268,8 +291,8 @@ Current controls:
   environment approval, and npm trusted publishing.
 - Branch protection and CODEOWNERS expectations are documented in
   `docs/repository-governance.md`.
-- Release inspection checks package entrypoints and forbidden pack contents
-  before packing/publishing.
+- Release inspection checks package entrypoints and forbidden pack contents (at
+  any depth) before packing/publishing.
 - CI includes actionlint, dependency review, supply-chain audit, docs build,
   package inspection, package packing, and tarball smoke tests.
 
@@ -298,10 +321,13 @@ Closed by the third audit pass (2026-10-22, section 12.5 of the audit report):
   comparisons with the library matched, Go verified the library's artefacts in
   the reverse direction, and the checked-out go-qrl tree of 2026-04-09 was
   identified as a previous generation and excluded as a reference. The
-  remaining divergences are tracked as findings, not open questions: go-qrl's
-  `--lightkdf` keystores are rejected by the stricter Argon2id bound (L-72),
-  indexed array/tuple event filters (L-71), reply fields the formatter drops
-  (L-73) and the non-empty `extraParams` acceptance (L-15).
+  remaining divergences are tracked as findings, not open questions: indexed
+  array/tuple event filters (L-71), reply fields the formatter drops (L-73) and
+  the non-empty `extraParams` acceptance (L-15). L-72 (go-qrl `--lightkdf`
+  keystores, Argon2id `m = 4096`) is closed: since 607257a `decrypt()` accepts
+  them through the lowered decrypt-side memory floor
+  (`ARGON2ID_DECRYPT_MEMORY_MIN` in `kdf_policy.ts`), while keystores this
+  library creates keep the stricter bound.
 
 Still open:
 

@@ -159,6 +159,7 @@ export class Web3Context<
 				{} as RegisteredSubs,
 			);
 			this._ownsSubscriptionManager = true;
+			this._followRpcCallSpecificationFlag();
 
 			return;
 		}
@@ -175,12 +176,15 @@ export class Web3Context<
 
 		this.setConfig(config ?? {});
 
+		// `useRpcCallSpecification` selects the error mapping; the block-timeout flag used to be
+		// passed here by mistake (P4-L-4).
 		this._requestManager =
 			requestManager ??
 			new Web3RequestManager<API>(
 				provider,
-				config?.enableExperimentalFeatures?.useSubscriptionWhenCheckingBlockTimeout,
+				config?.enableExperimentalFeatures?.useRpcCallSpecification,
 			);
+		this._followRpcCallSpecificationFlag();
 
 		if (subscriptionManager) {
 			this._subscriptionManager = subscriptionManager;
@@ -277,6 +281,14 @@ export class Web3Context<
 	public link<T extends Web3Context>(parentContext: T) {
 		this.setConfig(parentContext.config);
 		this._requestManager = parentContext.requestManager;
+		// The manager this context created is replaced by the parent's: release its listeners
+		// instead of orphaning them on the request manager.
+		if (
+			this._ownsSubscriptionManager &&
+			this._subscriptionManager !== parentContext.subscriptionManager
+		) {
+			this._subscriptionManager.dispose();
+		}
 		// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 		this._subscriptionManager = parentContext.subscriptionManager;
 		this._ownsSubscriptionManager = false;
@@ -309,6 +321,28 @@ export class Web3Context<
 		if (this._ownsSubscriptionManager) {
 			this._subscriptionManager.dispose();
 		}
+	}
+
+	/**
+	 * Copies the `useRpcCallSpecification` flag of the configuration into the request manager
+	 * (which maps EIP-1474 error replies to typed classes when it is set), so the flag applies
+	 * at construction and whenever `enableExperimentalFeatures` is assigned later (P4-L-4).
+	 */
+	private _followRpcCallSpecificationFlag(): void {
+		if (isNullish(this._requestManager)) {
+			return;
+		}
+		this._requestManager.useRpcCallSpecification =
+			this.config.enableExperimentalFeatures?.useRpcCallSpecification ?? false;
+	}
+
+	public get enableExperimentalFeatures() {
+		return super.enableExperimentalFeatures;
+	}
+
+	public set enableExperimentalFeatures(val) {
+		super.enableExperimentalFeatures = val;
+		this._followRpcCallSpecificationFlag();
 	}
 
 	/** Remembers a `CONFIG_CHANGE` forwarder registered on `parent` for this context, so {@link dispose} can remove it. */

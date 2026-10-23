@@ -59,13 +59,11 @@ import { blockSchema, logSchema } from '@theqrl/web3-qrl';
 
 import { AbiError, ResponseError, Web3ContractError } from '@theqrl/web3-errors';
 
-import { ALL_EVENTS } from './constants.js';
+import { ALL_EVENTS, TOPIC_HEX_LENGTH } from './constants.js';
 import { ContractOptions, ContractAbiWithSignature, EventLog } from './types.js';
 
 type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 
-/** A QRVM log topic is a 64-byte word: 128 hex characters. */
-const TOPIC_HEX_LENGTH = 128;
 /** The QRVM ABI word is 64 bytes: 128 hex characters. */
 const WORD_HEX_LENGTH = 128;
 const ARRAY_SUFFIX = /\[(\d*)\]$/;
@@ -431,6 +429,16 @@ export const encodeMethodABI = (
 	return `${encodeFunctionSignature(abi)}${params}`;
 };
 
+/**
+ * Decodes the return data of a call against the function's `outputs`: a single output is
+ * returned as is, several as an object with named and positional members.
+ *
+ * For compatibility `null` is returned when the function has no `outputs` member (whatever the
+ * data) and when there is no data at all. Empty data (`0x`) for a function that does declare
+ * outputs is an `AbiError`, the usual sign of a wrong address or missing code. The shape of the
+ * node's reply itself (a `0x` hex string) is checked by the contract before the data gets here
+ * (P4-L-30).
+ */
 export const decodeMethodReturn = (abi: AbiFunctionFragment, returnValues?: HexString) => {
 	// If it was constructor then we need to return contract address
 	if (abi.type === 'constructor') {

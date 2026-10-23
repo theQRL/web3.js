@@ -28,8 +28,11 @@ export class TransactionFactory {
 	/**
 	 * Create a transaction from a `txData` object
 	 *
-	 * @param txData - The transaction data. The `type` field will determine which transaction type is returned (if undefined, creates a legacy transaction)
+	 * @param txData - The transaction data. `type` is required and selects the transaction class: QRL has a
+	 * single transaction type, `2` ({@link FeeMarketEIP1559Transaction}). There is no legacy default: a
+	 * missing `type` is read as `0` and rejected like any other unsupported value (I-2).
 	 * @param txOptions - Options to pass on to the constructor of the transaction
+	 * @throws Error `Tx instantiation with type <type> not supported` for a missing or unsupported `type`
 	 */
 	public static fromTxData(
 		txData: TxData | TypedTransaction,

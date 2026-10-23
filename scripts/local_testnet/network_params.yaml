@@ -1,4 +1,8 @@
-# Published client/helper tags; this configuration targets Linux AMD64.
+# Client and helper images are referenced by their published *mutable* tags
+# (`stable`, `*-latest`): only the qrl-package commit is pinned
+# (start_local_testnet.sh), so a pull can bring a newer node image. Pin by
+# digest (`image@sha256:...`) once the upstream images publish stable digests.
+# This configuration targets Linux AMD64.
 participants:
   - el_type: gqrl
     el_image: qrledger/go-qrl:stable

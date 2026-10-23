@@ -16,7 +16,11 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { Web3Context, Web3ContextObject } from '@theqrl/web3-core';
-import { ResolverMethodMissingError, Web3ContractError } from '@theqrl/web3-errors';
+import {
+	InvalidAddressError,
+	ResolverMethodMissingError,
+	Web3ContractError,
+} from '@theqrl/web3-errors';
 import { Contract, NonPayableMethodObject } from '@theqrl/web3-qrl-contract';
 import { sha3, toChecksumAddress } from '@theqrl/web3-utils';
 import { isAddressString } from '@theqrl/web3-validator';
@@ -138,8 +142,9 @@ describe('resolver', () => {
 					call: async () => Promise.resolve(true),
 				} as unknown as NonPayableMethodObject<any, any>);
 
+			// The unchecksummed form: a capital `Q` (P4-L-44) and a lowercase body.
 			const addrMock = jest.spyOn(contract.methods, 'addr').mockReturnValue({
-				call: async () => Promise.resolve(recordAddress.toLowerCase()),
+				call: async () => Promise.resolve(`Q${recordAddress.slice(1).toLowerCase()}`),
 			} as unknown as NonPayableMethodObject<any, any>);
 
 			// todo when moving this mock in beforeAll, jest calls the actual implementation, how to fix that
@@ -303,34 +308,86 @@ describe('resolver', () => {
 	});
 
 	describe('name', () => {
-		it('getName', async () => {
-			const address =
-				'Q33380cd8b47eed92b0dcd1ccca2ee84efd0c8b87a4fe6ee4a918969cdd454c0b04ac9f03ffaafa765af0cbeab572d8c9dd514044aa94adee50fa5d361a3e4629';
+		const address = toChecksumAddress(
+			'Q33380cd8b47eed92b0dcd1ccca2ee84efd0c8b87a4fe6ee4a918969cdd454c0b04ac9f03ffaafa765af0cbeab572d8c9dd514044aa94adee50fa5d361a3e4629',
+		);
+		const reverseName = `${address.toLowerCase().substring(1)}.addr.reverse`;
 
+		/** Mocks a reverse record claiming `claimed` whose forward record is `forward` (P4-L-31). */
+		const mockRecords = (claimed: unknown, forward: unknown) => {
 			const supportsInterfaceMock = jest
 				.spyOn(contract.methods, 'supportsInterface')
 				.mockReturnValue({
 					call: async () => Promise.resolve(true),
 				} as unknown as NonPayableMethodObject<any, any>);
-
 			const nameMock = jest.spyOn(contract.methods, 'name').mockReturnValue({
-				call: jest.fn(),
+				call: async () => Promise.resolve(claimed),
 			} as unknown as NonPayableMethodObject<any, any>);
-
+			const addrMock = jest.spyOn(contract.methods, 'addr').mockReturnValue({
+				call: async () => Promise.resolve(forward),
+			} as unknown as NonPayableMethodObject<any, any>);
 			jest.spyOn(registry, 'getResolver').mockImplementation(async () => {
 				return new Promise(resolve => {
 					resolve(contract);
 				});
 			});
+			return { supportsInterfaceMock, nameMock, addrMock };
+		};
 
-			await resolver.getName(address);
+		it('getName returns the claimed name when it forward-resolves to the address (P4-L-31)', async () => {
+			const { supportsInterfaceMock, nameMock, addrMock } = mockRecords(QRNS_NAME, address);
+
+			await expect(resolver.getName(address)).resolves.toBe(QRNS_NAME);
 			expect(supportsInterfaceMock).toHaveBeenCalledWith(
 				interfaceIds[methodsInInterface.name],
 			);
-
-			const reverseName = `${address.toLowerCase().substring(1)}.addr.reverse`;
+			expect(supportsInterfaceMock).toHaveBeenCalledWith(
+				interfaceIds[methodsInInterface.addr],
+			);
 			expect(nameMock).toHaveBeenCalledWith(namehash(reverseName));
+			expect(addrMock).toHaveBeenCalledWith(namehash(QRNS_NAME));
 		});
+
+		it('getName returns an empty string when the claimed name resolves elsewhere (P4-L-31)', async () => {
+			mockRecords(QRNS_NAME, recordAddress);
+
+			await expect(resolver.getName(address)).resolves.toBe('');
+		});
+
+		it('getName returns an empty string without forward-resolving an empty record (P4-L-31)', async () => {
+			const { addrMock } = mockRecords('', address);
+
+			await expect(resolver.getName(address)).resolves.toBe('');
+			expect(addrMock).not.toHaveBeenCalled();
+		});
+
+		it('getName skips the name interface check only when asked (P4-L-31)', async () => {
+			const { supportsInterfaceMock } = mockRecords(QRNS_NAME, address);
+
+			await expect(resolver.getName(address, false)).resolves.toBe(QRNS_NAME);
+			expect(supportsInterfaceMock).not.toHaveBeenCalledWith(
+				interfaceIds[methodsInInterface.name],
+			);
+			expect(supportsInterfaceMock).toHaveBeenCalledWith(
+				interfaceIds[methodsInInterface.addr],
+			);
+		});
+
+		it('getName rejects a reverse resolver that does not return a string (P4-L-31)', async () => {
+			mockRecords(undefined, address);
+
+			await expect(resolver.getName(address)).rejects.toThrow(Web3ContractError);
+		});
+
+		it.each(['web3js.qrl', `Q${'zz'.repeat(64)}`, `0x${'ab'.repeat(20)}`, ''])(
+			'getName rejects the non-address %p with an InvalidAddressError (P4-L-31)',
+			async input => {
+				const { nameMock } = mockRecords(QRNS_NAME, address);
+
+				await expect(resolver.getName(input)).rejects.toThrow(InvalidAddressError);
+				expect(nameMock).not.toHaveBeenCalled();
+			},
+		);
 	});
 
 	describe('supportsInterface', () => {

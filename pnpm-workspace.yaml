@@ -11,17 +11,27 @@ nodeLinker: hoisted
 minimumReleaseAge: 10080
 minimumReleaseAgeExclude:
 - '@theqrl/*'
-# CVE remediation — bypass quarantine for security-only patch releases
-- '@babel/plugin-transform-modules-systemjs'
-- 'brace-expansion'
-- 'fast-uri'
-- 'postcss'
-- 'svgo'
+# CVE remediation — bypass quarantine for the exact security patch releases the
+# overrides below resolve to. Every entry other than @theqrl/* must be pinned to
+# exact versions (`name@x.y.z`, several joined with `||`): a name-only entry
+# would exempt every future release of the package, and `pnpm run doctor`
+# fails on it.
+- '@babel/plugin-transform-modules-systemjs@7.29.4'
+- 'brace-expansion@1.1.20||2.1.6||5.0.11'
+- 'fast-uri@3.1.7'
+- 'postcss@8.5.18'
+- 'svgo@3.3.5'
+- 'handlebars@4.7.10'
+- 'markdown-it@14.3.3'
+- 'undici@6.28.1||7.29.1'
 blockExoticSubdeps: true
 overrides:
   "braces@<3.0.3": "3.0.3"
-  "undici@<6.27.0": "6.27.0"
-  "undici@>=7.0.0 <7.28.0": "7.28.0"
+  # CVE-2026-13697 / CVE-2026-19534 / CVE-2026-84961 — undici TLS validation
+  # bypass (BalancedPool) and request handling (high); dev tooling via
+  # @semantic-release/github and @actions/http-client.
+  "undici@<6.28.1": "6.28.1"
+  "undici@>=7.0.0 <7.29.1": "7.29.1"
   "fast-uri@<3.1.7": "3.1.7"
   # CVE-2026-102276 / CVE-2026-102278 — recursive brace-expansion DoS
   "brace-expansion@<1.1.20": "1.1.20"
@@ -31,6 +41,9 @@ overrides:
   "svgo@>=3.0.0 <3.3.5": "3.3.5"
   # CVE-2026-102422 — shell-quote command injection after comment tokens
   "shell-quote@<1.11.0": "1.11.0"
+  # CVE-2026-106445 / CVE-2026-106446 — handlebars JavaScript injection
+  # (critical); release tooling via conventional-changelog-writer.
+  "handlebars@<4.7.10": "4.7.10"
   # CVE remediation — ws memory-exhaustion DoS (high)
   "ws@>=7.0.0 <7.5.11": "7.5.11"
   "ws@>=8.0.0 <8.21.0": "8.21.0"
@@ -43,7 +56,8 @@ overrides:
   "@babel/plugin-transform-modules-systemjs@<7.29.4": "7.29.4"
   "qs@>=6.11.1 <6.15.2": "6.15.3"
   "cookie@<0.7.0": "0.7.2"
-  "markdown-it@<14.2.0": "14.3.0"
+  # CVE-2026-111758 / CVE-2026-111759 — markdown-it DoS (high); docs via typedoc.
+  "markdown-it@>=14.0.0 <14.3.3": "14.3.3"
   "joi@<17.13.7": "17.13.7"
   "launch-editor@<2.14.2": "2.14.2"
   "webpack-dev-server@<5.2.5": "5.2.6"

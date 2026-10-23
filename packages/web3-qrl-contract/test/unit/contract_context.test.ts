@@ -162,8 +162,10 @@ describe('contract address checksum (L-57)', () => {
 		expect(contract.options.address).toBe(ADDR);
 	});
 
-	it('accepts the lowercase form and stores the checksummed address (L-57)', () => {
-		const contract = new Contract(abi, ADDR.toLowerCase(), { provider: new FakeProvider().asProvider() });
+	it('accepts the unchecksummed form and stores the checksummed address (L-57)', () => {
+		// The prefix is a capital `Q` (P4-L-44); the body may be all lowercase.
+		const unchecksummed = `Q${ADDR.slice(1).toLowerCase()}`;
+		const contract = new Contract(abi, unchecksummed, { provider: new FakeProvider().asProvider() });
 		expect(contract.options.address).toBe(ADDR);
 
 		const empty = new Contract(abi, '', { provider: new FakeProvider().asProvider() });

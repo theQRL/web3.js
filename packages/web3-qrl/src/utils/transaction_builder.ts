@@ -41,6 +41,7 @@ import {
 	LocalWalletNotAvailableError,
 	TransactionDataAndInputError,
 	UnableToPopulateNonceError,
+	NodeChainIdMismatchError,
 } from '@theqrl/web3-errors';
 import { seedToAccount } from '@theqrl/web3-qrl-accounts';
 import { bytesToHex, format, toChecksumAddress } from '@theqrl/web3-utils';
@@ -64,10 +65,11 @@ export { getTransactionType } from './get_transaction_type.js';
  * Resolves the `from` or `to` field of a caller-supplied transaction to an address.
  *
  * A string is an address and must be a QRL address; a non-negative safe-integer `number` is the
- * index of an account in the context's wallet. Nothing else is accepted: a hex string such as
- * `'0x1'` used to be read as a wallet index, so `to: '0x1'` sent the funds to wallet account 1
- * and a 20-byte Ethereum address became a huge index that failed as "no wallet available"
- * (L-51).
+ * index of an account in the context's wallet. `undefined` and `null` mean the field is not given:
+ * for `to` that is a contract creation, for `from` the sender is derived from the seed or taken
+ * from `defaultAccount` (P4-L-12). Nothing else is accepted: a hex string such as `'0x1'` used to
+ * be read as a wallet index, so `to: '0x1'` sent the funds to wallet account 1 and a 20-byte
+ * Ethereum address became a huge index that failed as "no wallet available" (L-51).
  *
  * @throws InvalidTransactionWithSender / InvalidTransactionWithReceiver for any other value.
  * @throws LocalWalletNotAvailableError for an index without a wallet or without such an account.
@@ -82,7 +84,7 @@ export const getTransactionFromOrToAttr = (
 		| TransactionWithFromAndToLocalWalletIndex,
 	seed?: HexString | Uint8Array,
 ): Address | undefined => {
-	if (transaction !== undefined && attr in transaction && transaction[attr] !== undefined) {
+	if (transaction !== undefined && attr in transaction && !isNullish(transaction[attr])) {
 		const transactionAttribute: unknown = transaction[attr];
 		if (typeof transactionAttribute === 'string' && isAddressString(transactionAttribute)) {
 			return transactionAttribute;
@@ -127,6 +129,29 @@ export const getTransactionNonce = async <ReturnFormat extends DataFormat>(
 
 // Keep in mind that the order the properties of populateTransaction get populated matters
 // as some of the properties are dependent on others
+/**
+ * Checks a chain id the caller supplied (directly, through `common.customChain` or through the
+ * context's `defaultCommon`) against the one the connected node serves. A transaction signed for
+ * another chain would be rejected by this node while the signature stays valid on that chain, so
+ * it is not signed. Without a provider (offline signing) there is nothing to compare against and
+ * the chain id is taken as given.
+ *
+ * @throws NodeChainIdMismatchError when the node reports a different chain id.
+ */
+const assertNodeChainId = async (
+	web3Context: Web3Context<QRLExecutionAPI>,
+	txChainId: Numbers,
+): Promise<void> => {
+	if (isNullish(web3Context.currentProvider)) {
+		return;
+	}
+	const nodeChainId = await getChainId(web3Context, QRL_DATA_FORMAT);
+	const txChainIdHex = format({ format: 'uint' }, txChainId, QRL_DATA_FORMAT);
+	if (BigInt(txChainIdHex) !== BigInt(nodeChainId)) {
+		throw new NodeChainIdMismatchError({ txChainId: txChainIdHex, nodeChainId });
+	}
+};
+
 export async function defaultTransactionBuilder<ReturnType = Transaction>(options: {
 	transaction: Transaction;
 	web3Context: Web3Context<QRLExecutionAPI & Web3NetAPI>;
@@ -225,6 +250,11 @@ export async function defaultTransactionBuilder<ReturnType = Transaction>(option
 		populatedTransaction.chainId = isNullish(commonChainId)
 			? await getChainId(options.web3Context, QRL_DATA_FORMAT)
 			: format({ format: 'uint' }, commonChainId as Numbers, QRL_DATA_FORMAT);
+		if (!isNullish(commonChainId)) {
+			await assertNodeChainId(options.web3Context, populatedTransaction.chainId);
+		}
+	} else {
+		await assertNodeChainId(options.web3Context, populatedTransaction.chainId);
 	}
 
 	if (isNullish(populatedTransaction.networkId)) {

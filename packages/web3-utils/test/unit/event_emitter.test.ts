@@ -78,6 +78,57 @@ describe('EventEmitter', () => {
 		expect(emitter.rawListeners('f')).toEqual([]);
 	});
 
+	it('removes only the fired once registration of a function also registered with on (P4-L-22)', () => {
+		const countPerEmit = (emitter: EventEmitter, emits: number) => {
+			let calls = 0;
+			const listener = () => {
+				calls += 1;
+			};
+			return {
+				listener,
+				run: () => {
+					const perEmit: number[] = [];
+					for (let index = 0; index < emits; index += 1) {
+						const before = calls;
+						emitter.emit('x');
+						perEmit.push(calls - before);
+					}
+					return perEmit;
+				},
+			};
+		};
+
+		const onceFirst = new EventEmitter();
+		const first = countPerEmit(onceFirst, 4);
+		onceFirst.once('x', first.listener);
+		onceFirst.on('x', first.listener);
+		// Node's emitter: 2,1,1,1. The `on()` entry used to be the one removed (2,1,0,0).
+		expect(first.run()).toEqual([2, 1, 1, 1]);
+		expect(onceFirst.listenerCount('x')).toBe(1);
+
+		const onFirst = new EventEmitter();
+		const second = countPerEmit(onFirst, 3);
+		onFirst.on('x', second.listener);
+		onFirst.once('x', second.listener);
+		expect(second.run()).toEqual([2, 1, 1]);
+		expect(onFirst.listenerCount('x')).toBe(1);
+
+		// A once entry that an earlier listener removed during the same emit still runs from
+		// the snapshot, once, and leaves nothing behind.
+		const removedMidEmit = new EventEmitter();
+		const calls: string[] = [];
+		const late = () => calls.push('late');
+		removedMidEmit.on('x', () => {
+			calls.push('early');
+			removedMidEmit.off('x', late);
+		});
+		removedMidEmit.once('x', late);
+		removedMidEmit.emit('x');
+		removedMidEmit.emit('x');
+		expect(calls).toEqual(['early', 'late', 'early']);
+		expect(removedMidEmit.listenerCount('x')).toBe(1);
+	});
+
 	it('tolerates listeners that add or remove listeners while emitting', () => {
 		const emitter = new EventEmitter();
 		const calls: string[] = [];

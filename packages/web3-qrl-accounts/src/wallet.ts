@@ -16,11 +16,28 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { Web3BaseWallet, Web3BaseWalletAccount, KeyStore } from '@theqrl/web3-types';
-import { isNullish } from '@theqrl/web3-validator';
+import { bytesToHex } from '@theqrl/web3-utils';
+import { isNullish, isObject, Web3ValidatorError } from '@theqrl/web3-validator';
 import { keystoreContainerError } from './keystore_utils.js';
 import { WebStorage } from './types.js';
 
 type BrowserError = { code: number; name: string };
+
+/**
+ * The typed error for a value handed to {@link Wallet.add} that is neither a seed nor an account
+ * object. Its message never includes the value (I-6).
+ */
+const invalidWalletAccountError = (): Web3ValidatorError =>
+	new Web3ValidatorError([
+		{
+			keyword: 'type',
+			instancePath: '',
+			schemaPath: '#/type',
+			params: {},
+			message:
+				'account must be a 51-byte extended seed (0x-prefixed hex string or byte array) or an account object with a string address',
+		},
+	]);
 
 /**
  * Wallet is an in memory `wallet` that can hold multiple accounts.
@@ -132,8 +149,11 @@ export class Wallet<
 	/**
 	 * Adds an account using a seed or account object to the wallet.
 	 *
-	 * @param account - A 51-byte extended seed (`0x`-prefixed hex string) or account object
+	 * @param account - A 51-byte extended seed (`0x`-prefixed hex string or `Uint8Array`) or account object
 	 * @returns The wallet
+	 * @throws Web3ValidatorError when `account` is neither a seed nor an object with a string `address`
+	 * (`null`, `{}`, a number); a malformed seed is rejected by the account provider (`InvalidSeedError`,
+	 * `SeedLengthError`).
 	 *
 	 * ```ts
 	 * web3.qrl.accounts.wallet.add('0x010000c902ea9bbf1dd51aaa2ee9bed126aba921f6a6afac9cf09a21f3d915b057bace6787a894a71d1d103992aca0a6a4250c');
@@ -154,9 +174,20 @@ export class Wallet<
 	 * ]
 	 * ```
 	 */
-	public add(account: T | string): this {
+	public add(account: T | string | Uint8Array): this {
 		if (typeof account === 'string') {
 			return this.add(this._accountProvider.seedToAccount(account));
+		}
+		if (account instanceof Uint8Array) {
+			// A byte-array seed takes the same provider entry point as a hex seed, so the provider's
+			// seed policy and typed errors apply to both spellings (I-6).
+			return this.add(this._accountProvider.seedToAccount(bytesToHex(account)));
+		}
+		const candidate: unknown = account;
+		if (!isObject(candidate) || typeof candidate.address !== 'string') {
+			// `null`, a number, `{}` or an object without an address used to die with a raw
+			// `TypeError` in the address bookkeeping below (I-6).
+			throw invalidWalletAccountError();
 		}
 		let index = this.length;
 		const existAccount = this.get(account.address);

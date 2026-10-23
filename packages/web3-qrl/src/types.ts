@@ -80,13 +80,20 @@ export type SendSignedTransactionEvents<ReturnFormat extends DataFormat> = {
 
 export interface SendTransactionOptions<ResolveType = TransactionReceipt> {
 	ignoreGasPricing?: boolean;
+	/**
+	 * Decides the outcome from the formatted receipt instead of the default `status` check: when a
+	 * resolver is given the status allow-list is bypassed and the PromiEvent resolves with whatever
+	 * the resolver returns (or rejects with what it throws). A resolver that must only accept
+	 * successful transactions has to check `receipt.status` itself, as the contract deploy resolver
+	 * does.
+	 */
 	transactionResolver?: (receipt: TransactionReceipt) => ResolveType;
 	contractAbi?: ContractAbi;
 	checkRevertBeforeSending?: boolean;
-	ignoreFillingGasLimit?: boolean;
 }
 
 export interface SendSignedTransactionOptions<ResolveType = TransactionReceipt> {
+	/** See {@link SendTransactionOptions.transactionResolver}: a resolver bypasses the `status` check. */
 	transactionResolver?: (receipt: TransactionReceipt) => ResolveType;
 	contractAbi?: ContractAbi;
 	checkRevertBeforeSending?: boolean;

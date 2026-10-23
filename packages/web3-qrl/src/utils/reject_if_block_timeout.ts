@@ -20,6 +20,7 @@ import { rejectIfConditionAtInterval } from '@theqrl/web3-utils';
 
 import { TransactionBlockTimeoutError } from '@theqrl/web3-errors';
 import { NUMBER_DATA_FORMAT } from '../constants.js';
+import { isValidUnsignedHexNumber } from './hex_guards.js';
 import { getBlockNumber } from './rpc_method_wrappers_readers.js';
 import { NewHeadsSubscription } from '../web3_subscriptions.js';
 
@@ -131,13 +132,15 @@ async function resolveBySubscription(
 		try {
 			subscription.on('data', (lastBlockHeader: BlockHeaderOutput) => {
 				if (subscriptionStopped) return;
-				needToWatchLater = false;
-				if (!lastBlockHeader?.number) {
+				// A header without a usable block number is not "data arrived": it is skipped
+				// before `BigInt` can throw out of the listener, and the polling fallback stays
+				// armed, as in `watchTransactionBySubscription` (P4-L-14).
+				const headerNumber: unknown = lastBlockHeader?.number;
+				if (!isValidUnsignedHexNumber(headerNumber)) {
 					return;
 				}
-				const numberOfBlocks = Number(
-					BigInt(lastBlockHeader.number) - BigInt(starterBlockNumber),
-				);
+				needToWatchLater = false;
+				const numberOfBlocks = Number(BigInt(headerNumber) - BigInt(starterBlockNumber));
 
 				if (numberOfBlocks >= web3Context.transactionBlockTimeout) {
 					// Transaction Block Timeout is known to be reached by subscribing to new heads

@@ -63,7 +63,7 @@
 		"test:e2e:testnet:http": "./scripts/test-runner.sh testnet http",
 		"test:e2e:testnet:ws": "./scripts/test-runner.sh testnet ws",
 		"husky:install": "husky install",
-		"husky:uninstall": "husky uninstall",
+		"husky:uninstall": "git config --unset core.hooksPath",
 		"compile:contracts": "node ./scripts/compile_contracts.js",
 		"release": "multi-semantic-release --ignore-private-packages --deps.prefix=^",
 		"release:dry-run": "multi-semantic-release --ignore-private-packages --deps.prefix=^ --dry-run",
@@ -76,7 +76,7 @@
 		"release:touch-packages": "node scripts/release/touch-packages.js",
 		"doctor": "node scripts/doctor.js",
 		"check:dependencies": "node scripts/check-package-dependencies.js",
-		"audit:supply-chain": "command -v docker >/dev/null 2>&1 || { echo 'audit:supply-chain runs Trivy 0.70.0 from a pinned container image and needs Docker. Install Docker, or install Trivy 0.70.0 yourself and run: trivy fs --scanners vuln --severity HIGH,CRITICAL --exit-code 1 --ignorefile .trivyignore pnpm-lock.yaml' >&2; exit 1; }; scan() { docker run --rm -v \"$PWD\":/work:ro -w /work -v qrl-web3-trivy-db:/root/.cache/trivy ghcr.io/aquasecurity/trivy:0.70.0@sha256:be1190afcb28352bfddc4ddeb71470835d16462af68d310f9f4bca710961a41e \"$@\"; }; scan fs --scanners vuln --severity HIGH,CRITICAL --exit-code 1 --ignorefile .trivyignore pnpm-lock.yaml; status=$?; scan version; exit $status"
+		"audit:supply-chain": "command -v docker >/dev/null 2>&1 || { echo 'audit:supply-chain runs Trivy 0.70.0 from a pinned container image and needs Docker. Install Docker, or install Trivy 0.70.0 yourself and run: trivy fs --scanners vuln --include-dev-deps --severity HIGH,CRITICAL --exit-code 1 --ignorefile .trivyignore pnpm-lock.yaml' >&2; exit 1; }; scan() { docker run --rm -v \"$PWD\":/work:ro -w /work -v qrl-web3-trivy-db:/root/.cache/trivy ghcr.io/aquasecurity/trivy:0.70.0@sha256:be1190afcb28352bfddc4ddeb71470835d16462af68d310f9f4bca710961a41e \"$@\"; }; scan fs --scanners vuln --include-dev-deps --severity HIGH,CRITICAL --exit-code 1 --ignorefile .trivyignore pnpm-lock.yaml; status=$?; scan version; exit $status"
 	},
 	"devDependencies": {
 		"@cypress/webpack-preprocessor": "7.1.0",

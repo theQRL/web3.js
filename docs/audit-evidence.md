@@ -33,9 +33,9 @@ Expected result:
 | Install with reviewed scripts | `pnpm install --frozen-lockfile` | Exit `0`; any dependency build scripts are limited to the reviewed `allowBuilds` list in `pnpm-workspace.yaml`. |
 | Toolchain | `pnpm run doctor` | Exit `0`; Node, pnpm, lockfile, TypeScript/Jest/ESLint, and required local toolchain checks pass. |
 | Repository hygiene | `pnpm run hygiene` | Exit `0`; prints `Repository hygiene checks passed`; no tracked generated output, local secrets, Yarn artefacts, copied files, or invalid symlinks. |
-| Workflow lint | `actionlint .github/workflows/*.yml` | Exit `0`; no workflow syntax or expression errors. |
+| Workflow lint | `actionlint .github/workflows/*.yml` and `zizmor --persona pedantic --config .github/zizmor.yml .github/workflows/` | Exit `0` for actionlint; zizmor reports no finding beyond the documented `self-repository` style note. |
 | Whitespace | `git diff --check` | Exit `0`; no trailing whitespace, conflict markers, or whitespace errors. |
-| Supply chain audit | `pnpm run audit:supply-chain` | Exit `0`; no high or critical production dependency advisories. |
+| Supply chain audit | `pnpm run audit:supply-chain` | Exit `0`; no high or critical advisories in the locked graph, production and development dependencies alike (`--include-dev-deps`). |
 | Workspace lint | `pnpm run lint` | Exit `0`; warnings are acceptable only if already present in the current baseline and not from changed code. |
 | Package build | `pnpm run build` | Exit `0`; Turbo reports all package/tool build tasks successful. |
 | Browser build | `pnpm run build:web` | Exit `0`; browser bundles build for `@theqrl/web3` and `@theqrl/web3-validator`. |
@@ -58,15 +58,16 @@ Required GitHub status checks should match the commands above:
   `engine-strict=true`; `semantic-release` requires `^22.14.0 || >=24.10.0`).
   The floor is proven against published tarballs on 20.19.0 by the release
   smoke job, plus `scripts/doctor.js` and the `package_engines` metadata test.
-- `Supply Chain Audit` runs the pinned Trivy 0.70.0 lockfile scan, failing on
-  HIGH/CRITICAL. Reproduce locally with `pnpm run audit:supply-chain` (same
-  version, from a digest-pinned image).
+- `Supply Chain Audit` runs the pinned Trivy 0.70.0 lockfile scan over
+  production and development dependencies, failing on HIGH/CRITICAL. Reproduce
+  locally with `pnpm run audit:supply-chain` (same version, from a
+  digest-pinned image, same scope).
 - `Package Inspection` builds, inspects, packs, and smoke-tests release
   tarballs.
 - `Unit Coverage` runs unit coverage and uploads configured JSON artefacts to
   Codecov.
 - `Docs Build` runs the Docusaurus/TypeDoc docs build.
-- `Lint workflow files` runs actionlint.
+- `Lint workflow files` runs actionlint and zizmor.
 - `Dependency Review` blocks high/critical vulnerable dependency changes in pull
   requests.
 

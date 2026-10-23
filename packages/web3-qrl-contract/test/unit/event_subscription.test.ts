@@ -20,6 +20,7 @@ import { ContractAbi } from '@theqrl/web3-types';
 import { Contract, EventLog } from '../../src';
 import {
 	ADDR,
+	ADDR2,
 	FakeProvider,
 	RpcErrorReply,
 	addrWord,
@@ -188,5 +189,93 @@ describe('contract event subscriptions (M-7e)', () => {
 		await flush();
 		expect(unhandled).toHaveLength(0);
 		expect(provider.calls).toHaveLength(0);
+	});
+});
+
+describe('live subscription log ownership and removed logs (P4-L-25)', () => {
+	const foreignAddressLog = { ...log, address: ADDR2.toLowerCase() };
+	const foreignTopicLog = {
+		...log,
+		topics: [topicOf('Foo(address,address,uint256)'), log.topics[1], log.topics[2]],
+	};
+	const removedLog = { ...log, removed: true };
+
+	const subscribe = async (options?: { topics?: string[] }) => {
+		const provider = new FakeProvider(
+			method => (method === 'qrl_subscribe' ? '0x1' : undefined),
+			true,
+		);
+		const contract = new Contract(abi, ADDR, { provider: provider.asProvider() });
+		const sub = contract.events.Transfer(options);
+		const data: EventLog[] = [];
+		const changed: (EventLog & { removed: true })[] = [];
+		sub.on('data', event => {
+			data.push(event);
+		});
+		sub.on('changed', event => {
+			changed.push(event);
+		});
+		await sub.subscribed;
+		return { provider, sub, data, changed };
+	};
+
+	it('never emits a log of another address as data; reports it on a listened error (P4-L-25)', async () => {
+		const { provider, sub, data, changed } = await subscribe();
+		const errors: Error[] = [];
+		sub.on('error', error => {
+			errors.push(error);
+		});
+
+		provider.notify('0x1', foreignAddressLog);
+
+		expect(data).toHaveLength(0);
+		expect(changed).toHaveLength(0);
+		expect(errors).toHaveLength(1);
+		expect(errors[0]).toBeInstanceOf(SubscriptionError);
+	});
+
+	it('never emits a log of another event signature as data (P4-L-25)', async () => {
+		const { provider, sub, data } = await subscribe();
+		const errors: Error[] = [];
+		sub.on('error', error => {
+			errors.push(error);
+		});
+
+		provider.notify('0x1', foreignTopicLog);
+		provider.notify('0x1', log);
+
+		expect(data).toHaveLength(1);
+		expect(data[0].returnValues.value).toBe(BigInt(5));
+		expect(errors).toHaveLength(1);
+	});
+
+	it('ignores a foreign log silently when nobody listens for errors (P4-L-25)', async () => {
+		const { provider, data } = await subscribe();
+
+		expect(() => provider.notify('0x1', foreignAddressLog)).not.toThrow();
+		expect(() => provider.notify('0x1', foreignTopicLog)).not.toThrow();
+		expect(data).toHaveLength(0);
+	});
+
+	it('emits a removed log on changed instead of data (P4-L-25)', async () => {
+		const { provider, data, changed } = await subscribe();
+
+		provider.notify('0x1', removedLog);
+
+		expect(data).toHaveLength(0);
+		expect(changed).toHaveLength(1);
+		expect(changed[0].removed).toBe(true);
+		expect(changed[0].event).toBe('Transfer');
+		expect(changed[0].returnValues.value).toBe(BigInt(5));
+	});
+
+	it("keeps the logs of custom topics, whose filter is the caller's choice (P4-L-25)", async () => {
+		const { provider, data } = await subscribe({
+			topics: [topicOf('Foo(address,address,uint256)')],
+		});
+
+		provider.notify('0x1', foreignTopicLog);
+
+		expect(data).toHaveLength(1);
 	});
 });

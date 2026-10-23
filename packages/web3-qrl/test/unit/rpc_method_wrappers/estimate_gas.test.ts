@@ -57,6 +57,7 @@ describe('call', () => {
 				);
 			}
 
+			(qrlRpcMethods.estimateGas as jest.Mock).mockResolvedValueOnce(mockRpcResponse);
 			await estimateGas(web3Context, ...inputParameters, DEFAULT_RETURN_FORMAT);
 			expect(qrlRpcMethods.estimateGas).toHaveBeenCalledWith(
 				web3Context.requestManager,

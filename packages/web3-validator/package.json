@@ -27,6 +27,7 @@
 	},
 	"files": [
 		"lib/**/*",
+		"!lib/**/*.tsbuildinfo",
 		"src/**/*",
 		"dist/**/*"
 	],

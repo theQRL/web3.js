@@ -20,7 +20,7 @@ import { encodeFunctionSignature } from '@theqrl/web3-qrl-abi';
 import { ContractAbi } from '@theqrl/web3-types';
 import { Web3ValidatorError } from '@theqrl/web3-validator';
 import { Contract } from '../../src';
-import { ADDR, FakeProvider, boundMethod, uintWord } from '../fixtures/fake_provider';
+import { ADDR, FakeProvider, addrWord, boundMethod, uintWord } from '../fixtures/fake_provider';
 
 const selector = (signature: string) => encodeFunctionSignature(signature);
 
@@ -284,6 +284,78 @@ describe('JSON interface and address shape validation (L-26)', () => {
 		// eslint-disable-next-line no-null/no-null
 		const withNullOptions = new Contract(transferAbi, ADDR, null as unknown as undefined);
 		expect(withNullOptions.options.address).toBe(ADDR);
+	});
+});
+
+describe('duplicate identical fragments (P4-M-8)', () => {
+	const owner = {
+		type: 'function',
+		name: 'owner',
+		inputs: [],
+		outputs: [{ type: 'address', name: '' }],
+		stateMutability: 'view',
+	};
+	const transfer = transferAbi[0];
+	const transferEvent = {
+		type: 'event',
+		name: 'Transfer',
+		inputs: [
+			{ type: 'address', name: 'from', indexed: true },
+			{ type: 'uint256', name: 'value', indexed: false },
+		],
+		anonymous: false,
+	};
+	// A hand-merged proxy and implementation ABI: every fragment listed twice.
+	const duplicatedAbi: ContractAbi = [owner, owner, transfer, transfer, transferEvent, transferEvent];
+
+	it('registers an identical fragment once, so a call by name is not ambiguous (P4-M-8)', () => {
+		const contract = new Contract(duplicatedAbi, ADDR, {
+			provider: new FakeProvider().asProvider(),
+		});
+
+		expect(boundMethod(contract, 'owner')().encodeABI()).toBe(selector('owner()'));
+		expect(boundMethod(contract, 'transfer')(ADDR, 5).encodeABI()).toBe(
+			`${selector('transfer(address,uint256)')}${addrWord(ADDR)}${uintWord(5)}`,
+		);
+		// The signature and selector keys keep working.
+		expect(boundMethod(contract, 'owner()')().encodeABI()).toBe(selector('owner()'));
+		expect(
+			boundMethod(contract, 'transfer(address,uint256)')(ADDR, 5).encodeABI().slice(0, 10),
+		).toBe(selector('transfer(address,uint256)'));
+		expect(
+			boundMethod(contract, selector('transfer(address,uint256)'))(ADDR, 5)
+				.encodeABI()
+				.slice(0, 10),
+		).toBe(selector('transfer(address,uint256)'));
+		// The first occurrence is kept and the duplicate is not listed.
+		expect(contract.options.jsonInterface).toHaveLength(3);
+		expect(contract.options.jsonInterface.filter(item => item.type === 'event')).toHaveLength(1);
+		expect(typeof contract.events.Transfer).toBe('function');
+	});
+
+	it('keeps genuine overloads apart (P4-M-8)', () => {
+		const contract = new Contract(
+			[
+				...duplicatedAbi,
+				{
+					type: 'function',
+					name: 'transfer',
+					inputs: [{ type: 'address', name: 'to' }],
+					outputs: [],
+					stateMutability: 'nonpayable',
+				},
+			],
+			ADDR,
+			{ provider: new FakeProvider().asProvider() },
+		);
+
+		expect(boundMethod(contract, 'transfer')(ADDR).encodeABI().slice(0, 10)).toBe(
+			selector('transfer(address)'),
+		);
+		expect(boundMethod(contract, 'transfer')(ADDR, 5).encodeABI().slice(0, 10)).toBe(
+			selector('transfer(address,uint256)'),
+		);
+		expect(contract.options.jsonInterface).toHaveLength(4);
 	});
 });
 

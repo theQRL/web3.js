@@ -29,6 +29,7 @@ import { SendSignedTransactionEvents, SendTransactionEvents } from '../types.js'
 import { transactionReceiptSchema } from '../schemas.js';
 import { MAX_CONSECUTIVE_POLLING_ERRORS } from '../constants.js';
 import { reportWatcherError } from './promi_event_errors.js';
+import { missingReceiptError, recheckReceipt } from './receipt_recheck.js';
 
 export type Web3PromiEventEventTypeBase<ReturnFormat extends DataFormat> =
 	| SendTransactionEvents<ReturnFormat>
@@ -52,6 +53,11 @@ export type WaitProps<ReturnFormat extends DataFormat, ResolveType = Transaction
  * tick up to {@link MAX_CONSECUTIVE_POLLING_ERRORS} times in a row; a persistent failure stops
  * the poller and is reported through the PromiEvent's `error` event when a listener is attached,
  * and logged otherwise (M-7c).
+ *
+ * Every block found is followed by a fresh `qrl_getTransactionReceipt`: a transaction that a
+ * reorg dropped from the chain is reported (`TransactionMissingReceiptOrBlockHashError`) and the
+ * poller stops, one that was re-included in another block is confirmed from that block with the
+ * node's new receipt (pass-4 informational, round 2).
  */
 export const watchTransactionByPolling = <
 	ReturnFormat extends DataFormat,
@@ -65,6 +71,8 @@ export const watchTransactionByPolling = <
 	// Having a transactionReceipt means that the transaction has already been included
 	// in at least one block, so we start with 1
 	let confirmations = 1;
+	// The receipt confirmations are counted from; replaced when a reorg moved the transaction.
+	let receipt: TransactionReceipt = transactionReceipt;
 	let consecutiveErrors = 0;
 	let stopped = false;
 	let intervalId: ReturnType<typeof setInterval> | undefined;
@@ -80,9 +88,10 @@ export const watchTransactionByPolling = <
 	const poll = async () => {
 		if (stopped) return;
 		try {
+			const nextNumber = BigInt(receipt.blockNumber) + BigInt(confirmations);
 			const nextBlock = await qrlRpcMethods.getBlockByNumber(
 				web3Context.requestManager,
-				numberToHex(BigInt(transactionReceipt.blockNumber) + BigInt(confirmations)),
+				numberToHex(nextNumber),
 				false,
 			);
 			// Stopped while the request was in flight.
@@ -91,12 +100,32 @@ export const watchTransactionByPolling = <
 
 			if (!nextBlock?.hash) return;
 
-			confirmations += 1;
+			// The chain grew past the receipt's block; make sure the transaction is still in it.
+			const recheck = await recheckReceipt(web3Context, receipt);
+			if (stopped) return;
+			if (recheck.kind === 'missing') {
+				stop();
+				reportWatcherError(transactionPromiEvent, missingReceiptError(receipt, returnFormat));
+				return;
+			}
+			if (recheck.kind === 'moved') {
+				receipt = recheck.receipt;
+			}
+
+			// Depth of the fetched block above the (possibly new) receipt block: the receipt's own
+			// block is confirmation 1. A transaction re-included at or after the fetched block
+			// has nothing new to confirm yet; the next tick starts from its new block.
+			const depth = nextNumber - BigInt(receipt.blockNumber) + BigInt(1);
+			if (depth < BigInt(2)) {
+				confirmations = 1;
+				return;
+			}
+			confirmations = Number(depth);
 			const formattedConfirmations: Numbers = confirmations;
 
 			transactionPromiEvent.emit('confirmation', {
 				confirmations: format({ format: 'uint' }, formattedConfirmations, returnFormat),
-				receipt: format(transactionReceiptSchema, transactionReceipt, returnFormat),
+				receipt: format(transactionReceiptSchema, receipt, returnFormat),
 				latestBlockHash: format(
 					{ format: 'bytes32' },
 					nextBlock.hash as Bytes,

@@ -249,6 +249,14 @@ export class Reader {
 	// small floor for tiny inputs). Zero-size element types are the only way past the byte
 	// budget, and this bound closes it (M-10).
 	public _incrementElementsDecoded(count: number): void {
+		// A count that is not a non-negative safe integer (a negative or string array length
+		// from a forged ParamType) would drive the budget negative or turn it into text (P4-M-2).
+		if (!Number.isSafeInteger(count) || count < 0) {
+			logger.throwError('invalid array element count', Logger.errors.BUFFER_OVERRUN, {
+				count,
+				offset: this._offset,
+			});
+		}
 		const root = this._root;
 		root._elementsDecoded += count;
 		const budget = Math.max(

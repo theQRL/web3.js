@@ -26,6 +26,12 @@
  *                                          Rewrite the baseline to the current
  *                                          counts verbatim (used to (re)generate
  *                                          the baseline; use deliberately).
+ *
+ * A package that has a budget but was not linted (its `lint` script was
+ * removed, so `turbo run lint` skips it too) fails the check instead of
+ * counting as zero warnings: otherwise dropping the script would silently
+ * disable both lint and the budget for that package (audit P4-L-49). A budget
+ * is dropped only by `--update` and only once the package directory is gone.
  */
 
 const { spawnSync } = require('node:child_process');
@@ -138,7 +144,29 @@ function main() {
 
 	const baseline = loadBaseline();
 
+	// Budgeted packages that still exist but were not linted this run.
+	const unlinted = Object.keys(baseline ?? {}).filter(
+		pkg => !(pkg in current) && fs.existsSync(path.join(root, pkg)),
+	);
+	const removed = Object.keys(baseline ?? {}).filter(
+		pkg => !(pkg in current) && !fs.existsSync(path.join(root, pkg)),
+	);
+
+	if (unlinted.length > 0) {
+		console.error(
+			`\nLint budget baseline names package(s) that were not linted: ${unlinted.join(', ')}.\n` +
+				'Every workspace package with a budget must keep a `lint` script (`turbo run lint` ' +
+				'skips a package without one, so removing it would disable lint and the budget at ' +
+				'once). Restore the script, or remove the package directory and run ' +
+				'`pnpm run lint:budget -- --update` to drop its budget deliberately.',
+		);
+		process.exit(1);
+	}
+
 	if (isUpdate) {
+		for (const pkg of removed) {
+			console.info(`Dropping the budget of removed package ${pkg}`);
+		}
 		const next = {};
 		for (const [pkg, count] of Object.entries(current)) {
 			const prior = baseline ? baseline[pkg] : undefined;
@@ -170,8 +198,12 @@ function main() {
 	const packages = new Set([...Object.keys(baseline), ...Object.keys(current)]);
 
 	for (const pkg of [...packages].sort()) {
+		if (removed.includes(pkg)) {
+			console.error(`${pkg} has a budget but no longer exists; drop it with pnpm run lint:budget -- --update`);
+			process.exit(1);
+		}
 		const budget = baseline[pkg] ?? 0;
-		const now = current[pkg] ?? 0;
+		const now = current[pkg];
 		const delta = now - budget;
 		rows.push({ pkg, budget, now, delta });
 		if (delta > 0) overBudget.push({ pkg, budget, now, delta });

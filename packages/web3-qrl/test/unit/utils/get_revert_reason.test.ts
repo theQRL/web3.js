@@ -48,6 +48,54 @@ describe('getRevertReason', () => {
 		);
 	});
 
+	it('simulates at the given block and falls back to defaultBlock when that state is gone (round 2)', async () => {
+		const transaction = {
+			from: 'Q2CCeCC72b4C8C0d943bEcFb1E67c4d8996D2F24d138E62dd19Dde2dA366C4faFff063A86501141d64AC7f273CCAE5053fD059722A4E9453170cb40F569872A02',
+			to: 'Q224D6a535f8991Cf611b3447F8DfE1059dbEd07c540A53e9E36D37b2ecEEA19013F66E973b207B0467a5A793203b27456B7aa1CEE00dF1e385D1eC5272718eb7',
+			data: '0x819f48fe',
+		};
+
+		// Pinned to the receipt's block.
+		const callSpy = jest.spyOn(RpcMethodWrappersReaders, 'call').mockResolvedValue('0x');
+		await GetRevertReason.getRevertReason(
+			web3Context,
+			transaction,
+			undefined,
+			DEFAULT_RETURN_FORMAT,
+			BigInt(42),
+		);
+		expect(callSpy).toHaveBeenCalledTimes(1);
+		expect(callSpy).toHaveBeenLastCalledWith(
+			web3Context,
+			transaction,
+			BigInt(42),
+			DEFAULT_RETURN_FORMAT,
+		);
+
+		// A pruned state answers with an error that is not a revert: the lookup is retried at
+		// defaultBlock, where a revert is reported as usual.
+		callSpy.mockReset();
+		callSpy
+			.mockRejectedValueOnce(new Error('missing trie node'))
+			.mockRejectedValueOnce(
+				new ContractExecutionError({
+					code: 3,
+					message: 'execution reverted: nope',
+					data: '0x',
+				} as never),
+			);
+		const reason = await GetRevertReason.getRevertReason(
+			web3Context,
+			transaction,
+			undefined,
+			DEFAULT_RETURN_FORMAT,
+			BigInt(42),
+		);
+		expect(callSpy).toHaveBeenCalledTimes(2);
+		expect(callSpy.mock.calls[1][2]).toBe(web3Context.defaultBlock);
+		expect(reason).toMatchObject({ reason: 'execution reverted: nope' });
+	});
+
 	it('should return undefined', async () => {
 		jest.spyOn(RpcMethodWrappersReaders, 'call').mockResolvedValueOnce(
 			'0x000000000000000000000000000000000000000000000000000000000000000a',

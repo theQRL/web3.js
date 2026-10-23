@@ -50,21 +50,23 @@ export const mockRpcResponse: Transaction = {
  */
 type TestData = [string, [Bytes | BlockNumberOrTag | undefined, Numbers]];
 export const testData: TestData[] = [
+	// Even-length hex strings shorter than 32 bytes are block numbers, not hashes (P4-L-11)
+	['blockNumber = "0x10", transactionIndex = "0x0"', ['0x10', '0x0']],
 	// blockNumber = Bytes, transactionIndex = HexString
 	[
-		'blockNumber = "0xd5677cf67b5aa051bb40496e68ad359eb97cfbf8", transactionIndex = "0x0"',
-		['0xd5677cf67b5aa051bb40496e68ad359eb97cfbf8', '0x0'],
+		'blockNumber = "0xdc0818cf78f21a8e70579cb46a43643f78291264dda342ae31049421c82d21ae", transactionIndex = "0x0"',
+		['0xdc0818cf78f21a8e70579cb46a43643f78291264dda342ae31049421c82d21ae', '0x0'],
 	],
 	[
-		'blockNumber = hexToBytes("0xd5677cf67b5aa051bb40496e68ad359eb97cfbf8"), transactionIndex = "0x0"',
-		[hexToBytes('0xd5677cf67b5aa051bb40496e68ad359eb97cfbf8'), '0x0'],
+		'blockNumber = hexToBytes("0xdc0818cf78f21a8e70579cb46a43643f78291264dda342ae31049421c82d21ae"), transactionIndex = "0x0"',
+		[hexToBytes('0xdc0818cf78f21a8e70579cb46a43643f78291264dda342ae31049421c82d21ae'), '0x0'],
 	],
 	[
-		'blockNumber = hexToBytes("d5677cf67b5aa051bb40496e68ad359eb97cfbf8"), transactionIndex = "0x0"',
+		'blockNumber = hexToBytes("dc0818cf78f21a8e70579cb46a43643f78291264dda342ae31049421c82d21ae"), transactionIndex = "0x0"',
 		[
 			new Uint8Array([
-				213, 103, 124, 246, 123, 90, 160, 81, 187, 64, 73, 110, 104, 173, 53, 158, 185, 124,
-				251, 248,
+				220, 8, 24, 207, 120, 242, 26, 142, 112, 87, 156, 180, 106, 67, 100, 63, 120, 41,
+				18, 100, 221, 163, 66, 174, 49, 4, 148, 33, 200, 45, 33, 174,
 			]),
 			'0x0',
 		],
@@ -84,19 +86,22 @@ export const testData: TestData[] = [
 
 	// blockNumber = Bytes, transactionIndex = number
 	[
-		'blockNumber = "0xd5677cf67b5aa051bb40496e68ad359eb97cfbf8", transactionIndex = 0',
-		['0xd5677cf67b5aa051bb40496e68ad359eb97cfbf8, transactionIndex = 0', 0],
+		'blockNumber = "0xdc0818cf78f21a8e70579cb46a43643f78291264dda342ae31049421c82d21ae", transactionIndex = 0',
+		[
+			'0xdc0818cf78f21a8e70579cb46a43643f78291264dda342ae31049421c82d21ae, transactionIndex = 0',
+			0,
+		],
 	],
 	[
-		'blockNumber = hexToBytes("0xd5677cf67b5aa051bb40496e68ad359eb97cfbf8"), transactionIndex = 0',
-		[hexToBytes('0xd5677cf67b5aa051bb40496e68ad359eb97cfbf8'), 0],
+		'blockNumber = hexToBytes("0xdc0818cf78f21a8e70579cb46a43643f78291264dda342ae31049421c82d21ae"), transactionIndex = 0',
+		[hexToBytes('0xdc0818cf78f21a8e70579cb46a43643f78291264dda342ae31049421c82d21ae'), 0],
 	],
 	[
-		'blockNumber = hexToBytes("d5677cf67b5aa051bb40496e68ad359eb97cfbf8"), transactionIndex = 0',
+		'blockNumber = hexToBytes("dc0818cf78f21a8e70579cb46a43643f78291264dda342ae31049421c82d21ae"), transactionIndex = 0',
 		[
 			new Uint8Array([
-				213, 103, 124, 246, 123, 90, 160, 81, 187, 64, 73, 110, 104, 173, 53, 158, 185, 124,
-				251, 248,
+				220, 8, 24, 207, 120, 242, 26, 142, 112, 87, 156, 180, 106, 67, 100, 63, 120, 41,
+				18, 100, 221, 163, 66, 174, 49, 4, 148, 33, 200, 45, 33, 174,
 			]),
 			0,
 		],
@@ -116,19 +121,19 @@ export const testData: TestData[] = [
 
 	// blockNumber = Bytes, transactionIndex = NumberString
 	[
-		'blockNumber = "0xd5677cf67b5aa051bb40496e68ad359eb97cfbf8", transactionIndex = "0"',
-		['0xd5677cf67b5aa051bb40496e68ad359eb97cfbf8', '0'],
+		'blockNumber = "0xdc0818cf78f21a8e70579cb46a43643f78291264dda342ae31049421c82d21ae", transactionIndex = "0"',
+		['0xdc0818cf78f21a8e70579cb46a43643f78291264dda342ae31049421c82d21ae', '0'],
 	],
 	[
-		'blockNumber = hexToBytes("0xd5677cf67b5aa051bb40496e68ad359eb97cfbf8"), transactionIndex = "0"',
-		[hexToBytes('0xd5677cf67b5aa051bb40496e68ad359eb97cfbf8'), '0'],
+		'blockNumber = hexToBytes("0xdc0818cf78f21a8e70579cb46a43643f78291264dda342ae31049421c82d21ae"), transactionIndex = "0"',
+		[hexToBytes('0xdc0818cf78f21a8e70579cb46a43643f78291264dda342ae31049421c82d21ae'), '0'],
 	],
 	[
-		'blockNumber = hexToBytes("d5677cf67b5aa051bb40496e68ad359eb97cfbf8"), transactionIndex = "0"',
+		'blockNumber = hexToBytes("dc0818cf78f21a8e70579cb46a43643f78291264dda342ae31049421c82d21ae"), transactionIndex = "0"',
 		[
 			new Uint8Array([
-				213, 103, 124, 246, 123, 90, 160, 81, 187, 64, 73, 110, 104, 173, 53, 158, 185, 124,
-				251, 248,
+				220, 8, 24, 207, 120, 242, 26, 142, 112, 87, 156, 180, 106, 67, 100, 63, 120, 41,
+				18, 100, 221, 163, 66, 174, 49, 4, 148, 33, 200, 45, 33, 174,
 			]),
 			'0',
 		],
@@ -148,19 +153,22 @@ export const testData: TestData[] = [
 
 	// blockNumber = Bytes, transactionIndex = BigInt
 	[
-		'blockNumber = "0xd5677cf67b5aa051bb40496e68ad359eb97cfbf8", transactionIndex = BigInt("0x0")',
-		['0xd5677cf67b5aa051bb40496e68ad359eb97cfbf8', BigInt('0x0')],
+		'blockNumber = "0xdc0818cf78f21a8e70579cb46a43643f78291264dda342ae31049421c82d21ae", transactionIndex = BigInt("0x0")',
+		['0xdc0818cf78f21a8e70579cb46a43643f78291264dda342ae31049421c82d21ae', BigInt('0x0')],
 	],
 	[
-		'blockNumber = hexToBytes("0xd5677cf67b5aa051bb40496e68ad359eb97cfbf8"), transactionIndex = BigInt("0x0")',
-		[hexToBytes('0xd5677cf67b5aa051bb40496e68ad359eb97cfbf8'), BigInt('0x0')],
+		'blockNumber = hexToBytes("0xdc0818cf78f21a8e70579cb46a43643f78291264dda342ae31049421c82d21ae"), transactionIndex = BigInt("0x0")',
+		[
+			hexToBytes('0xdc0818cf78f21a8e70579cb46a43643f78291264dda342ae31049421c82d21ae'),
+			BigInt('0x0'),
+		],
 	],
 	[
-		'blockNumber = hexToBytes("d5677cf67b5aa051bb40496e68ad359eb97cfbf8"), transactionIndex = BigInt("0x0")',
+		'blockNumber = hexToBytes("dc0818cf78f21a8e70579cb46a43643f78291264dda342ae31049421c82d21ae"), transactionIndex = BigInt("0x0")',
 		[
 			new Uint8Array([
-				213, 103, 124, 246, 123, 90, 160, 81, 187, 64, 73, 110, 104, 173, 53, 158, 185, 124,
-				251, 248,
+				220, 8, 24, 207, 120, 242, 26, 142, 112, 87, 156, 180, 106, 67, 100, 63, 120, 41,
+				18, 100, 221, 163, 66, 174, 49, 4, 148, 33, 200, 45, 33, 174,
 			]),
 			BigInt('0x0'),
 		],

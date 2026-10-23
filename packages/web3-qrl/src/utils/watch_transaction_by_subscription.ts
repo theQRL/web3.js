@@ -16,27 +16,14 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import { Bytes, Numbers, BlockHeaderOutput, TransactionReceipt } from '@theqrl/web3-types';
 import { format } from '@theqrl/web3-utils';
-import { isHexStrict } from '@theqrl/web3-validator';
 
 import { DataFormat } from '@theqrl/web3-types';
 import { NewHeadsSubscription } from '../web3_subscriptions.js';
 import { transactionReceiptSchema } from '../schemas.js';
+import { isHash32, isValidUnsignedHexNumber } from './hex_guards.js';
+import { reportWatcherError } from './promi_event_errors.js';
+import { missingReceiptError, recheckReceipt } from './receipt_recheck.js';
 import { WaitProps, watchTransactionByPolling } from './watch_transaction_by_pooling.js';
-
-const isValidUnsignedHexNumber = (value: unknown): value is string | number | bigint => {
-	if (typeof value === 'bigint' || typeof value === 'number') {
-		return value >= 0;
-	}
-	if (typeof value !== 'string') {
-		return false;
-	}
-	if (value.startsWith('-')) return false;
-	if (!isHexStrict(value)) return false;
-	return true;
-};
-
-const isValidBlockHash = (value: unknown): value is string =>
-	typeof value === 'string' && /^0x[0-9a-fA-F]{64}$/.test(value);
 
 /**
  * This function watches a Transaction by subscribing to new heads.
@@ -61,6 +48,8 @@ export const watchTransactionBySubscription = <
 	let subscription: NewHeadsSubscription | undefined;
 	let lastCaughtBlockHash: string | undefined;
 	let fallbackTimer: ReturnType<typeof setTimeout> | undefined;
+	// The receipt confirmations are counted from; replaced when a reorg moved the transaction.
+	let receipt: TransactionReceipt = transactionReceipt;
 
 	const dropSubscription = (sub: NewHeadsSubscription | undefined) => {
 		if (sub === undefined) return;
@@ -107,7 +96,7 @@ export const watchTransactionBySubscription = <
 					if (
 						!newBlockHeader?.number ||
 						!isValidUnsignedHexNumber(newBlockHeader.number) ||
-						!isValidBlockHash(newBlockHeader.parentHash) ||
+						!isHash32(newBlockHeader.parentHash) ||
 						// For some cases, the on-data event is fired couple times for the same block!
 						// This needs investigation but seems to be because of multiple `subscription.on('data'...)` even this should not cause that.
 						lastCaughtBlockHash === newBlockHeader?.parentHash
@@ -115,28 +104,50 @@ export const watchTransactionBySubscription = <
 						return;
 					}
 					lastCaughtBlockHash = newBlockHeader?.parentHash;
+					const headerNumber = BigInt(newBlockHeader.number);
 
-					const confirmations =
-						BigInt(newBlockHeader.number) -
-						BigInt(transactionReceipt.blockNumber) +
-						BigInt(1);
+					// A new head arrived; make sure the transaction is still in the chain it
+					// extends before counting it as a confirmation (reorg awareness).
+					recheckReceipt(web3Context, receipt)
+						.then(recheck => {
+							if (polling || subscription !== sub) return;
+							if (recheck.kind === 'missing') {
+								dropSubscription(sub);
+								reportWatcherError(
+									transactionPromiEvent,
+									missingReceiptError(receipt, returnFormat),
+								);
+								return;
+							}
+							if (recheck.kind === 'moved') {
+								receipt = recheck.receipt;
+							}
 
-					transactionPromiEvent.emit('confirmation', {
-						confirmations: format(
-							{ format: 'uint' },
-							confirmations as Numbers,
-							returnFormat,
-						),
-						receipt: format(transactionReceiptSchema, transactionReceipt, returnFormat),
-						latestBlockHash: format(
-							{ format: 'bytes32' },
-							newBlockHeader.parentHash as Bytes,
-							returnFormat,
-						),
-					});
-					if (confirmations >= web3Context.transactionConfirmationBlocks) {
-						dropSubscription(sub);
-					}
+							const confirmations =
+								headerNumber - BigInt(receipt.blockNumber) + BigInt(1);
+							// A header below the (new) receipt block confirms nothing.
+							if (confirmations < BigInt(1)) return;
+
+							transactionPromiEvent.emit('confirmation', {
+								confirmations: format(
+									{ format: 'uint' },
+									confirmations as Numbers,
+									returnFormat,
+								),
+								receipt: format(transactionReceiptSchema, receipt, returnFormat),
+								latestBlockHash: format(
+									{ format: 'bytes32' },
+									newBlockHeader.parentHash as Bytes,
+									returnFormat,
+								),
+							});
+							if (confirmations >= web3Context.transactionConfirmationBlocks) {
+								dropSubscription(sub);
+							}
+						})
+						.catch(() => {
+							// `recheckReceipt` never rejects; nothing to do.
+						});
 				});
 				sub.on('error', () => {
 					startPolling();

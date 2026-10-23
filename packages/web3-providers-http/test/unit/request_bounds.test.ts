@@ -276,6 +276,66 @@ describe('HttpProvider - request lifecycle bounds', () => {
 			expect(signal?.aborted).toBe(true);
 		});
 
+		it.each(['throw', 'reject'])(
+			'preserves the size error when cancelling a stream mid-read fails: %s (P4-L-19)',
+			async failure => {
+				// 8 x 1 KiB against a 2 KiB cap: the cap is crossed on the third chunk while the
+				// stream is still open, so the in-loop cancellation reaches the source.
+				const chunks = Array.from({ length: 8 }, () => new Uint8Array(1024).fill(0x61));
+				let index = 0;
+				const cancel =
+					failure === 'throw'
+						? jest.fn(() => {
+								throw new Error('underlying source cancel failed');
+							})
+						: jest.fn(async () =>
+								Promise.reject(new Error('underlying source cancel failed')),
+							);
+				const body = new ReadableStream<Uint8Array>({
+					pull(controller) {
+						if (index >= chunks.length) {
+							controller.close();
+							return;
+						}
+						controller.enqueue(chunks[index]);
+						index += 1;
+					},
+					cancel,
+				});
+				mockFetch.mockResolvedValueOnce(fakeResponse({ body }));
+				const provider = new HttpProvider('http://localhost:8545', { maxResponseBytes: 2048 });
+
+				const request = provider.request(payload);
+				await expect(request).rejects.toThrow(ResponseTooLargeError);
+				await expect(request).rejects.toMatchObject({ maxResponseBytes: 2048, receivedBytes: 3072 });
+				expect(cancel).toHaveBeenCalledTimes(1);
+				const { signal } = mockFetch.mock.calls[0][1] as RequestInit;
+				expect(signal?.aborted).toBe(true);
+			},
+		);
+
+		it('preserves the size error when destroying a Node body mid-read throws (P4-L-19)', async () => {
+			const body = new Readable({
+				read() {
+					this.push(Buffer.alloc(1024, 0x61));
+				},
+			});
+			const destroy = jest.spyOn(body, 'destroy').mockImplementation(() => {
+				throw new Error('destroy failed');
+			});
+			mockFetch.mockResolvedValueOnce(fakeResponse({ body }));
+			const provider = new HttpProvider('http://localhost:8545', { maxResponseBytes: 2048 });
+
+			const request = provider.request(payload);
+			await expect(request).rejects.toThrow(ResponseTooLargeError);
+			await expect(request).rejects.toMatchObject({ maxResponseBytes: 2048, receivedBytes: 3072 });
+			expect(destroy).toHaveBeenCalled();
+			const { signal } = mockFetch.mock.calls[0][1] as RequestInit;
+			expect(signal?.aborted).toBe(true);
+			destroy.mockRestore();
+			body.destroy();
+		});
+
 		it.each([
 			['absent', undefined],
 			['buffered', new Uint8Array(8)],

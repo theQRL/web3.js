@@ -15,7 +15,6 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { bytesToUtf8 } from '@theqrl/qrl-cryptography/utils.js';
 import { Address, Bytes, HexString, Numbers, ValueTypes } from '@theqrl/web3-types';
 import {
 	isAddressString,
@@ -43,8 +42,15 @@ const ADDRESS_HEX_CHARS = ADDRESS_BYTES * 2;
 // A decimal integer in its only accepted spelling. `BigInt()` on its own also accepts `''`
 // (as 0), surrounding whitespace, `+1`, `0b11`, `0o7` and `0x1` (L-28).
 const DECIMAL_INTEGER = /^-?\d+$/;
-// An amount in decimal text: `[-]integer[.fraction]`, at least one digit, no exponent.
-const DECIMAL_AMOUNT = /^(-?)(\d*)\.?(\d*)$/;
+// An amount in decimal text: `[-]integer[.fraction]`, at least one digit, no exponent. The
+// fraction group requires its dot, which keeps the match linear on a long non-matching input.
+const DECIMAL_AMOUNT = /^(-?)(\d*)(?:\.(\d*))?$/;
+// A structurally address-shaped string: the prefix and 128 hex digits, checksum not checked.
+const ADDRESS_SHAPE = /^[Qq][0-9a-fA-F]{128}$/;
+
+/** UTF-8 decoding that keeps a leading byte-order mark instead of silently dropping it. */
+const decodeUtf8 = (bytes: Uint8Array): string =>
+	new TextDecoder('utf-8', { ignoreBOM: true }).decode(bytes);
 
 // Ref: https://ethdocs.org/en/latest/ether.html
 /** @internal */
@@ -70,6 +76,14 @@ export const qrlUnitMap = {
 	gquanta: expo10(27),
 	tquanta: expo10(30),
 };
+
+/**
+ * Whether `unit` names a QRL unit. A plain property lookup also found `Object.prototype`
+ * members, so `toPlanck('1', 'constructor')` scaled by the length of a function's source
+ * text instead of throwing (P4-L-35).
+ */
+const isUnit = (unit: unknown): unit is QRLUnits =>
+	typeof unit === 'string' && Object.prototype.hasOwnProperty.call(qrlUnitMap, unit);
 
 export type QRLUnits = keyof typeof qrlUnitMap;
 /**
@@ -306,7 +320,7 @@ export const stringToHex = utf8ToHex;
  * > Hello World
  * ```
  */
-export const hexToUtf8 = (str: HexString): string => bytesToUtf8(hexToBytes(str));
+export const hexToUtf8 = (str: HexString): string => decodeUtf8(hexToBytes(str));
 
 /**
  * @alias hexToUtf8
@@ -316,7 +330,7 @@ export const toUtf8 = (input: HexString | Uint8Array) => {
 		return hexToUtf8(input);
 	}
 	validator.validate(['bytes'], [input]);
-	return bytesToUtf8(input);
+	return decodeUtf8(input);
 };
 
 /**
@@ -419,11 +433,17 @@ export const toHex = (
 		if (isHexStrict(value)) {
 			return returnType ? 'bytes' : value;
 		}
-		if (isHex(value) && !isInt(value, { bitSize: 512 })) {
+		// `isHex` admits a bare `-`; `-abc` is text, not the invalid hex `0x-abc`.
+		if (isHex(value) && !value.startsWith('-') && !isInt(value, { bitSize: 512 })) {
 			return returnType ? 'bytes' : `0x${value}`;
 		}
 		if (isAddressString(value)) {
 			return returnType ? 'address' : addressToHex(value);
+		}
+		// Address-shaped but not a valid address (wrong checksum case or a lowercase `q`): it
+		// used to fall through and be hashed as 129 bytes of text (P4-L-37).
+		if (ADDRESS_SHAPE.test(value)) {
+			throw new InvalidAddressError(value);
 		}
 
 		if (!Number.isFinite(value)) {
@@ -554,11 +574,10 @@ export const toBigInt = (value: unknown): bigint => {
  * ```
  */
 export const fromPlanck = (number: Numbers, unit: QRLUnits): string => {
-	const denomination = qrlUnitMap[unit];
-
-	if (!denomination) {
+	if (!isUnit(unit)) {
 		throw new InvalidUnitError(unit);
 	}
+	const denomination = qrlUnitMap[unit];
 
 	// A planck amount is always an integer. Anything else used to be stringified and sliced
 	// into garbage such as `0.0000000000000001.5` or `0.0000000000000000-1`.
@@ -638,11 +657,10 @@ export const toPlanck = (number: Numbers, unit: QRLUnits): string => {
 
 	validator.validate(['number'], [number]);
 
-	const denomination = qrlUnitMap[unit];
-
-	if (!denomination) {
+	if (!isUnit(unit)) {
 		throw new InvalidUnitError(unit);
 	}
+	const denomination = qrlUnitMap[unit];
 
 	// The amount as decimal text, `[-]integer[.fraction]`.
 	let text: string;
@@ -661,11 +679,12 @@ export const toPlanck = (number: Numbers, unit: QRLUnits): string => {
 	const match = DECIMAL_AMOUNT.exec(text);
 
 	// No digits at all, or an exponent (`1e-7` is how JavaScript prints 0.0000001).
-	if (!match || (match[2] === '' && match[3] === '')) {
+	if (!match || (match[2] === '' && (match[3] ?? '') === '')) {
 		throw new InvalidNumberError(number);
 	}
 
-	const [, sign, integer, rawFraction] = match;
+	const [, sign, integer] = match;
+	const rawFraction = match[3] ?? '';
 	// Trailing zeros carry no value and must not count against the unit's precision.
 	const fraction = rawFraction.replace(/0+$/, '');
 

@@ -22,8 +22,10 @@ import {
 	InvalidResponseError,
 } from '@theqrl/web3-errors';
 import { decodeContractErrorData, isAbiErrorFragment } from '@theqrl/web3-qrl-abi';
+import { isNullish } from '@theqrl/web3-validator';
 import {
 	AbiErrorFragment,
+	BlockNumberOrTag,
 	ContractAbi,
 	DataFormat,
 	DEFAULT_RETURN_FORMAT,
@@ -111,11 +113,28 @@ export async function getRevertReason<
 	transaction: TransactionCall,
 	contractAbi?: ContractAbi,
 	returnFormat: ReturnFormat = DEFAULT_RETURN_FORMAT as ReturnFormat,
+	blockNumber?: BlockNumberOrTag,
 ): Promise<undefined | RevertReason | RevertReasonWithCustomError | string> {
+	const simulate = async (block: BlockNumberOrTag) => {
+		try {
+			await call(web3Context, transaction, block, returnFormat);
+			return undefined;
+		} catch (error) {
+			// Throws for anything that is not a revert (L-52).
+			return parseTransactionError(error, contractAbi);
+		}
+	};
+	if (isNullish(blockNumber)) {
+		return simulate(web3Context.defaultBlock);
+	}
+	// The reason of a mined-and-reverted transaction is looked up at the block that included it,
+	// not at `defaultBlock`: the state the transaction ran against is the one that explains the
+	// revert, and at `latest` the call may succeed or fail for an unrelated reason. A node that
+	// has pruned that block's state answers with an error instead of a revert; the lookup then
+	// falls back to `defaultBlock`, as before the block was pinned.
 	try {
-		await call(web3Context, transaction, web3Context.defaultBlock, returnFormat);
-		return undefined;
-	} catch (error) {
-		return parseTransactionError(error, contractAbi);
+		return await simulate(blockNumber);
+	} catch {
+		return simulate(web3Context.defaultBlock);
 	}
 }

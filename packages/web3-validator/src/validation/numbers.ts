@@ -31,7 +31,9 @@ const DECIMAL_INTEGER = /^-?\d+$/;
 
 // A decimal number with an optional fraction: `1`, `1.5`, `1.`, `.5`, `-0.5`. No exponent,
 // no sign other than `-`, no whitespace, at most one dot.
-const DECIMAL_NUMBER = /^-?(?:\d+\.?\d*|\.\d+)$/;
+// The fraction requires its dot (`\d+(\.\d*)?`): `\d+\.?\d*` backtracked quadratically on a
+// long run of digits followed by a non-digit.
+const DECIMAL_NUMBER = /^-?(?:\d+(?:\.\d*)?|\.\d+)$/;
 
 /**
  * The integer a number-like input stands for, or `undefined` when the input is not an integer
