@@ -352,23 +352,11 @@ export const decodeEventABI = (
 	// create empty inputs if none are present (e.g. anonymous events on allEvents)
 	modifiedEvent.inputs = modifiedEvent.inputs ?? event.inputs ?? [];
 
-	// Handle case where an event signature shadows the current ABI with non-identical
-	// arg indexing. If # of topics doesn't match, event is anon.
+	// A matching signature with a different topic count is malformed, not anonymous.
 	if (!modifiedEvent.anonymous) {
-		let indexedInputs = 0;
-		(modifiedEvent.inputs ?? []).forEach(input => {
-			if (input.indexed) {
-				indexedInputs += 1;
-			}
-		});
-
-		if (indexedInputs > 0 && topics.length !== indexedInputs + 1) {
-			// checks if event is anonymous
-			modifiedEvent = {
-				...modifiedEvent,
-				anonymous: true,
-				inputs: [],
-			};
+		const indexedInputs = modifiedEvent.inputs.filter(input => input.indexed).length;
+		if (topics.length !== indexedInputs + 1) {
+			throw new AbiError('Event topic count does not match the ABI');
 		}
 	}
 

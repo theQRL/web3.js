@@ -675,8 +675,7 @@ export class Web3RequestManager<
 		response: JsonRpcResponse<ResultType, ErrorType>,
 	): JsonRpcBatchResponse<ResultType> | never {
 		if ((response as unknown) instanceof Error) {
-			Web3RequestManager._isReverted(response);
-			throw response;
+			throw Web3RequestManager._buildNonJsonRpcError(response);
 		}
 
 		if (isNullish(response)) {

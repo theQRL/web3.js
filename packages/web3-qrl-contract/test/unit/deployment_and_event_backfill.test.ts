@@ -73,6 +73,11 @@ describe('deployment, error fragments and event backfill (pass-5 audit)', () => 
 		expect(provider.lastCall('qrl_estimateGas')?.params[0]).not.toHaveProperty('to');
 		const result = await deployment.send({ ...fees, value: '0x7' });
 		expect(result.options.address).toBe(ADDR2);
+		expect(result.requestManager).toBe(contract.requestManager);
+		expect(result.subscriptionManager).toBe(contract.subscriptionManager);
+		const nextProvider = new FakeProvider();
+		result.requestManager.setProvider(nextProvider.asProvider());
+		expect(contract.currentProvider).toBe(nextProvider.asProvider());
 		expect(provider.lastCall('qrl_sendTransaction')?.params[0]).not.toHaveProperty('to');
 		expect(contract.options.address).toBe(ADDR);
 	});
@@ -136,7 +141,7 @@ describe('deployment, error fragments and event backfill (pass-5 audit)', () => 
 		expect(contract['_errorsInterface'][0].inputs[0].type).toBe('uint256');
 	});
 
-	it('drops foreign backfill logs before decoding, including logs too short for the bound event', async () => {
+	it('isolates malformed backfill logs and preserves valid entries', async () => {
 		const event = {
 			type: 'event',
 			name: 'Value',
@@ -157,17 +162,26 @@ describe('deployment, error fragments and event backfill (pass-5 audit)', () => 
 		const provider = new FakeProvider(method => {
 			if (method === 'qrl_subscribe') return '0x1';
 			if (method === 'qrl_getLogs')
-				return [{ ...log, topics: [topicOf('Other(uint256)')], data: '0x' }, log];
+				return [
+					log,
+					{ ...log, data: '0x' },
+					{ ...log, topics: [...log.topics, topicOf('Other(uint256)')] },
+					{ ...log, topics: [topicOf('Other(uint256)')], data: '0x' },
+					log,
+				];
 			return undefined;
 		}, true);
 		const contract = new Contract([event] as const, ADDR, { provider: provider.asProvider() });
 		const sub = contract.events.Value({ fromBlock: 0 });
 		const received: EventLog[] = [];
+		const errors = jest.fn();
+		sub.on('error', errors);
 		sub.on('data', item => {
 			received.push(item);
 		});
 		await sub.subscribed;
-		expect(received).toHaveLength(1);
+		expect(received).toHaveLength(2);
+		expect(errors).toHaveBeenCalledTimes(2);
 		expect(received[0].returnValues.value).toBe(BigInt(7));
 		await sub.unsubscribe();
 	});
@@ -196,5 +210,37 @@ describe('deployment, error fragments and event backfill (pass-5 audit)', () => 
 		await expect(
 			contract.getPastEvents('Values', { filter: { arr: [3, 4] } }),
 		).resolves.toHaveLength(0);
+		await expect(
+			contract.getPastEvents('Values', { filter: { arr: [[1, 2]] } }),
+		).rejects.toThrow();
+	});
+	it.each([undefined, ADDR])(
+		'shares managers when cloning a provider-bearing context (%s)',
+		address => {
+			const context = new Web3Context({ provider: new FakeProvider().asProvider() });
+			const contract = new Contract(constructorAbi, address, {}, context);
+			const clone = contract.clone();
+			const next = new FakeProvider().asProvider();
+			context.setProvider(next);
+			expect(clone.requestManager).toBe(context.requestManager);
+			expect(clone.subscriptionManager).toBe(context.subscriptionManager);
+			expect(clone.currentProvider).toBe(next);
+		},
+	);
+	it('cancels the live registration when fetching the backfill fails', async () => {
+		const event = { type: 'event', name: 'Value', inputs: [], anonymous: false } as const;
+		const provider = new FakeProvider(method => {
+			if (method === 'qrl_subscribe') return '0x1';
+			if (method === 'qrl_getLogs') throw new Error('backfill unavailable');
+			return undefined;
+		}, true);
+		const contract = new Contract([event] as const, ADDR, { provider: provider.asProvider() });
+		const sub = contract.events.Value({ fromBlock: 0 });
+		sub.on('error', () => undefined);
+		await expect(sub.subscribed).rejects.toThrow('Failed to get past events');
+		await new Promise<void>(resolve => setImmediate(resolve));
+		expect(contract.subscriptionManager.subscriptions.size).toBe(0);
+		expect(sub.id).toBeUndefined();
+		expect(provider.lastCall('qrl_unsubscribe')).toBeDefined();
 	});
 });

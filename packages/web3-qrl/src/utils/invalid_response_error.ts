@@ -130,6 +130,8 @@ export interface RpcResultSchema {
 	properties?: Record<string, RpcResultSchema>;
 	items?: RpcResultSchema;
 	oneOf?: RpcResultSchema[];
+	nullable?: boolean;
+	nullableWhen?: string;
 }
 export const assertRpcResult = (
 	method: string,
@@ -144,6 +146,7 @@ export const assertRpcResult = (
 			value,
 		);
 	};
+	if (value === null && schema.nullable) return;
 	if (schema.oneOf) {
 		for (const option of schema.oneOf) {
 			try {
@@ -164,19 +167,10 @@ export const assertRpcResult = (
 		for (const [key, child] of Object.entries(schema.properties ?? {})) {
 			const field = (value as Record<string, unknown>)[key];
 			if (field === undefined) continue;
-			// Pending transactions/blocks and contract creation carry these null fields.
 			if (
 				field === null &&
-				([
-					'to',
-					'contractAddress',
-					'blockNumber',
-					'blockHash',
-					'hash',
-					'number',
-					'transactionIndex',
-				].includes(key) ||
-					(key === 'miner' && (value as Record<string, unknown>).hash === null))
+				child.nullableWhen &&
+				(value as Record<string, unknown>)[child.nullableWhen] === null
 			)
 				continue;
 			assertRpcResult(method, field, child, `${path}.${key}`);
@@ -189,6 +183,8 @@ export const assertRpcResult = (
 		if (typeof value !== 'number' || !Number.isFinite(value)) fail();
 	} else if (schema.type === 'string' && typeof value !== 'string') fail();
 	if (schema.format === 'uint') expectQuantityReply(method, value);
+	else if (schema.format === 'uint512' && !isUInt(value as ValidInputTypes, { bitSize: 512 }))
+		fail();
 	else if (schema.format?.startsWith('bytes')) {
 		expectBytesReply(method, value);
 		const width = Number(schema.format.slice(5));

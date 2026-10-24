@@ -64,16 +64,10 @@ describe('decodeEventABI with a log that carries no topics', () => {
 		expect(decoded.raw.topics).toBeUndefined();
 	});
 
-	it('treats a named event whose topics are missing as anonymous', () => {
-		const decoded = decodeEventABI(
-			transfer,
-			logWithoutTopics,
-			[transfer],
-			DEFAULT_RETURN_FORMAT,
-		);
-
-		expect(decoded.signature).toBeUndefined();
-		expect(decoded.returnValues.__length__).toBe(0);
+	it('rejects a named event whose topics are missing', () => {
+		expect(() =>
+			decodeEventABI(transfer, logWithoutTopics, [transfer], DEFAULT_RETURN_FORMAT),
+		).toThrow(AbiError);
 	});
 
 	it('reports a declared anonymous event with indexed inputs through AbiError', () => {

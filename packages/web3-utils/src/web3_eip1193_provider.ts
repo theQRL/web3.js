@@ -37,9 +37,16 @@ export abstract class Eip1193Provider<
 	private _chainId: HexString = '';
 	private _accounts: HexString[] = [];
 	private _connectionGeneration = 0;
+	private _connected = false;
+
+	/** Whether the current connection has emitted its EIP-1193 connect event. */
+	public isConnected(): boolean {
+		return this._connected;
+	}
 
 	protected _invalidateConnection(): void {
 		this._connectionGeneration += 1;
+		this._connected = false;
 	}
 
 	protected _emitError(error: unknown): void {
@@ -75,8 +82,14 @@ export abstract class Eip1193Provider<
 
 	protected _onConnect() {
 		const generation = ++this._connectionGeneration;
-		Promise.all([this._getChainId(), this._getAccounts()])
-			.then(([chainId, accounts]) => {
+		Promise.allSettled([this._getChainId(), this._getAccounts()])
+			.then(([chainResult, accountsResult]) => {
+				if (generation !== this._connectionGeneration) return;
+				const chainId = chainResult.status === 'fulfilled' ? chainResult.value : '';
+				const accounts = accountsResult.status === 'fulfilled' ? accountsResult.value : [];
+				for (const result of [chainResult, accountsResult]) {
+					if (result.status === 'rejected') this._emitError(result.reason);
+				}
 				if (generation !== this._connectionGeneration) return;
 				if (chainId !== this._chainId) {
 					this._chainId = chainId;
@@ -90,6 +103,7 @@ export abstract class Eip1193Provider<
 					this._onAccountsChanged();
 				}
 				if (generation !== this._connectionGeneration) return;
+				this._connected = true;
 				this._eventEmitter.emit('connect', {
 					chainId: this._chainId,
 				} as ProviderConnectInfo);

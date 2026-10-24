@@ -59,26 +59,12 @@ describe('validation hardening (pass-4 audit)', () => {
 
 	describe('transformJsonDataToAbiFormat (P4-L-40)', () => {
 		it('keeps every element of a three-dimensional tuple array', () => {
-			const abi = [{ name: 'x', type: 'tuple[][][]', components: [{ name: 'a', type: 'uint8' }] }];
-			const data = [
-				[
-					[
-						[{ a: 1 }, { a: 2 }],
-						[{ a: 3 }],
-					],
-					[[{ a: 4 }]],
-				],
+			const abi = [
+				{ name: 'x', type: 'tuple[][][]', components: [{ name: 'a', type: 'uint8' }] },
 			];
+			const data = [[[[{ a: 1 }, { a: 2 }], [{ a: 3 }]], [[{ a: 4 }]]]];
 			const transformed = utils.transformJsonDataToAbiFormat(abi as never, data);
-			expect(transformed).toEqual([
-				[
-					[
-						[[1], [2]],
-						[[3]],
-					],
-					[[[4]]],
-				],
-			]);
+			expect(transformed).toEqual([[[[[1], [2]], [[3]]], [[[4]]]]]);
 			expect(() => validator.validate(abi as never, transformed)).not.toThrow();
 		});
 	});
@@ -127,11 +113,23 @@ describe('schema errors are typed (pass-4 informational, round 2)', () => {
 	});
 
 	it('rejects a tuple without components with a Web3ValidatorError', () => {
-		expect(() =>
-			validator.validate([{ name: 'a', type: 'tuple' } as never], [[1]]),
-		).toThrow(Web3ValidatorError);
-		expect(() =>
-			validator.validate([{ name: 'a', type: 'tuple' } as never], [[1]]),
-		).toThrow(/requires "components"/);
+		expect(() => validator.validate([{ name: 'a', type: 'tuple' } as never], [[1]])).toThrow(
+			Web3ValidatorError,
+		);
+		expect(() => validator.validate([{ name: 'a', type: 'tuple' } as never], [[1]])).toThrow(
+			/requires "components"/,
+		);
 	});
+});
+
+test('reports the true zod error count while retaining only 100 issues (P6-VAL-1)', () => {
+	expect(() => validator.validate(['uint8[]'], [Array(1000).fill(-1)])).toThrow(
+		'found 1000 error[s]',
+	);
+	expect(() => validator.validate(['uint8[]'], [Array(1000).fill(-1)])).toThrow(
+		'900 more errors omitted',
+	);
+	expect(validator.validate(['uint8[]'], [Array(1000).fill(-1)], { silent: true })).toHaveLength(
+		100,
+	);
 });

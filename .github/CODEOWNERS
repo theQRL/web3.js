@@ -21,3 +21,17 @@
 /.lint-budget.json @theQRL/devops
 /scripts/doctor*.js @theQRL/devops
 /scripts/check-repo-hygiene.js @theQRL/devops
+
+# Gate dependencies and package generation inputs.
+/.npmrc @theQRL/devops
+/scripts/check-package-dependencies.js @theQRL/devops
+/scripts/git-dependency-digest.js @theQRL/devops
+/scripts/lint-budget.js @theQRL/devops
+/scripts/clean.sh @theQRL/devops
+/scripts/init.ts @theQRL/devops
+/turbo.json @theQRL/devops
+/codecov.yml @theQRL/devops
+/.husky/ @theQRL/devops
+/templates/ @theQRL/devops
+/eslint.config.cjs @theQRL/devops
+/tools/eslint-config-base-web3/ @theQRL/devops

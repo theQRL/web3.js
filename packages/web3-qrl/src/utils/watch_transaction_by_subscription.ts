@@ -21,7 +21,7 @@ import { DataFormat } from '@theqrl/web3-types';
 import { NewHeadsSubscription } from '../web3_subscriptions.js';
 import { transactionReceiptSchema } from '../schemas.js';
 import { isHash32, isValidUnsignedHexNumber } from './hex_guards.js';
-import { reportWatcherError } from './promi_event_errors.js';
+import { reportWatcherError, emitConfirmation } from './promi_event_errors.js';
 import {
 	missingReceiptError,
 	recheckReceipt,
@@ -149,7 +149,7 @@ export const watchTransactionBySubscription = <
 							// A header below the (new) receipt block confirms nothing.
 							if (confirmations < BigInt(2)) return;
 
-							transactionPromiEvent.emit('confirmation', {
+							emitConfirmation(transactionPromiEvent, {
 								confirmations: format(
 									{ format: 'uint' },
 									confirmations as Numbers,

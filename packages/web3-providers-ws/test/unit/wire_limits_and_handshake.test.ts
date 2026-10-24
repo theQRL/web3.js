@@ -20,7 +20,7 @@ jest.unmock('isomorphic-ws');
 import { AddressInfo } from 'net';
 import { WebSocketServer, RawData } from 'ws';
 import { JsonRpcRequest } from '@theqrl/web3-types';
-import { ResponseTooLargeError } from '@theqrl/web3-errors';
+import { ConnectionCloseError, ResponseTooLargeError } from '@theqrl/web3-errors';
 import WebSocketProvider from '../../src/index';
 
 const parseRequest = (data: RawData): JsonRpcRequest => {
@@ -112,12 +112,20 @@ describe('WebSocket wire limits and handshake (pass-5 audit)', () => {
 					.catch((error: unknown) => error);
 				const [a, b] = await Promise.all([first, second]);
 				if (mode === 'notification') expect(a).toHaveProperty('result', '0x1');
-				else expect(a).toBeInstanceOf(ResponseTooLargeError);
+				else
+					expect(a).toBeInstanceOf(
+						mode === 'close 1009' ? ConnectionCloseError : ResponseTooLargeError,
+					);
 				if (mode === 'reply' || mode === 'notification') {
 					expect(b).toHaveProperty('result', '0x1');
 					expect(provider.getStatus()).toBe('connected');
-				} else expect(b).toBeInstanceOf(ResponseTooLargeError);
-				expect(errors.some(error => error instanceof ResponseTooLargeError)).toBe(true);
+				} else
+					expect(b).toBeInstanceOf(
+						mode === 'close 1009' ? ConnectionCloseError : ResponseTooLargeError,
+					);
+				expect(errors.some(error => error instanceof ResponseTooLargeError)).toBe(
+					mode !== 'close 1009',
+				);
 				if (autoReconnect) {
 					await reconnected;
 					await expect(
@@ -138,7 +146,7 @@ describe('WebSocket wire limits and handshake (pass-5 audit)', () => {
 			}
 		},
 	);
-	it('does not announce connect when the RPC handshake fails', async () => {
+	it('announces connect and reports errors when the current RPC handshake fails', async () => {
 		const server = new WebSocketServer({ host: '127.0.0.1', port: 0 });
 		await new Promise<void>(resolve => {
 			server.once('listening', resolve);
@@ -164,9 +172,9 @@ describe('WebSocket wire limits and handshake (pass-5 audit)', () => {
 		provider.on('connect', connected);
 		try {
 			await new Promise<void>(resolve => {
-				provider.once('error', () => resolve());
+				provider.once('connect', () => resolve());
 			});
-			expect(connected).not.toHaveBeenCalled();
+			expect(connected).toHaveBeenCalledWith({ chainId: '' });
 		} finally {
 			provider.disconnect();
 			for (const socket of server.clients) socket.terminate();
@@ -176,3 +184,50 @@ describe('WebSocket wire limits and handshake (pass-5 audit)', () => {
 		}
 	});
 });
+
+test.each([2 ** 28 + 1, 2 ** 29, 2 ** 30 + 1, 2 ** 31 + 100])(
+	'caps the real ws receiver before string conversion for maxResponseBytes=%s',
+	async maxResponseBytes => {
+		const server = new WebSocketServer({ host: '127.0.0.1', port: 0 });
+		await new Promise<void>(resolve => server.once('listening', resolve));
+		server.on('connection', socket =>
+			socket.on('message', raw => {
+				const request = parseRequest(raw);
+				socket.send(
+					JSON.stringify({
+						jsonrpc: '2.0',
+						id: request.id,
+						result: request.method === 'qrl_accounts' ? [] : '0x1',
+					}),
+				);
+			}),
+		);
+		const provider = new WebSocketProvider(
+			`ws://127.0.0.1:${(server.address() as AddressInfo).port}`,
+			{},
+			{ autoReconnect: false },
+			{ maxResponseBytes },
+		);
+		try {
+			await new Promise<void>(resolve => provider.once('connect', () => resolve()));
+			const socket = provider.SocketConnection as unknown as {
+				_receiver: { _maxPayload: number };
+			};
+			expect(socket._receiver._maxPayload).toBe(536_870_888);
+		} finally {
+			provider.disconnect();
+			for (const socket of server.clients) socket.terminate();
+			await new Promise<void>(resolve => server.close(() => resolve()));
+		}
+	},
+);
+
+test.each([-1, NaN, Number.MAX_SAFE_INTEGER + 1])(
+	'refuses an invalid ws maxPayload: %s',
+	maxPayload => {
+		expect(
+			() =>
+				new WebSocketProvider('ws://127.0.0.1:1', { maxPayload }, { autoReconnect: false }),
+		).toThrow();
+	},
+);

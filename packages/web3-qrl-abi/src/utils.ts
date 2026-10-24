@@ -17,7 +17,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 import { AbiError } from '@theqrl/web3-errors';
 import { AbiCoder, ParamType, booleanToBit } from '@theqrl/abi';
-import { bytesToHex, isNullish, leftPad } from '@theqrl/web3-utils';
+import { isNullish, leftPad } from '@theqrl/web3-utils';
 import {
 	AbiInput,
 	AbiCoderStruct,
@@ -174,12 +174,10 @@ export const formatParam = (type: string, _param: unknown): unknown => {
 		const bit = booleanToBit(_param);
 		return bit === undefined ? _param : bit === 1;
 	}
-	// Normalize binary values before cloning objects to preserve their bytes.
-	const normalizedParam = _param instanceof Uint8Array ? bytesToHex(_param) : _param;
-	const param =
-		typeof normalizedParam === 'object' && !Array.isArray(normalizedParam)
-			? { ...normalizedParam }
-			: normalizedParam;
+	// Preserve binary inputs for the coder: byte coders accept them, while the
+	// number coder rejects them. Converting to hex would bypass that validation.
+	if (_param instanceof Uint8Array) return _param;
+	const param = typeof _param === 'object' && !Array.isArray(_param) ? { ..._param } : _param;
 	const paramTypeBytes = /^bytes([0-9]*)$/;
 	const paramTypeBytesArray = /^bytes([0-9]*)\[\]$/;
 	const paramTypeNumber = /^(u?int)([0-9]*)$/;

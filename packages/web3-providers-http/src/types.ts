@@ -20,6 +20,9 @@ import { ProviderBoundsOptions, RequestBoundsOptions } from '@theqrl/web3-utils'
 /**
  * Constructor options for `HttpProvider`.
  *
+ * Native Node fetch uses an undici `dispatcher` for proxy and TLS configuration.
+ * A node-fetch `agent` is rejected when native fetch is available.
+ *
  * The transport bounds (`connectionTimeout`, `requestTimeout`, `maxResponseBytes`) come
  * from {@link ProviderBoundsOptions} so that the HTTP and socket providers share option
  * names, defaults and validation. Every bound is optional and defaults to a finite value;
@@ -47,7 +50,7 @@ export interface HttpProviderOptions extends ProviderBoundsOptions {
 	 * `cookie` included, to a redirect target on the **same host** (another port or path
 	 * counts as the same host); only a redirect to a different hostname drops them.
 	 */
-	providerOptions?: RequestInit;
+	providerOptions?: RequestInit & { dispatcher?: unknown };
 }
 
 /**
@@ -56,4 +59,5 @@ export interface HttpProviderOptions extends ProviderBoundsOptions {
  * `signal` is taken from {@link RequestBoundsOptions} rather than `RequestInit` so that a
  * caller signal is always composed with (never replaces) the request deadline.
  */
-export type HttpRequestOptions = Omit<RequestInit, 'signal'> & RequestBoundsOptions;
+export type HttpRequestOptions = Omit<RequestInit, 'signal'> &
+	RequestBoundsOptions & { dispatcher?: unknown };

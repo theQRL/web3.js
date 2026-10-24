@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Pass 6 audit corrections
+
+- Refuse node-fetch `agent` options under native fetch instead of silently ignoring proxy/TLS routing. Use an undici `dispatcher` with native Node fetch; the fallback still supports node-fetch options (P6-TR-4).
+
 ### Fixed
 
 - Prefer native fetch when available and map truncated bodies and refused redirects to typed transport errors (P5-TR-4).

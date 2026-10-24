@@ -39,6 +39,12 @@ export class NumberCoder extends Coder {
 	}
 
 	encode(writer: Writer, value: BigNumberish): number {
+		if (
+			!['number', 'bigint', 'string'].includes(typeof value) &&
+			!BigNumber.isBigNumber(value)
+		) {
+			this._throwError('expected a number, bigint, BigNumber or integer string', value);
+		}
 		let v = BigNumber.from(value);
 
 		// Check bounds are safe for encoding

@@ -59,6 +59,7 @@
 		"@theqrl/eslint-config-base-web3": "workspace:^",
 		"@types/jest": "30.0.0",
 		"@types/jest-when": "3.5.5",
+		"@types/ws": "8.18.1",
 		"@typescript-eslint/eslint-plugin": "8.59.4",
 		"@typescript-eslint/parser": "8.59.4",
 		"eslint": "10.4.0",
@@ -68,6 +69,7 @@
 		"jest-when": "4.0.3",
 		"prettier": "3.8.3",
 		"ts-jest": "29.4.11",
-		"typescript": "6.0.3"
+		"typescript": "6.0.3",
+		"ws": "8.21.0"
 	}
 }

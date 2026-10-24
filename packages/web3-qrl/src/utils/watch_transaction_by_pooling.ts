@@ -28,7 +28,7 @@ import { qrlRpcMethods } from '@theqrl/web3-rpc-methods';
 import { SendSignedTransactionEvents, SendTransactionEvents } from '../types.js';
 import { transactionReceiptSchema } from '../schemas.js';
 import { MAX_CONSECUTIVE_POLLING_ERRORS } from '../constants.js';
-import { reportWatcherError } from './promi_event_errors.js';
+import { reportWatcherError, emitConfirmation } from './promi_event_errors.js';
 import {
 	missingReceiptError,
 	recheckReceipt,
@@ -142,7 +142,7 @@ export const watchTransactionByPolling = <
 			confirmations = Number(depth);
 			const formattedConfirmations: Numbers = confirmations;
 
-			transactionPromiEvent.emit('confirmation', {
+			emitConfirmation(transactionPromiEvent, {
 				confirmations: format({ format: 'uint' }, formattedConfirmations, returnFormat),
 				receipt: format(transactionReceiptSchema, receipt, returnFormat),
 				latestBlockHash: format(

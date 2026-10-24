@@ -24,7 +24,7 @@ import {
 } from '@theqrl/web3-types';
 import { Web3Context, Web3PromiEvent } from '@theqrl/web3-core';
 import { format } from '@theqrl/web3-utils';
-import { isNullish } from '@theqrl/web3-validator';
+import { isNullish, isUInt } from '@theqrl/web3-validator';
 
 import {
 	TransactionMissingReceiptOrBlockHashError,
@@ -35,7 +35,8 @@ import {
 	watchTransactionByPolling,
 	Web3PromiEventEventTypeBase,
 } from './watch_transaction_by_pooling.js';
-import { isBlockHash, isValidUnsignedHexNumber } from './hex_guards.js';
+import { isBlockHash } from './hex_guards.js';
+import { emitConfirmation } from './promi_event_errors.js';
 import { invalidResponseError } from './invalid_response_error.js';
 import { watchTransactionBySubscription } from './watch_transaction_by_subscription.js';
 
@@ -68,10 +69,7 @@ export function watchTransactionForConfirmations<
 	if (isNullish(transactionReceipt.blockNumber))
 		throw new TransactionReceiptMissingBlockNumberError({ receipt: transactionReceipt });
 
-	if (
-		!isBlockHash(transactionReceipt.blockHash) ||
-		!isValidUnsignedHexNumber(transactionReceipt.blockNumber)
-	) {
+	if (!isBlockHash(transactionReceipt.blockHash) || !isUInt(transactionReceipt.blockNumber)) {
 		throw invalidResponseError(
 			'qrl_getTransactionReceipt',
 			'a receipt with a 32-byte block hash and an unsigned block number',
@@ -81,7 +79,7 @@ export function watchTransactionForConfirmations<
 	const firstConfirmation: Numbers = 1;
 
 	// As we have the receipt, it's the first confirmation that tx is accepted.
-	transactionPromiEvent.emit('confirmation', {
+	emitConfirmation(transactionPromiEvent, {
 		confirmations: format({ format: 'uint' }, firstConfirmation, returnFormat),
 		receipt: format(transactionReceiptSchema, transactionReceipt, returnFormat),
 		latestBlockHash: format({ format: 'bytes32' }, transactionReceipt.blockHash, returnFormat),

@@ -18,6 +18,7 @@ import { readFileSync } from 'fs';
 import { join, resolve } from 'path';
 
 interface DoctorChecks {
+	npmrcPolicyFailures: (text: string) => string[];
 	allowBuildsFailures: (workspaceYaml: string, lockfileText: string) => string[];
 	listWorkspaceBlockItems: (workspaceYaml: string, blockName: string) => string[] | undefined;
 	listWorkspaceBlockKeys: (workspaceYaml: string, blockName: string) => string[] | undefined;
@@ -316,5 +317,36 @@ describe('doctor checks', () => {
 		it('accepts the committed .trivyignore as of its review date', () => {
 			expect(trivyIgnoreFailures(read('.trivyignore'), '2026-10-22')).toEqual([]);
 		});
+	});
+});
+
+describe('pass-6 workspace policy parsing', () => {
+	it.each([
+		'base: &base\n  minimumReleaseAgeExclude: [lodash]\n<<: *base\n',
+		'base: &base { evil: true }\nallowBuilds: *base\n',
+	])('refuses merges and aliases rather than disagreeing with pnpm', yaml => {
+		expect(() => minimumReleaseAgeExcludeFailures(yaml)).toThrow(/aliases|merge/);
+		expect(() => allowBuildsFailures(yaml, '')).toThrow(/aliases|merge/);
+	});
+	it('reads multi-line flow mappings for build approvals', () => {
+		expect(
+			allowBuildsFailures('allowBuilds: {\n evil: true,\n bufferutil: true\n}\n', lockfile),
+		).toEqual([expect.stringContaining('evil')]);
+	});
+	it.each([
+		'minimum-release-age-exclude[]',
+		'only-built-dependencies[]',
+		'minimumReleaseAgeExclude',
+		'allow-builds',
+		'dangerously-allow-all-builds',
+	])('refuses .npmrc policy key %s', key => {
+		expect(doctorChecks.npmrcPolicyFailures(`${key}=lodash`)).toHaveLength(1);
+	});
+	it('allows normal npmrc settings and comments', () => {
+		expect(
+			doctorChecks.npmrcPolicyFailures(
+				'# minimum-release-age-exclude[]=lodash\nengine-strict=true\nregistry=https://registry.npmjs.org/',
+			),
+		).toEqual([]);
 	});
 });

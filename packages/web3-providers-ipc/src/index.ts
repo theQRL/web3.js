@@ -166,6 +166,13 @@ export default class IpcProvider<API extends Web3APISpec = QRLExecutionAPI> exte
 		}
 	}
 
+	public connect(): void {
+		if (this.getStatus() === 'connected' && !this.isReconnecting) {
+			IpcProvider._assertSocketPath(this._socketPath);
+		}
+		super.connect();
+	}
+
 	protected _openSocketConnection() {
 		IpcProvider._assertSocketPath(this._socketPath);
 		const previous = this._socketConnection;

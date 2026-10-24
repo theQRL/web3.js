@@ -618,7 +618,6 @@ export class Contract<Abi extends ContractAbi>
 					from: this.options.from,
 					input: this.options.input,
 					data: this.options.data,
-					provider: this.currentProvider,
 					syncWithContext: this.syncWithContext,
 					dataInputFill: this._dataInputFillOption,
 				},
@@ -634,7 +633,6 @@ export class Contract<Abi extends ContractAbi>
 					from: this.options.from,
 					input: this.options.input,
 					data: this.options.data,
-					provider: this.currentProvider,
 					syncWithContext: this.syncWithContext,
 					dataInputFill: this._dataInputFillOption,
 				},
@@ -946,6 +944,7 @@ export class Contract<Abi extends ContractAbi>
 		abi: EventAbiWithSignature,
 		eventOptions: Filter,
 		returnFormat: DataFormat,
+		onDecodeError?: (error: Error) => void,
 	): Promise<(string | EventLog)[]> {
 		const { fromBlock, toBlock, topics, address } = encodeEventABI(
 			this.options,
@@ -972,11 +971,24 @@ export class Contract<Abi extends ContractAbi>
 				: signatureTopic;
 		const decodedLogs = logs
 			.filter(log => isLogOf(log, expectedAddress, expectedTopic))
-			.map(log =>
-				typeof log === 'string'
-					? log
-					: decodeEventABI(abi, log as LogsInput, this._jsonInterface, returnFormat),
-			);
+			.flatMap(log => {
+				try {
+					return [
+						typeof log === 'string'
+							? log
+							: decodeEventABI(
+									abi,
+									log as LogsInput,
+									this._jsonInterface,
+									returnFormat,
+								),
+					];
+				} catch (error) {
+					if (!onDecodeError) throw error;
+					onDecodeError(error as Error);
+					return [];
+				}
+			});
 
 		const filter = eventOptions.filter ?? {};
 		// A nullish filter value is a wildcard, like the `null` topic it was sent as (F-9).
@@ -1553,7 +1565,12 @@ export class Contract<Abi extends ContractAbi>
 					// to (P4-L-26).
 					const backfill = isNullish(fromBlock)
 						? Promise.resolve()
-						: this._getPastEventsForAbi(abi, { fromBlock, topics }, returnFormat).then(
+						: this._getPastEventsForAbi(
+								abi,
+								{ fromBlock, topics },
+								returnFormat,
+								error => sub._processSubscriptionError(error),
+							).then(
 								logs => {
 									logs.forEach(log => sub.emit('data', log as EventLog));
 								},
@@ -1569,7 +1586,22 @@ export class Contract<Abi extends ContractAbi>
 							throw report(new SubscriptionError('Failed to subscribe.', error));
 						},
 					);
-					Promise.all([subscribe, backfill]).then(([id]) => resolve(id), reject);
+					Promise.all([subscribe, backfill]).then(
+						([id]) => resolve(id),
+						error => {
+							void sub
+								.unsubscribe()
+								.catch(cleanupError =>
+									report(
+										new SubscriptionError(
+											'Failed to unsubscribe after backfill failure.',
+											cleanupError as Error,
+										),
+									),
+								);
+							reject(error);
+						},
+					);
 				});
 			});
 			void sub.subscribed.catch(() => {

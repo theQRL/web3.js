@@ -65,6 +65,7 @@ interface ListenableProvider {
 	request?: unknown;
 	supportsSubscriptions?: () => boolean;
 	getStatus?: () => string;
+	isConnected?: () => boolean;
 }
 
 /** The members of a registered subscription the manager relies on. */
@@ -126,6 +127,10 @@ export class Web3SubscriptionManager<
 		InstanceType<RegisteredSubs[keyof RegisteredSubs]>,
 		Promise<void>
 	>();
+	private readonly _pendingRegistrations = new Set<
+		InstanceType<RegisteredSubs[keyof RegisteredSubs]>
+	>();
+	private readonly _subscriptionConnections = new WeakMap<ManagedSubscription, number>();
 	private _resubscribeTask?: Promise<void>;
 	private _resubscribeAgain = false;
 	private _generation = 0;
@@ -217,7 +222,8 @@ export class Web3SubscriptionManager<
 		// `connect` that completes the initial connection (provider still connecting when the
 		// listener was attached) re-subscribes nothing.
 		this._providerConnected =
-			typeof provider.getStatus === 'function' && provider.getStatus() === 'connected';
+			provider.isConnected?.() ??
+			(typeof provider.getStatus === 'function' && provider.getStatus() === 'connected');
 		const disconnectListener = () => {
 			this._connectionGeneration += 1;
 			this._providerConnected = false;
@@ -302,6 +308,14 @@ export class Web3SubscriptionManager<
 				for (const sub of [...this._intendedSubscriptions]) {
 					if (this._disposed || connection !== this._connectionGeneration) break;
 					if (!this._intendedSubscriptions.has(sub)) continue;
+					if (this._pendingRegistrations.has(sub)) continue;
+					// An initial registration may finish while an earlier recovery is
+					// awaiting its reply. It already belongs to this connection.
+					if (
+						this._subscriptionConnections.get(sub as unknown as ManagedSubscription) ===
+						connection
+					)
+						continue;
 					const attempt = this._resubscribeOne(sub);
 					this._pendingResubscriptions.set(sub, attempt);
 					try {
@@ -358,11 +372,11 @@ export class Web3SubscriptionManager<
 					(provider !== this.requestManager.provider || !this._subscriptions.has(id))
 				) {
 					const manager = new Web3RequestManager<API>(provider);
-					await waitWithTimeout(
+					void waitWithTimeout(
 						manager.send({ method: 'qrl_unsubscribe', params: [id] }),
 						UNSUBSCRIBE_ON_PROVIDER_CHANGE_TIMEOUT,
 						new SubscriptionError('Timed out releasing a cancelled subscription'),
-					);
+					).catch(error => this._reportSubscriptionError(managed, id, error));
 				}
 				return;
 			}
@@ -378,6 +392,7 @@ export class Web3SubscriptionManager<
 			}
 			this._deleteSubscriptionIds(sub);
 			this._subscriptions.set(sub.id, sub);
+			this._subscriptionConnections.set(managed, connection);
 		} catch (error) {
 			// Keep owner intent on failure: the next stable connect retries it.
 			this._reportSubscriptionError(managed, oldId ?? '', error);
@@ -471,49 +486,77 @@ export class Web3SubscriptionManager<
 		if (sub.id && this._subscriptions.has(sub.id)) {
 			throw new SubscriptionError(`Subscription with id "${sub.id}" already exists`);
 		}
+		if (this._pendingRegistrations.has(sub)) {
+			throw new SubscriptionError('Subscription registration is already in progress');
+		}
 
 		const managed = sub as unknown as ManagedSubscription;
 		// The provider the request goes to. If it is replaced while the request is in flight, the
 		// id the old node answers with is worthless on the new one (P4-L-1).
 		const providerAtRequest = this.requestManager.provider;
 		const generation = this._generation;
+		let connection = this._connectionGeneration;
+		const release = (id: string) => {
+			if (
+				providerAtRequest !== this.requestManager.provider ||
+				!this._subscriptions.has(id)
+			) {
+				const manager = new Web3RequestManager<API>(providerAtRequest);
+				void waitWithTimeout(
+					manager.send({ method: 'qrl_unsubscribe', params: [id] }),
+					UNSUBSCRIBE_ON_PROVIDER_CHANGE_TIMEOUT,
+					new SubscriptionError('Timed out releasing a superseded subscription'),
+				).catch(error => this._reportSubscriptionError(managed, id, error));
+			}
+		};
 		this._intendedSubscriptions.add(sub);
+		this._pendingRegistrations.add(sub);
 		this._attachProviderListener();
 		this._subscribesInFlight += 1;
 
 		let createdId: string;
 		try {
 			createdId = await managed.sendSubscriptionRequest();
+			if (
+				connection !== this._connectionGeneration &&
+				this.requestManager.provider === providerAtRequest &&
+				!this._disposed &&
+				generation === this._generation &&
+				this._intendedSubscriptions.has(sub)
+			) {
+				// A request queued during backoff can succeed on the new socket. Its
+				// generation is ambiguous, so release it and retry once on the current
+				// connection. Keep the pending marker throughout to exclude recovery.
+				managed._markUnsubscribed();
+				release(createdId);
+				connection = this._connectionGeneration;
+				createdId = await managed.sendSubscriptionRequest();
+			}
 		} catch (error) {
 			this._subscribesInFlight -= 1;
+			this._pendingRegistrations.delete(sub);
 			this._intendedSubscriptions.delete(sub);
 			this._detachProviderListenerWhenIdle();
 			throw error;
 		}
 		this._subscribesInFlight -= 1;
+		this._pendingRegistrations.delete(sub);
 
 		if (
 			this.requestManager.provider !== providerAtRequest ||
 			this._disposed ||
 			generation !== this._generation ||
+			connection !== this._connectionGeneration ||
 			!this._intendedSubscriptions.has(sub)
 		) {
 			this._intendedSubscriptions.delete(sub);
 			managed._markUnsubscribed();
 			this._detachProviderListenerWhenIdle();
-			if (
-				providerAtRequest !== this.requestManager.provider ||
-				!this._subscriptions.has(createdId)
-			) {
-				const manager = new Web3RequestManager<API>(providerAtRequest);
-				await waitWithTimeout(
-					manager.send({ method: 'qrl_unsubscribe', params: [createdId] }),
-					UNSUBSCRIBE_ON_PROVIDER_CHANGE_TIMEOUT,
-					new SubscriptionError('Timed out releasing a cancelled subscription'),
-				).catch(error => this._reportSubscriptionError(managed, createdId, error));
-			}
+			release(createdId);
 			throw new SubscriptionError(
-				'The subscription was cancelled or the provider was replaced while subscribing; the subscription was not registered. Subscribe again on the new provider.',
+				connection !== this._connectionGeneration
+					? 'The connection changed again while subscribing; the subscription was not registered. Retry once the connection is stable.'
+					: 'The subscription was cancelled or the provider was replaced while subscribing; the subscription was not registered. Subscribe again on the new provider.',
 			);
 		}
 
@@ -523,7 +566,7 @@ export class Web3SubscriptionManager<
 			throw new SubscriptionError('Subscription is not subscribed yet.');
 		}
 
-		if (this._subscriptions.has(sub.id)) {
+		if (this._subscriptions.has(sub.id) && this._subscriptions.get(sub.id) !== sub) {
 			const duplicateId = sub.id;
 			this._intendedSubscriptions.delete(sub);
 			managed._markUnsubscribed();
@@ -534,6 +577,7 @@ export class Web3SubscriptionManager<
 		}
 
 		this._subscriptions.set(sub.id, sub);
+		this._subscriptionConnections.set(managed, connection);
 		// Idempotent: re-attaches the listener if a concurrent removal detached it meanwhile.
 		this._attachProviderListener();
 
@@ -577,11 +621,15 @@ export class Web3SubscriptionManager<
 		}
 
 		const managed = sub as unknown as ManagedSubscription;
+		const stale = this._subscriptionConnections.get(managed) !== this._connectionGeneration;
 		// Remove owner intent before the await, so a queued recovery skips this entry.
 		this._intendedSubscriptions.delete(sub);
 		this._deleteSubscriptionIds(sub);
 		try {
 			await managed.sendUnsubscribeRequest();
+		} catch (error) {
+			// An id from a previous connection may already have disappeared on the node.
+			if (!stale) throw error;
 		} finally {
 			// A stale entry would keep dispatching notifications to a subscription its owner has
 			// let go of, and `sub.id` would claim it is still live (M-7f).

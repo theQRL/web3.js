@@ -73,3 +73,49 @@ describe('package inspection forbidden patterns (P4-L-46)', () => {
 		expect(readFileSync(resolve(root, '.gitignore'), 'utf8')).toMatch(/^\.env\n\.env\.\*$/m);
 	});
 });
+
+describe('release sibling ranges', () => {
+	// eslint-disable-next-line @typescript-eslint/no-require-imports
+	const { siblingRangeFailures, selectReleasePackages } =
+		require('../../release/inspect-packages') as {
+			siblingRangeFailures: (manifest: unknown, siblings: Set<string>) => string[];
+			selectReleasePackages: (
+				args: string[],
+				packages: { name: string }[],
+			) => { name: string }[];
+		};
+	it('inspects all development packages but only selected release manifests', () => {
+		const packages = [{ name: '@probe/a' }, { name: '@probe/b' }];
+		expect(selectReleasePackages([], packages)).toEqual(packages);
+		expect(selectReleasePackages(['--release', '@probe/b'], packages)).toEqual([packages[1]]);
+		expect(() => selectReleasePackages(['--release'], packages)).toThrow('Usage');
+		expect(() => selectReleasePackages(['--release', '@probe/missing'], packages)).toThrow(
+			'Unknown',
+		);
+	});
+	it.each([
+		'workspace:*',
+		'workspace:^',
+		'file:../b',
+		'*',
+		'~1.2.3',
+		'01.2.3',
+		'1.2.3-01',
+		'1.2.3-rc..1',
+	])('rejects %s in a publishable sibling dependency', range => {
+		expect(
+			siblingRangeFailures(
+				{ name: '@probe/a', dependencies: { '@probe/b': range } },
+				new Set(['@probe/b']),
+			),
+		).toHaveLength(1);
+	});
+	it.each(['1.2.3', '^1.2.3', '^1.2.3-rc.1'])('accepts %s for a publishable sibling', range => {
+		expect(
+			siblingRangeFailures(
+				{ name: '@probe/a', dependencies: { '@probe/b': range } },
+				new Set(['@probe/b']),
+			),
+		).toEqual([]);
+	});
+});

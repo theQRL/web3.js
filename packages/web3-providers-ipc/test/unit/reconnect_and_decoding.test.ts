@@ -456,6 +456,44 @@ describe('IpcProvider over real sockets', () => {
 		});
 	});
 
+	it('preserves a live socket and its requests if explicit reconnect cannot validate the path', async () => {
+		const socketPath = path.join(dir, 'live.ipc');
+		const server = await startServer(socketPath);
+		const provider = new IpcProvider(socketPath, {}, { autoReconnect: false });
+		try {
+			await until(() => provider.getStatus() === 'connected', 2000, 'connect');
+			const socket = provider.SocketConnection;
+			const pending = provider.request(payload(20, 'slow') as never);
+			fs.unlinkSync(socketPath);
+			expect(() => provider.connect()).toThrow(InvalidClientError);
+			expect(provider.SocketConnection).toBe(socket);
+			expect(provider.getStatus()).toBe('connected');
+			await expect(pending).resolves.toHaveProperty('result', '0x5');
+		} finally {
+			provider.disconnect();
+			await server.close();
+		}
+	});
+	it('manual connect cancels a pending IPC reconnect timer', async () => {
+		const socketPath = path.join(dir, 'live.ipc');
+		const server = await startServer(socketPath);
+		const provider = new IpcProvider(socketPath, {}, { autoReconnect: true, delay: 100 });
+		try {
+			await until(() => provider.getStatus() === 'connected', 2000, 'connect');
+			server.clients[0].destroy();
+			await until(() => provider.getStatus() === 'disconnected', 2000, 'disconnect');
+			provider.connect();
+			await until(() => provider.getStatus() === 'connected', 2000, 'manual connect');
+			await expect(
+				provider.request(payload(21, 'qrl_blockNumber') as never),
+			).resolves.toHaveProperty('result', '0x5');
+			await wait(200);
+			expect(server.clients).toHaveLength(2);
+		} finally {
+			provider.disconnect();
+			await server.close();
+		}
+	});
 	describe('payload serialisation (I-15)', () => {
 		it('rejects a bigint param with RequestSerializationError', async () => {
 			const socketPath = path.join(dir, 's.ipc');

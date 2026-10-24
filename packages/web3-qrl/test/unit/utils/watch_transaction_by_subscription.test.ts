@@ -93,6 +93,21 @@ describe('watchTransactionBySubscription (L-54)', () => {
 			returnFormat: DEFAULT_RETURN_FORMAT,
 		});
 
+	it('reports throwing confirmation listeners without stopping before the threshold', async () => {
+		const errors = jest.fn();
+		promiEvent.on('error', errors);
+		promiEvent.on('confirmation', () => {
+			throw new Error('listener boom');
+		});
+		start();
+		await jest.advanceTimersByTimeAsync(1);
+		subscription.emit('data', header(0x11));
+		subscription.emit('data', header(0x12));
+		await jest.advanceTimersByTimeAsync(100);
+		expect(confirmations).toEqual([BigInt(2), BigInt(3)]);
+		expect(errors).toHaveBeenCalledTimes(2);
+		expect(removeSubscription).toHaveBeenCalledTimes(1);
+	});
 	it('counts confirmations from the subscription, stops at the threshold and never starts polling', async () => {
 		start();
 		await jest.advanceTimersByTimeAsync(1);

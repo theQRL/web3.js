@@ -65,6 +65,7 @@ export async function waitWithTimeout<T>(
 			awaitable instanceof Promise ? awaitable : awaitable(),
 			new Promise<undefined | Error>((resolve, reject) => {
 				timeoutId = setTimeout(() => (error ? reject(error) : resolve(undefined)), timeout);
+				if (typeof timeoutId === 'object') timeoutId.unref?.();
 			}),
 		]);
 	} finally {

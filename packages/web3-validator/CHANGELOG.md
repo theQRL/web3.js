@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Pass 6 audit corrections
+
+- Preserve the total validation issue count and omitted-issue count while retaining at most 100 errors (P6-VAL-1).
+- Zod 4 rejects Infinity and -Infinity for number schemas and changes native validation message text. ValidationError is a local path/message type, Web3ValidationOptions.silent is optional, and unsupported or array-valued schema types now throw instead of falling back to object validation.
+
 ### Fixed
 
 - Upgrade Zod to 4.6.6 and bound validation to 64 nesting levels, with at most 100 reported issues and bounded excerpts (P5-SC-1).

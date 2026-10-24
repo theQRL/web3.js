@@ -19,7 +19,7 @@ Release publishing is guarded by:
 - Every release tag of a publishable package must already be on the registry (pre-flight, see "Recovering From A Failed Release Run").
 - Release tarballs must pass CommonJS and ESM smoke tests on Node 20.19.0 (the advertised `engines.node` floor) before publish, installed with `npm ci` from a lockfile the `prepare` job resolved.
 - Every job that consumes the release-candidate artifact first verifies it against the SHA-256 digests the `prepare` job recorded as job outputs (`scripts/release/verify-artifact-digests.sh`); the artifact store of a running workflow is not trusted.
-- npm publishing runs on Node 24 with its bundled npm (11.5.1 or newer) so npm trusted publishing can use OIDC, in a job that does nothing but verify and publish.
+- npm publishing runs on Node 24.22.1 with its bundled npm (11.5.1 or newer) so npm trusted publishing can use OIDC, in a job that does nothing but verify and publish.
 - npm publishing must use provenance (`NPM_CONFIG_PROVENANCE=true`).
 - A version that already exists on the registry is skipped only when its `dist.integrity` equals the SHA-512 of the tarball this run built; any other bytes fail the run.
 
@@ -195,3 +195,5 @@ block before inspection or packing. This works without a warm Turbo cache even w
 was not released at the same commit. Recovery still executes the tagged revision's build
 scripts; historical releases made with a different dependency-prefix policy may not reproduce
 byte for byte, and the publish integrity check must remain fail-closed.
+
+The publish job pins `NODE_PUBLISH_VERSION` to [Node 24.22.1](https://nodejs.org/en/blog/release/v24.22.1) and fails before publishing unless its bundled npm is at least 11.5.1. Release inspection (`inspect-packages.js --release <package-name> ...`) rejects non-semver sibling ranges, including `workspace:*`, for packages selected for publication. Ordinary workspace inspection permits development manifests with `workspace:^`.

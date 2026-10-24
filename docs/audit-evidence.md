@@ -253,6 +253,74 @@ is 32. `getStorageSlotNumForLongString` hashes a 64-byte VM word but returns a
 their widths do not change the access-list key format. The contract access-list
 integration suite checks the RPC path against a node.
 
+## Pass 6 remediation (2026-10-24)
+
+The six Medium and nineteen Low findings in `AUDIT_REPORT_2026-10-24_pass6.md`
+are addressed by the following changes and regression coverage:
+
+| Findings | Correction and coverage |
+| --- | --- |
+| P6-CORE-1–4 | Track initial registrations separately from recovery, release stale replies, retain connect notifications after failed handshake probes, accept stale-id cancellation, and detach best-effort cleanup from the caller. Real WebSocket handshake/reconnect cases and manager cancellation tests cover these paths. |
+| P6-TR-1–5 | Cap WebSocket frames before string conversion, cancel manual-connect backoff, distinguish peer close 1009 from a local response limit, reject ignored native-fetch agents, and preflight live IPC replacement. Transport suites exercise real loopback sockets and request cleanup. |
+| P6-QRL-1–5 | Accept decimal-string receipt formats, validate 512-bit storage values, type gas/fee overflows, scope nullable RPC fields by schema, and isolate confirmation listener failures. Polling/subscription, proof, and receipt tests cover the changes. |
+| P6-CT-1–4 | Preserve clone/deployment managers, isolate malformed historical logs and clean up failed backfills, reject topic-count mismatches, and reject nested integer-array alternatives in indexed filters. |
+| P6-ABI-1–2, P6-VAL-1 | Reject byte-like integers while retaining binary byte inputs and decoded BigNumber compatibility; align typed-data booleans/domains with node rules; report the full issue count while retaining at most 100 issues. |
+| P6-SC-1–4 | Parse workspace policy once and reject YAML merges/aliases and `.npmrc` policy overrides; pin the publishing runtime and assert npm's minimum version; enforce exact/caret sibling ranges for packages selected for publication. Ordinary workspace inspection still permits development ranges. |
+
+Related informational corrections update changelogs and the opt-in validator
+budget description, remove expired quarantine exemptions, extend CODEOWNERS,
+refuse secret-file symlinks, and run republish inspection from the dispatched
+scripts. The lint budget is ratcheted down without raising any package allowance.
+
+Local verification used Node 22.22.1 and pnpm 10.27.0, with builds and unit tests
+restricted to CPUs 0 and 1. All 19 package/tool builds passed; the final WebSocket
+and ABI edits were rebuilt, and both browser bundles passed (existing webpack
+size warnings remain). The unit suites passed **6,495 tests in 275 suites**, with
+six skipped tests and one todo, retaining all package coverage thresholds.
+The final decimal-string confirmation test also passed after its lint correction.
+Frozen offline install, doctor, hygiene, dependency checks, and all 19 package
+dry-run inspections passed. Inspection was run from a copied scripts directory
+with `NODE_PATH` pointing to the checkout, as in republishing; strict release
+inspection correctly rejected unresolved workspace ranges. Actionlint passed;
+offline Zizmor retained only the previously documented low `self-repository`
+finding (exit 12).
+The final lint gate reported zero errors and 1,257 warnings against the reduced
+1,257 warning budget; `git diff --check` passed.
+
+Command logs and package test summaries are under `/tmp/web3-pass6-*`.
+Live-node integration, tarball installation smoke tests, and the documentation
+site build were not rerun in this remediation; the pass-5 results above describe
+the earlier tree, not this one.
+
+GitHub/npm account settings, a live release workflow run, the contracts release
+tag, published tool-package decisions, and the on-chain ReverseRegistrar
+convention remain external follow-ups from the report. No package is published
+as part of this remediation.
+
+### Pass 6 residual follow-up (2026-10-25)
+
+P6R-1 now retries an initial subscription once when its successful reply spans a
+reconnect. The manager releases the uncertain id, keeps the registration excluded
+from recovery while retrying, and skips a completed retry if an older recovery
+finishes later. Cancellation, clearing, disposal, and provider replacement still
+prevent registration. A second connection change is bounded by a specific
+retryable error instead of the cancellation/provider-replacement message.
+
+P6R-2 uses format-agnostic unsigned-integer validation when comparing execution
+statuses. Strict node-response validation remains unchanged. Regression cases
+cover polling and new-head watchers, all four number formats, both byte formats,
+and both changed and unchanged execution status after a reorg, including cleanup.
+
+Verification: the full core, QRL, and contract suites passed **2,183 tests in
+88 suites** (four skipped), with their existing coverage thresholds. Final
+focused reruns passed after lint corrections. Both changed packages rebuilt
+CommonJS, ESM, and declarations, and the web3 browser bundle rebuilt with its
+existing size warnings. ESLint reported zero errors and unchanged warning counts
+(core 40, QRL 242); formatting and `git diff --check` passed. Re-running the
+original status-flip reproduction now reports the reorg error and stops both
+watchers for decimal strings and bigints. Logs are under `/tmp/web3-pass6r-*`
+and the core/QRL/contract `/tmp/web3-pass6-unit-*.log` files.
+
 ## Artefacts To Preserve
 
 For an audit handoff, preserve:

@@ -279,3 +279,103 @@ describe('RPC boundaries and configuration (pass-5 audit)', () => {
 		}).toThrow();
 	});
 });
+
+describe('pass-6 registration races', () => {
+	it('does not recover a registration whose retry finished before an older recovery', async () => {
+		const { provider, manager, subscribe } = setup();
+		const first = await subscribe();
+		provider.hold = true;
+		const pending = subscribe();
+		provider.emit('connect', {});
+		expect(provider.held).toHaveLength(2);
+		provider.held.shift()!.resolve('0x9');
+		await flush();
+		expect(provider.held).toHaveLength(2);
+		provider.held.pop()!.resolve('0xa');
+		const second = await pending;
+		provider.held.shift()!.resolve('0xb');
+		await flush();
+		expect(first.id).toBe('0xb');
+		expect(second.id).toBe('0xa');
+		expect(manager.subscriptions.size).toBe(2);
+		expect(provider.held).toHaveLength(0);
+		expect([...provider.live].sort()).toEqual(['0xa', '0xb']);
+		await manager.unsubscribe();
+		expect(provider.live.size).toBe(0);
+	});
+	it('releases a stale reply and retries once without overlapping recovery', async () => {
+		const { provider, manager, subscribe } = setup();
+		provider.hold = true;
+		const result = subscribe().catch((error: unknown) => error);
+		provider.emit('connect', {});
+		expect(provider.held).toHaveLength(1);
+		provider.held.shift()!.resolve('0x9');
+		await flush();
+		expect(provider.live.size).toBe(0);
+		expect(provider.held).toHaveLength(1);
+		provider.held.shift()!.resolve('0xa');
+		const sub = (await result) as ExampleSubscription;
+		expect(sub.id).toBe('0xa');
+		expect([...provider.live]).toEqual(['0xa']);
+		await sub.unsubscribe();
+		expect(manager.subscriptions.size).toBe(0);
+	});
+	it.each(['reconnect', 'owner', 'clear', 'dispose', 'replace'] as const)(
+		'does not register a retry superseded by %s',
+		async action => {
+			const { provider, manager, requests, subscribe } = setup();
+			provider.hold = true;
+			const result = subscribe().catch((error: unknown) => error);
+			provider.emit('connect', {});
+			provider.held.shift()!.resolve('0x9');
+			await flush();
+			expect(provider.held).toHaveLength(1);
+			if (action === 'reconnect') provider.emit('connect', {});
+			else if (action === 'owner') await manager.unsubscribe();
+			else if (action === 'replace') requests.setProvider(new RaceProvider() as never);
+			else manager[action]();
+			provider.held.shift()!.resolve('0xa');
+			const error = await result;
+			expect(error).toBeInstanceOf(Error);
+			expect((error as Error).message).toContain(
+				action === 'reconnect'
+					? 'connection changed again'
+					: 'cancelled or the provider was replaced',
+			);
+			await flush();
+			expect(provider.live.size).toBe(0);
+			expect(manager.subscriptions.size).toBe(0);
+			expect(provider.held).toHaveLength(0);
+			manager.dispose();
+		},
+	);
+	it('cancels a queued recovery even when the node refuses its stale id', async () => {
+		const { provider, manager, subscribe } = setup();
+		await subscribe();
+		const second = await subscribe();
+		const original = provider.request.bind(provider);
+		jest.spyOn(provider, 'request').mockImplementation(async payload => {
+			if (payload.method === 'qrl_unsubscribe') throw new Error('subscription not found');
+			return original(payload);
+		});
+		provider.hold = true;
+		provider.emit('connect', {});
+		await expect(second.unsubscribe()).resolves.toBeUndefined();
+		provider.held.shift()!.resolve('0x9');
+		await flush();
+		expect(manager.hasSubscription(second as never)).toBe(false);
+		expect(provider.held).toHaveLength(0);
+		manager.dispose();
+	});
+	it('does not wait for a late-id release to acknowledge cancellation', async () => {
+		const { provider, manager, subscribe } = setup();
+		provider.hold = true;
+		provider.holdUnsubscribe = true;
+		const result = subscribe().catch((error: unknown) => error);
+		manager.dispose();
+		provider.held.shift()!.resolve('0x9');
+		expect(await result).toBeInstanceOf(Error);
+		expect(provider.live.size).toBe(0);
+		provider.heldUnsubscribes.shift()!();
+	});
+});

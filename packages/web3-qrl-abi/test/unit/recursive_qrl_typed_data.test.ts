@@ -25,7 +25,7 @@ const hashWords = (...words: string[]): string =>
 const hashStruct = (type: string, ...fieldHashes: string[]): string =>
 	hashWords(keccak256(type), ...fieldHashes);
 const emptyArrayHash = keccak256('0x');
-const domainHash = hashStruct('QRLTypedDataDomain()');
+const domainHash = hashStruct('QRLTypedDataDomain(string name)', keccak256('test'));
 
 const expectMessage = (typedData: QRLTypedData, structHash: string) => {
 	const message = `0x1901${domainHash.slice(2)}${structHash.slice(2)}`;
@@ -37,14 +37,14 @@ describe('recursive QRL typed-data schemas', () => {
 	const personType = 'Person(string name,Person[] children)';
 	const personData: QRLTypedData = {
 		types: {
-			QRLTypedDataDomain: [],
+			QRLTypedDataDomain: [{ name: 'name', type: 'string' }],
 			Person: [
 				{ name: 'name', type: 'string' },
 				{ name: 'children', type: 'Person[]' },
 			],
 		},
 		primaryType: 'Person',
-		domain: {},
+		domain: { name: 'test' },
 		message: { name: 'Alice', children: [] },
 	};
 
@@ -78,7 +78,7 @@ describe('recursive QRL typed-data schemas', () => {
 				{
 					...personData,
 					types: {
-						QRLTypedDataDomain: [],
+						QRLTypedDataDomain: [{ name: 'name', type: 'string' }],
 						Person: [{ name: 'children', type: 'Person[2][]' }],
 					},
 					message: { children: [] },
@@ -117,7 +117,7 @@ describe('recursive QRL typed-data schemas', () => {
 	const emptyGroupHash = hashStruct(groupType, emptyArrayHash);
 	const mutualData: QRLTypedData = {
 		types: {
-			QRLTypedDataDomain: [],
+			QRLTypedDataDomain: [{ name: 'name', type: 'string' }],
 			Person: [
 				{ name: 'name', type: 'string' },
 				{ name: 'group', type: 'Group' },
@@ -125,7 +125,7 @@ describe('recursive QRL typed-data schemas', () => {
 			Group: [{ name: 'members', type: 'Person[]' }],
 		},
 		primaryType: 'Person',
-		domain: {},
+		domain: { name: 'test' },
 		message: { name: 'Alice', group: { members: [] } },
 	};
 
@@ -158,7 +158,7 @@ describe('recursive QRL typed-data schemas', () => {
 		expectMessage(
 			{
 				types: {
-					QRLTypedDataDomain: [],
+					QRLTypedDataDomain: [{ name: 'name', type: 'string' }],
 					Envelope: [
 						{ name: 'zed', type: 'Zed' },
 						{ name: 'alpha', type: 'Alpha' },
@@ -170,7 +170,7 @@ describe('recursive QRL typed-data schemas', () => {
 					Unused: [{ name: 'children', type: 'Unused[]' }],
 				},
 				primaryType: 'Envelope',
-				domain: {},
+				domain: { name: 'test' },
 				message: { zed: { leaf }, alpha: { leaf }, leaf },
 			},
 			hashStruct(

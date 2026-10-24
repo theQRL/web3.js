@@ -60,3 +60,14 @@ describe('native fetch failures (pass-5 audit)', () => {
 		}
 	});
 });
+
+test('refuses an ignored node-fetch agent before making a native fetch request', async () => {
+	const fetchRequest = jest.spyOn(globalThis, 'fetch');
+	const provider = new HttpProvider('http://127.0.0.1:1', {
+		providerOptions: { agent: {} } as never,
+	});
+	await expect(
+		provider.request({ jsonrpc: '2.0', id: 1, method: 'qrl_blockNumber', params: [] }),
+	).rejects.toThrow('use an undici dispatcher');
+	expect(fetchRequest).not.toHaveBeenCalled();
+});

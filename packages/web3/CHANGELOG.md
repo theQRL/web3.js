@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Pass 6 audit corrections
+
+- Wallet signing follows the calling QRL module configuration. Contracts created through web3.qrl.Contract copy the root context configuration; later configuration changes propagate only with syncWithContext enabled. Clones and deployment results continue sharing their originating request/subscription managers.
+
 ### Fixed
 
 - Built-in wallet signing uses the calling QRL module configuration, including custom chain settings and transaction builders (P5-QRL-2).

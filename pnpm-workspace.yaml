@@ -16,16 +16,7 @@ minimumReleaseAgeExclude:
 # exact versions (`name@x.y.z`, several joined with `||`): a name-only entry
 # would exempt every future release of the package, and `pnpm run doctor`
 # fails on it.
-- '@babel/plugin-transform-modules-systemjs@7.29.4'
-- 'brace-expansion@1.1.20||2.1.6||5.0.11'
-- 'fast-uri@3.1.7'
-- 'postcss@8.5.18'
-- 'svgo@3.3.5'
-- 'handlebars@4.7.10'
-- 'markdown-it@14.3.3'
-- 'undici@6.29.1||7.30.1'
 - 'body-parser@2.4.0'
-- 'zod@4.6.6'
 blockExoticSubdeps: true
 overrides:
   "braces@<3.0.3": "3.0.3"

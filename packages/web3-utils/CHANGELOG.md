@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Pass 6 audit corrections
+
+- Emit `connect` after the current handshake settles even when a gateway rejects its RPC probes; failed fields use an empty chain id or account list, and failures are reported on `error`. Stale handshakes stay suppressed. `isConnected()` reports whether the current connection emitted `connect` (P6-CORE-2).
+- Cancel a scheduled reconnect when explicitly connecting, and unref best-effort promise timeout timers (P6-TR-2, P6-CORE-4).
+
 ### Changed
 
 - **Breaking:** `ValueTypes` and `toHex(value, true)` report `uint512` / `int512` for numeric inputs instead of `uint256` / `int256`. This type label is separate from the 256-bit default used by packed encoding.
@@ -20,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Serialize asynchronous interval checks; reject explicit zero/NaN deferred timeouts; correlate oversized socket messages by envelope IDs and emit connect only after a successful current-connection handshake (P5-CORE-11/12, P5-TR-1/2).
+- Serialize asynchronous interval checks; reject explicit zero/NaN deferred timeouts; correlate oversized socket messages by envelope IDs and emit connect after the current-connection handshake settles (P5-CORE-11/12, P5-TR-1/2).
 - Pad boolean and fixed-size byte array elements to 64-byte words in packed encoding, matching Hyperion. This corrects the output of `encodePacked`, `hyperionSha3`, and `hyperionSha3Raw` for affected arrays.
 
 <!-- EXAMPLE

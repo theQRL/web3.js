@@ -128,3 +128,15 @@ export const reportListenerError = <ReturnFormat extends DataFormat, ResolveType
 		error,
 	);
 };
+
+/** Listener failures are reported without interrupting confirmation counting or cleanup. */
+export const emitConfirmation = <ReturnFormat extends DataFormat, ResolveType>(
+	promiEvent: SendPromiEvent<ReturnFormat, ResolveType>,
+	confirmation: SendTransactionEvents<ReturnFormat>['confirmation'],
+): void => {
+	try {
+		promiEvent.emit('confirmation', confirmation);
+	} catch (error) {
+		reportListenerError(promiEvent, 'confirmation', error);
+	}
+};

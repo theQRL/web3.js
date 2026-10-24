@@ -163,15 +163,18 @@ export const transactionInfoSchema = {
 	properties: {
 		...transactionSchema.properties,
 		blockHash: {
+			nullable: true,
 			format: 'bytes32',
 		},
 		blockNumber: {
+			nullable: true,
 			format: 'uint',
 		},
 		hash: {
 			format: 'bytes32',
 		},
 		transactionIndex: {
+			nullable: true,
 			format: 'uint',
 		},
 		from: {
@@ -258,6 +261,7 @@ export const blockSchema = {
 			format: 'bytes32',
 		},
 		miner: {
+			nullableWhen: 'hash',
 			format: 'address',
 		},
 		stateRoot: {
@@ -313,6 +317,7 @@ export const blockSchema = {
 			],
 		},
 		hash: {
+			nullableWhen: 'miner',
 			format: 'bytes32',
 		},
 		withdrawalsRoot: {
@@ -506,6 +511,7 @@ export const transactionReceiptSchema = {
 			format: 'address',
 		},
 		to: {
+			nullable: true,
 			format: 'address',
 		},
 		cumulativeGasUsed: {
@@ -518,6 +524,7 @@ export const transactionReceiptSchema = {
 			format: 'uint',
 		},
 		contractAddress: {
+			nullable: true,
 			format: 'address',
 		},
 		logs: {
@@ -589,7 +596,7 @@ export const storageProofSchema = {
 			oneOf: [{ format: 'uint' }, { format: 'bytes32' }],
 		},
 		value: {
-			format: 'uint',
+			format: 'uint512',
 		},
 		proof: {
 			type: 'array',

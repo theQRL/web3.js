@@ -48,9 +48,12 @@ describe('decoded aliases, log names and typed data (pass-5 audit)', () => {
 	});
 
 	const typed = (type: string, value: unknown): QRLTypedData => ({
-		types: { QRLTypedDataDomain: [], Item: [{ name: 'value', type }] },
+		types: {
+			QRLTypedDataDomain: [{ name: 'name', type: 'string' }],
+			Item: [{ name: 'value', type }],
+		},
 		primaryType: 'Item',
-		domain: {},
+		domain: { name: 'test' },
 		message: { value },
 	});
 	it.each([
@@ -74,4 +77,34 @@ describe('decoded aliases, log names and typed data (pass-5 audit)', () => {
 		nested.types.Child = [{ name: 'value', type: 'uint8' }];
 		expect(() => getEncodedQRLTypedData(nested, true)).toThrow('extra data');
 	});
+	it.each([0, 1, '0', '1', '0x1', BigInt(0), BigInt(1)])(
+		'rejects non-JSON booleans in typed data: %s',
+		value => {
+			expect(() => getEncodedQRLTypedData(typed('bool', value), true)).toThrow(
+				'expected a boolean',
+			);
+		},
+	);
+	it.each([true, false])('accepts JSON booleans: %s', value => {
+		expect(getEncodedQRLTypedData(typed('bool', value), true)).toMatch(/^0x[0-9a-f]{64}$/);
+	});
+	it('rejects empty and declared-but-empty domains', () => {
+		let input = { ...typed('uint8', 1), domain: {} };
+		input.types.QRLTypedDataDomain = [];
+		expect(() => getEncodedQRLTypedData(input, true)).toThrow('domain is undefined');
+		input.types.QRLTypedDataDomain = [
+			{ name: 'name', type: 'string' },
+			{ name: 'version', type: 'string' },
+		];
+		input = { ...input, domain: { name: '', version: '1' } };
+		expect(() => getEncodedQRLTypedData(input, true)).toThrow('empty domain field');
+	});
+	it.each([{ value: [1, 2] }, { value: new Uint8Array([1, 2]) }, { value: Buffer.from([1, 2]) }])(
+		'rejects byte-like integer values',
+		({ value }) => {
+			expect(() => encodeParameters(['uint256'], [value])).toThrow(AbiError);
+			expect(() => encodeParameters(['int256'], [value])).toThrow(AbiError);
+			expect(() => encodeParameters(['uint256[]'], [[value]])).toThrow(AbiError);
+		},
+	);
 });

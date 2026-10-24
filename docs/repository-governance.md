@@ -131,3 +131,5 @@ review as ordinary pull requests.
 Dependency policy, pnpm hardening settings, audit commands, and lockfile review
 requirements are documented in
 [`docs/supply-chain-security.md`](supply-chain-security.md).
+
+The publish job pins `NODE_PUBLISH_VERSION` to [Node 24.22.1](https://nodejs.org/en/blog/release/v24.22.1) and fails before publishing unless its bundled npm is at least 11.5.1. Release inspection (`inspect-packages.js --release <package-name> ...`) rejects non-semver sibling ranges, including `workspace:*`, for packages selected for publication. Ordinary workspace inspection permits development manifests with `workspace:^`.

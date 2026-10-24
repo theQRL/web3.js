@@ -299,6 +299,13 @@ seven-day `minimumReleaseAge` quarantine.
 Undici 6.29.1/7.30.1 also close CVE-2026-109869. The body-parser 2.x floor is
 2.4.0 for CVE-2026-111181. Production validation uses Zod 4.6.6, replacing 3.22.3,
 for CVE-2023-54404. Exact security versions are listed in `minimumReleaseAgeExclude`;
-flow and block YAML sequences receive the same doctor checks. The validator also
-limits total input traversal to 10,000 values and depth 64 before parsing, then
-keeps at most 100 bounded issue messages. See [pass 5 evidence](audit-remediation-2026-10-24.md).
+flow and block YAML sequences and mappings receive the same doctor checks. Merge keys
+and aliases are rejected, and install/quarantine overrides in `.npmrc` fail doctor.
+The validator limits nesting depth to 64 and keeps at most 100 bounded issue messages.
+Total input traversal has no value-count cap by default; callers may opt into `maxEntries`. See [pass 5 evidence](audit-remediation-2026-10-24.md).
+
+
+Pass 6 removed expired quarantine exemptions; only the first-party scope and the
+body-parser 2.4.0 security patch (released 2026-10-22) remain exempt as of 2026-10-24.
+Frozen-lockfile installs do not resolve versions, so this quarantine applies to
+resolving maintainer installs rather than replaying CI's committed lockfile.

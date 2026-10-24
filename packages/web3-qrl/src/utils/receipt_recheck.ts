@@ -26,7 +26,7 @@ import {
 	TransactionReceipt,
 } from '@theqrl/web3-types';
 import { format } from '@theqrl/web3-utils';
-import { isNullish, isObject } from '@theqrl/web3-validator';
+import { isNullish, isObject, isUInt } from '@theqrl/web3-validator';
 
 import { transactionReceiptSchema } from '../schemas.js';
 import { isHash32, isValidUnsignedHexNumber } from './hex_guards.js';
@@ -113,8 +113,8 @@ export const changedReceiptStatusError = (
 	previous: TransactionReceipt,
 	fresh: TransactionReceipt,
 ) =>
-	isValidUnsignedHexNumber(previous.status) &&
-	isValidUnsignedHexNumber(fresh.status) &&
+	isUInt(previous.status) &&
+	isUInt(fresh.status) &&
 	BigInt(previous.status) !== BigInt(fresh.status)
 		? new TransactionError(
 				'Transaction execution status changed after a chain reorganization',

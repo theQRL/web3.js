@@ -102,7 +102,7 @@ export interface SocketProviderDiagnostics {
  * presents one surface. `maxResponseBytes` bounds every message the peer sends: a larger one
  * is dropped unparsed and identified requests fail with a `ResponseTooLargeError`.
  * Oversized notifications are dropped without failing unrelated requests. WebSocket also
- * has a separate wire limit (twice this bound by default); exceeding that limit closes the
+ * has a separate wire limit (twice this bound, capped at 536,870,888 bytes); exceeding it closes the
  * connection and fails all outstanding requests with `ResponseTooLargeError`.
  */
 export interface SocketProviderOptions extends ProviderBoundsOptions {
@@ -292,6 +292,7 @@ export abstract class SocketProvider<
 	 * waiting for a connection stay queued and are written once the new socket opens.
 	 */
 	public connect(): void {
+		if (this._reconnectTimer !== undefined) this._cancelReconnect();
 		this._invalidateConnection();
 		try {
 			// Bytes left over from a previous connection must never prefix the first message of

@@ -188,11 +188,17 @@ const validateTypedData = (typedData: QRLTypedData): void => {
  *
  * @throws AbiError - when the payload is malformed (missing `primaryType`, `types.QRLTypedDataDomain`,
  * `domain` or `message`, a field without data, or a value that is not an encoding of its declared type:
- * a non-string for `string`, a non-hex value for `bytes`, a value other than `true`/`false` (or the
- * explicit `0`/`1` forms) for `bool`, an out-of-range integer, ...). Nothing is hashed on a best-effort basis.
+ * a non-string for `string`, a non-hex value for `bytes`, a value other than `true`/`false`
+ * for `bool`, an out-of-range integer, ...). Nothing is hashed on a best-effort basis.
  */
 export const getMessage = (typedData: QRLTypedData, hash?: boolean): string => {
 	validateTypedData(typedData);
+	if (
+		Object.values(typedData.domain).length === 0 ||
+		Object.values(typedData.domain).every(value => value === '' || isNullish(value))
+	) {
+		throw new AbiError('Invalid typed data: domain is undefined');
+	}
 
 	let message: string;
 	try {
@@ -279,6 +285,9 @@ const encodeValue = (
 		return ['bytes32', keccak256(data)];
 	}
 
+	if (type === 'bool' && typeof data !== 'boolean') {
+		throw new AbiError("Cannot encode data: expected a boolean for type 'bool'");
+	}
 	return [type, data as string];
 };
 
@@ -312,6 +321,9 @@ const encodeData = (
 			}
 
 			const value = data[field.name];
+			if (type === 'QRLTypedDataDomain' && value === '') {
+				throw new AbiError(`Cannot encode data: empty domain field '${field.name}'`);
+			}
 			const [_type, encodedValue] = encodeValue(typedData, field.type, value);
 
 			return [

@@ -88,4 +88,26 @@ describe('getProof', () => {
 			expect(result).toStrictEqual(expectedFormattedResult);
 		},
 	);
+	it.each([BigInt(2) ** BigInt(256), BigInt(2) ** BigInt(512) - BigInt(1)])(
+		'accepts a VM64 storage value: %s',
+		async value => {
+			(qrlRpcMethods.getProof as jest.Mock).mockResolvedValue({
+				...mockRpcResponse,
+				storageProof: [
+					{ ...mockRpcResponse.storageProof[0], value: `0x${value.toString(16)}` },
+				],
+			});
+			const result = await getProof(web3Context, ...testData[0][1], DEFAULT_RETURN_FORMAT);
+			expect(result.storageProof[0].value).toBe(value);
+		},
+	);
+	it('rejects a storage quantity beyond 512 bits', async () => {
+		(qrlRpcMethods.getProof as jest.Mock).mockResolvedValue({
+			...mockRpcResponse,
+			storageProof: [{ ...mockRpcResponse.storageProof[0], value: `0x1${'0'.repeat(128)}` }],
+		});
+		await expect(
+			getProof(web3Context, ...testData[0][1], DEFAULT_RETURN_FORMAT),
+		).rejects.toThrow();
+	});
 });

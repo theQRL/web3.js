@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Pass 6 audit corrections
+
+- Reject byte-like integer arguments in raw ABI encoding. Typed-data bool values must be JSON booleans; domains must be nonempty and declared domain fields cannot contain empty strings, matching go-qrl signing rules (P6-ABI-1, P6-ABI-2).
+
 ### Changed
 
 - **Breaking:** Renamed `getEncodedEip712Data` to `getEncodedQRLTypedData`. Typed data must define `QRLTypedDataDomain` instead of `EIP712Domain`, changing its hashes.

@@ -34,6 +34,7 @@ import {
 } from '@theqrl/web3-utils';
 import {
 	BaseWeb3Error,
+	ConnectionCloseError,
 	ConnectionNotOpenError,
 	ProviderError,
 	RequestSerializationError,
@@ -224,10 +225,7 @@ export default class WebSocketProvider<
 		const defaults: ClientOptions = {
 			// Allow bounded oversize frames through to the parser so it can correlate
 			// the error without dropping every other request on this connection.
-			maxPayload: Math.min(
-				Number.MAX_SAFE_INTEGER,
-				2 * this._providerBounds.maxResponseBytes,
-			),
+			maxPayload: Math.min(536_870_888, 2 * this._providerBounds.maxResponseBytes),
 			perMessageDeflate: false,
 			// `ws` has no handshake deadline of its own: without one a peer that accepts the
 			// TCP connection but never completes the upgrade keeps the socket CONNECTING
@@ -239,6 +237,15 @@ export default class WebSocketProvider<
 				? undefined
 				: this._socketOptions;
 		const merged = { ...defaults, ...(userOptions ?? {}) } as ClientOptions;
+		// ws truncates maxPayload to int32 and converts text to a V8 string before
+		// our handler runs. Even an explicit unlimited setting must respect that ceiling.
+		if (!Number.isSafeInteger(merged.maxPayload) || (merged.maxPayload ?? 0) < 0) {
+			throw new ProviderError('maxPayload must be a non-negative safe integer');
+		}
+		merged.maxPayload =
+			merged.maxPayload === 0
+				? 536_870_888
+				: Math.min(merged.maxPayload ?? 536_870_888, 536_870_888);
 		this._socketConnection = new WebSocket(this._socketPath, undefined, merged);
 	}
 
@@ -383,8 +390,9 @@ export default class WebSocketProvider<
 		if (!isNullish(event.target) && event.target !== this._socketConnection) {
 			return;
 		}
+		// A peer close (including 1009) describes its limit, not our response bound.
 		if (event.code === 1009) {
-			const error = new ResponseTooLargeError(this._providerBounds.maxResponseBytes);
+			const error = new ConnectionCloseError(event);
 			this._rejectAllRequests(error);
 			this._emitError(error);
 		}

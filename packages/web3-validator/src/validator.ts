@@ -228,7 +228,7 @@ export class Validator {
 				if (options?.silent) {
 					return errors;
 				}
-				throw new Web3ValidatorError(errors);
+				throw new Web3ValidatorError(errors, result.error.issues.length);
 			}
 		}
 		return undefined;

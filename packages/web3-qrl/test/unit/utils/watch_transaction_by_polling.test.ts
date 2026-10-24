@@ -153,6 +153,20 @@ describe('watchTransactionByPolling', () => {
 			jest.resetAllMocks();
 		});
 
+		it('reports throwing confirmation listeners and still stops at the threshold', async () => {
+			(qrlRpcMethods.getBlockByNumber as jest.Mock).mockResolvedValue(mockBlockData);
+			const errors = jest.fn();
+			promiEvent.on('error', errors);
+			promiEvent.on('confirmation', () => {
+				throw new Error('listener boom');
+			});
+			start();
+			await jest.advanceTimersByTimeAsync(1000);
+			expect(confirmations).toEqual([BigInt(2), BigInt(3)]);
+			expect(errors).toHaveBeenCalledTimes(2);
+			expect(qrlRpcMethods.getBlockByNumber).toHaveBeenCalledTimes(2);
+			expect(jest.getTimerCount()).toBe(0);
+		});
 		it('emits exactly the confirmations up to the threshold and stops polling (L-54)', async () => {
 			(qrlRpcMethods.getBlockByNumber as jest.Mock).mockResolvedValue(mockBlockData);
 

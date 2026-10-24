@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Pass 6 audit corrections
+
+- Integer encoders accept numbers, bigints, BigNumber values and decimal/hex strings; arrays, Uint8Array, Buffer and other objects are rejected rather than coerced to big-endian integers (P6-ABI-1).
+
 ### Fixed
 
 - Nested named tuple results are inspected once per positional child, avoiding exponential traversal of aliases (P5-ABI-1).

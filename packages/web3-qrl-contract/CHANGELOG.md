@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Pass 6 audit corrections
+
+- Keep request/subscription managers shared by clone() and deployment results so provider changes continue to propagate. Explicit constructor provider overrides still create independent managers (P6-CT-1).
+- Isolate undecodable backfill logs, report each error and replay valid entries. Reject topic-count mismatches for named events and release the live subscription on terminal backfill failure (P6-CT-2, P6-CT-3).
+- Indexed array filters take one array value. OR-lists of array values are unsupported and invalid nested scalar values now throw instead of becoming integers (P6-CT-4).
+
 ### Fixed
 
 - Deploying from an addressed instance creates a new contract; explicit deployment destinations are rejected. Preserve backfill signature checks, indexed-array filter semantics, provider overrides and immutable error ABI fragments (P5-CT-1 through P5-CT-4, P5-ABI-3).

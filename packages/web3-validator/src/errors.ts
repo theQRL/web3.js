@@ -30,14 +30,14 @@ export class Web3ValidatorError extends BaseWeb3Error {
 	public code = ERR_VALIDATION;
 	public readonly errors: Web3ValidationErrorObject[];
 
-	public constructor(errors: Web3ValidationErrorObject[]) {
+	public constructor(errors: Web3ValidationErrorObject[], totalErrors = errors.length) {
 		super();
 
 		this.errors = errors.slice(0, 100);
 
 		super.message = `Web3 validator found ${
-			errors.length
-		} error[s]:\n${this._compileErrors().join('\n')}${errors.length > 100 ? `\n... ${errors.length - 100} more errors omitted` : ''}`;
+			totalErrors
+		} error[s]:\n${this._compileErrors().join('\n')}${totalErrors > 100 ? `\n... ${totalErrors - 100} more errors omitted` : ''}`;
 	}
 
 	private _compileErrors(): string[] {

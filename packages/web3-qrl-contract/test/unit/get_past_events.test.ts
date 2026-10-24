@@ -166,13 +166,13 @@ describe('getPastEvents', () => {
 		expect(events[0].returnValues.value).toBe(BigInt(99));
 	});
 
-	it('keeps every log with the requested signature when custom topics are given (I-13)', async () => {
+	it('rejects a log whose custom topics do not match the requested ABI topic count', async () => {
 		logs = [approvalLog];
-		const events = (await contract.getPastEvents('Transfer' as never, {
-			topics: [topicOf('Approval(address,uint256)')],
-		})) as EventLog[];
-
-		expect(events).toHaveLength(1);
+		await expect(
+			contract.getPastEvents('Transfer' as never, {
+				topics: [topicOf('Approval(address,uint256)')],
+			}),
+		).rejects.toThrow('Event topic count does not match the ABI');
 	});
 
 	it.each([20, '20', BigInt(20), '0x14'])(

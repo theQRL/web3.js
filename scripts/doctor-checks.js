@@ -24,60 +24,76 @@ const unquote = value => value.trim().replace(/^(['"])(.*)\1$/, '$2');
 
 const leadingSpaces = line => /^ */.exec(line)[0].length;
 
-const isBlankOrComment = line => line.trim() === '' || line.trim().startsWith('#');
-
-// Reads the keys of a top-level block (`overrides:` or `allowBuilds:`) in
-// pnpm-workspace.yaml. The block's indentation is taken from its first entry
-// (two or four spaces are both valid YAML), nested values are skipped, and a
-// flow mapping on the header line (`allowBuilds: {keccak: true}`) is read too,
-// so a stale entry cannot hide behind a formatting variant.
-function listWorkspaceBlockKeys(workspaceYaml, blockName) {
-	const lines = workspaceYaml.split('\n');
-	const headerPattern = new RegExp(`^${escapeRegExp(blockName)}:(\\s|$)`);
-	const start = lines.findIndex(line => headerPattern.test(line));
-	if (start === -1) return undefined;
-
-	const inline = lines[start]
-		.slice(blockName.length + 1)
-		.replace(/\s#.*$/, '')
-		.trim();
-	if (inline.startsWith('{')) {
-		return inline
-			.replace(/^\{|\}$/g, '')
-			.split(',')
-			.map(entry => unquote(entry.split(':')[0]))
-			.filter(Boolean);
+// Reject YAML merge/alias features rather than interpret them differently from pnpm.
+// All checks consume the same parsed mapping, including multi-line flow mappings.
+function parseWorkspace(workspaceYaml) {
+	if (typeof workspaceYaml !== 'string') return workspaceYaml;
+	const { parseDocument, visit, isScalar } = require('yaml');
+	const document = parseDocument(workspaceYaml);
+	if (document.errors.length) throw document.errors[0];
+	visit(document, {
+		Alias() {
+			throw new Error('pnpm-workspace.yaml must not use YAML aliases');
+		},
+		Pair(_key, pair) {
+			if (isScalar(pair.key) && pair.key.value === '<<') {
+				throw new Error('pnpm-workspace.yaml must not use YAML merge keys');
+			}
+		},
+	});
+	const value = document.toJS({ maxAliasCount: 0 });
+	if (!value || typeof value !== 'object' || Array.isArray(value)) {
+		throw new Error('pnpm-workspace.yaml must be a mapping');
 	}
-
-	const keys = [];
-	let indent;
-	for (let index = start + 1; index < lines.length; index += 1) {
-		const line = lines[index];
-		if (isBlankOrComment(line)) continue;
-		const spaces = leadingSpaces(line);
-		if (spaces === 0) break;
-		if (indent === undefined) indent = spaces;
-		if (spaces < indent) break;
-		if (spaces > indent) continue;
-
-		const match = /^ *(?:"([^"]+)"|'([^']+)'|([^\s"'#][^:]*)):/.exec(line);
-		if (match) keys.push(match[1] ?? match[2] ?? match[3]);
-	}
-
-	return keys;
+	return value;
 }
 
-// Reads the entries of a top-level block sequence (`minimumReleaseAgeExclude:`)
-// in pnpm-workspace.yaml, quoted or not, at any indentation.
+function listWorkspaceBlockKeys(workspaceYaml, blockName) {
+	const document = parseWorkspace(workspaceYaml);
+	if (!Object.prototype.hasOwnProperty.call(document, blockName)) return undefined;
+	const block = document[blockName];
+	if (!block || typeof block !== 'object' || Array.isArray(block)) {
+		throw new Error(`${blockName} must be a YAML mapping`);
+	}
+	return Object.keys(block);
+}
+
 function listWorkspaceBlockItems(workspaceYaml, blockName) {
-	const { parse } = require('yaml');
-	const document = parse(workspaceYaml, { maxAliasCount: 100 });
-	if (!document || !Object.prototype.hasOwnProperty.call(document, blockName)) return undefined;
+	const document = parseWorkspace(workspaceYaml);
+	if (!Object.prototype.hasOwnProperty.call(document, blockName)) return undefined;
 	const items = document[blockName];
 	if (!Array.isArray(items) || items.some(item => typeof item !== 'string')) {
 		throw new Error(`${blockName} must be a YAML sequence of strings`);
 	}
 	return items;
+}
+
+function npmrcPolicyFailures(npmrc) {
+	const controlled = new Set([
+		'minimumreleaseage',
+		'minimumreleaseageexclude',
+		'allowbuilds',
+		'onlybuiltdependencies',
+		'onlybuiltdependenciesfile',
+		'neverbuiltdependencies',
+		'ignoredbuiltdependencies',
+		'dangerouslyallowallbuilds',
+		'strictdepbuilds',
+		'ignoredepscripts',
+	]);
+	return npmrc.split(/\r?\n/).flatMap(line => {
+		if (/^\s*[#;]/.test(line) || !line.includes('=')) return [];
+		const key = line
+			.slice(0, line.indexOf('='))
+			.trim()
+			.replace(/['"\[\]_-]/g, '')
+			.toLowerCase();
+		return controlled.has(key)
+			? [
+					`.npmrc must not set ${key}; declare install and quarantine policy in pnpm-workspace.yaml`,
+				]
+			: [];
+	});
 }
 
 // True when the lockfile carries a `packages:` entry for the package, i.e. a
@@ -242,6 +258,8 @@ function trivyActionSettings(workflowYaml) {
 }
 
 module.exports = {
+	parseWorkspace,
+	npmrcPolicyFailures,
 	allowBuildsFailures,
 	listWorkspaceBlockItems,
 	listWorkspaceBlockKeys,

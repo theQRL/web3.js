@@ -69,15 +69,15 @@ describe('getEncodedQRLTypedData: malformed payloads are rejected, not hashed (I
 		expect(() => encode(fieldType, value)).toThrow(AbiError);
 	});
 
-	it('encodes the explicit bool forms by value (H-3)', () => {
+	it('encodes JSON booleans and rejects numeric bool forms (P6-ABI-2)', () => {
 		const asFalse = encode('bool', false);
 		const asTrue = encode('bool', true);
 		expect(asFalse).not.toBe(asTrue);
 		for (const value of ['0', '0x0', 0, BigInt(0)]) {
-			expect(encode('bool', value)).toBe(asFalse);
+			expect(() => encode('bool', value)).toThrow(AbiError);
 		}
 		for (const value of ['1', '0x1', 1, BigInt(1)]) {
-			expect(encode('bool', value)).toBe(asTrue);
+			expect(() => encode('bool', value)).toThrow(AbiError);
 		}
 	});
 

@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Pass 6 audit corrections
+
+- Fix pass-6 subscription registration/reconnect races, confirmation formatting, VM64 proof values, contract clone provider sharing, WebSocket payload bounds, event decoding, typed-data validation, and release policy checks.
+- Pin the publishing job to Node 24.22.1 and enforce npm >= 11.5.1. Reject ambiguous workspace policy YAML and `.npmrc` install/quarantine overrides; inspect sibling publishing ranges before packing.
+
 ### Added
 
 - A digest-pinned standalone go-qrl execution testnet launcher with Clef, hash archive state, HTTP/WS/IPC endpoints, and a shared two-CPU limit (`scripts/local_testnet/README.md`).
