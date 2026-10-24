@@ -1,29 +1,135 @@
 # Local Testnet (Kurtosis)
 
+## Execution API checks with a two-CPU limit
+
+For Web3 integration checks, a standalone execution node can run without the
+beacon and validator services. It uses the published go-qrl 0.3.3 binaries at
+commit `f3864c46`, a digest-pinned image, the ten public accounts in
+`scripts/accounts.json`, and Clef signing rules restricted to those accounts.
+Hash-based archive storage retains historical state for `earliest` block queries.
+An Engine API driver produces blocks and advances finalized fork choice every
+32 blocks. This exercises the real execution client; consensus-client and
+validator behavior still requires the Kurtosis network below.
+
+On Linux AMD64, with Docker and the repository's Node/pnpm toolchain available,
+start it in a separate terminal:
+
+```sh
+bash scripts/local_testnet/start_execution_testnet.sh
+```
+
+Wait for the `Ready:` message. The launcher and its container share CPUs 0 and 1,
+the container has a two-CPU quota, and `GOMAXPROCS=2` limits the Go clients. The
+HTTP, WS, and authenticated Engine API ports bind only to `127.0.0.1`. The
+launcher prints the temporary state directory, including its node/signer logs
+and IPC socket. Ctrl-C stops the node and signer; the logs remain for inspection.
+An optional first argument selects an **empty** state directory.
+
+Run the HTTP suites serially on the same two CPUs:
+
+```sh
+UV_THREADPOOL_SIZE=2 NODE_OPTIONS=--v8-pool-size=1 GOMAXPROCS=2 \
+WEB3_SYSTEM_TEST_ENV=true WEB3_SYSTEM_TEST_BACKEND=gqrl \
+WEB3_SYSTEM_TEST_MODE=http WEB3_SYSTEM_TEST_PROVIDER=http://127.0.0.1:18545 \
+  taskset -c 0,1 pnpm exec turbo run test:integration --concurrency=1 -- --runInBand --watchman=false
+```
+
+Repeat with `WEB3_SYSTEM_TEST_MODE=ws` and
+`WEB3_SYSTEM_TEST_PROVIDER=ws://127.0.0.1:18546` for WebSocket coverage. To run a
+single package, add (for example) `--filter=@theqrl/web3-qrl-qrns` before `--`.
+For IPC, point `WEB3_SYSTEM_TEST_PROVIDER` at the printed `node/gqrl.ipc` path
+and run the IPC provider suites and `packages/web3/test/integration/ipc.test.ts`.
+Do not use `scripts/test-runner.sh` for this backend: that runner selects the
+Kurtosis ports 8545/8546 instead.
+
 ## Start / Stop
 
 - Start: `pnpm run pos:start`
 - Stop: `pnpm run pos:stop`
-- `pnpm run pos:start` also runs `pnpm run pos:clef:setup` after the network is up.
 
-## Clef: import accounts + auto-authorization
+The network comes from [`theQRL/qrl-package`](https://github.com/theQRL/qrl-package), pinned to
+[`25d3a1c53009`](https://github.com/theQRL/qrl-package/commit/25d3a1c53009294f06644c5b49c1011cf86ad0a5)
+in `start_local_testnet.sh`. Kurtosis loads that revision directly from GitHub. Startup requires
+Docker, Kurtosis, and access to GitHub and the image registry.
 
-The Kurtosis package starts a `clef` remote-signer service (`signer-clef`). By default it uses the interactive CLI UI, which blocks on transaction approvals and password prompts.
+The network uses eight slots per epoch. The pinned package sets 64 epochs per execution voting
+period, preserving the 512-slot limit compiled into the mainnet qrysm images.
 
-To:
-- import the seeds in `scripts/accounts.json` into the clef keystore, and
-- enable non-interactive signing (auto-approve + auto-password)
+## Client images
 
-run manually:
+The default network requires a Linux AMD64 Docker host. The go-qrl and genesis-generator images
+in this set are AMD64-only.
 
-- `pnpm run pos:clef:setup`
+`network_params.yaml` selects clients and helpers using published image tags.
 
-This will:
-- upload a small `clef-autoui` shim into the enclave and restart `signer-clef` to run behind it
-- import each `seed` from `scripts/accounts.json` into `/clef-keystore/keystore`
+| Service                               | Image                                         |
+| ------------------------------------- | --------------------------------------------- |
+| Execution node                        | `qrledger/go-qrl:stable`                      |
+| Clef and Clef account preparation     | `qrledger/go-qrl:alltools-stable`             |
+| Beacon node                           | `qrledger/qrysm:beacon-chain-latest`          |
+| Validator                             | `qrledger/qrysm:validator-latest`             |
+| Genesis and validator key preparation | `qrledger/qrysm:qrl-genesis-generator-latest` |
+
+The generator embeds the deposit contract and includes `deposit`, `validator`, and `qrysmctl`.
+It must support 64-byte addresses and the five-argument deposit contract, including
+`randao_commitment`. This package uses the generator for those helper commands; a separate
+qrysm alltools image is not used.
+
+When updating this set:
+
+1. Build and publish compatible client and generator images under the tags above.
+2. Inspect each published image with `docker buildx imagetools inspect <repository>:<tag>`.
+   Confirm that `linux/amd64` is supported, then refresh the local image with
+   `docker pull <repository>:<tag>`. Kurtosis normally reuses cached images.
+3. Recreate the testnet and run both transport suites below to check compatibility.
+
+These settings cover the QRL clients and their genesis/signing helpers. Kurtosis also runs its
+own infrastructure and utility containers.
+
+## Endpoints
+
+`network_params.yaml` publishes the execution layer on fixed host ports, so the HTTP RPC is always
+`http://127.0.0.1:8545` and the WS RPC `ws://127.0.0.1:8546` — the endpoints `scripts/test-runner.sh` hands
+to the test suites. Only one enclave can hold those ports, so stop a running testnet before
+starting another.
+
+## Integration tests
+
+After starting the network, run:
+
+```sh
+pnpm run test:e2e:gqrl:http
+pnpm run test:e2e:gqrl:ws
+```
+
+These use the compiled contract fixtures and cover deployment, calls, transactions, events,
+and revert handling. WebSocket subscriptions are exercised by the WS suite.
+
+To run only the contract integration suite against these images:
+
+```sh
+. scripts/env.sh
+WEB3_SYSTEM_TEST_MODE=http WEB3_SYSTEM_TEST_PROVIDER=http://127.0.0.1:8545 \
+  pnpm --filter @theqrl/web3-qrl-contract run test:integration
+WEB3_SYSTEM_TEST_MODE=ws WEB3_SYSTEM_TEST_PROVIDER=ws://127.0.0.1:8546 \
+  pnpm --filter @theqrl/web3-qrl-contract run test:integration
+```
+
+## Accounts
+
+`network_params.yaml` sets `remote_signer_auto_approve: true`, so the package provisions the
+`signer-clef` service with ten development accounts, already imported into the clef keystore,
+prefunded at genesis, and approved by an attested clef ruleset. Nothing has to be imported or
+patched after the network is up.
+
+Those same ten accounts are listed in `scripts/accounts.json`, which the system tests read through
+`scripts/system_tests_utils.ts`. Tests can therefore either sign locally with the seed or send
+`from` the account and let the node sign through clef.
+
+When bumping `QRL_PKG_VERSION`, regenerate `scripts/accounts.json` if the package's development
+accounts changed — the tests and clef must agree on the same set.
 
 ### Notes
 
-- Default clef key password is `passwordpassword` (override with `CLEF_KEY_PASSWORD=...`).
-- This is meant for **local testing only**; it auto-approves signing requests.
-- If you tear down the enclave (`pnpm run pos:stop`), `pnpm run pos:start` will run clef setup again on the next start.
+- Development networks only: anyone who can reach the node can spend from these accounts.
+- The seeds are publicly known dev keys — never fund them on a real network.

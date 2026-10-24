@@ -49,19 +49,22 @@ describe('convert-to-zod', () => {
 			),
 		).not.toThrow();
 	});
-	it('incorrect type to object', () => {
-		expect(() =>
-			validator.validateJSONSchema(
-				{
-					type: 'object2',
-					properties: {
-						a: { type: 'number' },
+	it.each(['object2', 'constructor', 'lazy', 'effect'])(
+		'rejects unsupported schema type %s',
+		type => {
+			expect(() =>
+				validator.validateJSONSchema(
+					{
+						type,
+						properties: {
+							a: { type: 'number' },
+						},
 					},
-				},
-				{ a: 1 },
-			),
-		).not.toThrow();
-	});
+					{ a: 1 },
+				),
+			).toThrow('Unsupported schema type');
+		},
+	);
 	it('format with undefined value', () => {
 		expect(() =>
 			validator.validateJSONSchema(

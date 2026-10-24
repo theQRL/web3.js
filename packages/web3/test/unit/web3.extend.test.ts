@@ -33,6 +33,9 @@ declare module '@theqrl/web3' {
 }
 
 describe('Web3 extend tests', () => {
+	const testAddress =
+		'Q33380cd8b47eed92b0dcd1ccca2ee84efd0c8b87a4fe6ee4a918969cdd454c0b04ac9f03ffaafa765af0cbeab572d8c9dd514044aa94adee50fa5d361a3e4629';
+
 	it('web3 extend should send correct rpc call', async () => {
 		const web3 = new Web3('http://127.0.0.1:7545');
 
@@ -53,18 +56,18 @@ describe('Web3 extend tests', () => {
 			],
 		});
 
-		await web3.myModule.getBalance('Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000005b43746580aaf00a69019fa59d9ed7d9c85ddd70', 'latest');
+		await web3.myModule.getBalance(testAddress, 'latest');
 
 		expect(requestManagerSendSpy).toHaveBeenCalledWith({
 			method: 'qrl_getBalance',
-			params: ['Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000005b43746580aaf00a69019fa59d9ed7d9c85ddd70', 'latest'],
+			params: [testAddress, 'latest'],
 		});
 
-		await web3.myModule.getL2Balance('Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000005b43746580aaf00a69019fa59d9ed7d9c85ddd70', 'latest');
+		await web3.myModule.getL2Balance(testAddress, 'latest');
 
 		expect(requestManagerSendSpy).toHaveBeenCalledWith({
 			method: 'qrl_getBalance',
-			params: ['Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000005b43746580aaf00a69019fa59d9ed7d9c85ddd70', 'latest'],
+			params: [testAddress, 'latest'],
 		});
 	});
 
@@ -87,18 +90,18 @@ describe('Web3 extend tests', () => {
 			],
 		});
 
-		await web3.getBalance('Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000005b43746580aaf00a69019fa59d9ed7d9c85ddd70', 'latest');
+		await web3.getBalance(testAddress, 'latest');
 
 		expect(requestManagerSendSpy).toHaveBeenCalledWith({
 			method: 'qrl_getBalance',
-			params: ['Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000005b43746580aaf00a69019fa59d9ed7d9c85ddd70', 'latest'],
+			params: [testAddress, 'latest'],
 		});
 
-		await web3.getL2Balance('Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000005b43746580aaf00a69019fa59d9ed7d9c85ddd70', 'latest');
+		await web3.getL2Balance(testAddress, 'latest');
 
 		expect(requestManagerSendSpy).toHaveBeenCalledWith({
 			method: 'qrl_getBalance',
-			params: ['Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000005b43746580aaf00a69019fa59d9ed7d9c85ddd70', 'latest'],
+			params: [testAddress, 'latest'],
 		});
 	});
 });

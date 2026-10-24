@@ -15,9 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-// eslint-disable-next-line import/no-extraneous-dependencies
 import Web3 from '@theqrl/web3';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { Web3Account } from '@theqrl/web3-qrl-accounts';
 import { GreeterBytecode, GreeterAbi } from '../../shared_fixtures/build/Greeter';
 import { getSystemTestProvider, createLocalAccount, isWs } from '../../fixtures/system_test_utils';
@@ -44,6 +42,21 @@ describe('contract', () => {
 				from: localAccount.address,
 				gas: '1000000',
 			};
+		});
+
+		it('wallet-signs a creation when deploying from an addressed instance', async () => {
+			const first = await contract.deploy(deployOptions).send(sendOptions);
+			const firstAddress = first.options.address;
+			const deployment = first.deploy({
+				data: GreeterBytecode,
+				arguments: ['Second greeting'],
+			});
+			expect(await deployment.estimateGas(sendOptions)).toBeGreaterThan(BigInt(0));
+			const second = await deployment.send(sendOptions);
+			expect(second.options.address).not.toBe(firstAddress);
+			expect(first.options.address).toBe(firstAddress);
+			await expect(first.methods.greet().call()).resolves.toBe('My Greeting');
+			await expect(second.methods.greet().call()).resolves.toBe('Second greeting');
 		});
 
 		it.each(['0x2'])('should emit the "sending" event', async txType => {
@@ -74,7 +87,7 @@ describe('contract', () => {
 			expect(deployedContract.options.address).toBeDefined();
 		});
 
-		it('deploy should fail with low baseFeeGas EIP1559', async () => {
+		it('rejects a deployment below the EIP-1559 intrinsic gas limit', async () => {
 			await expect(
 				contract.deploy(deployOptions).send({
 					type: '0x2',
@@ -83,7 +96,7 @@ describe('contract', () => {
 					maxPriorityFeePerGas: '0x1',
 					from: localAccount.address,
 				}),
-			).rejects.toThrow('Signer Error Signer Error  gasLimit is too low');
+			).rejects.toThrow('Signer Error: gasLimit is too low');
 		});
 
 		it.each(['0x2'])('should return estimated gas of contract method %p', async txType => {
@@ -130,7 +143,6 @@ describe('contract', () => {
 			// On http we use polling to get confirmation, so wait a bit longer
 			await sleep(isWs ? 500 : 2000);
 
-			// eslint-disable-next-line jest/no-standalone-expect
 			expect(confirmationHandler).toHaveBeenCalled();
 		});
 

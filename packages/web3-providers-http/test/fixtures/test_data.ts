@@ -34,7 +34,6 @@ export const invalidClients = [
 	// eslint-disable-next-line no-null/no-null
 	null,
 	undefined,
-	/* eslint-disable @typescript-eslint/no-magic-numbers */
 	42,
 ];
 

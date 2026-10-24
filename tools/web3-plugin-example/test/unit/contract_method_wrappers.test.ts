@@ -32,21 +32,24 @@ describe('ContractMethodWrappersPlugin', () => {
 		web3.registerPlugin(
 			new ContractMethodWrappersPlugin(
 				SQRCTF1TokenAbi,
-				'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000DaC17f958d2ee523A2206206994597C13d831eC7',
+				'Qcfec0cbee560cbd6ed89580204af71448f1fb8c577e60e9afc6e697019e2312cf3b24b98eb763627a1c38c96ecd7e7c20ba9774cb6c0a810b78e8ea529ccdc40',
 			),
 		);
 		expect(web3.contractMethodWrappersPlugin).toBeDefined();
 	});
 
 	describe('methods', () => {
-		const contractAddress = 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000DaC17f958d2ee523A2206206994597C13d831eC7';
-		const sender = 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000008da5e39ec14b57fb9bcd9aa2b4500e909119795d';
-		const recipient = 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000004f641def1e7845caab95ac717c80416082430d0d';
+		const contractAddress =
+			'Qcfec0cbee560cbd6ed89580204af71448f1fb8c577e60e9afc6e697019e2312cf3b24b98eb763627a1c38c96ecd7e7c20ba9774cb6c0a810b78e8ea529ccdc40';
+		const checksumContractAddress =
+			'QCfeC0cbeE560cbD6ed89580204AF71448f1fB8c577e60e9afC6E697019E2312cF3B24B98Eb763627a1C38c96ecd7E7c20BA9774cb6c0a810B78E8ea529ccdc40';
+		const sender =
+			'Q33380cd8b47eed92b0dcd1ccca2ee84efd0c8b87a4fe6ee4a918969cdd454c0b04ac9f03ffaafa765af0cbeab572d8c9dd514044aa94adee50fa5d361a3e4629';
+		const recipient =
+			'Q73308de47979b11dbd527534db611180102646126787ac70a6a9004483efc254d15c688ee61c92db7d644ceebc43d43363e06233dee730cbc78f46ad564cf39b';
 		const amount = BigInt(42);
-		const expectedSenderBalance =
-			'0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000280';
-		const expectedRecipientBalance =
-			'0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000120';
+		const expectedSenderBalance = `0x${'0'.repeat(125)}280`;
+		const expectedRecipientBalance = `0x${'0'.repeat(125)}120`;
 		let requestManagerSendSpy: jest.Mock;
 
 		let web3: Web3;
@@ -72,8 +75,8 @@ describe('ContractMethodWrappersPlugin', () => {
 				method: 'qrl_call',
 				params: [
 					expect.objectContaining({
-						input: '0x70a0823100000000000000000000000000000000000000000000000000000000000000000000000000000000000000008da5e39ec14b57fb9bcd9aa2b4500e909119795d',
-						to: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000DaC17f958d2ee523A2206206994597C13d831eC7',
+						input: `0x70a08231${sender.slice(1)}`,
+						to: checksumContractAddress,
 					}),
 					'latest',
 				],
@@ -91,8 +94,9 @@ describe('ContractMethodWrappersPlugin', () => {
 			// Mocking block number for trySendTransaction call
 			requestManagerSendSpy.mockResolvedValueOnce('0x1');
 			requestManagerSendSpy.mockResolvedValueOnce(expectedTransactionHash);
-			// Mocking response for getTransactionReceipt for waitForTransactionReceipt
-			requestManagerSendSpy.mockResolvedValueOnce({});
+			// Mocking response for getTransactionReceipt for waitForTransactionReceipt; only a
+			// receipt with status 1 counts as success, anything else is treated as a revert (H-1)
+			requestManagerSendSpy.mockResolvedValueOnce({ status: '0x1' });
 			// Mocking getBlockNumber for waitForTransactionReceipt
 			requestManagerSendSpy.mockResolvedValueOnce('0x2');
 			requestManagerSendSpy.mockResolvedValueOnce(expectedSenderBalance);
@@ -108,11 +112,11 @@ describe('ContractMethodWrappersPlugin', () => {
 				method: 'qrl_sendTransaction',
 				params: [
 					expect.objectContaining({
-						input: '0xa9059cbb00000000000000000000000000000000000000000000000000000000000000000000000000000000000000004f641def1e7845caab95ac717c80416082430d0d0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002a',
+						input: `0xa9059cbb${recipient.slice(1)}${'0'.repeat(126)}2a`,
 						from: sender,
 						maxFeePerGas: expectedMaxFeePerGas,
 						maxPriorityFeePerGas: expectedMaxPriorityFeePerGas,
-						to: contractAddress,
+						to: checksumContractAddress,
 					}),
 				],
 			});

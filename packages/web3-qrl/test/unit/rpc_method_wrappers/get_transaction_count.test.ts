@@ -55,6 +55,7 @@ describe('getTransactionCount', () => {
 				);
 			}
 
+			(qrlRpcMethods.getTransactionCount as jest.Mock).mockResolvedValueOnce(mockRpcResponse);
 			await getTransactionCount(web3Context, ...inputParameters, DEFAULT_RETURN_FORMAT);
 			expect(qrlRpcMethods.getTransactionCount).toHaveBeenCalledWith(
 				web3Context.requestManager,

@@ -31,7 +31,6 @@ const packages = [
 	'../packages/web3-qrl-abi',
 	'../packages/web3-qrl-accounts',
 	'../packages/web3-qrl-qrns',
-	'../packages/web3-qrl-iban',
 	'../packages/web3-providers-http',
 	'../packages/web3-providers-ws',
 	'../packages/web3-providers-ipc',

@@ -14,8 +14,16 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { bytesToUint8Array, hexToBytes, uint8ArrayEquals } from '@theqrl/web3-utils';
+import { TransactionSigningError } from '@theqrl/web3-errors';
+import {
+	bytesToHex,
+	bytesToUint8Array,
+	hexToBytes,
+	toChecksumAddress,
+	uint8ArrayEquals,
+} from '@theqrl/web3-utils';
 import { FeeMarketEIP1559Transaction } from '../../../src';
+import { recoverTransaction } from '../../../src/account';
 import { Chain, Common, Hardfork, toUint8Array, uint8ArrayToBigInt } from '../../../src/common';
 import {
 	addressFromPublicKeyAndDescriptor,
@@ -47,7 +55,9 @@ describe('[BaseTransaction]', () => {
 			class: FeeMarketEIP1559Transaction,
 			name: 'FeeMarketEIP1559Transaction',
 			type: 2,
-			values: [new Uint8Array([1])].concat(Array(10).fill(zero)),
+			// [chainId, nonce, maxPriorityFeePerGas, maxFeePerGas, gasLimit, to, value, data,
+			// accessList (an RLP list, never a byte string), descriptor, extraParams]
+			values: [new Uint8Array([1]), zero, zero, zero, zero, zero, zero, zero, [], zero, zero],
 			txs: eip1559Txs,
 			fixtures: eip1559Fixtures,
 		},
@@ -133,7 +143,6 @@ describe('[BaseTransaction]', () => {
 
 	it('verifySignature() -> invalid', () => {
 		for (const txType of txTypes) {
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-call
 			for (const txFixture of txType.fixtures.slice(0, 4)) {
 				txFixture.data.signature = '0x01231412';
 				const tx = txType.class.fromTxData(txFixture.data, { common });
@@ -199,6 +208,37 @@ describe('[BaseTransaction]', () => {
 				expect(uint8ArrayEquals(signedTx.getSenderAddress().buf, expectedAddress)).toBe(true);
 			}
 		}
+	});
+
+	it('getSenderAddress() does not authenticate the public key, recoverTransaction() does (I-4)', () => {
+		const [fixture] = eip1559Fixtures;
+		const signed = eip1559Txs[0].sign(hexToBytes(fixture.seed));
+		const otherSeed =
+			'0x010000034da61fe50c659a3285549dc395571e2bf6891c462c041e3c6b9061fc73eb3687d03f940e5e65d582019ef10ce1327f';
+		const other = FeeMarketEIP1559Transaction.fromTxData({ chainId: BigInt(1) }, { common }).sign(
+			hexToBytes(otherSeed),
+		);
+
+		// The signature stays, the public key is swapped for another account's.
+		const values = signed.raw();
+		values[12] = other.publicKey;
+		const tampered = FeeMarketEIP1559Transaction.fromValuesArray(values, { common });
+
+		// The address is derived from the attached key, so it is the attacker-chosen one...
+		expect(tampered.verifySignature()).toBe(false);
+		expect(
+			uint8ArrayEquals(tampered.getSenderAddress().buf, other.getSenderAddress().buf),
+		).toBe(true);
+		expect(
+			uint8ArrayEquals(tampered.getSenderAddress().buf, signed.getSenderAddress().buf),
+		).toBe(false);
+		// ...which is why the sender may only be read after `verifySignature()`, as recoverTransaction does.
+		expect(() => recoverTransaction(bytesToHex(tampered.serialize()))).toThrow(
+			TransactionSigningError,
+		);
+		expect(recoverTransaction(bytesToHex(signed.serialize()))).toBe(
+			toChecksumAddress(signed.getSenderAddress().toString()),
+		);
 	});
 
 	it('getSenderPublicKey()', () => {

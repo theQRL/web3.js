@@ -16,7 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { Web3RequestManager } from '@theqrl/web3-core';
-import { Eip712TypedData } from '@theqrl/web3-types';
+import { QRLTypedData } from '@theqrl/web3-types';
 
 import { qrlRpcMethods } from '../../../src/index';
 
@@ -25,11 +25,11 @@ import { qrlRpcMethods } from '../../../src/index';
 // the only way to prove the guard actually fires rather than being registered but inert.
 
 const address =
-	'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000eb014f8c8b418db6b45774c326a0e64c78914dc0';
+	'QdBb14ea952DfAedB0788Beae4fD92393f215CAa2c115ac22bc68805E171cfadE76CFF540c1ADC7B13017E4c66b6109135f25ff73412650da569E458E4A43800b';
 
 const validTypedData = {
 	types: {
-		EIP712Domain: [
+		QRLTypedDataDomain: [
 			{ name: 'name', type: 'string' },
 			{ name: 'chainId', type: 'uint256' },
 		],
@@ -38,7 +38,7 @@ const validTypedData = {
 	primaryType: 'Message',
 	domain: { name: 'QRL', chainId: 1 },
 	message: { contents: 'hello' },
-} as unknown as Eip712TypedData;
+} as unknown as QRLTypedData;
 
 const clone = () => JSON.parse(JSON.stringify(validTypedData)) as Record<string, any>;
 
@@ -57,14 +57,14 @@ describe('signTypedData - typed data validation', () => {
 		expect(sendSpy).toHaveBeenCalledTimes(1);
 	});
 
-	// Each case below would otherwise reach the wallet and fail inside getEncodedEip712Data with
+	// Each case below would otherwise reach the wallet and fail inside getEncodedQRLTypedData with
 	// an opaque TypeError. The request must not be sent at all.
 	it.each([
 		[
-			'types.EIP712Domain missing',
+			'types.QRLTypedDataDomain missing',
 			() => {
 				const d = clone();
-				delete d.types.EIP712Domain;
+				delete d.types.QRLTypedDataDomain;
 				return d;
 			},
 		],
@@ -102,7 +102,7 @@ describe('signTypedData - typed data validation', () => {
 		],
 		['typed data is not an object', () => 'nonsense' as unknown as Record<string, any>],
 	])('should reject and not send the request when %s', async (_, build) => {
-		const malformed = build() as unknown as Eip712TypedData;
+		const malformed = build() as unknown as QRLTypedData;
 
 		await expect(
 			qrlRpcMethods.signTypedData(requestManager, address, malformed),

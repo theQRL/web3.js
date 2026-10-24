@@ -131,7 +131,6 @@ describe('[Common]: Merge/POS specific logic', () => {
 	it('Should fail setting invalid hardfork', () => {
 		const customChains = [testnetPOS];
 		expect(() => {
-			// eslint-disable-next-line no-new
 			new Common({ chain: 'testnetPOS', hardfork: 'invalid', customChains });
 		}).toThrow(`Hardfork with name invalid not supported`);
 	});

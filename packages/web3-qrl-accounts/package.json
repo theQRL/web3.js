@@ -26,6 +26,7 @@
 	},
 	"files": [
 		"lib/**/*",
+		"!lib/**/*.tsbuildinfo",
 		"src/**/*"
 	],
 	"scripts": {
@@ -64,9 +65,9 @@
 	},
 	"dependencies": {
 		"@ethereumjs/rlp": "10.1.1",
-		"@theqrl/mldsa87": "2.1.3",
-		"@theqrl/qrl-cryptography": "0.3.0",
-		"@theqrl/wallet.js": "6.2.3",
+		"@theqrl/mldsa87": "2.2.0",
+		"@theqrl/qrl-cryptography": "0.3.3",
+		"@theqrl/wallet.js": "6.3.0",
 		"@theqrl/web3-errors": "workspace:^",
 		"@theqrl/web3-types": "workspace:^",
 		"@theqrl/web3-utils": "workspace:^",

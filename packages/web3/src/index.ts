@@ -126,8 +126,9 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
  * web3.setProvider('ws://localhost:8546');
  * // or
  * web3.setProvider(new Web3.providers.WebsocketProvider('ws://localhost:8546'));
- *
- * //todo add IPC provider
+ * // or, over a local node's IPC socket (Node.js only)
+ * import { IpcProvider } from '@theqrl/web3-providers-ipc';
+ * web3.setProvider(new IpcProvider('/users/myuser/.qrl/execution/gqrl.ipc'));
  * ```
  *
  * #### Example: Remote QRL Node
@@ -156,8 +157,9 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
  *  + `Object` - `WebSocketProvider`: The WebSocket provider is the standard for usage in legacy browsers.
  *
  *
- *  + `Object` - `IpcProvider`: The IPC provider is used in node.js dapps when running a local node. Gives the most secure connection.
- *
+ * The IPC provider is not part of `Web3.providers` and an IPC path is not auto-detected from a
+ * string: it lives in the Node.js-only package `@theqrl/web3-providers-ipc` and is passed as an
+ * instance.
  *
  * #### Example
  * ```ts
@@ -168,7 +170,8 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
  * let web3 = new Web3(Web3.givenProvider || new Web3.providers.WebsocketProvider('ws://remotenode.com:8546'));
  *
  * // Using the IPC provider in node.js
- * var web3 = new Web3(new Web3.providers.IpcProvider('/Users/myuser/Library/QRL/Execution/gqrl.ipc')); // mac os path
+ * import { IpcProvider } from '@theqrl/web3-providers-ipc';
+ * var web3 = new Web3(new IpcProvider('/Users/myuser/Library/QRL/Execution/gqrl.ipc')); // mac os path
  * // on windows the path is: "\\\\.\\pipe\\gqrl.ipc"
  * // on linux the path is: "/users/myuser/.qrl/execution/gqrl.ipc"
  * ```
@@ -295,12 +298,12 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
  * let request1: JsonRpcOptionalRequest = {
  * 	id: 10,
  * 	method: 'qrl_getBalance',
- * 	params: ["Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000dc6bad79dab7ea733098f66f6c6f9dd008da3258", 'latest'],
+ * 	params: ["Q954661615C7818d41Eb6c410e5206d640D49aC2c8396AEc1Cf464357459bB372E2b3F3477aD4ADBD462634e33C7b34666769f2D6b7a4a727658DE8EE8a9150BA", 'latest'],
  * };
  * let request2: JsonRpcOptionalRequest = {
  * 	id: 11,
  * 	method: 'qrl_getBalance',
- * 	params: ["Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000962f9a9c2a6c092474d24def35eccb3d9363265e", 'latest'],
+ * 	params: ["Q43AFAE518DA3aC35a77D53157702Aa6cb25AE551c84031541Bdac877a2d7006662B950A224c228b5b13150e529451d8aa90277d3E54e0a1CC5A4B1dE8F574114", 'latest'],
  * };
  *
  * const batch = new web3.BatchRequest();
@@ -330,7 +333,6 @@ export { Web3 };
 export { Web3Context, Web3PluginBase, Web3QRLPluginBase } from '@theqrl/web3-core';
 export { Web3QRL } from '@theqrl/web3-qrl';
 export { Contract } from '@theqrl/web3-qrl-contract';
-export { Iban } from '@theqrl/web3-qrl-iban';
 export { Net } from '@theqrl/web3-net';
 export { HttpProvider } from '@theqrl/web3-providers-http';
 export { WebSocketProvider } from '@theqrl/web3-providers-ws';

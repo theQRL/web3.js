@@ -27,7 +27,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
  *
  * getBalance(
  *      new Web3Context('http://127.0.0.1:8545'),
- *      'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000407d73d8a49eeb85d32cf465507dd71d507100c1',
+ *      'Q83cd1122848dd1b2E3AF9ca60a1340e595B2C6d5b3B340AfD625e38EEf9067bc9C28db215702Aa8B3C0243Bb13785a9365A35ee1Fe8e57983b1D47d9fff835a3',
  *      BlockTags.LATEST,
  *      DEFAULT_RETURN_FORMAT
  * ).then(console.log);
@@ -39,7 +39,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
  * import Web3 from '@theqrl/web3';
  *
  * const web3 = new Web3(Web3.givenProvider || 'ws://some.local-or-remote.node:8546');
- * web3.qrl.getBalance('Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000407d73d8a49eeb85d32cf465507dd71d507100c1').then(console.log);
+ * web3.qrl.getBalance('Q83cd1122848dd1b2E3AF9ca60a1340e595B2C6d5b3B340AfD625e38EEf9067bc9C28db215702Aa8B3C0243Bb13785a9365A35ee1Fe8e57983b1D47d9fff835a3').then(console.log);
  * > 1000000000000n
  *```
  *

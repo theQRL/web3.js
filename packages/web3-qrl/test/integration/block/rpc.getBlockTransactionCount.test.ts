@@ -15,7 +15,6 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import { SupportedProviders, TransactionReceipt } from '@theqrl/web3-types';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { Contract } from '@theqrl/web3-qrl-contract';
 import { Web3QRL } from '../../../src';
 import {
@@ -95,12 +94,31 @@ describe('rpc with block', () => {
 			toAllVariants<{
 				block: 'earliest' | 'latest' | 'pending' | 'blockHash' | 'blockNumber';
 			}>({
-				block: ['earliest', 'latest', 'pending', 'blockHash', 'blockNumber'],
+				block: ['earliest', 'pending', 'blockHash', 'blockNumber'],
 			}),
 		)('getBlockTransactionCount', async ({ block }) => {
 			const res = await web3QRL.getBlockTransactionCount(blockData[block]);
 			const shouldBe = ['earliest', 'pending'].includes(String(blockData[block])) ? 0 : 1;
 			expect(Number(res)).toBe(shouldBe);
+		});
+
+		it('getBlockTransactionCount for latest matches the current block contents', async () => {
+			let observed: { actual: bigint; expected: number } | undefined;
+			// Empty blocks can advance latest after the fixture transaction is mined.
+			// Compare the two RPCs only while the head stays unchanged.
+			for (let attempt = 0; attempt < 10 && !observed; attempt += 1) {
+				// eslint-disable-next-line no-await-in-loop
+				const head = await web3QRL.getBlock('latest');
+				// eslint-disable-next-line no-await-in-loop
+				const actual = await web3QRL.getBlockTransactionCount('latest');
+				// eslint-disable-next-line no-await-in-loop
+				const numberAfter = await web3QRL.getBlockNumber();
+				if (head.number === numberAfter) {
+					observed = { actual, expected: head.transactions.length };
+				}
+			}
+			expect(observed).toBeDefined();
+			expect(Number(observed!.actual)).toBe(observed!.expected);
 		});
 	});
 });

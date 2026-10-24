@@ -157,7 +157,6 @@ export interface FeeMarketEIP1559TxData extends TxData {
 	/**
 	 * The access list which contains the addresses/storage slots which the transaction wishes to access
 	 */
-	// eslint-disable-next-line @typescript-eslint/ban-types
 	accessList?: AccessListUint8Array | AccessList | null;
 
 	/**

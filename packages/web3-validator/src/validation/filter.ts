@@ -35,7 +35,8 @@ export const isFilterObject = (value: Filter) => {
 		'topics',
 		'blockHash',
 	];
-	if (isNullish(value) || typeof value !== 'object') return false;
+	// An array is an object to `typeof`, but it is never a filter (I-11).
+	if (isNullish(value) || typeof value !== 'object' || Array.isArray(value)) return false;
 
 	if (
 		!Object.keys(value).every(property =>
@@ -57,6 +58,10 @@ export const isFilterObject = (value: Filter) => {
 	}
 
 	if (!isNullish(value.topics)) {
+		// `topics` reaches this check straight from dApp input (`getPastLogs`, `subscribe`):
+		// a non-array must fail validation, not throw `topics.every is not a function` (L-26).
+		if (!Array.isArray(value.topics)) return false;
+
 		if (
 			!value.topics.every(topic => {
 				if (isNullish(topic)) return true;

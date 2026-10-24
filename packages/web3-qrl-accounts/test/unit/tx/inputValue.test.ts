@@ -160,7 +160,6 @@ test('[Invalid Array Input values]', () => {
 			for (let x = 0; x < rawValues.length; x += 1) {
 				// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
 				rawValues[x] = <any>[1, 2, 3];
-				// eslint-disable-next-line default-case
 				switch (txType) {
 					case 2:
 						// eslint-disable-next-line jest/no-conditional-expect
@@ -228,7 +227,6 @@ test('[Invalid Access Lists]', () => {
 					rawValues[8] = invalidAccessListItem;
 				}
 
-				// eslint-disable-next-line default-case
 				switch (txType) {
 					case 2:
 						// eslint-disable-next-line jest/no-conditional-expect

@@ -34,7 +34,7 @@ describe('Web3Subscription', () => {
 		eipProvider.request = jest.fn();
 		requestManager = {
 			send: jest.fn().mockImplementation(async () => {
-				return 'sub-id';
+				return '0x5ab1d';
 			}),
 			on: jest.fn(),
 			provider,
@@ -43,7 +43,7 @@ describe('Web3Subscription', () => {
 
 		eipRequestManager = {
 			send: jest.fn().mockImplementation(async () => {
-				return 'sub-id';
+				return '0x5ab1d';
 			}),
 			on: jest.fn(),
 			provider: eipProvider,

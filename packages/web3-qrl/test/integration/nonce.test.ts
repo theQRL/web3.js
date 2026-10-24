@@ -15,7 +15,6 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import { TransactionPollingTimeoutError, TransactionSendTimeoutError } from '@theqrl/web3-errors';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { SupportedProviders, Web3 } from '@theqrl/web3';
 import { Web3Account } from '@theqrl/web3-qrl-accounts';
 import { Web3QRL } from '../../src';

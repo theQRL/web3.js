@@ -32,13 +32,14 @@
 	],
 	"files": [
 		"lib/**/*",
+		"!lib/**/*.tsbuildinfo",
 		"src/**/*",
 		"dist/**/*"
 	],
 	"scripts": {
 		"clean": "rimraf dist && rimraf lib",
 		"prebuild": "pnpm run clean",
-		"version:output": "[ -z $npm_package_version ] && rm ./src/version.ts || echo \"/* eslint-disable header/header */ export const Web3PkgInfo = { version: '$npm_package_version' };\" > ./src/version.ts",
+		"version:output": "[ -z $npm_package_version ] && rm ./src/version.ts || echo \"export const Web3PkgInfo = { version: '$npm_package_version' };\" > ./src/version.ts",
 		"build": "pnpm run version:output && pnpm run build:cjs && pnpm run build:esm && pnpm run build:types",
 		"build:cjs": "tsc --build tsconfig.cjs.json && echo '{\"type\": \"commonjs\"}' > ./lib/commonjs/package.json",
 		"build:esm": "tsc --build tsconfig.esm.json && echo '{\"type\": \"module\"}' > ./lib/esm/package.json",
@@ -70,8 +71,6 @@
 		"@typescript-eslint/parser": "8.59.4",
 		"eslint": "10.4.0",
 		"eslint-config-prettier": "10.1.8",
-		"hardhat": "2.22.0",
-		"in3": "3.3.3",
 		"jest": "30.4.2",
 		"jest-extended": "7.0.0",
 		"prettier": "3.8.3",
@@ -88,7 +87,6 @@
 		"@theqrl/web3-qrl-abi": "workspace:^",
 		"@theqrl/web3-qrl-accounts": "workspace:^",
 		"@theqrl/web3-qrl-contract": "workspace:^",
-		"@theqrl/web3-qrl-iban": "workspace:^",
 		"@theqrl/web3-qrl-qrns": "workspace:^",
 		"@theqrl/web3-rpc-methods": "workspace:^",
 		"@theqrl/web3-types": "workspace:^",

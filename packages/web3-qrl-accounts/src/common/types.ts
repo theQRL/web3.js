@@ -31,10 +31,8 @@ export interface GenesisBlockConfig {
 
 export interface HardforkConfig {
 	name: Hardfork | string;
-	// eslint-disable-next-line @typescript-eslint/ban-types
 	block: number | null; // null is used for hardforks that should not be applied -- since `undefined` isn't a valid value in JSON
 	timestamp?: number | string;
-	// eslint-disable-next-line @typescript-eslint/ban-types
 	forkHash?: string | null;
 }
 
@@ -169,6 +167,5 @@ export type ToBytesInputTypes =
 	| Uint8Array
 	| number[]
 	| TransformableToArray
-	// eslint-disable-next-line @typescript-eslint/ban-types
 	| null
 	| undefined;

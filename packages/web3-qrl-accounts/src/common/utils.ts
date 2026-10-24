@@ -20,7 +20,6 @@ import { Hardfork } from './enums.js';
 import { ToBytesInputTypes, TypeOutput, TypeOutputReturnType } from './types.js';
 
 type ConfigHardfork =
-	// eslint-disable-next-line @typescript-eslint/ban-types
 	| { name: string; block: null; timestamp: number }
 	| { name: string; block: number; timestamp?: number };
 
@@ -82,7 +81,6 @@ function parseGqrlParams(json: any) {
 	}
 	// gqrl may use number for timestamp
 	if (!isHexPrefixed(timestamp)) {
-		// eslint-disable-next-line radix
 		timestamp = intToHex(parseInt(timestamp));
 	}
 
@@ -92,9 +90,7 @@ function parseGqrlParams(json: any) {
 		networkId: chainId,
 		genesis: {
 			timestamp,
-			// eslint-disable-next-line radix
 			gasLimit: parseInt(gasLimit), // gqrl gasLimit is an hex string while ours is a `number`
-			// eslint-disable-next-line radix
 			extraData,
 			mixHash,
 			coinbase,
@@ -128,9 +124,7 @@ function parseGqrlParams(json: any) {
 	params.hardforks = configHardforkNames
 		.map(nameBlock => ({
 			name: forkMapRev[nameBlock],
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 			block:
-				// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
 				forkMap[forkMapRev[nameBlock]].isTimestamp === true ||
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
 				typeof config[nameBlock] !== 'number'
@@ -138,9 +132,7 @@ function parseGqrlParams(json: any) {
 					  null
 					: // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
 					  config[nameBlock],
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 			timestamp:
-				// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
 				forkMap[forkMapRev[nameBlock]].isTimestamp === true &&
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
 				typeof config[nameBlock] === 'number'
@@ -179,12 +171,12 @@ export function parseGqrlGenesis(json: any, name?: string) {
 			throw new Error('Invalid format, expected gqrl genesis fields missing');
 		}
 		if (name !== undefined) {
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, no-param-reassign
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
 			json.name = name;
 		}
 		return parseGqrlParams(json);
 	} catch (e: any) {
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/restrict-template-expressions
+		// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
 		throw new Error(`Error parsing parameters file: ${e.message}`);
 	}
 }
@@ -233,6 +225,18 @@ export const toUint8Array = function (v: ToBytesInputTypes): Uint8Array {
 	}
 
 	if (Array.isArray(v)) {
+		// Only a flat array of byte values is a byte string. A nested array (an RLP list decoded
+		// where a string was expected) or an out-of-range element must not be coerced silently.
+		if (
+			!v.every(
+				(item: unknown) =>
+					typeof item === 'number' && Number.isInteger(item) && item >= 0 && item <= 255,
+			)
+		) {
+			throw new Error(
+				'Cannot convert array to Uint8Array: every element must be an integer between 0 and 255',
+			);
+		}
 		return Uint8Array.from(v);
 	}
 
@@ -345,16 +349,11 @@ export const setLengthLeft = function (msg: Uint8Array, length: number) {
  * @return (Uint8Array|Array|String)
  */
 export function stripZeros<T extends Uint8Array | number[] | string>(a: T): T {
-	// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
 	let first = a[0];
-	// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
 	while (a.length > 0 && first.toString() === '0') {
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, prefer-destructuring, @typescript-eslint/no-unsafe-call, no-param-reassign
 		a = a.slice(1) as T;
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, prefer-destructuring, @typescript-eslint/no-unsafe-member-access
 		first = a[0];
 	}
-	// eslint-disable-next-line @typescript-eslint/no-unsafe-return
 	return a;
 }
 
@@ -388,7 +387,6 @@ export function bigIntToUnpaddedUint8Array(value: bigint): Uint8Array {
  * @param input value to convert
  * @param outputType type to output
  */
-// eslint-disable-next-line @typescript-eslint/ban-types
 export function toType<T extends TypeOutput>(input: null, outputType: T): null;
 export function toType<T extends TypeOutput>(input: undefined, outputType: T): undefined;
 export function toType<T extends TypeOutput>(
@@ -398,7 +396,6 @@ export function toType<T extends TypeOutput>(
 export function toType<T extends TypeOutput>(
 	input: ToBytesInputTypes,
 	outputType: T,
-	// eslint-disable-next-line @typescript-eslint/ban-types
 ): TypeOutputReturnType[T] | undefined | null {
 	// eslint-disable-next-line no-null/no-null
 	if (input === null) {

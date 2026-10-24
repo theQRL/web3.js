@@ -14,9 +14,28 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { existsSync, writeFileSync, readFileSync } from 'fs';
+import {
+	existsSync,
+	writeFileSync,
+	readFileSync,
+	fchmodSync,
+	openSync,
+	closeSync,
+	constants,
+	lstatSync,
+} from 'fs';
 
 if (!existsSync('.secrets.json')) {
 	const data = readFileSync('templates/.secrets.json.tmpl', 'utf-8');
-	writeFileSync('.secrets.json', data);
+	writeFileSync('.secrets.json', data, { mode: 0o600, flag: 'wx' });
+}
+
+// O_NOFOLLOW also closes the race between checking the path and changing permissions.
+if (lstatSync('.secrets.json').isSymbolicLink())
+	throw new Error('.secrets.json must not be a symlink');
+const secretsFd = openSync('.secrets.json', constants.O_RDONLY | constants.O_NOFOLLOW);
+try {
+	fchmodSync(secretsFd, 0o600);
+} finally {
+	closeSync(secretsFd);
 }

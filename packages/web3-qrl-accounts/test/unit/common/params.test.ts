@@ -19,15 +19,12 @@ import { Chain, Common, Hardfork } from '../../../src/common';
 describe('[Common]: Parameter access for param(), paramByHardfork()', () => {
 	it('Basic usage', () => {
 		const c = new Common({ chain: Chain.Mainnet, qips: [] });
-		expect(c.paramByHardfork('gasPrices', 'ecAdd', 'zond')).toEqual(BigInt(150));
+		expect(c.paramByHardfork('gasPrices', 'depositroot', 'zond')).toEqual(BigInt(18000));
+		expect(c.paramByHardfork('gasPrices', 'mldsa87Verify', 'zond')).toEqual(BigInt(125000));
 
 		// NOTE(rgeraldes24): there are no param updates yet
-		// c.setHardfork(Hardfork.Byzantium);
-		// expect(c.param('gasPrices', 'ecAdd')).toEqual(BigInt(500));
-		// c.setHardfork(Hardfork.Istanbul);
-		expect(c.param('gasPrices', 'ecAdd')).toEqual(BigInt(150));
-		// c.setHardfork(Hardfork.MuirGlacier);
-		// expect(c.param('gasPrices', 'ecAdd')).toEqual(BigInt(150));
+		expect(c.param('gasPrices', 'depositroot')).toEqual(BigInt(18000));
+		expect(c.param('gasPrices', 'mldsa87Verify')).toEqual(BigInt(125000));
 
 		expect(c.param('gasPrices', 'notexistingvalue')).toEqual(BigInt(0));
 		expect(c.paramByHardfork('gasPrices', 'notexistingvalue', 'zond')).toEqual(BigInt(0));
@@ -37,18 +34,18 @@ describe('[Common]: Parameter access for param(), paramByHardfork()', () => {
 		const c = new Common({ chain: Chain.Mainnet });
 
 		expect(() => {
-			c.paramByHardfork('gasPrizes', 'ecAdd', 'byzantium');
+			c.paramByHardfork('gasPrizes', 'depositroot', 'byzantium');
 		}).toThrow('Topic gasPrizes not defined');
 
 		c.setHardfork(Hardfork.Zond);
-		expect(c.param('gasPrices', 'ecAdd')).toEqual(BigInt(150));
+		expect(c.param('gasPrices', 'depositroot')).toEqual(BigInt(18000));
 	});
 
 	// NOTE(rgeraldes24): there are no param updates yet
 	it('Parameter updates', () => {
 		const c = new Common({ chain: Chain.Mainnet });
 
-		expect(c.paramByHardfork('gasPrices', 'ecAdd', 'zond')).toEqual(BigInt(150));
+		expect(c.paramByHardfork('gasPrices', 'depositroot', 'zond')).toEqual(BigInt(18000));
 
 		// expect(c.paramByHardfork('pow', 'minerReward', 'byzantium')).toEqual(
 		// 	BigInt(3000000000000000000),
@@ -66,8 +63,8 @@ describe('[Common]: Parameter access for param(), paramByHardfork()', () => {
 	// NOTE(rgeraldes24): there are no param updates yet
 	it('Access by block number, paramByBlock()', () => {
 		const c = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Zond });
-		expect(c.paramByBlock('gasPrices', 'ecAdd', 4370000)).toEqual(BigInt(150));
-		expect(c.paramByBlock('gasPrices', 'ecAdd', 4369999)).toEqual(BigInt(150));
+		expect(c.paramByBlock('gasPrices', 'depositroot', 4370000)).toEqual(BigInt(18000));
+		expect(c.paramByBlock('gasPrices', 'depositroot', 4369999)).toEqual(BigInt(18000));
 
 		/*
 		const c = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.Zond });

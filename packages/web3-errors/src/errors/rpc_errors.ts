@@ -15,10 +15,8 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/* eslint-disable max-classes-per-file */
-
 import { JsonRpcResponseWithError, JsonRpcId, JsonRpcError } from '@theqrl/web3-types';
-import { BaseWeb3Error } from '../web3_error_base.js';
+import { BaseWeb3Error, toJsonSafe, truncateEchoedText } from '../web3_error_base.js';
 import {
 	ERR_RPC_INTERNAL_ERROR,
 	ERR_RPC_INVALID_INPUT,
@@ -41,18 +39,27 @@ export class RpcError extends BaseWeb3Error {
 	public jsonrpc: string;
 	public jsonRpcError: JsonRpcError;
 	public constructor(rpcError: JsonRpcResponseWithError, message?: string) {
+		// The reply is node supplied: a missing or null `error.code` must not turn into a
+		// `TypeError` thrown from inside an error constructor (I-15).
+		const code = rpcError?.error?.code;
 		super(
-			message ??
-				genericRpcErrorMessageTemplate.replace('*code*', rpcError.error.code.toString()),
+			truncateEchoedText(
+				message ?? genericRpcErrorMessageTemplate.replace('*code*', String(code)),
+			),
 		);
-		this.code = rpcError.error.code;
-		this.id = rpcError.id;
-		this.jsonrpc = rpcError.jsonrpc;
-		this.jsonRpcError = rpcError.error;
+		this.code = code;
+		this.id = rpcError?.id;
+		this.jsonrpc = rpcError?.jsonrpc;
+		this.jsonRpcError = rpcError?.error;
 	}
 
 	public toJSON() {
-		return { ...super.toJSON(), error: this.jsonRpcError, id: this.id, jsonRpc: this.jsonrpc };
+		return {
+			...super.toJSON(),
+			error: toJsonSafe(this.jsonRpcError),
+			id: this.id,
+			jsonRpc: this.jsonrpc,
+		};
 	}
 }
 

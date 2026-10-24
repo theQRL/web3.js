@@ -34,32 +34,43 @@ import {
 } from '@theqrl/web3-types';
 import { Web3Context } from '@theqrl/web3-core';
 import { getId } from '@theqrl/web3-net';
-import { isNullish, isNumber, isAddressString } from '@theqrl/web3-validator';
+import { isNullish, isAddressString, isUInt } from '@theqrl/web3-validator';
 import {
 	InvalidTransactionWithSender,
 	InvalidTransactionWithReceiver,
 	LocalWalletNotAvailableError,
 	TransactionDataAndInputError,
 	UnableToPopulateNonceError,
+	NodeChainIdMismatchError,
+	InvalidNonceOrChainIdError,
 } from '@theqrl/web3-errors';
 import { seedToAccount } from '@theqrl/web3-qrl-accounts';
 import { bytesToHex, format, toChecksumAddress } from '@theqrl/web3-utils';
-import { NUMBER_DATA_FORMAT } from '../constants.js';
-import {
-	getChainId,
-	getTransactionCount,
-	estimateGas,
-} from './rpc_method_wrappers_readers.js';
+import { getChainId, getTransactionCount, estimateGas } from './rpc_method_wrappers_readers.js';
 import { transactionSchema } from '../schemas.js';
 import { InternalTransaction } from '../types.js';
 import { getTransactionGasPricing } from './get_transaction_gas_pricing.js';
 import { getTransactionType } from './get_transaction_type.js';
+import { validateTransactionInput } from './transaction_input.js';
 
 // Re-exported for backward compatibility: `getTransactionType` previously lived
 // in this module. Its definition moved to `./get_transaction_type.js` to break
 // the `transaction_builder` <-> `get_transaction_gas_pricing` import cycle.
 export { getTransactionType } from './get_transaction_type.js';
 
+/**
+ * Resolves the `from` or `to` field of a caller-supplied transaction to an address.
+ *
+ * A string is an address and must be a QRL address; a non-negative safe-integer `number` is the
+ * index of an account in the context's wallet. `undefined` and `null` mean the field is not given:
+ * for `to` that is a contract creation, for `from` the sender is derived from the seed or taken
+ * from `defaultAccount` (P4-L-12). Nothing else is accepted: a hex string such as `'0x1'` used to
+ * be read as a wallet index, so `to: '0x1'` sent the funds to wallet account 1 and a 20-byte
+ * Ethereum address became a huge index that failed as "no wallet available" (L-51).
+ *
+ * @throws InvalidTransactionWithSender / InvalidTransactionWithReceiver for any other value.
+ * @throws LocalWalletNotAvailableError for an index without a wallet or without such an account.
+ */
 export const getTransactionFromOrToAttr = (
 	attr: 'from' | 'to',
 	web3Context: Web3Context<QRLExecutionAPI>,
@@ -70,30 +81,25 @@ export const getTransactionFromOrToAttr = (
 		| TransactionWithFromAndToLocalWalletIndex,
 	seed?: HexString | Uint8Array,
 ): Address | undefined => {
-	if (transaction !== undefined && attr in transaction && transaction[attr] !== undefined) {
-		const transactionAttribute = transaction[attr];
+	if (transaction !== undefined && attr in transaction && !isNullish(transaction[attr])) {
+		const transactionAttribute: unknown = transaction[attr];
 		if (typeof transactionAttribute === 'string' && isAddressString(transactionAttribute)) {
 			return transactionAttribute;
 		}
-		if (isNumber(transactionAttribute as Numbers)) {
-			if (web3Context.wallet) {
-				const account = web3Context.wallet.get(
-					format({ format: 'uint' }, transactionAttribute as Numbers, NUMBER_DATA_FORMAT),
-				);
-
-				if (!isNullish(account)) {
-					return account.address;
-				}
-
-				throw new LocalWalletNotAvailableError();
+		if (
+			typeof transactionAttribute === 'number' &&
+			Number.isSafeInteger(transactionAttribute) &&
+			transactionAttribute >= 0
+		) {
+			const account = web3Context.wallet?.get(transactionAttribute);
+			if (!isNullish(account)) {
+				return account.address;
 			}
 			throw new LocalWalletNotAvailableError();
-		} else {
-			throw attr === 'from'
-				? new InvalidTransactionWithSender(transaction.from)
-				: // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-				  new InvalidTransactionWithReceiver(transaction.to);
 		}
+		throw attr === 'from'
+			? new InvalidTransactionWithSender(transaction.from)
+			: new InvalidTransactionWithReceiver(transaction.to);
 	}
 	if (attr === 'from') {
 		if (!isNullish(seed)) {
@@ -120,6 +126,32 @@ export const getTransactionNonce = async <ReturnFormat extends DataFormat>(
 
 // Keep in mind that the order the properties of populateTransaction get populated matters
 // as some of the properties are dependent on others
+/**
+ * Checks a chain id the caller supplied (directly, through `common.customChain` or through the
+ * context's `defaultCommon`) against the one the connected node serves. A transaction signed for
+ * another chain would be rejected by this node while the signature stays valid on that chain, so
+ * it is not signed. Without a provider (offline signing) there is nothing to compare against and
+ * the chain id is taken as given.
+ *
+ * @throws NodeChainIdMismatchError when the node reports a different chain id.
+ */
+const assertNodeChainId = async (
+	web3Context: Web3Context<QRLExecutionAPI>,
+	txChainId: Numbers,
+): Promise<void> => {
+	if (!isUInt(txChainId, { bitSize: 256 })) {
+		throw new InvalidNonceOrChainIdError({ nonce: undefined, chainId: txChainId });
+	}
+	if (isNullish(web3Context.currentProvider)) {
+		return;
+	}
+	const nodeChainId = await getChainId(web3Context, QRL_DATA_FORMAT);
+	const txChainIdHex = format({ format: 'uint' }, txChainId, QRL_DATA_FORMAT);
+	if (BigInt(txChainIdHex) !== BigInt(nodeChainId)) {
+		throw new NodeChainIdMismatchError({ txChainId: txChainIdHex, nodeChainId });
+	}
+};
+
 export async function defaultTransactionBuilder<ReturnType = Transaction>(options: {
 	transaction: Transaction;
 	web3Context: Web3Context<QRLExecutionAPI & Web3NetAPI>;
@@ -127,6 +159,10 @@ export async function defaultTransactionBuilder<ReturnType = Transaction>(option
 	fillGasPrice?: boolean;
 	fillGasLimit?: boolean;
 }): Promise<ReturnType> {
+	// A legacy `gasPrice` and quantities given as unsafe JavaScript numbers are rejected before
+	// the formatter can drop or round them (L-50, L-55).
+	validateTransactionInput(options.transaction);
+
 	let populatedTransaction = format(
 		transactionSchema,
 		options.transaction,
@@ -180,7 +216,13 @@ export async function defaultTransactionBuilder<ReturnType = Transaction>(option
 	}
 
 	if (isNullish(populatedTransaction.common)) {
-		if (options.web3Context.defaultCommon) {
+		// `common` and the `chain`/`hardfork` pair are mutually exclusive signing options (see
+		// `validateChainInfo`): the context's `defaultCommon` is only adopted when the caller
+		// left the pair unset, and the pair's defaults are only applied when no `common` is used.
+		const hasChainOrHardfork =
+			!isNullish(populatedTransaction.chain) || !isNullish(populatedTransaction.hardfork);
+
+		if (options.web3Context.defaultCommon && !hasChainOrHardfork) {
 			const common = options.web3Context.defaultCommon as unknown as Common;
 			const chainId = common.customChain.chainId as string;
 			const networkId = common.customChain.networkId as string;
@@ -189,27 +231,48 @@ export async function defaultTransactionBuilder<ReturnType = Transaction>(option
 				...common,
 				customChain: { chainId, networkId, name },
 			};
-		}
-
-		if (isNullish(populatedTransaction.chain)) {
-			populatedTransaction.chain = options.web3Context.defaultChain as ValidChains;
-		}
-		if (isNullish(populatedTransaction.hardfork)) {
-			populatedTransaction.hardfork = options.web3Context.defaultHardfork as Hardfork;
+		} else {
+			if (isNullish(populatedTransaction.chain)) {
+				populatedTransaction.chain = options.web3Context.defaultChain as ValidChains;
+			}
+			if (isNullish(populatedTransaction.hardfork)) {
+				populatedTransaction.hardfork = options.web3Context.defaultHardfork as Hardfork;
+			}
 		}
 	}
 
-	if (
-		isNullish(populatedTransaction.chainId) &&
-		isNullish(populatedTransaction.common?.customChain.chainId)
-	) {
-		populatedTransaction.chainId = await getChainId(options.web3Context, QRL_DATA_FORMAT);
+	if (isNullish(populatedTransaction.chainId)) {
+		// A `common` (explicit or adopted from `defaultCommon`) names the chain the caller
+		// intends to sign for, so its chain id is used before the node is asked for one;
+		// signing validation requires `chainId` itself to be set either way. A `common` without
+		// a `customChain` is left for the signing validation to reject (L-26).
+		const commonChainId = populatedTransaction.common?.customChain?.chainId;
+		populatedTransaction.chainId = isNullish(commonChainId)
+			? await getChainId(options.web3Context, QRL_DATA_FORMAT)
+			: format({ format: 'uint' }, commonChainId as Numbers, QRL_DATA_FORMAT);
+		if (!isNullish(commonChainId)) {
+			await assertNodeChainId(options.web3Context, populatedTransaction.chainId);
+		}
+	} else {
+		await assertNodeChainId(options.web3Context, populatedTransaction.chainId);
 	}
 
 	if (isNullish(populatedTransaction.networkId)) {
-		populatedTransaction.networkId =
-			(options.web3Context.defaultNetworkId as string) ??
-			(await getId(options.web3Context, QRL_DATA_FORMAT));
+		// `networkId` is not signed; it only parameterises the `Common` of the transaction
+		// class. The node is asked for `net_version` only when neither the transaction's
+		// `common`, nor the context, names it (I-12).
+		const commonNetworkId = populatedTransaction.common?.customChain?.networkId;
+		if (!isNullish(commonNetworkId)) {
+			populatedTransaction.networkId = format(
+				{ format: 'uint' },
+				commonNetworkId as Numbers,
+				QRL_DATA_FORMAT,
+			);
+		} else {
+			populatedTransaction.networkId =
+				(options.web3Context.defaultNetworkId as string) ??
+				(await getId(options.web3Context, QRL_DATA_FORMAT));
+		}
 	}
 
 	if (isNullish(populatedTransaction.gasLimit) && !isNullish(populatedTransaction.gas)) {

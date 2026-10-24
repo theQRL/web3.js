@@ -20,6 +20,7 @@ import { rejectIfConditionAtInterval } from '@theqrl/web3-utils';
 
 import { TransactionBlockTimeoutError } from '@theqrl/web3-errors';
 import { NUMBER_DATA_FORMAT } from '../constants.js';
+import { isValidUnsignedHexNumber } from './hex_guards.js';
 import { getBlockNumber } from './rpc_method_wrappers_readers.js';
 import { NewHeadsSubscription } from '../web3_subscriptions.js';
 
@@ -67,6 +68,8 @@ async function resolveBySubscription(
 	// The following variable will stay true except if the data arrived,
 	//	or if watching started after an error had occurred.
 	let needToWatchLater = true;
+	let subscriptionStopped = false;
+	let blockHeaderTimeoutId: ReturnType<typeof setTimeout> | undefined;
 
 	let subscription: NewHeadsSubscription;
 	let resourceCleaner: ResourceCleaner;
@@ -75,6 +78,7 @@ async function resolveBySubscription(
 		reject: (value: Error | PromiseLike<Error>) => void,
 		previousError?: Error,
 	) {
+		if (subscriptionStopped) return;
 		if (previousError) {
 			console.warn('error happened at subscription. So revert to polling...', previousError);
 		}
@@ -95,6 +99,10 @@ async function resolveBySubscription(
 		)) as unknown as NewHeadsSubscription;
 		resourceCleaner = {
 			clean: () => {
+				if (subscriptionStopped) return;
+				subscriptionStopped = true;
+				needToWatchLater = false;
+				clearTimeout(blockHeaderTimeoutId);
 				// Remove the subscription, if it was not removed somewhere
 				// 	else by calling, for example, subscriptionManager.clear()
 				if (subscription.id) {
@@ -109,19 +117,30 @@ async function resolveBySubscription(
 				}
 			},
 		};
-	} catch (error) {
+	} catch {
 		return resolveByPolling(web3Context, starterBlockNumber, transactionHash);
 	}
 	const promiseToError: Promise<never> = new Promise((_, reject) => {
+		// Cleanup must also cancel this fallback; otherwise it can start a new poller
+		// after the receipt wait has already finished.
+		blockHeaderTimeoutId = setTimeout(() => {
+			if (needToWatchLater) {
+				revertToPolling(reject);
+			}
+		}, web3Context.blockHeaderTimeout * 1000);
+
 		try {
 			subscription.on('data', (lastBlockHeader: BlockHeaderOutput) => {
-				needToWatchLater = false;
-				if (!lastBlockHeader?.number) {
+				if (subscriptionStopped) return;
+				// A header without a usable block number is not "data arrived": it is skipped
+				// before `BigInt` can throw out of the listener, and the polling fallback stays
+				// armed, as in `watchTransactionBySubscription` (P4-L-14).
+				const headerNumber: unknown = lastBlockHeader?.number;
+				if (!isValidUnsignedHexNumber(headerNumber)) {
 					return;
 				}
-				const numberOfBlocks = Number(
-					BigInt(lastBlockHeader.number) - BigInt(starterBlockNumber),
-				);
+				needToWatchLater = false;
+				const numberOfBlocks = Number(BigInt(headerNumber) - BigInt(starterBlockNumber));
 
 				if (numberOfBlocks >= web3Context.transactionBlockTimeout) {
 					// Transaction Block Timeout is known to be reached by subscribing to new heads
@@ -140,13 +159,6 @@ async function resolveBySubscription(
 		} catch (error) {
 			revertToPolling(reject, error as Error);
 		}
-
-		// Fallback to polling if tx receipt didn't arrived in "blockHeaderTimeout" [10 seconds]
-		setTimeout(() => {
-			if (needToWatchLater) {
-				revertToPolling(reject);
-			}
-		}, web3Context.blockHeaderTimeout * 1000);
 	});
 
 	return [promiseToError, resourceCleaner];

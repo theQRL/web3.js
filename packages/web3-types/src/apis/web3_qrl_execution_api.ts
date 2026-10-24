@@ -19,7 +19,7 @@ import {
 	AccountObject,
 	Address,
 	BlockNumberOrTag,
-	Eip712TypedData,
+	QRLTypedData,
 	HexString256Bytes,
 	HexString32Bytes,
 	TransactionInfo,
@@ -44,10 +44,9 @@ export type Web3QRLExecutionAPI = QRLExecutionAPI & {
 		blockNumber: BlockNumberOrTag,
 	) => AccountObject;
 
-	// https://github.com/ethereum/EIPs/blob/master/EIPS/eip-712.md
 	// Answered by a wallet provider (which signs locally), not by a gqrl node — the same way
 	// `eth_signTypedData_v4` is a wallet method on Ethereum rather than a node method.
 	// There is deliberately no suffix-less `qrl_signTypedData`: no QRL wallet or node
 	// implements it.
-	qrl_signTypedData_v4: (address: Address, typedData: Eip712TypedData) => HexString256Bytes;
+	qrl_signTypedData_v4: (address: Address, typedData: QRLTypedData) => HexString256Bytes;
 };

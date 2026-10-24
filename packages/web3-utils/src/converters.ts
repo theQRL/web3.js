@@ -15,7 +15,6 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { bytesToUtf8 } from '@theqrl/qrl-cryptography/utils.js';
 import { Address, Bytes, HexString, Numbers, ValueTypes } from '@theqrl/web3-types';
 import {
 	isAddressString,
@@ -39,6 +38,19 @@ const base = BigInt(10);
 const expo10 = (expo: number) => base ** BigInt(expo);
 const ADDRESS_BYTES = 64;
 const ADDRESS_HEX_CHARS = ADDRESS_BYTES * 2;
+
+// A decimal integer in its only accepted spelling. `BigInt()` on its own also accepts `''`
+// (as 0), surrounding whitespace, `+1`, `0b11`, `0o7` and `0x1` (L-28).
+const DECIMAL_INTEGER = /^-?\d+$/;
+// An amount in decimal text: `[-]integer[.fraction]`, at least one digit, no exponent. The
+// fraction group requires its dot, which keeps the match linear on a long non-matching input.
+const DECIMAL_AMOUNT = /^(-?)(\d*)(?:\.(\d*))?$/;
+// A structurally address-shaped string: the prefix and 128 hex digits, checksum not checked.
+const ADDRESS_SHAPE = /^[Qq][0-9a-fA-F]{128}$/;
+
+/** UTF-8 decoding that keeps a leading byte-order mark instead of silently dropping it. */
+const decodeUtf8 = (bytes: Uint8Array): string =>
+	new TextDecoder('utf-8', { ignoreBOM: true }).decode(bytes);
 
 // Ref: https://ethdocs.org/en/latest/ether.html
 /** @internal */
@@ -64,6 +76,14 @@ export const qrlUnitMap = {
 	gquanta: expo10(27),
 	tquanta: expo10(30),
 };
+
+/**
+ * Whether `unit` names a QRL unit. A plain property lookup also found `Object.prototype`
+ * members, so `toPlanck('1', 'constructor')` scaled by the length of a function's source
+ * text instead of throwing (P4-L-35).
+ */
+const isUnit = (unit: unknown): unit is QRLUnits =>
+	typeof unit === 'string' && Object.prototype.hasOwnProperty.call(qrlUnitMap, unit);
 
 export type QRLUnits = keyof typeof qrlUnitMap;
 /**
@@ -160,6 +180,10 @@ export const addressToBytes = (value: Address): Uint8Array =>
  */
 export const hexToAddress = (value: HexString): Address => {
 	validator.validate(['hex'], [value]);
+	// `hex` validation admits a sign; an address has none (L-32).
+	if (value.startsWith('-')) {
+		throw new InvalidAddressError(value);
+	}
 	const hex = value.toLowerCase().replace(/^0x/i, '');
 	if (hex.length > ADDRESS_HEX_CHARS) {
 		throw new InvalidAddressError(value);
@@ -220,7 +244,7 @@ export const toDecimal = hexToNumber;
  * ```
  */
 export const numberToHex = (value: Numbers, hexstrict?: boolean): HexString => {
-	if (typeof value !== 'bigint') validator.validate(['int'], [value]);
+	if (typeof value !== 'bigint') validator.validate(['int512'], [value]);
 	// To avoid duplicate code and circular dependency we will
 	// use `numberToHex` implementation from `web3-validator`
 	let updatedValue = validatorUtils.numberToHex(value);
@@ -296,7 +320,7 @@ export const stringToHex = utf8ToHex;
  * > Hello World
  * ```
  */
-export const hexToUtf8 = (str: HexString): string => bytesToUtf8(hexToBytes(str));
+export const hexToUtf8 = (str: HexString): string => decodeUtf8(hexToBytes(str));
 
 /**
  * @alias hexToUtf8
@@ -306,7 +330,7 @@ export const toUtf8 = (input: HexString | Uint8Array) => {
 		return hexToUtf8(input);
 	}
 	validator.validate(['bytes'], [input]);
-	return bytesToUtf8(input);
+	return decodeUtf8(input);
 };
 
 /**
@@ -381,17 +405,20 @@ export const toHex = (
 	returnType?: boolean,
 ): HexString | ValueTypes => {
 	if (typeof value === 'boolean') {
-		// eslint-disable-next-line no-nested-ternary
 		return returnType ? 'bool' : value ? '0x01' : '0x00';
 	}
 
 	if (typeof value === 'number') {
-		// eslint-disable-next-line no-nested-ternary
-		return returnType ? (value < 0 ? 'int256' : 'uint256') : numberToHex(value);
+		return returnType ? (value < 0 ? 'int512' : 'uint512') : numberToHex(value);
 	}
 
 	if (typeof value === 'bigint') {
 		return returnType ? 'bigint' : numberToHex(value);
+	}
+
+	// Byte arrays are bytes, not objects to be JSON-serialised (L-30).
+	if (value instanceof Uint8Array) {
+		return returnType ? 'bytes' : bytesToHex(value);
 	}
 
 	if (typeof value === 'object' && !!value) {
@@ -400,17 +427,23 @@ export const toHex = (
 
 	if (typeof value === 'string') {
 		if (value.startsWith('-0x') || value.startsWith('-0X')) {
-			return returnType ? 'int256' : numberToHex(value);
+			return returnType ? 'int512' : numberToHex(value);
 		}
 
 		if (isHexStrict(value)) {
 			return returnType ? 'bytes' : value;
 		}
-		if (isHex(value) && !isInt(value)) {
+		// `isHex` admits a bare `-`; `-abc` is text, not the invalid hex `0x-abc`.
+		if (isHex(value) && !value.startsWith('-') && !isInt(value, { bitSize: 512 })) {
 			return returnType ? 'bytes' : `0x${value}`;
 		}
 		if (isAddressString(value)) {
 			return returnType ? 'address' : addressToHex(value);
+		}
+		// Address-shaped but not a valid address (wrong checksum case or a lowercase `q`): it
+		// used to fall through and be hashed as 129 bytes of text (P4-L-37).
+		if (ADDRESS_SHAPE.test(value)) {
+			throw new InvalidAddressError(value);
 		}
 
 		if (!Number.isFinite(value)) {
@@ -423,6 +456,11 @@ export const toHex = (
 
 /**
  * Converts any given value into it's number representation, if possible, else into it's bigint representation.
+ *
+ * Accepted inputs are finite JavaScript numbers, bigints, `0x`-prefixed hex strings and plain
+ * decimal integer strings. `NaN`, `Infinity`, `''`, `' 1 '`, `'+1'`, `'0b11'`, `'1e3'`, `'0x'`,
+ * booleans, arrays and objects are rejected with an {@link InvalidNumberError} (L-26, L-28).
+ *
  * @param value - The value to convert
  * @returns - Returns the value in number or bigint representation
  *
@@ -443,6 +481,9 @@ export const toHex = (
  */
 export const toNumber = (value: Numbers): number | bigint => {
 	if (typeof value === 'number') {
+		if (!Number.isFinite(value)) {
+			throw new InvalidNumberError(value);
+		}
 		return value;
 	}
 
@@ -456,15 +497,21 @@ export const toNumber = (value: Numbers): number | bigint => {
 		return hexToNumber(value);
 	}
 
-	try {
+	if (typeof value === 'string' && DECIMAL_INTEGER.test(value)) {
 		return toNumber(BigInt(value));
-	} catch {
-		throw new InvalidNumberError(value);
 	}
+
+	throw new InvalidNumberError(value);
 };
 
 /**
  * Auto converts any given value into it's bigint representation
+ *
+ * Accepted inputs are integer JavaScript numbers (converted exactly, so pass a string or a
+ * bigint above `Number.MAX_SAFE_INTEGER`), bigints, `0x`-prefixed hex strings (optionally
+ * negative) and plain decimal integer strings. Anything else, including `1.5`, `NaN`, `'0x'`,
+ * `''` and bare hex digits, is rejected with an {@link InvalidNumberError} instead of a raw
+ * `SyntaxError` / `RangeError` (L-26).
  *
  * @param value - The value to convert
  * @returns - Returns the value in bigint representation
@@ -477,6 +524,9 @@ export const toNumber = (value: Numbers): number | bigint => {
  */
 export const toBigInt = (value: unknown): bigint => {
 	if (typeof value === 'number') {
+		if (!Number.isInteger(value)) {
+			throw new InvalidNumberError(value);
+		}
 		return BigInt(value);
 	}
 
@@ -484,9 +534,22 @@ export const toBigInt = (value: unknown): bigint => {
 		return value;
 	}
 
-	// isHex passes for dec, too
-	if (typeof value === 'string' && isHex(value)) {
-		return BigInt(value);
+	if (typeof value === 'string') {
+		if (isHexStrict(value)) {
+			const [negative, hex] = value.startsWith('-') ? [true, value.slice(1)] : [false, value];
+
+			// `0x` is valid hex bytes but, like go-ethereum's "hex number has no digits", not a number.
+			if (hex.length <= 2) {
+				throw new InvalidNumberError(value);
+			}
+
+			const magnitude = BigInt(hex);
+			return negative ? -magnitude : magnitude;
+		}
+
+		if (DECIMAL_INTEGER.test(value)) {
+			return BigInt(value);
+		}
 	}
 
 	throw new InvalidNumberError(value);
@@ -494,6 +557,12 @@ export const toBigInt = (value: unknown): bigint => {
 
 /**
  * Takes a number of planck and converts it to any other qrl unit.
+ *
+ * The amount must be an integer: a bigint, an integer JavaScript number (converted exactly,
+ * so pass a string or a bigint above `Number.MAX_SAFE_INTEGER`), a decimal integer string or a
+ * `0x`-prefixed hex string. Negative amounts are supported. Fractions, `NaN`, `Infinity`, `''`
+ * and non-numeric strings throw an {@link InvalidNumberError} (L-19).
+ *
  * @param number - The value in planck
  * @param unit - The unit to convert to
  * @returns - Returns the converted value in the given unit
@@ -505,22 +574,23 @@ export const toBigInt = (value: unknown): bigint => {
  * ```
  */
 export const fromPlanck = (number: Numbers, unit: QRLUnits): string => {
-	const denomination = qrlUnitMap[unit];
-
-	if (!denomination) {
+	if (!isUnit(unit)) {
 		throw new InvalidUnitError(unit);
 	}
+	const denomination = qrlUnitMap[unit];
 
-	// value in planck would always be integer
-	// 13456789, 1234
-	const value = String(toNumber(number));
+	// A planck amount is always an integer. Anything else used to be stringified and sliced
+	// into garbage such as `0.0000000000000001.5` or `0.0000000000000000-1`.
+	const planck = toBigInt(number);
+	const sign = planck < BigInt(0) ? '-' : '';
+	const value = (planck < BigInt(0) ? -planck : planck).toString();
 
 	// count number of zeros in denomination
 	// 1000000 -> 6
 	const numberOfZerosInDenomination = denomination.toString().length - 1;
 
 	if (numberOfZerosInDenomination <= 0) {
-		return value.toString();
+		return `${sign}${value}`;
 	}
 
 	// pad the value with required zeros
@@ -543,18 +613,31 @@ export const fromPlanck = (number: Numbers, unit: QRLUnits): string => {
 	const fraction = rawFraction.slice(0, fractionEnd);
 
 	if (integer === '') {
-		return `0.${fraction}`;
+		return `${sign}0.${fraction}`;
 	}
 
 	if (fraction === '') {
-		return integer;
+		return `${sign}${integer}`;
 	}
 
-	return `${integer}.${fraction}`;
+	return `${sign}${integer}.${fraction}`;
 };
 
 /**
  * Takes a number of a unit and converts it to planck.
+ *
+ * The amount is parsed exactly, never through floating point. Accepted inputs are decimal
+ * strings (`'1'`, `'1.5'`, `'-0.5'`, `'.5'`), `0x`-prefixed hex strings, bigints and
+ * JavaScript numbers (integers are converted exactly; a non-integer number is converted from
+ * its shortest decimal representation, which must not use an exponent).
+ *
+ * The amount must not carry more significant decimals than the unit has (18 for `quanta`,
+ * 9 for `shor`, 0 for `planck`): such an amount cannot be represented in planck and throws
+ * an {@link InvalidNumberError}. It used to be silently multiplied by a power of ten
+ * instead (H-2). Trailing zeros are not significant, so `'1.0000000000000000000'` is fine.
+ *
+ * `''`, `'.'`, `'+1'`, `' 1 '`, `'0b11'`, `'1e3'`, `NaN`, `Infinity` and non-numeric values
+ * are rejected with a typed error (L-26, L-28).
  *
  * @param number - The number to convert.
  * @param unit - {@link QRLUnits} The unit of the number passed.
@@ -568,43 +651,58 @@ export const fromPlanck = (number: Numbers, unit: QRLUnits): string => {
  */
 // todo in 1.x unit defaults to 'quanta'
 export const toPlanck = (number: Numbers, unit: QRLUnits): string => {
-	validator.validate(['number'], [number]);
-
-	const denomination = qrlUnitMap[unit];
-
-	if (!denomination) {
-		throw new InvalidUnitError(unit);
+	if (typeof number === 'number' && !Number.isFinite(number)) {
+		throw new InvalidNumberError(number);
 	}
 
-	// if value is decimal e.g. 24.56 extract `integer` and `fraction` part
-	// to avoid `fraction` to be null use `concat` with empty string
-	const [integer, fraction] = String(
-		typeof number === 'string' && !isHexStrict(number) ? number : toNumber(number),
-	)
-		.split('.')
-		.concat('');
+	validator.validate(['number'], [number]);
 
-	// join the value removing `.` from
-	// 24.56 -> 2456
-	const value = BigInt(`${integer}${fraction}`);
+	if (!isUnit(unit)) {
+		throw new InvalidUnitError(unit);
+	}
+	const denomination = qrlUnitMap[unit];
 
-	// multiply value with denomination
-	// 2456 * 1000000 -> 2456000000
-	const updatedValue = value * denomination;
+	// The amount as decimal text, `[-]integer[.fraction]`.
+	let text: string;
+	if (typeof number === 'bigint') {
+		text = number.toString();
+	} else if (typeof number === 'number') {
+		// An integer is converted exactly; `String()` would print 2^60 as 1152921504606847000.
+		// A fraction keeps its shortest round-trip representation, which is what was typed.
+		text = Number.isInteger(number) ? BigInt(number).toString() : String(number);
+	} else if (isHexStrict(number)) {
+		text = toBigInt(number).toString();
+	} else {
+		text = number;
+	}
+
+	const match = DECIMAL_AMOUNT.exec(text);
+
+	// No digits at all, or an exponent (`1e-7` is how JavaScript prints 0.0000001).
+	if (!match || (match[2] === '' && (match[3] ?? '') === '')) {
+		throw new InvalidNumberError(number);
+	}
+
+	const [, sign, integer] = match;
+	const rawFraction = match[3] ?? '';
+	// Trailing zeros carry no value and must not count against the unit's precision.
+	const fraction = rawFraction.replace(/0+$/, '');
 
 	// count number of zeros in denomination
 	const numberOfZerosInDenomination = denomination.toString().length - 1;
 
-	// check which either `fraction` or `denomination` have lower number of zeros
-	const decimals = Math.min(fraction.length, numberOfZerosInDenomination);
-
-	if (decimals === 0) {
-		return updatedValue.toString();
+	// More significant decimals than the unit has cannot be represented in planck. Rejecting
+	// is the only safe answer: the previous code stripped `min(fraction, precision)` digits
+	// and so multiplied the amount by 10^(fraction - precision).
+	if (fraction.length > numberOfZerosInDenomination) {
+		throw new InvalidNumberError(number);
 	}
 
-	// Add zeros to make length equal to required decimal points
-	// If string is larger than decimal points required then remove last zeros
-	return updatedValue.toString().padStart(decimals, '0').slice(0, -decimals);
+	// 24.56 quanta -> 2456 * 10^(18 - 2)
+	const planck =
+		BigInt(`${integer}${fraction}`) * expo10(numberOfZerosInDenomination - fraction.length);
+
+	return sign === '-' && planck !== BigInt(0) ? `-${planck.toString()}` : planck.toString();
 };
 
 /**

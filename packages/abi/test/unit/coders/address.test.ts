@@ -123,7 +123,7 @@ describe('AddressCoder', () => {
 			['all-ones', maxBody],
 			['alternating nibbles', abBody],
 		])('reads one 64-byte word back as %s', (_label, body) => {
-			expect(decodeData(`0x${body}`)).toBe(addr(body));
+			expect(decodeData(`0x${body}`)).toBe(toChecksumAddress(addr(body)));
 		});
 
 		it('consumes exactly one 64-byte word', () => {
@@ -135,8 +135,8 @@ describe('AddressCoder', () => {
 		it('decodes the second word independently of the first', () => {
 			const reader = new Reader(`0x${abBody}${oneBody}`, 64);
 			const coder = new AddressCoder('to');
-			expect(coder.decode(reader)).toBe(addr(abBody));
-			expect(coder.decode(reader)).toBe(addr(oneBody));
+			expect(coder.decode(reader)).toBe(toChecksumAddress(addr(abBody)));
+			expect(coder.decode(reader)).toBe(toChecksumAddress(addr(oneBody)));
 			expect(reader.consumed).toBe(128);
 		});
 
@@ -154,9 +154,9 @@ describe('AddressCoder', () => {
 
 	describe('round-trip', () => {
 		it.each([zeroBody, oneBody, maxBody, abBody, digitBody])(
-			'encode -> decode is the identity for Q%s',
+			'encode -> decode returns the checksummed form of Q%s',
 			body => {
-				expect(decodeData(encodeData(addr(body)))).toBe(addr(body));
+				expect(decodeData(encodeData(addr(body)))).toBe(toChecksumAddress(addr(body)));
 			},
 		);
 	});
@@ -200,17 +200,14 @@ describe('AddressCoder', () => {
 			expect(() => encodeData(`${prefix}${abBody}`)).toThrow();
 		});
 
-		it('accepts a lowercase "q" prefix as an alias for "Q"', () => {
-			// The validator regex is /^Q[0-9a-f]{128}$/i, so the prefix is matched
-			// case-insensitively and addressToHex strips it with /^q/i. Both forms
-			// therefore denote the same 64 bytes.
-			expect(encodeData(`q${abBody}`)).toBe(`0x${abBody}`);
-			expect(encodeData(`q${abBody}`)).toBe(encodeData(`Q${abBody}`));
+		it('rejects a lowercase "q" prefix, as go-qrl does (P4-L-44)', () => {
+			// go-qrl's `hasQPrefix` accepts a capital `Q` only; the validator regex used to carry
+			// the `i` flag and let `q…` through every address check while the node rejected it.
+			expect(() => encodeData(`q${abBody}`)).toThrow();
 		});
 
-		it('normalises the prefix to uppercase "Q" on decode', () => {
-			// Asymmetry: "q..." is accepted on the way in, but decode always emits "Q...".
-			expect(decodeData(encodeData(`q${abBody}`))).toBe(`Q${abBody}`);
+		it('emits the checksummed uppercase "Q" form on decode', () => {
+			expect(decodeData(encodeData(`Q${abBody}`))).toBe(toChecksumAddress(`Q${abBody}`));
 		});
 	});
 
@@ -271,12 +268,11 @@ describe('AddressCoder', () => {
 			expect(() => encodeData(flipped)).toThrow();
 		});
 
-		it('always decodes to the lowercase (non-checksummed) form', () => {
-			// Documented asymmetry: decode() goes through hexToAddress(), which
-			// lowercases. It never returns the mixed-case checksummed form.
+		it('always decodes to the checksummed form', () => {
 			const checksummed = toChecksumAddress(addr(abBody));
 			expect(checksummed).not.toBe(addr(abBody));
-			expect(decodeData(encodeData(checksummed))).toBe(addr(abBody));
+			expect(decodeData(encodeData(addr(abBody)))).toBe(checksummed);
+			expect(decodeData(encodeData(checksummed))).toBe(checksummed);
 		});
 	});
 

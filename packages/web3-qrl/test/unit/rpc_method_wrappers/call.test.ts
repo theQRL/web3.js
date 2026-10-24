@@ -39,6 +39,10 @@ describe('call', () => {
 		web3Context = new Web3Context('http://127.0.0.1:8545');
 	});
 
+	beforeEach(() => {
+		(qrlRpcMethods.call as jest.Mock).mockResolvedValue(mockRpcResponse);
+	});
+
 	it.each(testData)(
 		`should call rpcMethods.call with expected parameters\nTitle: %s\nInput parameters: %s\n`,
 		async (_, inputParameters) => {

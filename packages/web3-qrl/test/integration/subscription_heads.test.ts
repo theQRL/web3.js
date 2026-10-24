@@ -15,7 +15,6 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import { BlockHeaderOutput, SupportedProviders } from '@theqrl/web3-types';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { Web3 } from '@theqrl/web3';
 import { Web3QRL, NewHeadsSubscription } from '../../src';
 import { Resolve } from './helper';
@@ -72,7 +71,6 @@ describeIf(isSocket)('subscription', () => {
 					reject(error);
 				});
 			});
-			// eslint-disable-next-line no-void
 			void sendFewSampleTxs(checkTxCount);
 
 			await pr;

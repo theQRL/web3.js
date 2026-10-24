@@ -18,10 +18,57 @@ import { Web3ValidationErrorObject } from '@theqrl/web3-types';
 
 import { z, ZodType, ZodIssue, ZodIssueCode, ZodTypeAny } from 'zod';
 
-import { RawCreateParams } from 'zod/lib/types';
+import { BaseWeb3Error, truncateEchoedText } from '@theqrl/web3-errors';
 import { Web3ValidatorError } from './errors.js';
-import { Json, JsonSchema } from './types.js';
+import { Json, JsonSchema, Web3ValidationOptions } from './types.js';
 import formats from './formats.js';
+
+// Depth is always bounded. An aggregate value budget is opt-in for untrusted
+// data: a small global limit also rejects legitimate caller-supplied calldata.
+const checkValidationBudget = (data: unknown, maxEntries?: number) => {
+	if (maxEntries !== undefined && (!Number.isSafeInteger(maxEntries) || maxEntries <= 0)) {
+		throw new Web3ValidatorError([
+			{
+				keyword: 'validationBudget',
+				instancePath: '',
+				schemaPath: '',
+				params: { maxEntries },
+				message: 'maxEntries must be a positive safe integer',
+			},
+		]);
+	}
+	let remaining = maxEntries ?? Infinity;
+	const visit = (value: unknown, depth: number) => {
+		remaining -= 1;
+		if (remaining < 0 || depth > 64) {
+			throw new Web3ValidatorError([
+				{
+					keyword: 'validationBudget',
+					instancePath: '',
+					schemaPath: '',
+					params: { maxEntries, maxDepth: 64 },
+					message:
+						depth > 64
+							? 'Validation input exceeds 64 nesting levels'
+							: `Validation input exceeds ${maxEntries} entries`,
+				},
+			]);
+		}
+		if (value && typeof value === 'object' && !(value instanceof Uint8Array)) {
+			// Check array size before iterating or copying its contents.
+			if (Array.isArray(value) && value.length > remaining) {
+				remaining = -1;
+				visit(undefined, depth);
+			}
+			// eslint-disable-next-line no-restricted-syntax -- stop at the budget without allocating Object.keys for an unbounded object
+			for (const key in value) {
+				if (Object.prototype.hasOwnProperty.call(value, key))
+					visit((value as Record<string, unknown>)[key], depth + 1);
+			}
+		}
+	};
+	visit(data, 0);
+};
 
 const convertToZod = (schema: JsonSchema): ZodType => {
 	if ((!schema?.type || schema?.type === 'object') && schema?.properties) {
@@ -42,6 +89,20 @@ const convertToZod = (schema: JsonSchema): ZodType => {
 		return z.object(obj).partial();
 	}
 
+	if (schema?.type === 'array' && !schema?.items) {
+		// Zod would build an array schema around `undefined` and fail later with a raw
+		// `TypeError` (`_parseSync`); a schema that names no element type is a schema error.
+		throw new Web3ValidatorError([
+			{
+				keyword: 'items',
+				message: 'An array schema requires "items" (the element schema)',
+				params: { type: 'array' },
+				instancePath: '',
+				schemaPath: '',
+			},
+		]);
+	}
+
 	if (schema?.type === 'array' && schema?.items) {
 		if (Array.isArray(schema.items) && schema.items.length > 0) {
 			const arr: Partial<[ZodTypeAny, ...ZodTypeAny[]]> = [];
@@ -58,9 +119,13 @@ const convertToZod = (schema: JsonSchema): ZodType => {
 		// Dynamic arrays (`T[]`) carry no `minItems`/`maxItems` and stay unconstrained.
 		let zodArraySchema = z.array(convertToZod(schema.items as JsonSchema));
 		zodArraySchema =
-			typeof schema?.minItems === 'number' ? zodArraySchema.min(schema.minItems) : zodArraySchema;
+			typeof schema?.minItems === 'number'
+				? zodArraySchema.min(schema.minItems)
+				: zodArraySchema;
 		zodArraySchema =
-			typeof schema?.maxItems === 'number' ? zodArraySchema.max(schema.maxItems) : zodArraySchema;
+			typeof schema?.maxItems === 'number'
+				? zodArraySchema.max(schema.maxItems)
+				: zodArraySchema;
 
 		return zodArraySchema;
 	}
@@ -76,38 +141,83 @@ const convertToZod = (schema: JsonSchema): ZodType => {
 	}
 
 	if (schema?.format) {
-		return z.any().refine(formats[schema.format], (value: unknown) => ({
-			params: { value, format: schema.format },
-		}));
+		// Only the registered formats are callable: a schema naming an unknown format (or an
+		// `Object.prototype` member such as `constructor`) must fail as a validation error,
+		// never as `check is not a function` or by silently passing (L-26, I-11).
+		const check = Object.prototype.hasOwnProperty.call(formats, schema.format)
+			? formats[schema.format]
+			: undefined;
+
+		if (typeof check !== 'function') {
+			throw new Web3ValidatorError([
+				{
+					keyword: 'format',
+					message: `Unknown format "${schema.format}"`,
+					params: { format: schema.format },
+					instancePath: '',
+					schemaPath: '',
+				},
+			]);
+		}
+
+		return z.any().superRefine((value: unknown, context) => {
+			if (!check(value))
+				context.addIssue({ code: 'custom', params: { value, format: schema.format } });
+		});
 	}
 
 	if (
 		schema?.type &&
-		schema?.type !== 'object' &&
-		typeof (z as unknown as { [key: string]: (params?: RawCreateParams) => ZodType })[
-			String(schema.type)
-		] === 'function'
+		![
+			'object',
+			'array',
+			'string',
+			'number',
+			'boolean',
+			'bigint',
+			'null',
+			'undefined',
+			'any',
+			'unknown',
+			'date',
+		].includes(String(schema.type))
 	) {
-		return (z as unknown as { [key: string]: (params?: RawCreateParams) => ZodType })[
-			String(schema.type)
-		]();
+		throw new Web3ValidatorError([
+			{
+				keyword: 'type',
+				instancePath: '',
+				schemaPath: '',
+				params: { type: schema.type },
+				message: `Unsupported schema type ${String(schema.type)}`,
+			},
+		]);
+	}
+	if (
+		schema?.type &&
+		schema?.type !== 'object' &&
+		typeof (z as unknown as { [key: string]: () => ZodType })[String(schema.type)] ===
+			'function'
+	) {
+		return (z as unknown as { [key: string]: () => ZodType })[String(schema.type)]();
 	}
 	return z.object({ data: z.any() }).partial();
 };
 
 export class Validator {
-	// eslint-disable-next-line no-use-before-define
 	private static validatorInstance?: Validator;
 
-	// eslint-disable-next-line no-useless-constructor, @typescript-eslint/no-empty-function
 	public static factory(): Validator {
-		if (!Validator.validatorInstance) {
-			Validator.validatorInstance = new Validator();
-		}
+		Validator.validatorInstance ??= new Validator();
 		return Validator.validatorInstance;
 	}
 
-	public validate(schema: JsonSchema, data: Json, options?: { silent?: boolean }) {
+	public validate(schema: JsonSchema, data: Json, options?: Web3ValidationOptions) {
+		try {
+			checkValidationBudget(data, options?.maxEntries);
+		} catch (error) {
+			if (options?.silent && error instanceof Web3ValidatorError) return error.errors;
+			throw error;
+		}
 		const zod = convertToZod(schema);
 		const result = zod.safeParse(data);
 		// Zod's SafeParseReturnType narrows to SafeParseError only on the explicit false check.
@@ -118,7 +228,7 @@ export class Validator {
 				if (options?.silent) {
 					return errors;
 				}
-				throw new Web3ValidatorError(errors);
+				throw new Web3ValidatorError(errors, result.error.issues.length);
 			}
 		}
 		return undefined;
@@ -126,7 +236,7 @@ export class Validator {
 	// eslint-disable-next-line class-methods-use-this
 	private convertErrors(errors: ZodIssue[] | undefined): Web3ValidationErrorObject[] | undefined {
 		if (errors && Array.isArray(errors) && errors.length > 0) {
-			return errors.map((error: ZodIssue) => {
+			return errors.slice(0, 100).map((error: ZodIssue) => {
 				let message;
 				let keyword;
 				let params;
@@ -155,9 +265,15 @@ export class Validator {
 					if (typeof value === 'undefined') {
 						message = `value at "/${schemaPath}" is required`;
 					} else {
+						// `convertToString` never throws: a bigint or a circular object used to turn
+						// the validation error into a raw `TypeError` (P4-L-39).
 						message = `value "${
-							// eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-							typeof value === 'object' ? JSON.stringify(value) : value
+							// eslint-disable-next-line no-null/no-null -- `null` is reported as the node sent it
+							value === null
+								? 'null'
+								: typeof value === 'string'
+									? truncateEchoedText(value)
+									: truncateEchoedText(BaseWeb3Error.convertToString(value, true))
 						}" at "/${schemaPath}" must pass "${format}" validation`;
 					}
 
@@ -168,7 +284,6 @@ export class Validator {
 					keyword: keyword ?? field,
 					instancePath: instancePath ? `/${instancePath}` : '',
 					schemaPath: schemaPath ? `#${schemaPath}` : '#',
-					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 					params: params ?? { value: error.message },
 					message: message ?? error.message,
 				} as Web3ValidationErrorObject;

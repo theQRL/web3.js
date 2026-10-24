@@ -40,6 +40,10 @@ describe('getFeeHistory', () => {
 		web3Context = new Web3Context('http://127.0.0.1:8545');
 	});
 
+	beforeEach(() => {
+		(qrlRpcMethods.getFeeHistory as jest.Mock).mockResolvedValue(mockRpcResponse);
+	});
+
 	it.each(testData)(
 		`should call rpcMethods.getProof with expected parameters\nTitle: %s\nInput parameters: %s\n`,
 		async (_, inputParameters) => {
@@ -98,6 +102,8 @@ describe('getFeeHistory', () => {
 				...inputParameters,
 				expectedReturnFormat,
 			);
+			const ratios: number[] = result.gasUsedRatio;
+			expect(ratios).toEqual(mockRpcResponse.gasUsedRatio);
 			expect(result).toStrictEqual(expectedFormattedResult);
 		},
 	);

@@ -18,7 +18,6 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import { TypedArray } from '@theqrl/web3-types';
 
 // Explicitly check for the
-// eslint-disable-next-line @typescript-eslint/ban-types
 export const isNullish = (item: unknown): item is undefined | null =>
 	// Using "null" value intentionally for validation
 	// eslint-disable-next-line no-null/no-null

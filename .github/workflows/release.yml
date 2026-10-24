@@ -3,7 +3,20 @@ name: Release
 on:
   push:
     branches: [main]
+  # Manual path: rebuild and publish versions that an earlier run tagged but
+  # never published (RELEASE.md, "Recovering From A Failed Release Run"). It
+  # runs through the same `npm-publish` environment and the same publish,
+  # attestation and provenance jobs as a push release.
   workflow_dispatch:
+    inputs:
+      tags:
+        description: >-
+          Release tags to rebuild and publish, comma-separated
+          (e.g. "@theqrl/web3@1.0.4,@theqrl/web3-utils@1.0.4"), or "all-missing"
+          for every package whose last tag is not on the registry.
+        required: true
+        default: all-missing
+        type: string
 
 concurrency:
   group: release-${{ github.ref }}
@@ -17,6 +30,7 @@ permissions:
 # rather than assumed. Keep in step with the root package.json engines.node.
 env:
   NODE_FLOOR_VERSION: 20.19.0
+  NODE_PUBLISH_VERSION: 24.22.1
 
 jobs:
   ci:
@@ -27,16 +41,28 @@ jobs:
     name: Prepare Release
     needs: ci
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'theQRL/web3.js' && vars.RELEASES_ENABLED == 'true'
+    if: >-
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+      && github.ref == 'refs/heads/main'
+      && github.repository == 'theQRL/web3.js'
+      && vars.RELEASES_ENABLED == 'true'
     environment: npm-publish
     permissions:
-      contents: write # create GitHub Releases via @semantic-release/github
-      issues: write # semantic-release opens issues for release failures
-      pull-requests: write # semantic-release comments on released PRs
+      # Push release tags and create *draft* GitHub Releases via
+      # @semantic-release/github; the drafts are published by the attest job
+      # once every tarball is on npm. Issue and PR commenting is disabled in
+      # .releaserc.json, so no issues/pull-requests permission is needed.
+      contents: write # push release tags, create draft GitHub Releases
     outputs:
-      released: ${{ steps.released.outputs.released }}
-      count: ${{ steps.released.outputs.count }}
-      packages: ${{ steps.released.outputs.packages }}
+      released: ${{ steps.released.outputs.released || steps.republish.outputs.released }}
+      count: ${{ steps.released.outputs.count || steps.republish.outputs.count }}
+      packages: ${{ steps.released.outputs.packages || steps.republish.outputs.packages }}
+      # sha256sum output (base64) of every file in the release-candidate
+      # artifact, and of the tarballs alone. Job outputs are fixed when this job
+      # ends, so the consuming jobs verify the artifact they download against
+      # them instead of trusting the artifact store of a still-running workflow.
+      digests: ${{ steps.digests.outputs.digests }}
+      tarball-digests: ${{ steps.digests.outputs.tarball-digests }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -55,19 +81,32 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
 
+      # multi-semantic-release derives every sibling range from the last tag,
+      # so a tagged version that never reached the registry wedges every
+      # dependant's next release. Fail here, before new tags are pushed, and
+      # point at the manual run that publishes the missing versions.
+      - name: Check that every tagged release is on the registry
+        if: github.event_name == 'push'
+        run: node scripts/release/published-versions.js --tags --check
+
       - name: Build packages before release analysis
+        if: github.event_name == 'push'
         run: pnpm run build
 
       - name: Build browser bundles before release analysis
+        if: github.event_name == 'push'
         run: pnpm run build:web
 
       - name: Inspect package tarballs before release analysis
+        if: github.event_name == 'push'
         run: pnpm run release:inspect-packages
 
       - name: Snapshot package versions
+        if: github.event_name == 'push'
         run: node scripts/release/packages.js snapshot .release/release-versions-before.json
 
       - name: Run multi-semantic-release
+        if: github.event_name == 'push'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GIT_AUTHOR_NAME: github-actions[bot]
@@ -78,19 +117,18 @@ jobs:
 
       - name: Detect released packages
         id: released
+        if: github.event_name == 'push'
         run: node scripts/release/packages.js diff .release/release-versions-before.json .release/released-packages.json
 
-      - name: Rebuild packages after version updates
+      - name: Rebuild packages and browser bundles with workspace dependency edges
         if: steps.released.outputs.released == 'true'
-        run: pnpm run build
-
-      - name: Rebuild browser bundles after version updates
-        if: steps.released.outputs.released == 'true'
-        run: pnpm run build:web
+        run: node scripts/release/build-with-workspace-links.js
 
       - name: Inspect package tarballs after version updates
         if: steps.released.outputs.released == 'true'
-        run: pnpm run release:inspect-packages
+        run: |
+          mapfile -t release_packages < <(cut -f2 .release/released-packages.tsv)
+          node scripts/release/inspect-packages.js --release "${release_packages[@]}"
 
       - name: Pack released packages
         if: steps.released.outputs.released == 'true'
@@ -101,16 +139,87 @@ jobs:
             echo "Packing ${package_name}@${package_version}"
             pnpm --dir "${package_path}" pack --pack-destination ../../dist/tarballs
           done < .release/released-packages.tsv
-          cp .release/released-packages.json .release/released-packages.tsv dist/
+
+      # Manual path. Resolves the requested tags to the versions that are
+      # missing from the registry and the commits they point at; every later
+      # step reads the same .release/released-packages.{tsv,json} as the push
+      # path. Versions already on the registry are skipped: publish-tarballs.js
+      # would only re-verify their integrity against a rebuild.
+      - name: Plan the versions to republish
+        id: republish
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          REQUESTED_TAGS: ${{ inputs.tags }}
+        run: node scripts/release/republish-plan.js "${REQUESTED_TAGS}" .release
+
+      # Each tagged commit is checked out, installed from its own lockfile and
+      # built; scripts/release/restore-tag-manifests.js re-creates the manifest
+      # state the original run published (tag version, `^<last release>` sibling
+      # ranges), and the requested packages are packed from it. The scripts run
+      # from a copy taken at the dispatched commit so the loop does not depend on
+      # what each older commit shipped, and `pnpm run build` cleans dist/, so the
+      # tarballs are collected outside the tree and moved in afterwards.
+      - name: Rebuild and pack the tagged versions
+        if: steps.republish.outputs.released == 'true'
+        run: |
+          set -euo pipefail
+          cp -R scripts "${RUNNER_TEMP}/release-scripts"
+          mkdir -p "${RUNNER_TEMP}/tarballs"
+          dispatched_commit=$(git rev-parse HEAD)
+          cut -f1 .release/republish.tsv | sort -u | while IFS= read -r commit; do
+            echo "::group::Rebuilding ${commit}"
+            git checkout --quiet --detach "${commit}"
+            pnpm install --frozen-lockfile --ignore-scripts
+            node "${RUNNER_TEMP}/release-scripts/release/restore-tag-manifests.js" "${commit}"
+            node "${RUNNER_TEMP}/release-scripts/release/build-with-workspace-links.js"
+            mapfile -t release_packages < <(awk -F '\t' -v commit="${commit}" '$1 == commit { print $3 }' .release/republish.tsv)
+            NODE_PATH="${PWD}/node_modules" node "${RUNNER_TEMP}/release-scripts/release/inspect-packages.js" --release "${release_packages[@]}"
+            while IFS=$'\t' read -r row_commit package_path package_name package_version _release_tag _tarball_name; do
+              if [ "${row_commit}" = "${commit}" ]; then
+                echo "Packing ${package_name}@${package_version}"
+                pnpm --dir "${package_path}" pack --pack-destination "${RUNNER_TEMP}/tarballs"
+              fi
+            done < .release/republish.tsv
+            git checkout --quiet -- .
+            echo "::endgroup::"
+          done
+          git checkout --quiet --detach "${dispatched_commit}"
+          pnpm install --frozen-lockfile --ignore-scripts
+          mkdir -p dist/tarballs
+          mv "${RUNNER_TEMP}"/tarballs/*.tgz dist/tarballs/
+          while IFS=$'\t' read -r _package_path _package_name _package_version _release_tag tarball_name; do
+            test -s "dist/tarballs/${tarball_name}"
+          done < .release/released-packages.tsv
+
+      - name: Collect release metadata
+        if: steps.released.outputs.released == 'true' || steps.republish.outputs.released == 'true'
+        run: cp .release/released-packages.json .release/released-packages.tsv dist/
 
       - name: Generate checksums
-        if: steps.released.outputs.released == 'true'
+        if: steps.released.outputs.released == 'true' || steps.republish.outputs.released == 'true'
         run: |
           sha256sum dist/tarballs/*.tgz > dist/checksums-sha256.txt
           sha512sum dist/tarballs/*.tgz > dist/checksums-sha512.txt
 
+      # The smoke job installs exactly this tree with `npm ci` (metadata-only
+      # resolution here, nothing is fetched or executed).
+      - name: Resolve the smoke-test dependency tree
+        if: steps.released.outputs.released == 'true' || steps.republish.outputs.released == 'true'
+        run: node scripts/release/smoke-tarballs.js --resolve-only dist/released-packages.tsv dist/tarballs dist/smoke
+
+      - name: Record artifact digests
+        id: digests
+        if: steps.released.outputs.released == 'true' || steps.republish.outputs.released == 'true'
+        run: |
+          set -euo pipefail
+          cd dist
+          {
+            echo "digests=$(sha256sum tarballs/*.tgz released-packages.json released-packages.tsv checksums-sha256.txt checksums-sha512.txt smoke/package.json smoke/package-lock.json | base64 -w0)"
+            echo "tarball-digests=$(cd tarballs && sha256sum ./*.tgz | sed 's#  \./#  #' | base64 -w0)"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Upload release candidate tarballs
-        if: steps.released.outputs.released == 'true'
+        if: steps.released.outputs.released == 'true' || steps.republish.outputs.released == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: release-candidate-tarballs
@@ -120,7 +229,11 @@ jobs:
             dist/released-packages.tsv
             dist/checksums-sha256.txt
             dist/checksums-sha512.txt
-          retention-days: 5
+            dist/smoke/package.json
+            dist/smoke/package-lock.json
+          # Environment approvals can wait up to 30 days; the candidate must
+          # outlive that so an approved run can still be re-driven.
+          retention-days: 30
 
   smoke-node-floor:
     name: Smoke Tarballs (advertised Node floor)
@@ -136,11 +249,12 @@ jobs:
       - name: Use Node.js ${{ env.NODE_FLOOR_VERSION }}
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          # Smoke test runs `npm install` against the published tarballs in a
-          # fresh temp dir; it never installs the monorepo's devDependencies,
-          # so the semantic-release Node 22+ engine constraint does not apply.
-          # Pin the exact advertised floor here so consumers on the oldest
-          # supported Node are covered, not just the newest 20.x release.
+          # Smoke test runs `npm ci` against the lockfile prepare resolved for
+          # the published tarballs in a fresh directory; it never installs the
+          # monorepo's devDependencies, so the semantic-release Node 22+ engine
+          # constraint does not apply. Pin the exact advertised floor here so
+          # consumers on the oldest supported Node are covered, not just the
+          # newest 20.x release.
           node-version: ${{ env.NODE_FLOOR_VERSION }}
 
       - name: Download release candidate tarballs
@@ -149,9 +263,17 @@ jobs:
           name: release-candidate-tarballs
           path: dist
 
-      - name: Smoke test packed tarballs
-        run: node scripts/release/smoke-tarballs.js dist/released-packages.tsv dist/tarballs
+      - name: Verify the artifact against the prepare job's digests
+        env:
+          DIGESTS: ${{ needs.prepare.outputs.digests }}
+        run: scripts/release/verify-artifact-digests.sh dist "${DIGESTS}"
 
+      - name: Smoke test packed tarballs
+        run: node scripts/release/smoke-tarballs.js dist/released-packages.tsv dist/tarballs dist/smoke
+
+  # The only job with npm's trusted-publishing identity (OIDC via id-token in
+  # the npm-publish environment). It does nothing but verify and publish: no
+  # third-party action and no other tool runs with that token available.
   publish:
     name: Publish
     needs: [prepare, smoke-node-floor]
@@ -159,9 +281,8 @@ jobs:
     runs-on: ubuntu-latest
     environment: npm-publish
     permissions:
-      contents: write # upload SBOMs and checksums to GitHub Releases
+      contents: read # checkout only; releases are updated by the attest job
       id-token: write # npm trusted publishing OIDC token + provenance signing
-      attestations: write # create build-provenance attestations
     env:
       NPM_CONFIG_PROVENANCE: "true"
       NPM_CONFIG_ACCESS: public
@@ -174,18 +295,24 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 22.15.0
+          node-version: ${{ env.NODE_PUBLISH_VERSION }}
           registry-url: https://registry.npmjs.org/
 
-      - name: Use npm 11 for trusted publishing
-        # zizmor: ignore[adhoc-packages]
-        # npm trusted publishing (OIDC provenance) requires npm >= 11.5.1, which
-        # is newer than the npm bundled with the pinned Node in setup-node above.
-        # The version is pinned exactly (not @latest), so this is a deliberate,
-        # reviewed exception rather than an unpinned ad-hoc install.
+      # Node 24 bundles an OIDC-capable npm. No package installation runs with
+      # this job's publishing identity available.
+      - name: Check bundled npm
         run: |
-          npm install -g npm@11.5.1
-          npm --version
+          node <<'NODE'
+          const { execFileSync } = require('node:child_process');
+          const version = execFileSync('npm', ['--version'], { encoding: 'utf8' }).trim();
+          const match = /^(\d+)\.(\d+)\.(\d+)$/.exec(version);
+          if (!match) throw new Error(`Invalid npm version: ${version}`);
+          const [major, minor, patch] = match.slice(1).map(Number);
+          if (major < 11 || (major === 11 && (minor < 5 || (minor === 5 && patch < 1)))) {
+            throw new Error(`npm >= 11.5.1 required, found ${version}`);
+          }
+          console.log(`npm ${version}`);
+          NODE
 
       - name: Download release candidate tarballs
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
@@ -193,26 +320,118 @@ jobs:
           name: release-candidate-tarballs
           path: dist
 
-      - name: Publish tarballs with trusted publishing
-        run: |
-          while IFS=$'\t' read -r _package_path package_name package_version _release_tag tarball_name; do
-            echo "Publishing ${package_name}@${package_version}"
-            npm publish "dist/tarballs/${tarball_name}" --access public
-          done < dist/released-packages.tsv
+      # Nothing downloaded is trusted until it matches the digests prepare
+      # recorded as job outputs: the artifact store of a running workflow can be
+      # re-uploaded by code executed in any job in between.
+      - name: Verify the artifact against the prepare job's digests
+        env:
+          DIGESTS: ${{ needs.prepare.outputs.digests }}
+        run: scripts/release/verify-artifact-digests.sh dist "${DIGESTS}"
 
+      # Idempotent: a package whose exact version is already on the registry
+      # with this tarball's integrity is skipped, a version that exists with
+      # other bytes fails the run, and one failed publish does not stop the
+      # loop, so a failed run is re-driven by re-running this job while the
+      # release-candidate artifact exists. See RELEASE.md, "Recovering from a
+      # failed release run".
+      - name: Publish tarballs with trusted publishing
+        run: node scripts/release/publish-tarballs.js dist/released-packages.tsv dist/tarballs
+
+  # SBOM generation runs third-party tooling (syft, fetched at run time), so it
+  # gets neither an OIDC token nor write permissions; the attest job verifies
+  # its output against the digests recorded here before signing anything.
+  sbom:
+    name: Generate SBOMs
+    needs: prepare
+    if: needs.prepare.outputs.released == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # checkout the lockfile syft catalogues
+    outputs:
+      digests: ${{ steps.digests.outputs.digests }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Both SBOMs describe the repository checkout, i.e. the whole locked
+      # dependency graph (pnpm-lock.yaml, production and development
+      # dependencies) the tarballs were built from; a packed tarball on its own
+      # carries no dependency tree to catalogue. They are attested with the
+      # tarballs as subjects, which is what binds them to the published bytes.
       - name: Generate SBOM SPDX
         uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
         with:
           format: spdx-json
-          output-file: dist/sbom-spdx.json
-          artifact-name: sbom-spdx.json
+          output-file: dist/sbom/sbom-spdx.json
+          upload-artifact: false
+          upload-release-assets: false
 
       - name: Generate SBOM CycloneDX
         uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
         with:
           format: cyclonedx-json
-          output-file: dist/sbom-cyclonedx.json
-          artifact-name: sbom-cyclonedx.json
+          output-file: dist/sbom/sbom-cyclonedx.json
+          upload-artifact: false
+          upload-release-assets: false
+
+      - name: Record SBOM digests
+        id: digests
+        run: |
+          set -euo pipefail
+          cd dist/sbom
+          echo "digests=$(sha256sum sbom-spdx.json sbom-cyclonedx.json | base64 -w0)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload SBOMs
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-sboms
+          path: |
+            dist/sbom/sbom-spdx.json
+            dist/sbom/sbom-cyclonedx.json
+          retention-days: 30
+
+  # Attestations and release uploads need id-token and write permissions but
+  # deliberately NOT the npm-publish environment: npm trusted publishing is
+  # scoped to repository, workflow file and environment, so an OIDC token
+  # minted here cannot publish a package even if a step were compromised.
+  attest:
+    name: Attest And Publish Releases
+    needs: [prepare, publish, sbom]
+    if: needs.prepare.outputs.released == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # upload tarballs, checksums and SBOMs to the GitHub Releases and un-draft them
+      id-token: write # sign build-provenance and SBOM attestations via OIDC
+      attestations: write # create build-provenance and SBOM attestations
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Download release candidate tarballs
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release-candidate-tarballs
+          path: dist
+
+      - name: Verify the artifact against the prepare job's digests
+        env:
+          DIGESTS: ${{ needs.prepare.outputs.digests }}
+        run: scripts/release/verify-artifact-digests.sh dist "${DIGESTS}"
+
+      - name: Download SBOMs
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release-sboms
+          path: dist/sbom
+
+      - name: Verify the SBOMs against the sbom job's digests
+        env:
+          DIGESTS: ${{ needs.sbom.outputs.digests }}
+        run: scripts/release/verify-artifact-digests.sh dist/sbom "${DIGESTS}"
 
       - name: Attest release artefacts
         uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
@@ -222,17 +441,26 @@ jobs:
             dist/checksums-sha256.txt
             dist/checksums-sha512.txt
 
+      # The SBOM is the predicate and the published tarballs (plus the checksum
+      # files) are the subjects, so `gh attestation verify <tarball>` finds the
+      # SBOM attestation of that tarball; an SBOM attesting itself binds nothing.
       - name: Attest SBOM SPDX
         uses: actions/attest-sbom@c604332985a26aa8cf1bdc465b92731239ec6b9e # v4.1.0
         with:
-          subject-path: dist/sbom-spdx.json
-          sbom-path: dist/sbom-spdx.json
+          subject-path: |
+            dist/tarballs/*.tgz
+            dist/checksums-sha256.txt
+            dist/checksums-sha512.txt
+          sbom-path: dist/sbom/sbom-spdx.json
 
       - name: Attest SBOM CycloneDX
         uses: actions/attest-sbom@c604332985a26aa8cf1bdc465b92731239ec6b9e # v4.1.0
         with:
-          subject-path: dist/sbom-cyclonedx.json
-          sbom-path: dist/sbom-cyclonedx.json
+          subject-path: |
+            dist/tarballs/*.tgz
+            dist/checksums-sha256.txt
+            dist/checksums-sha512.txt
+          sbom-path: dist/sbom/sbom-cyclonedx.json
 
       - name: Upload release artefacts
         env:
@@ -243,36 +471,26 @@ jobs:
               "dist/tarballs/${tarball_name}" \
               dist/checksums-sha256.txt \
               dist/checksums-sha512.txt \
-              dist/sbom-spdx.json \
-              dist/sbom-cyclonedx.json \
+              dist/sbom/sbom-spdx.json \
+              dist/sbom/sbom-cyclonedx.json \
               --clobber \
               --repo "${GITHUB_REPOSITORY}"
           done < dist/released-packages.tsv
 
-  slsa-subjects:
-    name: Compute SLSA Subjects
-    needs: prepare
-    if: needs.prepare.outputs.released == 'true'
-    runs-on: ubuntu-latest
-    outputs:
-      hashes: ${{ steps.hash.outputs.hashes }}
-    steps:
-      - name: Download release candidate tarballs
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: release-candidate-tarballs
-          path: dist
-
-      - name: Generate SLSA subject hashes
-        id: hash
+      # The releases exist as drafts since the prepare job; they become public
+      # only now, after every tarball was published and its artefacts attached.
+      # `gh release edit` is idempotent, so re-running this job is safe.
+      - name: Publish GitHub releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          set -euo pipefail
-          cd dist/tarballs
-          echo "hashes=$(sha256sum ./*.tgz | base64 -w0)" >> "$GITHUB_OUTPUT"
+          while IFS=$'\t' read -r _package_path _package_name _package_version release_tag _tarball_name; do
+            gh release edit "${release_tag}" --draft=false --repo "${GITHUB_REPOSITORY}"
+          done < dist/released-packages.tsv
 
   slsa-provenance:
     name: SLSA Provenance
-    needs: [prepare, publish, slsa-subjects]
+    needs: [prepare, publish]
     if: needs.prepare.outputs.released == 'true'
     permissions:
       actions: read # SLSA generator inspects the run's workflow definition
@@ -284,7 +502,9 @@ jobs:
     # https://github.com/slsa-framework/slsa-github-generator/blob/main/internal/builders/generic/README.md
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
     with:
-      base64-subjects: ${{ needs.slsa-subjects.outputs.hashes }}
+      # The subjects are the tarball digests prepare recorded when it packed
+      # them, not a re-hash of a downloadable artifact.
+      base64-subjects: ${{ needs.prepare.outputs.tarball-digests }}
       upload-assets: false
       provenance-name: provenance.intoto.jsonl
 
@@ -296,17 +516,27 @@ jobs:
     permissions:
       contents: write # attach SLSA provenance asset to package GitHub Releases
     steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
       - name: Download release metadata
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: release-candidate-tarballs
           path: dist
 
+      - name: Verify the artifact against the prepare job's digests
+        env:
+          DIGESTS: ${{ needs.prepare.outputs.digests }}
+        run: scripts/release/verify-artifact-digests.sh dist "${DIGESTS}"
+
       - name: Download SLSA provenance
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: provenance.intoto.jsonl
-          path: dist
+          path: dist/provenance
 
       - name: Upload SLSA provenance to package releases
         env:
@@ -314,7 +544,7 @@ jobs:
         run: |
           while IFS=$'\t' read -r _package_path _package_name _package_version release_tag _tarball_name; do
             gh release upload "${release_tag}" \
-              dist/provenance.intoto.jsonl \
+              dist/provenance/provenance.intoto.jsonl \
               --clobber \
               --repo "${GITHUB_REPOSITORY}"
           done < dist/released-packages.tsv

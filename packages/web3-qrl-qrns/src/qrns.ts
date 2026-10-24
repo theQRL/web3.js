@@ -16,17 +16,28 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { Web3Context, Web3ContextObject } from '@theqrl/web3-core';
-import { QRNSNetworkNotSyncedError, QRNSUnsupportedNetworkError } from '@theqrl/web3-errors';
+import {
+	InvalidAddressError,
+	QRNSNetworkNotSyncedError,
+	QRNSUnsupportedNetworkError,
+	RevertInstructionError,
+	Web3ContractError,
+} from '@theqrl/web3-errors';
 import { isSyncing } from '@theqrl/web3-qrl';
 import { Contract } from '@theqrl/web3-qrl-contract';
 import { getId } from '@theqrl/web3-net';
 import {
+	Address,
 	DEFAULT_RETURN_FORMAT,
 	QRLExecutionAPI,
 	FMT_NUMBER,
+	PayableCallOptions,
 	SupportedProviders,
+	TransactionReceipt,
 	Web3NetAPI,
 } from '@theqrl/web3-types';
+import { isNullish } from '@theqrl/web3-utils';
+import { isAddressString } from '@theqrl/web3-validator';
 import { PublicResolverAbi } from './abi/qrns/PublicResolver.js';
 import { networkIds, registryAddresses } from './config.js';
 import { Registry } from './registry.js';
@@ -37,23 +48,22 @@ import { Resolver } from './resolver.js';
  *
  */
 export class QRNS extends Web3Context<QRLExecutionAPI & Web3NetAPI> {
-	/**
-	 * The registryAddress property can be used to define a custom registry address when you are connected to an unknown chain. It defaults to the main registry address.
-	 */
-	public registryAddress: string;
+	private _registryAddress?: string;
 	private readonly _registry: Registry;
 	private readonly _resolver: Resolver;
 	private _detectedAddress?: string;
+	/** The provider {@link _detectedAddress} and {@link _lastSyncCheck} were established against. */
+	private _detectedProvider?: unknown;
 	private _lastSyncCheck?: number;
 
 	/**
 	 * Use to create an instance of QRNS
-	 * @param registryAddr - (Optional) The address of the QRNS registry (default: mainnet registry address)
+	 * @param registryAddr - The address of a deployed QRNS registry. It may be set later through `registryAddress`; no built-in deployment is currently available.
 	 * @param provider - (Optional) The provider to use for the QRNS instance
 	 * @example
 	 * ```ts
 	 * const qrns = new QRNS(
-	 * 	"Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c2e074ec69a0dfb2997ba6c7d2e1e",
+	 * 	registryAddress, // The address of your deployed registry.
 	 * 	"http://localhost:8545"
 	 * );
 	 *
@@ -68,10 +78,37 @@ export class QRNS extends Web3Context<QRLExecutionAPI & Web3NetAPI> {
 			| Web3ContextObject<QRLExecutionAPI & Web3NetAPI>
 			| string,
 	) {
-		super(provider ?? '');
-		this.registryAddress = registryAddr ?? registryAddresses.main; // will default to main registry address
+		super(provider);
+		if (!isNullish(registryAddr)) {
+			this.registryAddress = registryAddr;
+		}
 		this._registry = new Registry(this.getContextObject(), registryAddr);
 		this._resolver = new Resolver(this._registry);
+	}
+
+	/**
+	 * The address of the QRNS registry every query goes to. An address set here (or given to
+	 * the constructor) always wins; otherwise the address {@link QRNS.checkNetwork} detected
+	 * for the current provider is used. Without either, accessing this property or making a
+	 * QRNS query throws a `Web3ContractError` before sending a contract call.
+	 * Use it to define a custom registry address when you are connected to an unknown chain.
+	 * The registry contract is repointed lazily, before the next query (L-62).
+	 */
+	public get registryAddress(): string {
+		const address = this._registryAddress ?? this._detectedAddressFor(this.provider);
+		if (!address) {
+			throw new Web3ContractError(
+				'No verified QRNS registry is configured. Set registryAddress to your deployed registry address.',
+			);
+		}
+		return address;
+	}
+
+	public set registryAddress(value: string) {
+		if (!isAddressString(value)) {
+			throw new InvalidAddressError(value);
+		}
+		this._registryAddress = value;
 	}
 
 	/**
@@ -84,11 +121,11 @@ export class QRNS extends Web3Context<QRLExecutionAPI & Web3NetAPI> {
 	 * const resolver = await qrns.getResolver('resolver');
 	 *
 	 * console.log(resolver.options.address);
-	 * > 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000001234567890123456789012345678901234567890'
+	 * > 'Qd5812F6Cf4a0f645aa620cd57319a0Ed649dd8f5519A9dde7770ae5b0E49e547985f35eB972A2a07041561aa39c65A3991478f9B1e6749e05277dcf58A9A8B72'
 	 * ```
 	 */
 	public async getResolver(name: string): Promise<Contract<typeof PublicResolverAbi>> {
-		return this._registry.getResolver(name);
+		return this.registry.getResolver(name);
 	}
 
 	/**
@@ -101,7 +138,7 @@ export class QRNS extends Web3Context<QRLExecutionAPI & Web3NetAPI> {
 	 * ```
 	 */
 	public async recordExists(name: string): Promise<unknown> {
-		return this._registry.recordExists(name);
+		return this.registry.recordExists(name);
 	}
 
 	/**
@@ -114,7 +151,7 @@ export class QRNS extends Web3Context<QRLExecutionAPI & Web3NetAPI> {
 	 * ```
 	 */
 	public async getTTL(name: string): Promise<unknown> {
-		return this._registry.getTTL(name);
+		return this.registry.getTTL(name);
 	}
 
 	/**
@@ -127,42 +164,77 @@ export class QRNS extends Web3Context<QRLExecutionAPI & Web3NetAPI> {
 	 * ```
 	 */
 	public async getOwner(name: string): Promise<unknown> {
-		return this._registry.getOwner(name);
+		return this.registry.getOwner(name);
 	}
 
 	/**
-	 * Resolves a QRNS name to a QRL address.
+	 * Resolves a QRNS name to an address.
 	 * @param QRNSName - The QRNS name to resolve
 	 * @param coinType - (Optional) The coin type, defaults to 60 (QRL)
-	 * @returns - The QRL address of the given name
+	 * @returns - For coin type 60 the checksummed QRL address of the name (`addr(bytes32)`); a name without an address record (the resolver answers the zero address) rejects with a `Web3ContractError`. For any other coin type the raw address bytes as hex (`addr(bytes32,uint256)`).
 	 * ```ts
 	 * const address = await web3.qrl.qrns.getAddress('qrl.qrns');
 	 * console.log(address);
-	 * > 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000fb6916095ca1df60bb79ce92ce3ea74c37c5d359'
+	 * > 'Q693ba851060efb980daca536c4a1ef74585e1f14657dea79e1f8f4655b543046e11c577ad9a2445443e9e3092aeee55ecf99325f4add93be6c23a2431f6065b9'
 	 * ```
 	 */
 	public async getAddress(QRNSName: string, coinType = 60) {
-		return this._resolver.getAddress(QRNSName, coinType);
+		return this.resolver.getAddress(QRNSName, coinType);
 	}
 
 	/**
-	 * Returns the X and Y coordinates of the curve point for the public key.
+	 * ERC-634 - Returns the text content stored in the resolver for the specified key.
+	 *
+	 * For an address the name is obtained by reverse resolution (see {@link QRNS.getName}): only
+	 * a name that forward-resolves to the address is used, and `''` (the value of an unset
+	 * ERC-634 key) is returned when the address has no verified name (P4-L-31).
+	 * @param QRNSNameOrAddr - The QRNS name to resolve, or a QRL address for reverse resolution
+	 * @param key - The key to resolve https://github.com/ethereum/ercs/blob/master/ERCS/erc-634.md#global-keys
+	 * @returns - The value content stored in the resolver for the specified key
+	 */
+	public async getText(QRNSNameOrAddr: string, key: string): Promise<string> {
+		if (isAddressString(QRNSNameOrAddr)) {
+			const name = await this.resolver.getName(QRNSNameOrAddr, false);
+			if (name === '') {
+				return '';
+			}
+			return this.resolver.getText(name, key);
+		}
+		return this.resolver.getText(QRNSNameOrAddr, key);
+	}
+
+	/**
+	 * Reverse-resolves an address to its name (`<address>.addr.reverse`). The name is returned
+	 * only when it forward-resolves to the same address again; otherwise, and when there is no
+	 * reverse record, `''` is returned (P4-L-31; this is what ethers' `lookupAddress` reports as
+	 * `null`).
+	 * @param address - The QRL address to reverse-resolve
+	 * @param checkInterfaceSupport - Whether to check that the resolver implements `name(bytes32)` first
+	 * @returns - The verified name, or `''`
+	 * @throws InvalidAddressError - when `address` is not a QRL address
+	 */
+	public async getName(address: string, checkInterfaceSupport = true): Promise<string> {
+		return this.resolver.getName(address, checkInterfaceSupport);
+	}
+
+	/**
+	 * Returns the ML-DSA-87 public key and descriptor associated with a QRNS node.
 	 * @param QRNSName - The QRNS name
-	 * @returns - The X and Y coordinates of the curve point for the public key
+	 * @returns - `{ publicKey, descriptor }`
 	 * @example
 	 * ```ts
 	 * const key = await web3.qrl.qrns.getPubkey('qrl.qrns');
 	 * console.log(key);
 	 * > {
-	 * "0": "0x0000000000000000000000000000000000000000000000000000000000000000",
-	 * "1": "0x0000000000000000000000000000000000000000000000000000000000000000",
-	 * "x": "0x0000000000000000000000000000000000000000000000000000000000000000",
-	 * "y": "0x0000000000000000000000000000000000000000000000000000000000000000"
+	 * "0": "0x",
+	 * "1": "0x",
+	 * "publicKey": "0x",
+	 * "descriptor": "0x"
 	 * }
 	 * ```
 	 */
 	public async getPubkey(QRNSName: string) {
-		return this._resolver.getPubkey(QRNSName);
+		return this.resolver.getPubkey(QRNSName);
 	}
 
 	/**
@@ -177,20 +249,24 @@ export class QRNS extends Web3Context<QRLExecutionAPI & Web3NetAPI> {
 	 * ```
 	 */
 	public async getContenthash(QRNSName: string) {
-		return this._resolver.getContenthash(QRNSName);
+		return this.resolver.getContenthash(QRNSName);
 	}
 
 	/**
 	 * Checks if the current used network is synced and looks for QRNS support there.
-	 * Throws an error if not.
+	 * Throws an error if not. An explicitly configured registry is used after checking sync
+	 * status. Otherwise a verified deployment must be listed for the network. Detection is
+	 * cached per provider: switching the provider repeats it (L-62).
 	 * @returns - The address of the QRNS registry if the network has been detected successfully
 	 * @example
 	 * ```ts
 	 * console.log(await web3.qrl.qrns.checkNetwork());
-	 * > 'Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c2e074ec69a0dfb2997ba6c7d2e1e'
+	 * // Returns the configured or detected registry address.
 	 * ```
 	 */
 	public async checkNetwork() {
+		this._forgetDetectionForOtherProvider();
+
 		const now = Date.now() / 1000;
 		if (!this._lastSyncCheck || now - this._lastSyncCheck > 3600) {
 			const syncInfo = await isSyncing(this);
@@ -202,6 +278,9 @@ export class QRNS extends Web3Context<QRLExecutionAPI & Web3NetAPI> {
 			this._lastSyncCheck = now;
 		}
 
+		if (this._registryAddress) {
+			return this._registryAddress;
+		}
 		if (this._detectedAddress) {
 			return this._detectedAddress;
 		}
@@ -232,13 +311,57 @@ export class QRNS extends Web3Context<QRLExecutionAPI & Web3NetAPI> {
 	 * ```
 	 */
 	public async supportsInterface(QRNSName: string, interfaceId: string) {
-		return this._resolver.supportsInterface(QRNSName, interfaceId);
+		return this.resolver.supportsInterface(QRNSName, interfaceId);
 	}
 
 	/**
 	 * @returns - Returns all events that can be emitted by the QRNS registry.
 	 */
 	public get events() {
-		return this._registry.events;
+		return this.registry.events;
+	}
+
+	/**
+	 * Sets the address of a QRNS name in his resolver.
+	 * @param name - The QRNS name
+	 * @param address - The address to set
+	 * @param txConfig - (Optional) The transaction config
+	 * @returns - The transaction receipt
+	 * ```ts
+	 * const receipt = await qrns.setAddress('web3js.qrl','Q33380cd8b47eed92b0dcd1ccca2ee84efd0c8b87a4fe6ee4a918969cdd454c0b04ac9f03ffaafa765af0cbeab572d8c9dd514044aa94adee50fa5d361a3e4629');
+	 *```
+	 */
+	public async setAddress(
+		name: string,
+		address: Address,
+		txConfig: PayableCallOptions,
+	): Promise<TransactionReceipt | RevertInstructionError> {
+		return this.resolver.setAddress(name, address, txConfig);
+	}
+
+	/** The registry, repointed at {@link QRNS.registryAddress} before every use. */
+	private get registry(): Registry {
+		this._registry.address = this.registryAddress;
+		return this._registry;
+	}
+
+	/** The resolver, whose registry is repointed at {@link QRNS.registryAddress} before every use. */
+	private get resolver(): Resolver {
+		this._registry.address = this.registryAddress;
+		return this._resolver;
+	}
+
+	private _detectedAddressFor(provider: unknown): string | undefined {
+		return this._detectedProvider === provider ? this._detectedAddress : undefined;
+	}
+
+	/** A detection made against another provider says nothing about the current one. */
+	private _forgetDetectionForOtherProvider(): void {
+		const { provider } = this;
+		if (this._detectedProvider !== provider) {
+			this._detectedProvider = provider;
+			this._detectedAddress = undefined;
+			this._lastSyncCheck = undefined;
+		}
 	}
 }

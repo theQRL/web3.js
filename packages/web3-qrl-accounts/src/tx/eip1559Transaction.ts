@@ -21,6 +21,7 @@ import { bytesToHex, hexToBytes, uint8ArrayConcat, uint8ArrayEquals } from '@the
 import { MAX_INTEGER } from './constants.js';
 import { BaseTransaction } from './baseTransaction.js';
 import {
+	assertAccessListUint8Array,
 	getAccessListData,
 	getAccessListJSON,
 	getDataFeeEIP2930,
@@ -51,7 +52,6 @@ const TRANSACTION_TYPE_UINT8ARRAY = hexToBytes(TRANSACTION_TYPE.toString(16).pad
  * - TransactionType: 2
  * - EIP: [EIP-1559](https://eips.ethereum.org/EIPS/eip-1559)
  */
-// eslint-disable-next-line no-use-before-define
 export class FeeMarketEIP1559Transaction extends BaseTransaction<FeeMarketEIP1559Transaction> {
 	public readonly chainId: bigint;
 	public readonly accessList: AccessListUint8Array;
@@ -111,6 +111,10 @@ export class FeeMarketEIP1559Transaction extends BaseTransaction<FeeMarketEIP155
 	 *
 	 * Format: `[chainId, nonce, maxPriorityFeePerGas, maxFeePerGas, gasLimit, to, value, data,
 	 * accessList, descriptor, extraParams, signature, publicKey ]`
+	 *
+	 * The 11-element form (no `signature`/`publicKey`) and the 13-element form with empty
+	 * authentication fields are this library's own encodings of an *unsigned* transaction (see
+	 * {@link FeeMarketEIP1559Transaction.serialize}); go-qrl's RLP decoder accepts neither (I-3).
 	 */
 	public static fromValuesArray(values: FeeMarketEIP1559ValuesArray, opts: TxOptions = {}) {
 		if (values.length !== 11 && values.length !== 13) {
@@ -134,6 +138,37 @@ export class FeeMarketEIP1559Transaction extends BaseTransaction<FeeMarketEIP155
 			signature,
 			publicKey,
 		] = values;
+
+		// Every scalar field must be an RLP byte string. `RLP.decode` yields a nested array for an
+		// RLP *list*, and the generic byte conversion would flatten a list of one-byte strings back
+		// into the original bytes, so one signed transaction would have many "valid" encodings
+		// with different hashes. go-qrl's RLP decoder rejects a list where `[]byte` is expected;
+		// so does this method. `signature`/`publicKey` are only present in the 13-element form.
+		const byteFields: [string, unknown][] = [
+			['chainId', chainId],
+			['nonce', nonce],
+			['maxPriorityFeePerGas', maxPriorityFeePerGas],
+			['maxFeePerGas', maxFeePerGas],
+			['gasLimit', gasLimit],
+			['to', to],
+			['value', value],
+			['data', data],
+			['descriptor', descriptor],
+			['extraParams', extraParams],
+		];
+		if (values.length === 13) {
+			byteFields.push(['signature', signature], ['publicKey', publicKey]);
+		}
+		for (const [name, field] of byteFields) {
+			if (!(field instanceof Uint8Array)) {
+				throw new Error(
+					`Invalid EIP-1559 transaction: ${name} must be a byte string, not ${
+						Array.isArray(field) ? 'a list' : typeof field
+					}`,
+				);
+			}
+		}
+		assertAccessListUint8Array(accessList);
 
 		this._validateNotArray({ chainId });
 		validateNoLeadingZeroes({
@@ -257,14 +292,18 @@ export class FeeMarketEIP1559Transaction extends BaseTransaction<FeeMarketEIP155
 	 * Returns a Uint8Array Array of the raw Uint8Arrays of the EIP-1559 transaction, in order.
 	 *
 	 * Format: `[chainId, nonce, maxPriorityFeePerGas, maxFeePerGas, gasLimit, to, value, data,
-	 * accessList, signatureYParity, signatureR, signatureS]`
+	 * accessList, descriptor, extraParams, signature, publicKey]`
 	 *
 	 * Use {@link FeeMarketEIP1559Transaction.serialize} to add a transaction to a block
 	 * with {@link Block.fromValuesArray}.
 	 *
 	 * For an unsigned tx this method uses the empty Uint8Array values for the
-	 * signature parameters for encoding. For an EIP-155 compliant
-	 * representation for external signing use {@link FeeMarketEIP1559Transaction.getMessageToSign}.
+	 * authentication fields `descriptor`, `extraParams`, `signature` and `publicKey`. That
+	 * encoding is library-internal: it round-trips through
+	 * {@link FeeMarketEIP1559Transaction.fromValuesArray}, but go-qrl's RLP decoder rejects it
+	 * (its `Descriptor` is a fixed 3-byte field), so it must never be broadcast (I-3). For the
+	 * signing preimage used by external signers use
+	 * {@link FeeMarketEIP1559Transaction.getMessageToSign}.
 	 */
 	public raw(): FeeMarketEIP1559ValuesArray {
 		return [
@@ -293,6 +332,12 @@ export class FeeMarketEIP1559Transaction extends BaseTransaction<FeeMarketEIP155
 	 * Note that in contrast to the legacy tx serialization format this is not
 	 * valid RLP any more due to the raw tx type preceding and concatenated to
 	 * the RLP encoding of the values.
+	 *
+	 * Only the encoding of a *signed* transaction is the wire format `qrl_sendRawTransaction`
+	 * accepts. An unsigned transaction serializes with empty authentication fields, which this
+	 * library decodes again but go-qrl does not (see {@link FeeMarketEIP1559Transaction.raw}); the
+	 * unsigned preimage for external signers is {@link FeeMarketEIP1559Transaction.getMessageToSign}
+	 * (I-3).
 	 */
 	public serialize(): Uint8Array {
 		const base = this.raw();
@@ -355,7 +400,11 @@ export class FeeMarketEIP1559Transaction extends BaseTransaction<FeeMarketEIP155
 	}
 
 	/**
-	 * Returns the public key of the sender
+	 * Returns the public key attached to the transaction.
+	 *
+	 * **Precondition:** {@link FeeMarketEIP1559Transaction.verifySignature} must have returned `true`.
+	 * The key is a plain field of the (possibly untrusted) raw transaction: this method only checks
+	 * that the authentication fields are present, not that the signature was made with this key (I-4).
 	 */
 	public getSenderPublicKey(): Uint8Array {
 		if (!this.isSigned()) {

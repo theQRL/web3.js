@@ -117,14 +117,14 @@ export const numberToHexstrictValidData: [Numbers, HexString][] = [
 ];
 
 export const numberToHexInvalidData: [any, string][] = [
-	[12.2, 'value "12.2" at "/0" must pass "int" validation'],
-	['0xag', 'value "0xag" at "/0" must pass "int" validation'],
-	['122g', 'value "122g" at "/0" must pass "int" validation'],
+	[12.2, 'value "12.2" at "/0" must pass "int512" validation'],
+	['0xag', 'value "0xag" at "/0" must pass "int512" validation'],
+	['122g', 'value "122g" at "/0" must pass "int512" validation'],
 	// Using "null" value intentionally for validation
 	// eslint-disable-next-line no-null/no-null
-	[null, 'value "null" at "/0" must pass "int" validation'],
+	[null, 'value "null" at "/0" must pass "int512" validation'],
 	[undefined, 'Web3 validator found 1 error[s]:\nvalue at "/0" is required'],
-	[{}, 'value "{}" at "/0" must pass "int" validation'],
+	[{}, 'value "{}" at "/0" must pass "int512" validation'],
 ];
 
 export const hexToNumberValidData: [HexString, Numbers][] = [
@@ -227,13 +227,13 @@ export const hexToAsciiValidData: [string, HexString][] = [
 ];
 
 export const toHexValidData: [Numbers | Bytes | Address | boolean, [HexString, ValueTypes]][] = [
-	[1, ['0x1', 'uint256']],
-	[255, ['0xff', 'uint256']],
-	[256, ['0x100', 'uint256']],
+	[1, ['0x1', 'uint512']],
+	[255, ['0xff', 'uint512']],
+	[256, ['0x100', 'uint512']],
 	[BigInt(12), ['0xc', 'bigint']],
 	['768', ['0x373638', 'string']],
 	['-768', ['0x2d373638', 'string']],
-	[-255, ['-0xff', 'int256']],
+	[-255, ['-0xff', 'int512']],
 	['I have 100£', ['0x49206861766520313030c2a3', 'string']],
 	['I \u0000 data', ['0x4920002064617461', 'string']],
 	['\u0000 null suffix', ['0x206e756c6c20737566666978', 'string']],
@@ -247,13 +247,13 @@ export const toHexValidData: [Numbers | Bytes | Address | boolean, [HexString, V
 		['0x72fdb1c1ddd4c67804f42b93de95cf6a8c51d2d1', 'bytes'],
 	],
 	[
-		'Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000072fdb1c1ddd4c67804f42b93de95cf6a8c51d2d1',
+		'Q7893453eB77dC635560B6d6A414503671eb1EFD926b8a8F98011DA0e1093E36B109C0A015735be44F0e56057E41183F62AD340D72C5458A3Fd8c744df8a533B5',
 		[
-			'0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000072fdb1c1ddd4c67804f42b93de95cf6a8c51d2d1',
+			'0x7893453eb77dc635560b6d6a414503671eb1efd926b8a8f98011da0e1093e36b109c0a015735be44f0e56057e41183f62ad340d72c5458a3fd8c744df8a533b5',
 			'address',
 		],
 	],
-	['-0x01', ['-0x1', 'int256']],
+	['-0x01', ['-0x1', 'int512']],
 	['123c', ['0x123c', 'bytes']],
 ];
 
@@ -308,11 +308,10 @@ export const toPlanckValidData: [[Numbers, QRLUnits], string][] = [
 ];
 
 export const fromPlanckInvalidData: [[any, any], string][] = [
-	// eslint-disable-next-line no-useless-escape
 	[['123.34', 'kplanck'], 'Invalid value given "123.34". Error: can not parse as number data.'],
 	// Using "null" value intentionally for validation
 	// eslint-disable-next-line no-null/no-null
-	[[null, 'kplanck'], 'Invalid value given "undefined". Error: can not parse as number data.'],
+	[[null, 'kplanck'], 'Invalid value given "null". Error: can not parse as number data.'],
 	[
 		[undefined, 'kplanck'],
 		'Invalid value given "undefined". Error: can not parse as number data.',

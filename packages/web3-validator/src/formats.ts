@@ -21,7 +21,7 @@ import { isBlockNumber, isBlockNumberOrTag, isBlockTag } from './validation/bloc
 import { isBloom } from './validation/bloom.js';
 import { isBoolean } from './validation/boolean.js';
 import { isBytes } from './validation/bytes.js';
-import { isEip712TypedData } from './validation/eip712.js';
+import { isQRLTypedData } from './validation/qrl_typed_data.js';
 import { isFilterObject } from './validation/filter.js';
 import { isHexStrict, isString } from './validation/string.js';
 import { isNumber, isInt, isUInt } from './validation/numbers.js';
@@ -34,7 +34,9 @@ const formats: { [key: string]: (data: unknown) => boolean } = {
 	blockNumberOrTag: (data: unknown) => isBlockNumberOrTag(data as string | number | bigint),
 	bool: (data: unknown) => isBoolean(data as ValidInputTypes),
 	bytes: (data: unknown) => isBytes(data as ValidInputTypes | Uint8Array | number[]),
-	eip712TypedData: (data: unknown) => isEip712TypedData(data),
+	function: (data: unknown) =>
+		isBytes(data as ValidInputTypes | Uint8Array | number[], { size: 68 }),
+	qrlTypedData: (data: unknown) => isQRLTypedData(data),
 	filter: (data: unknown) => isFilterObject(data as Filter),
 	hex: (data: unknown) => isHexStrict(data as ValidInputTypes),
 	uint: (data: unknown) => isUInt(data as ValidInputTypes),
@@ -43,12 +45,12 @@ const formats: { [key: string]: (data: unknown) => boolean } = {
 	string: (data: unknown) => isString(data as ValidInputTypes),
 };
 // generate formats for all numbers types
-for (let bitSize = 8; bitSize <= 256; bitSize += 8) {
+for (let bitSize = 8; bitSize <= 512; bitSize += 8) {
 	formats[`int${bitSize}`] = data => isInt(data as ValidInputTypes, { bitSize });
 	formats[`uint${bitSize}`] = data => isUInt(data as ValidInputTypes, { bitSize });
 }
 // generate bytes
-for (let size = 1; size <= 32; size += 1) {
+for (let size = 1; size <= 64; size += 1) {
 	formats[`bytes${size}`] = data =>
 		isBytes(data as ValidInputTypes | Uint8Array | number[], { size });
 }

@@ -23,8 +23,8 @@ import {
 	Web3APISpec,
 	Web3BaseProvider,
 } from '@theqrl/web3-types';
-import { EventEmitter } from 'events';
-import { EIP1193ProviderRpcError } from '@theqrl/web3-errors';
+import { EventEmitter, EventEmitterLike } from './event_emitter.js';
+import { EIP1193ProviderRpcError, InvalidResponseError } from '@theqrl/web3-errors';
 import { toPayload } from './json_rpc.js';
 
 /**
@@ -33,9 +33,21 @@ import { toPayload } from './json_rpc.js';
 export abstract class Eip1193Provider<
 	API extends Web3APISpec = QRLExecutionAPI,
 > extends Web3BaseProvider<API> {
-	protected readonly _eventEmitter: EventEmitter = new EventEmitter();
+	protected readonly _eventEmitter: EventEmitterLike = new EventEmitter();
 	private _chainId: HexString = '';
 	private _accounts: HexString[] = [];
+	private _connectionGeneration = 0;
+	private _connected = false;
+
+	/** Whether the current connection has emitted its EIP-1193 connect event. */
+	public isConnected(): boolean {
+		return this._connected;
+	}
+
+	protected _invalidateConnection(): void {
+		this._connectionGeneration += 1;
+		this._connected = false;
+	}
 
 	protected _emitError(error: unknown): void {
 		if (this._eventEmitter.listenerCount('error') > 0) {
@@ -53,7 +65,8 @@ export abstract class Eip1193Provider<
 				params: [],
 			}) as Web3APIPayload<API, Web3APIMethod<API>>,
 		);
-		return data?.result ?? '';
+		if (typeof data?.result !== 'string' || data.error) throw new InvalidResponseError(data);
+		return data.result;
 	}
 
 	private async _getAccounts(): Promise<HexString[]> {
@@ -63,44 +76,44 @@ export abstract class Eip1193Provider<
 				params: [],
 			}) as Web3APIPayload<API, Web3APIMethod<API>>,
 		);
-		return data?.result ?? [];
+		if (!Array.isArray(data?.result) || data.error) throw new InvalidResponseError(data);
+		return data.result;
 	}
 
 	protected _onConnect() {
-		Promise.all([
-			this._getChainId()
-				.then(chainId => {
-					if (chainId !== this._chainId) {
-						this._chainId = chainId;
-						this._eventEmitter.emit('chainChanged', this._chainId);
-					}
-				})
-				.catch(err => this._emitError(err)),
-
-			this._getAccounts()
-				.then(accounts => {
-					if (
-						!(
-							this._accounts.length === accounts.length &&
-							accounts.every(v => accounts.includes(v))
-						)
-					) {
-						this._accounts = accounts;
-						this._onAccountsChanged();
-					}
-				})
-				.catch(err => this._emitError(err)),
-		])
-			.then(() =>
+		const generation = ++this._connectionGeneration;
+		Promise.allSettled([this._getChainId(), this._getAccounts()])
+			.then(([chainResult, accountsResult]) => {
+				if (generation !== this._connectionGeneration) return;
+				const chainId = chainResult.status === 'fulfilled' ? chainResult.value : '';
+				const accounts = accountsResult.status === 'fulfilled' ? accountsResult.value : [];
+				for (const result of [chainResult, accountsResult]) {
+					if (result.status === 'rejected') this._emitError(result.reason);
+				}
+				if (generation !== this._connectionGeneration) return;
+				if (chainId !== this._chainId) {
+					this._chainId = chainId;
+					this._eventEmitter.emit('chainChanged', chainId);
+				}
+				const unchanged =
+					this._accounts.length === accounts.length &&
+					accounts.every(account => this._accounts.includes(account));
+				if (!unchanged) {
+					this._accounts = accounts;
+					this._onAccountsChanged();
+				}
+				if (generation !== this._connectionGeneration) return;
+				this._connected = true;
 				this._eventEmitter.emit('connect', {
 					chainId: this._chainId,
-				} as ProviderConnectInfo),
-			)
+				} as ProviderConnectInfo);
+			})
 			.catch(err => this._emitError(err));
 	}
 
 	// todo this must be ProvideRpcError with a message too
 	protected _onDisconnect(code: number, data?: unknown) {
+		this._invalidateConnection();
 		this._eventEmitter.emit('disconnect', new EIP1193ProviderRpcError(code, data));
 	}
 

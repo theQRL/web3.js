@@ -900,11 +900,14 @@ describe('Web3RequestManager', () => {
 
 				const manager = new Web3RequestManager();
 				const myProvider = {
-					request: jest
-						.fn()
-						.mockImplementation(async () =>
-							Promise.reject(new Error('execution reverted')),
+					request: jest.fn().mockImplementation(async () =>
+						Promise.reject(
+							Object.assign(new Error('execution reverted'), {
+								code: 3,
+								data: '0x',
+							}),
 						),
+					),
 				} as any;
 
 				jest.spyOn(manager, 'provider', 'get').mockReturnValue(myProvider);
@@ -1122,7 +1125,7 @@ describe('Web3RequestManager', () => {
 				expect(myProvider.request).toHaveBeenCalledWith(payload);
 			});
 
-			it('should pass request to provider and reject if provider throws error', async () => {
+			it('should return the batch response if the provider throws it, as the web3 provider path does (L-38)', async () => {
 				const manager = new Web3RequestManager();
 				const myProvider = {
 					request: jest.fn().mockImplementation(async _ => {
@@ -1132,7 +1135,8 @@ describe('Web3RequestManager', () => {
 
 				jest.spyOn(manager, 'provider', 'get').mockReturnValue(myProvider);
 
-				await expect(manager.sendBatch(request)).rejects.toEqual(errorResponse);
+				// Its error members are reported per batch entry; the batch itself did not fail.
+				await expect(manager.sendBatch(request)).resolves.toEqual(errorResponse);
 				expect(myProvider.request).toHaveBeenCalledTimes(1);
 				expect(myProvider.request).toHaveBeenCalledWith(payload);
 			});
@@ -1152,5 +1156,53 @@ describe('Web3RequestManager', () => {
 				expect(myProvider.request).toHaveBeenCalledWith(payload);
 			});
 		});
+	});
+
+	describe('malformed error replies', () => {
+		/* eslint-disable no-null/no-null */
+		const settle = async (manager: Web3RequestManager) =>
+			manager.send({ method: 'my_method', params: [] }).then(
+				() => undefined,
+				(error: unknown) => error,
+			);
+
+		it('rejects a reply whose error member is null with a typed error', async () => {
+			const manager = new Web3RequestManager(undefined, undefined);
+			const myProvider = {
+				// An `AsyncFunction` is what marks an EIP-1193 provider for the request manager.
+				// eslint-disable-next-line @typescript-eslint/require-await
+				request: async () => ({ id: 1, jsonrpc: '2.0', error: null }),
+			} as any;
+			jest.spyOn(manager, 'provider', 'get').mockReturnValue(myProvider);
+
+			const error = await settle(manager);
+			expect(error).toBeInstanceOf(ResponseError);
+			expect(error).not.toBeInstanceOf(TypeError);
+		});
+
+		it.each([
+			['data: null', { code: 3, message: 'execution reverted', data: null }],
+			[
+				'data.originalError: null',
+				{ code: 3, message: 'execution reverted', data: { originalError: null } },
+			],
+		])('maps a revert with %s to ContractExecutionError', async (_, rpcError) => {
+			const manager = new Web3RequestManager(undefined, undefined);
+			const myProvider = {
+				// The reply must carry the request's id: an id mismatch is an InvalidResponseError
+				// and is no longer re-classified as a revert by its message (P4-L-8).
+				// eslint-disable-next-line @typescript-eslint/require-await
+				request: async (payload: { id: unknown }) => ({
+					id: payload.id,
+					jsonrpc: '2.0',
+					error: rpcError,
+				}),
+			} as any;
+			jest.spyOn(manager, 'provider', 'get').mockReturnValue(myProvider);
+
+			const error = await settle(manager);
+			expect(error).toBeInstanceOf(ContractExecutionError);
+		});
+		/* eslint-enable no-null/no-null */
 	});
 });

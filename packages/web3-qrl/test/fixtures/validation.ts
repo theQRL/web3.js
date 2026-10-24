@@ -39,7 +39,7 @@ export const isBaseTransactionValidData: [BaseTransactionAPI, true][] = [
 	],
 	[
 		{
-			to: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006e599da0bff7a6598ac1224e4985430bf16458a4',
+			to: 'Q9Fa83f21CE9bd493B02D7460E03d82D44a77B4612d8B6a0Acc94655106Fbb96152d3E16a0ba414C368653BaE2fe868cB109c05727Ca47148114749451afb7Cc1',
 			type: '0x2',
 			nonce: '0x1',
 			gas: '0x5208',
@@ -54,7 +54,7 @@ export const isAccessListEntryValidData: [AccessListEntry, true][] = [
 	[{}, true],
 	[
 		{
-			address: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006e599da0bff7a6598ac1224e4985430bf16458a4',
+			address: 'Q9Fa83f21CE9bd493B02D7460E03d82D44a77B4612d8B6a0Acc94655106Fbb96152d3E16a0ba414C368653BaE2fe868cB109c05727Ca47148114749451afb7Cc1',
 		},
 		true,
 	],
@@ -69,7 +69,7 @@ export const isAccessListEntryValidData: [AccessListEntry, true][] = [
 	],
 	[
 		{
-			address: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006e599da0bff7a6598ac1224e4985430bf16458a4',
+			address: 'Q9Fa83f21CE9bd493B02D7460E03d82D44a77B4612d8B6a0Acc94655106Fbb96152d3E16a0ba414C368653BaE2fe868cB109c05727Ca47148114749451afb7Cc1',
 			storageKeys: [
 				'0x22f30f0608f88c510de0016370f1525b330e5839026bdff93f9ceef24d2275e6',
 				'0x63a01bba0d4f0ad913a241aed52f5c55807be35f554536abd1e451d4e6515b29',
@@ -102,7 +102,7 @@ export const isTransactionWithSenderValidData = (): [TransactionWithSenderAPI, t
 		return [
 			{
 				...transaction[0],
-				from: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006e599da0bff7a6598ac1224e4985430bf16458a4',
+				from: 'Q9Fa83f21CE9bd493B02D7460E03d82D44a77B4612d8B6a0Acc94655106Fbb96152d3E16a0ba414C368653BaE2fe868cB109c05727Ca47148114749451afb7Cc1',
 			},
 			true,
 		];
@@ -120,11 +120,11 @@ export const validateTransactionWithSenderInvalidData = (): [
 };
 
 export const isTransactionCallValidData: [TransactionCall, true][] = [
-	[{ to: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006e599da0bff7a6598ac1224e4985430bf16458a4' }, true],
+	[{ to: 'Q9Fa83f21CE9bd493B02D7460E03d82D44a77B4612d8B6a0Acc94655106Fbb96152d3E16a0ba414C368653BaE2fe868cB109c05727Ca47148114749451afb7Cc1' }, true],
 	[
 		{
-			from: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006e599da0bff7a6598ac1224e4985430bf16458a4',
-			to: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006e599da0bff7a6598ac1224e4985430bf16458a4',
+			from: 'Q9Fa83f21CE9bd493B02D7460E03d82D44a77B4612d8B6a0Acc94655106Fbb96152d3E16a0ba414C368653BaE2fe868cB109c05727Ca47148114749451afb7Cc1',
+			to: 'Q9Fa83f21CE9bd493B02D7460E03d82D44a77B4612d8B6a0Acc94655106Fbb96152d3E16a0ba414C368653BaE2fe868cB109c05727Ca47148114749451afb7Cc1',
 			gas: '0x5208',
 			value: '0x1',
 		},
@@ -132,8 +132,8 @@ export const isTransactionCallValidData: [TransactionCall, true][] = [
 	],
 	[
 		{
-			from: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006e599da0bff7a6598ac1224e4985430bf16458a4',
-			to: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006e599da0bff7a6598ac1224e4985430bf16458a4',
+			from: 'Q9Fa83f21CE9bd493B02D7460E03d82D44a77B4612d8B6a0Acc94655106Fbb96152d3E16a0ba414C368653BaE2fe868cB109c05727Ca47148114749451afb7Cc1',
+			to: 'Q9Fa83f21CE9bd493B02D7460E03d82D44a77B4612d8B6a0Acc94655106Fbb96152d3E16a0ba414C368653BaE2fe868cB109c05727Ca47148114749451afb7Cc1',
 			gas: '0x5208',
 			maxFeePerGas: '0x5208',
 			value: '0x1',
@@ -143,7 +143,19 @@ export const isTransactionCallValidData: [TransactionCall, true][] = [
 	],
 ];
 
-export const validateTransactionCallInvalidData = (): [any, InvalidTransactionCall][] =>
-	validateTransactionWithSenderInvalidData().map(transaction => {
-		return [transaction[0], new InvalidTransactionCall(transaction[0])];
-	});
+// A call may set `type` and the fee-market fields (they only have to be well-formed), so the
+// sender-invalid data above (complete 1559 transactions without `from`) are valid calls; the
+// invalid calls are the ones with a missing or malformed field.
+export const validateTransactionCallInvalidData = (): [any, InvalidTransactionCall][] => {
+	const { to } = isTransactionCallValidData[0][0];
+	const invalidCalls = [
+		{},
+		{ to: '0x1' },
+		{ to, from: 'Q1' },
+		{ to, gas: 'abc' },
+		{ to, value: 'abc' },
+		{ to, type: 'ab' },
+		{ to, maxFeePerGas: 'abc' },
+	];
+	return invalidCalls.map(call => [call, new InvalidTransactionCall(call)]);
+};

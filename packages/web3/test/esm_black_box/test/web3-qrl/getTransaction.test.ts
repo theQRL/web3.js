@@ -19,7 +19,6 @@ import {
 	closeOpenConnection,
 	getSystemTestProvider,
 	isWs,
-	// eslint-disable-next-line import/no-relative-packages
 } from '../../../shared_fixtures/system_tests_utils';
 
 describe('ESM - Black Box Unit Tests - web3.qrl.getTransaction', () => {

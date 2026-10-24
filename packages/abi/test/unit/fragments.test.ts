@@ -33,7 +33,6 @@ import {
 // ethers-v5 code assumes that semantics). These suites assert the now-working
 // behaviour (finding C46).
 
-
 describe('Fragment dispatch', () => {
 	it('routes "error ..." to an ErrorFragment', () => {
 		const fragment = Fragment.from('error Unauthorized(address caller)');
@@ -74,13 +73,25 @@ describe('Fragment dispatch', () => {
 	});
 });
 
+describe('checkForbidden', () => {
+	it('rejects the builtin error signatures', () => {
+		expect(() => ErrorFragment.from('Error(string)')).toThrow(/user defined/);
+		expect(() => ErrorFragment.from('Panic(uint256)')).toThrow(/user defined/);
+		expect(() => ErrorFragment.from('Panic(uint)')).toThrow(/user defined/);
+	});
+
+	it('accepts Panic(uint512) as a custom error', () => {
+		expect(ErrorFragment.from('Panic(uint512)').format()).toBe('Panic(uint512)');
+	});
+});
+
 describe('ErrorFragment', () => {
 	it('parses inputs', () => {
-		const fragment = ErrorFragment.from('InsufficientBalance(uint256 available)');
+		const fragment = ErrorFragment.from('InsufficientBalance(uint512 available)');
 		expect(fragment.type).toBe('error');
 		expect(fragment.name).toBe('InsufficientBalance');
 		expect(fragment.inputs).toHaveLength(1);
-		expect(fragment.inputs[0].type).toBe('uint256');
+		expect(fragment.inputs[0].type).toBe('uint512');
 		expect(fragment.inputs[0].name).toBe('available');
 	});
 
@@ -94,10 +105,10 @@ describe('ErrorFragment', () => {
 
 	it('produces the canonical sighash form, dropping names', () => {
 		expect(
-			ErrorFragment.from('Unauthorized(address caller, uint256 code)').format(
+			ErrorFragment.from('Unauthorized(address caller, uint512 code)').format(
 				FormatTypes.sighash,
 			),
-		).toBe('Unauthorized(address,uint256)');
+		).toBe('Unauthorized(address,uint512)');
 	});
 
 	it('keeps the "error" keyword and names in the full form', () => {
@@ -121,10 +132,10 @@ describe('ErrorFragment', () => {
 		// The full form carries the "error" keyword, so it re-parses via
 		// Fragment.from (which dispatches on the keyword) rather than
 		// ErrorFragment.from (which expects the keyword already stripped).
-		const once = ErrorFragment.from('Unauthorized(address caller, uint256 code)').format(
+		const once = ErrorFragment.from('Unauthorized(address caller, uint512 code)').format(
 			FormatTypes.full,
 		);
-		expect(once).toBe('error Unauthorized(address caller, uint256 code)');
+		expect(once).toBe('error Unauthorized(address caller, uint512 code)');
 		expect(Fragment.from(once).format(FormatTypes.full)).toBe(once);
 	});
 
@@ -139,14 +150,14 @@ describe('ErrorFragment', () => {
 	});
 
 	it('handles a tuple input', () => {
-		const fragment = ErrorFragment.from('Foo(tuple(address a, uint256 b) order)');
+		const fragment = ErrorFragment.from('Foo(tuple(address a, uint512 b) order)');
 		expect(fragment.inputs[0].baseType).toBe('tuple');
 		expect(fragment.inputs[0].components).toHaveLength(2);
-		expect(fragment.format(FormatTypes.sighash)).toBe('Foo((address,uint256))');
+		expect(fragment.format(FormatTypes.sighash)).toBe('Foo((address,uint512))');
 	});
 
 	it('rejects an invalid error name', () => {
-		expect(() => ErrorFragment.fromString('9Bad(uint256)')).toThrow(/invalid identifier/);
+		expect(() => ErrorFragment.fromString('9Bad(uint512)')).toThrow(/invalid identifier/);
 	});
 
 	it('rejects an object with the wrong type', () => {
@@ -161,7 +172,7 @@ describe('ErrorFragment', () => {
 describe('EventFragment', () => {
 	it('should parse indexed inputs', () => {
 		const fragment = EventFragment.from(
-			'Transfer(address indexed from, address indexed to, uint256 value)',
+			'Transfer(address indexed from, address indexed to, uint512 value)',
 		);
 		expect(fragment.inputs).toHaveLength(3);
 		expect(fragment.inputs[0].indexed).toBe(true);
@@ -171,26 +182,26 @@ describe('EventFragment', () => {
 	});
 
 	it('should parse the anonymous modifier', () => {
-		expect(EventFragment.from('Foo(uint256 a) anonymous').anonymous).toBe(true);
+		expect(EventFragment.from('Foo(uint512 a) anonymous').anonymous).toBe(true);
 	});
 
 	it('should produce the canonical sighash form', () => {
 		expect(
-			EventFragment.from('Transfer(address indexed from, uint256 value)').format(
+			EventFragment.from('Transfer(address indexed from, uint512 value)').format(
 				FormatTypes.sighash,
 			),
-		).toBe('Transfer(address,uint256)');
+		).toBe('Transfer(address,uint512)');
 	});
 
 	it('should keep indexed and names in the full form', () => {
 		// ethers-v5 `full` format prefixes the fragment kind ("event ").
-		expect(EventFragment.from('Foo(uint256 indexed a)').format(FormatTypes.full)).toBe(
-			'event Foo(uint256 indexed a)',
+		expect(EventFragment.from('Foo(uint512 indexed a)').format(FormatTypes.full)).toBe(
+			'event Foo(uint512 indexed a)',
 		);
 	});
 
 	it('should round-trip string -> JSON -> object -> string', () => {
-		const fragment = EventFragment.from('Transfer(address indexed from, uint256 value)');
+		const fragment = EventFragment.from('Transfer(address indexed from, uint512 value)');
 		const json = JSON.parse(fragment.format(FormatTypes.json));
 		expect(EventFragment.fromObject(json).format(FormatTypes.full)).toBe(
 			fragment.format(FormatTypes.full),
@@ -200,7 +211,7 @@ describe('EventFragment', () => {
 
 describe('ConstructorFragment', () => {
 	it('should parse inputs and default to nonpayable', () => {
-		const fragment = ConstructorFragment.from('constructor(address owner, uint256 supply)');
+		const fragment = ConstructorFragment.from('constructor(address owner, uint512 supply)');
 		expect(fragment.type).toBe('constructor');
 		expect(fragment.inputs).toHaveLength(2);
 		expect(fragment.stateMutability).toBe('nonpayable');
@@ -223,7 +234,7 @@ describe('ConstructorFragment', () => {
 describe('FunctionFragment', () => {
 	it('rejects an invalid function name before it ever reaches the constructor', () => {
 		// This validation runs pre-construction, so it survives the defect.
-		expect(() => FunctionFragment.fromString('9bad(uint256)')).toThrow(/invalid identifier/);
+		expect(() => FunctionFragment.fromString('9bad(uint512)')).toThrow(/invalid identifier/);
 	});
 
 	it('rejects an object with no determinable stateMutability', () => {
@@ -234,7 +245,7 @@ describe('FunctionFragment', () => {
 
 	it('should parse inputs, outputs and state mutability', () => {
 		const fragment = FunctionFragment.from(
-			'transfer(address to, uint256 value) returns (bool success)',
+			'transfer(address to, uint512 value) returns (bool success)',
 		);
 		expect(fragment.name).toBe('transfer');
 		expect(fragment.inputs).toHaveLength(2);
@@ -258,26 +269,101 @@ describe('FunctionFragment', () => {
 
 	it('should produce the canonical sighash form', () => {
 		expect(
-			FunctionFragment.from('transfer(address to, uint256 value) returns (bool)').format(
+			FunctionFragment.from('transfer(address to, uint512 value) returns (bool)').format(
 				FormatTypes.sighash,
 			),
-		).toBe('transfer(address,uint256)');
+		).toBe('transfer(address,uint512)');
 	});
 
 	it('should produce the full form including returns', () => {
 		// ethers-v5 `full` format prefixes the fragment kind ("function ").
 		expect(
 			FunctionFragment.from(
-				'transfer(address to, uint256 value) view returns (bool success)',
+				'transfer(address to, uint512 value) view returns (bool success)',
 			).format(FormatTypes.full),
-		).toBe('function transfer(address to, uint256 value) view returns (bool success)');
+		).toBe('function transfer(address to, uint512 value) view returns (bool success)');
 	});
 
 	it('should round-trip string -> JSON -> object -> string', () => {
-		const fragment = FunctionFragment.from('balanceOf(address owner) view returns (uint256)');
+		const fragment = FunctionFragment.from('balanceOf(address owner) view returns (uint512)');
 		const json = JSON.parse(fragment.format(FormatTypes.json));
 		expect(FunctionFragment.fromObject(json).format(FormatTypes.full)).toBe(
 			fragment.format(FormatTypes.full),
 		);
+	});
+});
+
+describe('untrusted ABI JSON (I-10)', () => {
+	const codeOf = (fn: () => unknown) => {
+		try {
+			fn();
+		} catch (error) {
+			expect(error).not.toBeInstanceOf(TypeError);
+			return (error as { code?: string }).code;
+		}
+		return undefined;
+	};
+
+	it('rejects a null or non-object fragment with an argument error instead of a TypeError', () => {
+		expect(() => Fragment.fromObject(JSON.parse('null'))).toThrow(/invalid fragment object/);
+		expect(codeOf(() => Fragment.fromObject(JSON.parse('null')))).toBe('INVALID_ARGUMENT');
+		expect(() => Fragment.fromObject(undefined as any)).toThrow(/invalid fragment object/);
+		expect(() => Fragment.fromObject('function f()' as any)).toThrow(
+			/invalid fragment object/,
+		);
+		expect(() => EventFragment.fromObject(JSON.parse('null'))).toThrow(/invalid event object/);
+		expect(() => FunctionFragment.fromObject(JSON.parse('null'))).toThrow(
+			/invalid function object/,
+		);
+		expect(() => ConstructorFragment.fromObject(JSON.parse('null'))).toThrow(
+			/invalid constructor object/,
+		);
+		expect(() => ErrorFragment.fromObject(JSON.parse('null'))).toThrow(/invalid error object/);
+	});
+
+	it('rejects inputs and outputs that are not arrays', () => {
+		expect(() =>
+			EventFragment.fromObject({ type: 'event', name: 'E', inputs: 'x' as any }),
+		).toThrow(/invalid inputs/);
+		expect(codeOf(() => EventFragment.fromObject({ type: 'event', name: 'E', inputs: 'x' as any }))).toBe(
+			'INVALID_ARGUMENT',
+		);
+		expect(() =>
+			FunctionFragment.fromObject({
+				type: 'function',
+				name: 'f',
+				stateMutability: 'view',
+				inputs: [],
+				outputs: {} as any,
+			}),
+		).toThrow(/invalid outputs/);
+		expect(() =>
+			FunctionFragment.fromObject({
+				type: 'function',
+				name: 'f',
+				stateMutability: 'view',
+				inputs: 5 as any,
+			}),
+		).toThrow(/invalid inputs/);
+		expect(() => ErrorFragment.fromObject({ type: 'error', name: 'E', inputs: 5 as any })).toThrow(
+			/invalid inputs/,
+		);
+		expect(() =>
+			ConstructorFragment.fromObject({ type: 'constructor', inputs: 'x' as any }),
+		).toThrow(/invalid inputs/);
+	});
+
+	it('rejects an input whose type is not a string', () => {
+		expect(() =>
+			EventFragment.fromObject({ type: 'event', name: 'E', inputs: [JSON.parse('{"type":null}')] }),
+		).toThrow(/invalid type/);
+	});
+
+	it('still treats absent inputs and outputs as none', () => {
+		expect(EventFragment.fromObject({ type: 'event', name: 'E' }).inputs).toEqual([]);
+		const fn = FunctionFragment.fromObject({ type: 'function', name: 'f', stateMutability: 'view' });
+		expect(fn.inputs).toEqual([]);
+		expect(fn.outputs).toEqual([]);
+		expect(ErrorFragment.fromObject({ type: 'error', name: 'E' }).inputs).toEqual([]);
 	});
 });

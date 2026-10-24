@@ -27,6 +27,7 @@
 	},
 	"files": [
 		"lib/**/*",
+		"!lib/**/*.tsbuildinfo",
 		"src/**/*"
 	],
 	"scripts": {
@@ -63,7 +64,7 @@
 		"typescript": "6.0.3"
 	},
 	"dependencies": {
-		"@theqrl/qrl-cryptography": "0.3.0",
+		"@theqrl/qrl-cryptography": "0.3.3",
 		"@theqrl/web3-errors": "workspace:^",
 		"@theqrl/web3-types": "workspace:^",
 		"@theqrl/web3-validator": "workspace:^"

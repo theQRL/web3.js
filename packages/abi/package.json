@@ -14,6 +14,7 @@
 	},
 	"files": [
 		"lib/**/*",
+		"!lib/**/*.tsbuildinfo",
 		"src/**/*"
 	],
 	"publishConfig": {
@@ -50,7 +51,7 @@
 		"@ethersproject/constants": "5.8.0",
 		"@ethersproject/logger": "5.8.0",
 		"@ethersproject/properties": "5.8.0",
-		"@ethersproject/strings": "5.8.0",
+		"@theqrl/qrl-cryptography": "0.3.3",
 		"@theqrl/web3-utils": "workspace:^"
 	},
 	"devDependencies": {

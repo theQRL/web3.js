@@ -36,7 +36,6 @@ import {
 	HexString32Bytes,
 	Uint,
 } from '@theqrl/web3-types';
-// eslint-disable-next-line import/no-cycle
 import { LogsSubscription } from './log_subscription.js';
 
 export type NonPayableTxOptions = NonPayableCallOptions;
@@ -57,7 +56,8 @@ export interface EventLog {
 	readonly data: HexString;
 	readonly raw?: { data: string; topics: unknown[] };
 	readonly returnValues: Record<string, unknown>;
-	readonly signature?: HexString;
+	/** The canonical 32-byte event signature hash. */
+	readonly signature?: HexString32Bytes;
 }
 
 export interface ContractEventOptions {
@@ -128,7 +128,7 @@ export interface ContractOptions {
 	 *
 	 * ```ts
 	 * myContract.options.address;
-	 * > 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000de0b295669a9fd93d5f28d9ec85e40f4cb697bae'
+	 * > 'QCfeC0cbeE560cbD6ed89580204AF71448f1fB8c577e60e9afC6E697019E2312cF3B24B98Eb763627a1C38c96ecd7E7c20BA9774cb6c0a810B78E8ea529ccdc40'
 	 *
 	 * // set a new address
 	 * myContract.options.address = 'Q1234FFDD...';
@@ -152,7 +152,7 @@ export interface NonPayableMethodObject<Inputs = unknown[], Outputs = unknown[]>
 	 *
 	 * ```ts
 	 * // using the promise
-	 * const result = await myContract.methods.myMethod(123).call({from: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000de0b295669a9fd93d5f28d9ec85e40f4cb697bae'});
+	 * const result = await myContract.methods.myMethod(123).call({from: 'QCfeC0cbeE560cbD6ed89580204AF71448f1fB8c577e60e9afC6E697019E2312cF3B24B98Eb763627a1C38c96ecd7E7c20BA9774cb6c0a810B78E8ea529ccdc40'});
 	 *
 	 * // MULTI-ARGUMENT RETURN:
 	 * // Hyperion
@@ -203,13 +203,13 @@ export interface NonPayableMethodObject<Inputs = unknown[], Outputs = unknown[]>
 	 * This will send a transaction to the smart contract and execute its method. Note this can alter the smart contract state.
 	 *
 	 * ```ts
-	 * await myContract.methods.myMethod(123).send({from: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000de0b295669a9fd93d5f28d9ec85e40f4cb697bae'});
+	 * await myContract.methods.myMethod(123).send({from: 'QCfeC0cbeE560cbD6ed89580204AF71448f1fB8c577e60e9afC6E697019E2312cF3B24B98Eb763627a1C38c96ecd7E7c20BA9774cb6c0a810B78E8ea529ccdc40'});
 	 *
-	 * const receipt = await myContract.methods.myMethod(123).send({from: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000de0b295669a9fd93d5f28d9ec85e40f4cb697bae'});
+	 * const receipt = await myContract.methods.myMethod(123).send({from: 'QCfeC0cbeE560cbD6ed89580204AF71448f1fB8c577e60e9afC6E697019E2312cF3B24B98Eb763627a1C38c96ecd7E7c20BA9774cb6c0a810B78E8ea529ccdc40'});
 	 *
 	 *
 	 * // using the event emitter
-	 * const sendObj = myContract.methods.myMethod(123).send({from: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000de0b295669a9fd93d5f28d9ec85e40f4cb697bae'})
+	 * const sendObj = myContract.methods.myMethod(123).send({from: 'QCfeC0cbeE560cbD6ed89580204AF71448f1fB8c577e60e9afC6E697019E2312cF3B24B98Eb763627a1C38c96ecd7E7c20BA9774cb6c0a810B78E8ea529ccdc40'})
 	 * sendObj.on('transactionHash', function(hash){
 	 *   ...
 	 * });
@@ -226,7 +226,7 @@ export interface NonPayableMethodObject<Inputs = unknown[], Outputs = unknown[]>
 	 *       "transactionIndex": 0,
 	 *       "blockHash": "0xef95f2f1ed3ca60b048b4bf67cde2195961e0bba6f70bcbea9a2c4e133e34b46",
 	 *       "blockNumber": 3,
-	 *       "contractAddress": "Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000011f4d0a3c12e86b4b5f39b213f7e19d048276dae",
+	 *       "contractAddress": "Q0B425Ed8E7399aF5dEFFE13a09e7F1776996a32466aa3c1BB1a34ad61760A2Eb72705C904aB988e3e089E55d1D8081DA21F20544E04CB5f0ac85aA6d5940e38D",
 	 *       "cumulativeGasUsed": 314159,
 	 *       "gasUsed": 30234,
 	 *       "events": {
@@ -238,16 +238,16 @@ export interface NonPayableMethodObject<Inputs = unknown[], Outputs = unknown[]>
 	 *               },
 	 *               raw: {
 	 *                   data: '0x7f9fade1c0d57a7af66ab4ead79fade1c0d57a7af66ab4ead7c2c2eb7b11a91385',
-	 *                   topics: ['0xfd43ade1c09fade1c0d57a7af66ab4ead7c2c2eb7b11a91ffdd57a7af66ab4ead7', '0x7f9fade1c0d57a7af66ab4ead79fade1c0d57a7af66ab4ead7c2c2eb7b11a91385']
+	 *                   topics: ['0xfd43ade1c09fade1c0d57a7af66ab4ead7c2c2eb7b11a91ffdd57a7af66ab4ea0000000000000000000000000000000000000000000000000000000000000000', '0x7f9fade1c0d57a7af66ab4ead79fade1c0d57a7af66ab4ead7c2c2eb7b11a9130000000000000000000000000000000000000000000000000000000000000000']
 	 *               },
 	 *               event: 'MyEvent',
-	 *               signature: '0xfd43ade1c09fade1c0d57a7af66ab4ead7c2c2eb7b11a91ffdd57a7af66ab4ead7',
+	 *               signature: '0xfd43ade1c09fade1c0d57a7af66ab4ead7c2c2eb7b11a91ffdd57a7af66ab4ea',
 	 *               logIndex: 0,
 	 *               transactionIndex: 0,
 	 *               transactionHash: '0x7f9fade1c0d57a7af66ab4ead79fade1c0d57a7af66ab4ead7c2c2eb7b11a91385',
 	 *               blockHash: '0xfd43ade1c09fade1c0d57a7af66ab4ead7c2c2eb7b11a91ffdd57a7af66ab4ead7',
 	 *               blockNumber: 1234,
-	 *               address: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000de0b295669a9fd93d5f28d9ec85e40f4cb697bae'
+	 *               address: 'QCfeC0cbeE560cbD6ed89580204AF71448f1fB8c577e60e9afC6E697019E2312cF3B24B98Eb763627a1C38c96ecd7E7c20BA9774cb6c0a810B78E8ea529ccdc40'
 	 *           },
 	 *           "MyOtherEvent": {
 	 *               ...
@@ -319,7 +319,7 @@ export interface NonPayableMethodObject<Inputs = unknown[], Outputs = unknown[]>
 	 * > {
 	 *  "accessList": [
 	 *     {
-	 *       "address": "Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000015859bdf5aff2080a9968f6a410361e9598df62f",
+	 *       "address": "QE5A56080716c3E4d0E1965dD1Af6012ecc96a0bA89811854D099547372eb4eE56F92761cfc57202EF56e39b724A6Ec6698737E5D92052A698933aef847B73295",
 	 *       "storageKeys": [
 	 *         "0x0000000000000000000000000000000000000000000000000000000000000000"
 	 *       ]
@@ -342,7 +342,7 @@ export interface PayableMethodObject<Inputs = unknown[], Outputs = unknown[]> {
 	 *
 	 * ```ts
 	 * // using the promise
-	 * const result = await myContract.methods.myMethod(123).call({from: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000de0b295669a9fd93d5f28d9ec85e40f4cb697bae'});
+	 * const result = await myContract.methods.myMethod(123).call({from: 'QCfeC0cbeE560cbD6ed89580204AF71448f1fB8c577e60e9afC6E697019E2312cF3B24B98Eb763627a1C38c96ecd7E7c20BA9774cb6c0a810B78E8ea529ccdc40'});
 	 *
 	 * // MULTI-ARGUMENT RETURN:
 	 * // Hyperion
@@ -392,13 +392,13 @@ export interface PayableMethodObject<Inputs = unknown[], Outputs = unknown[]> {
 	 * Will send a transaction to the smart contract and execute its method. Note this can alter the smart contract state.
 	 *
 	 * ```ts
-	 * await myContract.methods.myMethod(123).send({from: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000de0b295669a9fd93d5f28d9ec85e40f4cb697bae'});
+	 * await myContract.methods.myMethod(123).send({from: 'QCfeC0cbeE560cbD6ed89580204AF71448f1fB8c577e60e9afC6E697019E2312cF3B24B98Eb763627a1C38c96ecd7E7c20BA9774cb6c0a810B78E8ea529ccdc40'});
 	 *
-	 * const receipt = await myContract.methods.myMethod(123).send({from: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000de0b295669a9fd93d5f28d9ec85e40f4cb697bae'});
+	 * const receipt = await myContract.methods.myMethod(123).send({from: 'QCfeC0cbeE560cbD6ed89580204AF71448f1fB8c577e60e9afC6E697019E2312cF3B24B98Eb763627a1C38c96ecd7E7c20BA9774cb6c0a810B78E8ea529ccdc40'});
 	 *
 	 *
 	 * // using the event emitter
-	 * const sendObj = myContract.methods.myMethod(123).send({from: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000de0b295669a9fd93d5f28d9ec85e40f4cb697bae'})
+	 * const sendObj = myContract.methods.myMethod(123).send({from: 'QCfeC0cbeE560cbD6ed89580204AF71448f1fB8c577e60e9afC6E697019E2312cF3B24B98Eb763627a1C38c96ecd7E7c20BA9774cb6c0a810B78E8ea529ccdc40'})
 	 * sendObj.on('transactionHash', function(hash){
 	 *   ...
 	 * });
@@ -415,7 +415,7 @@ export interface PayableMethodObject<Inputs = unknown[], Outputs = unknown[]> {
 	 *       "transactionIndex": 0,
 	 *       "blockHash": "0xef95f2f1ed3ca60b048b4bf67cde2195961e0bba6f70bcbea9a2c4e133e34b46",
 	 *       "blockNumber": 3,
-	 *       "contractAddress": "Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000011f4d0a3c12e86b4b5f39b213f7e19d048276dae",
+	 *       "contractAddress": "Q0B425Ed8E7399aF5dEFFE13a09e7F1776996a32466aa3c1BB1a34ad61760A2Eb72705C904aB988e3e089E55d1D8081DA21F20544E04CB5f0ac85aA6d5940e38D",
 	 *       "cumulativeGasUsed": 314159,
 	 *       "gasUsed": 30234,
 	 *       "events": {
@@ -427,16 +427,16 @@ export interface PayableMethodObject<Inputs = unknown[], Outputs = unknown[]> {
 	 *               },
 	 *               raw: {
 	 *                   data: '0x7f9fade1c0d57a7af66ab4ead79fade1c0d57a7af66ab4ead7c2c2eb7b11a91385',
-	 *                   topics: ['0xfd43ade1c09fade1c0d57a7af66ab4ead7c2c2eb7b11a91ffdd57a7af66ab4ead7', '0x7f9fade1c0d57a7af66ab4ead79fade1c0d57a7af66ab4ead7c2c2eb7b11a91385']
+	 *                   topics: ['0xfd43ade1c09fade1c0d57a7af66ab4ead7c2c2eb7b11a91ffdd57a7af66ab4ea0000000000000000000000000000000000000000000000000000000000000000', '0x7f9fade1c0d57a7af66ab4ead79fade1c0d57a7af66ab4ead7c2c2eb7b11a9130000000000000000000000000000000000000000000000000000000000000000']
 	 *               },
 	 *               event: 'MyEvent',
-	 *               signature: '0xfd43ade1c09fade1c0d57a7af66ab4ead7c2c2eb7b11a91ffdd57a7af66ab4ead7',
+	 *               signature: '0xfd43ade1c09fade1c0d57a7af66ab4ead7c2c2eb7b11a91ffdd57a7af66ab4ea',
 	 *               logIndex: 0,
 	 *               transactionIndex: 0,
 	 *               transactionHash: '0x7f9fade1c0d57a7af66ab4ead79fade1c0d57a7af66ab4ead7c2c2eb7b11a91385',
 	 *               blockHash: '0xfd43ade1c09fade1c0d57a7af66ab4ead7c2c2eb7b11a91ffdd57a7af66ab4ead7',
 	 *               blockNumber: 1234,
-	 *               address: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000de0b295669a9fd93d5f28d9ec85e40f4cb697bae'
+	 *               address: 'QCfeC0cbeE560cbD6ed89580204AF71448f1fB8c577e60e9afC6E697019E2312cF3B24B98Eb763627a1C38c96ecd7E7c20BA9774cb6c0a810B78E8ea529ccdc40'
 	 *           },
 	 *           "MyOtherEvent": {
 	 *               ...
@@ -508,7 +508,7 @@ export interface PayableMethodObject<Inputs = unknown[], Outputs = unknown[]> {
 	 * > {
 	 *  "accessList": [
 	 *     {
-	 *       "address": "Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000015859bdf5aff2080a9968f6a410361e9598df62f",
+	 *       "address": "QE5A56080716c3E4d0E1965dD1Af6012ecc96a0bA89811854D099547372eb4eE56F92761cfc57202EF56e39b724A6Ec6698737E5D92052A698933aef847B73295",
 	 *       "storageKeys": [
 	 *         "0x0000000000000000000000000000000000000000000000000000000000000000"
 	 *       ]

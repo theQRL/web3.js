@@ -17,6 +17,25 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 import { Coder, Reader, Writer } from './abstract-coder.js';
 
+/**
+ * Maps a value to the bit a `bool` parameter encodes it as, or `undefined` when the value is
+ * not an encoding of a boolean.
+ *
+ * Diff vs ethers v5 (H-3): ethers encoded JS truthiness, so `'0'`, `'0x0'`, `'false'`, `2` and
+ * `{}` all became `true`. Only `true`/`false` and the explicit forms that the library's
+ * validator (`web3-validator`'s `bool` format) accepts are encodings of a boolean, and they are
+ * mapped by value: `0`/`1`, `0n`/`1n`, `'0'`/`'1'` and `'0x0'`/`'0x1'`.
+ */
+export function booleanToBit(value: unknown): 0 | 1 | undefined {
+	if (value === true || value === 1 || value === BigInt(1) || value === '1' || value === '0x1') {
+		return 1;
+	}
+	if (value === false || value === 0 || value === BigInt(0) || value === '0' || value === '0x0') {
+		return 0;
+	}
+	return undefined;
+}
+
 export class BooleanCoder extends Coder {
 	constructor(localName: string) {
 		super('bool', 'bool', localName, false);
@@ -26,11 +45,20 @@ export class BooleanCoder extends Coder {
 		return false;
 	}
 
-	encode(writer: Writer, value: boolean): number {
-		return writer.writeValue(value ? 1 : 0);
+	encode(writer: Writer, value: unknown): number {
+		const bit = booleanToBit(value);
+		if (bit === undefined) {
+			return this._throwError('invalid boolean value', value);
+		}
+		return writer.writeValue(bit);
 	}
 
 	decode(reader: Reader): any {
-		return reader.coerce(this.type, !reader.readValue().isZero());
+		const word = reader.readValue();
+		// Only 0 and 1 encode a boolean; the on-chain decoder rejects anything else.
+		if (!word.isZero() && !word.eq(1)) {
+			this._throwError('invalid boolean value', word);
+		}
+		return reader.coerce(this.type, !word.isZero());
 	}
 }

@@ -26,9 +26,11 @@ jest.mock('fs');
 describe('IpcProvider', () => {
 	let socketPath: string;
 
+	const socketStats = { isSocket: () => true } as unknown as fs.Stats;
+
 	beforeEach(() => {
 		socketPath = '/test/test.ipc';
-		jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+		jest.spyOn(fs, 'statSync').mockReturnValue(socketStats);
 	});
 
 	describe('constructor', () => {
@@ -40,7 +42,6 @@ describe('IpcProvider', () => {
 
 		it('should try to connect', () => {
 			const connectSpy = jest.spyOn(IpcProvider.prototype, 'connect');
-			// eslint-disable-next-line no-new
 			new IpcProvider(socketPath);
 
 			expect(connectSpy).toHaveBeenCalled();
@@ -49,21 +50,47 @@ describe('IpcProvider', () => {
 
 	describe('connect', () => {
 		it('should verify socket path', () => {
-			// eslint-disable-next-line no-new
 			new IpcProvider(socketPath);
 
-			expect(fs.existsSync).toHaveBeenCalledWith(socketPath);
-			expect(fs.existsSync).toHaveBeenCalledTimes(1);
+			expect(fs.statSync).toHaveBeenCalledWith(socketPath);
+			expect(fs.statSync).toHaveBeenCalledTimes(1);
 		});
 
 		it('should throw error if socket path does not exists', () => {
-			jest.spyOn(fs, 'existsSync').mockReturnValue(false);
+			jest.spyOn(fs, 'statSync').mockImplementation(() => {
+				throw Object.assign(new Error('ENOENT: no such file or directory'), {
+					code: 'ENOENT',
+				});
+			});
 			expect(() => new IpcProvider(socketPath)).toThrow(
 				new ConnectionError(
 					`Error while connecting to ${socketPath}. Reason: ${
 						new InvalidClientError(socketPath).message
 					}`,
 				),
+			);
+		});
+
+		it('does not require a socket inode on Windows (named pipes)', () => {
+			jest.spyOn(fs, 'statSync').mockReturnValue({
+				isSocket: () => false,
+			} as unknown as fs.Stats);
+			const platform = Object.getOwnPropertyDescriptor(process, 'platform');
+			Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
+			try {
+				expect(() => new IpcProvider(socketPath)).not.toThrow();
+			} finally {
+				Object.defineProperty(process, 'platform', platform as PropertyDescriptor);
+			}
+		});
+
+		it('refuses a path that exists but is not a socket (L-43)', () => {
+			jest.spyOn(fs, 'statSync').mockReturnValue({
+				isSocket: () => false,
+			} as unknown as fs.Stats);
+			expect(() => new IpcProvider(socketPath)).toThrow(ConnectionError);
+			expect(() => new IpcProvider(socketPath)).toThrow(
+				`IPC path "${socketPath}" exists but is not a Unix domain socket`,
 			);
 		});
 

@@ -27,10 +27,14 @@ import { isNullish } from '@theqrl/web3-validator';
 import { qrlRpcMethods } from '@theqrl/web3-rpc-methods';
 
 import {
+	InvalidNumberError,
+	InvalidPropertiesForTransactionTypeError,
 	TransactionDataAndInputError,
 	UnableToPopulateNonceError,
 	UnsupportedTransactionTypeError,
+	NodeChainIdMismatchError,
 } from '@theqrl/web3-errors';
+import { getId } from '@theqrl/web3-net';
 import { defaultTransactionBuilder } from '../../src/utils/transaction_builder';
 
 jest.mock('@theqrl/web3-rpc-methods');
@@ -53,7 +57,7 @@ describe('defaultTransactionBuilder', () => {
 	const defaultTransactionType = '0x2';
 	const transaction: Transaction = {
 		from: expectedFrom,
-		to: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000003535353535353535353535353535353535353535',
+		to: 'QFcAc5a47dc5363999c60BC3b4288720E870a423A1383F00cFaa9E1135a60E43eA809688917A789EE0BDd6828dB2dcd848Bc632c28023794f8187af3Bac5DB018',
 		value: '0x174876e800',
 		gas: expectedGas,
 		gasLimit: expectedGasLimit,
@@ -78,7 +82,7 @@ describe('defaultTransactionBuilder', () => {
 	};
 	const mockBlockData = {
 		parentHash: '0xe99e022112df268087ea7eafaf4790497fd21dbeeb6bd7a1721df161a6657a54',
-		miner: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000bb7b8287f3f0a933474a79eae42cbca977791171',
+		miner: 'Q3268305Ca04D8742fEEe646e4cC5936463E12197162f086D72b85f8F2DAFea881B291ce929E87d9D518D7664Db23989d42c355B6A4590BAA9f571c4614fFa232',
 		stateRoot: '0xddc8b0234c2e0cad087c8b389aa7ef01f7d79b2570bccb77ce48648aa61c904d',
 		transactionsRoot: '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421',
 		receiptsRoot: '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421',
@@ -383,6 +387,8 @@ describe('defaultTransactionBuilder', () => {
 
 			const input = { ...transaction };
 			delete input.common;
+			delete input.chain;
+			delete input.hardfork;
 			delete input.maxPriorityFeePerGas;
 			delete input.maxFeePerGas;
 
@@ -392,6 +398,136 @@ describe('defaultTransactionBuilder', () => {
 				fillGasPrice: true,
 			});
 			expect(result.common).toStrictEqual(customCommon);
+			// `common` and the chain/hardfork pair are mutually exclusive signing options: the
+			// context defaults for the pair must not be filled in next to the adopted common.
+			expect(result.chain).toBeUndefined();
+			expect(result.hardfork).toBeUndefined();
+		});
+
+		it('takes chainId from web3Context.defaultCommon and checks it against the node', async () => {
+			// The node is asked once, to confirm it serves the chain the common names.
+			(qrlRpcMethods.getChainId as jest.Mock).mockClear();
+			(qrlRpcMethods.getChainId as jest.Mock).mockResolvedValue('0x7');
+			web3Context = new Web3Context<QRLExecutionAPI>({
+				provider: new HttpProvider('http://127.0.0.1'),
+				config: {
+					defaultCommon: {
+						customChain: { name: 'custom', networkId: '0x3', chainId: '0x7' },
+						baseChain: 'mainnet',
+						hardfork: 'zond',
+					},
+				},
+			});
+
+			const input = { ...transaction };
+			delete input.common;
+			delete input.chain;
+			delete input.hardfork;
+			delete input.chainId;
+			delete input.maxPriorityFeePerGas;
+			delete input.maxFeePerGas;
+
+			const result = await defaultTransactionBuilder({
+				transaction: input,
+				web3Context,
+				fillGasPrice: true,
+			});
+			expect(result.chainId).toBe('0x7');
+			expect(qrlRpcMethods.getChainId).toHaveBeenCalledTimes(1);
+		});
+
+		it('rejects a defaultCommon chainId the connected node does not serve', async () => {
+			(qrlRpcMethods.getChainId as jest.Mock).mockResolvedValue('0x1');
+			web3Context = new Web3Context<QRLExecutionAPI>({
+				provider: new HttpProvider('http://127.0.0.1'),
+				config: {
+					defaultCommon: {
+						customChain: { name: 'custom', networkId: '0x3', chainId: '0x7' },
+						baseChain: 'mainnet',
+						hardfork: 'zond',
+					},
+				},
+			});
+			const input = { ...transaction };
+			delete input.common;
+			delete input.chain;
+			delete input.hardfork;
+			delete input.chainId;
+
+			await expect(
+				defaultTransactionBuilder({ transaction: input, web3Context, fillGasPrice: true }),
+			).rejects.toThrow(NodeChainIdMismatchError);
+		});
+
+		it('should prefer an explicit chain/hardfork pair over web3Context.defaultCommon', async () => {
+			web3Context = new Web3Context<QRLExecutionAPI>({
+				provider: new HttpProvider('http://127.0.0.1'),
+				config: {
+					defaultCommon: {
+						customChain: { name: 'custom', networkId: '0x3', chainId: '0x1' },
+						baseChain: 'mainnet',
+						hardfork: 'zond',
+					},
+				},
+			});
+
+			const input = { ...transaction };
+			delete input.common;
+			delete input.maxPriorityFeePerGas;
+			delete input.maxFeePerGas;
+
+			const result = await defaultTransactionBuilder({
+				transaction: input,
+				web3Context,
+				fillGasPrice: true,
+			});
+			expect(result.common).toBeUndefined();
+			expect(result.chain).toBe('mainnet');
+			expect(result.hardfork).toBe('zond');
+		});
+	});
+
+	describe('chainId cross-check against the node (round 2)', () => {
+		beforeEach(() => {
+			(qrlRpcMethods.getChainId as jest.Mock).mockClear();
+		});
+
+		it('rejects a caller-supplied chainId the connected node does not serve', async () => {
+			(qrlRpcMethods.getChainId as jest.Mock).mockResolvedValue('0x1');
+			const input = { ...transaction, chainId: '0x2' };
+			delete input.common;
+
+			await expect(
+				defaultTransactionBuilder({ transaction: input, web3Context, fillGasPrice: true }),
+			).rejects.toThrow(NodeChainIdMismatchError);
+		});
+
+		it('accepts a caller-supplied chainId the node serves, whatever its spelling', async () => {
+			(qrlRpcMethods.getChainId as jest.Mock).mockResolvedValue('0x1');
+			const input = { ...transaction, chainId: 1 };
+			delete input.common;
+
+			const result = await defaultTransactionBuilder({
+				transaction: input,
+				web3Context,
+				fillGasPrice: true,
+			});
+			expect(BigInt(result.chainId as string)).toBe(BigInt(1));
+			expect(qrlRpcMethods.getChainId).toHaveBeenCalledTimes(1);
+		});
+
+		it('does not ask the node when no provider is set (offline signing)', async () => {
+			const offlineContext = new Web3Context<QRLExecutionAPI>();
+			const input = { ...transaction, chainId: '0x2' };
+			delete input.common;
+
+			const result = await defaultTransactionBuilder({
+				transaction: input,
+				web3Context: offlineContext,
+				fillGasPrice: true,
+			});
+			expect(BigInt(result.chainId as string)).toBe(BigInt(2));
+			expect(qrlRpcMethods.getChainId).not.toHaveBeenCalled();
 		});
 	});
 
@@ -413,7 +549,25 @@ describe('defaultTransactionBuilder', () => {
 	});
 
 	describe('should populate networkId', () => {
-		it('should populate with web3Net.getId', async () => {
+		it('should populate with web3Net.getId when neither the transaction nor its common names it', async () => {
+			(getId as jest.Mock).mockClear();
+			const input = { ...transaction };
+			delete input.networkId;
+			delete input.common;
+			delete input.maxPriorityFeePerGas;
+			delete input.maxFeePerGas;
+
+			const result = await defaultTransactionBuilder({
+				transaction: input,
+				web3Context,
+				fillGasPrice: true,
+			});
+			expect(result.networkId).toBe(expectedNetworkId);
+			expect(getId).toHaveBeenCalledTimes(1);
+		});
+
+		it('takes networkId from common.customChain without asking the node (I-12)', async () => {
+			(getId as jest.Mock).mockClear();
 			const input = { ...transaction };
 			delete input.networkId;
 			delete input.maxPriorityFeePerGas;
@@ -424,7 +578,42 @@ describe('defaultTransactionBuilder', () => {
 				web3Context,
 				fillGasPrice: true,
 			});
-			expect(result.networkId).toBe(expectedNetworkId);
+			expect(result.networkId).toBe(transaction.common?.customChain.networkId);
+			expect(getId).not.toHaveBeenCalled();
+		});
+	});
+
+	describe('input checks (L-50, L-55, L-26)', () => {
+		it('rejects a legacy gasPrice before populating anything (L-50)', async () => {
+			await expect(
+				defaultTransactionBuilder({
+					transaction: { ...transaction, gasPrice: '0x1' } as never,
+					web3Context,
+				}),
+			).rejects.toThrow(InvalidPropertiesForTransactionTypeError);
+		});
+
+		it('rejects a value above Number.MAX_SAFE_INTEGER given as a number (L-55)', async () => {
+			await expect(
+				defaultTransactionBuilder({
+					transaction: { ...transaction, value: 2 ** 53 + 1 },
+					web3Context,
+				}),
+			).rejects.toThrow(InvalidNumberError);
+		});
+
+		it('tolerates a common without customChain and asks the node for the chain id (L-26)', async () => {
+			const input = { ...transaction, common: {} as never };
+			delete input.chainId;
+			delete input.maxPriorityFeePerGas;
+			delete input.maxFeePerGas;
+
+			const result = await defaultTransactionBuilder({
+				transaction: input,
+				web3Context,
+				fillGasPrice: true,
+			});
+			expect(result.chainId).toBe(expectedChainId);
 		});
 	});
 

@@ -44,7 +44,8 @@ describe('getBlock', () => {
 		`should call rpcMethods.getBlock with expected parameters\nTitle: %s\nInput parameters: %s\n`,
 		async (_, inputParameters) => {
 			const [inputBlock, hydrated] = inputParameters;
-			const inputBlockIsBytes = isBytes(inputBlock as Bytes);
+			// Only a 32-byte value is a block hash (P4-L-11).
+			const inputBlockIsBytes = isBytes(inputBlock as Bytes, { size: 32 });
 
 			let inputBlockFormatted;
 
@@ -73,7 +74,8 @@ describe('getBlock', () => {
 				expectedMockRpcResponse,
 				expectedReturnFormat,
 			);
-			const inputBlockIsBytes = isBytes(inputBlock as Bytes);
+			// Only a 32-byte value is a block hash (P4-L-11).
+			const inputBlockIsBytes = isBytes(inputBlock as Bytes, { size: 32 });
 			(
 				(inputBlockIsBytes
 					? qrlRpcMethods.getBlockByHash

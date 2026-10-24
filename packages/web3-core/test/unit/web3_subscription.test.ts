@@ -28,7 +28,7 @@ describe('Web3Subscription', () => {
 	beforeEach(() => {
 		requestManager = {
 			send: jest.fn().mockImplementation(async () => {
-				return 'sub-id';
+				return '0x5ab1d';
 			}),
 			on: jest.fn(),
 			provider: { on: jest.fn(), removeListener: jest.fn(), request: jest.fn() },
@@ -69,15 +69,25 @@ describe('Web3Subscription', () => {
 		it('should set correct subscription id', async () => {
 			expect(sub.id).toBeUndefined();
 			await sub.subscribe();
-			expect(sub.id).toBe('sub-id');
+			expect(sub.id).toBe('0x5ab1d');
 		});
 
 		it('should start listening to the "message" event', async () => {
 			await sub.subscribe();
 
-			expect(requestManager.provider.on).toHaveBeenCalledTimes(1);
+			// `message` for the notifications, `disconnect`/`connect` to re-subscribe after a
+			// reconnect (P4-L-3).
+			expect(requestManager.provider.on).toHaveBeenCalledTimes(3);
 			expect(requestManager.provider.on).toHaveBeenCalledWith(
 				'message',
+				expect.any(Function),
+			);
+			expect(requestManager.provider.on).toHaveBeenCalledWith(
+				'disconnect',
+				expect.any(Function),
+			);
+			expect(requestManager.provider.on).toHaveBeenCalledWith(
+				'connect',
 				expect.any(Function),
 			);
 		});
@@ -86,8 +96,8 @@ describe('Web3Subscription', () => {
 	describe('unsubscribe', () => {
 		beforeEach(() => {
 			sub = new ExampleSubscription({ param1: 'value' }, { subscriptionManager });
-			sub['_id'] = 'sub-id';
-			subscriptionManager.subscriptions.set('sub-id', sub);
+			sub['_id'] = '0x5ab1d';
+			subscriptionManager.subscriptions.set('0x5ab1d', sub);
 		});
 
 		it('should invoke request manager to unsubscribe', async () => {
@@ -96,14 +106,47 @@ describe('Web3Subscription', () => {
 			expect(requestManager.send).toHaveBeenCalledTimes(1);
 			expect(requestManager.send).toHaveBeenCalledWith({
 				method: 'qrl_unsubscribe',
-				params: ['sub-id'],
+				params: ['0x5ab1d'],
 			});
 		});
 
 		it('should remove the subscription id', async () => {
-			expect(sub.id).toBe('sub-id');
+			expect(sub.id).toBe('0x5ab1d');
 			await sub.unsubscribe();
 			expect(sub.id).toBeUndefined();
+		});
+	});
+
+	describe('formatting failures', () => {
+		it('reports a notification it cannot format on its own error event', () => {
+			class ThrowingSubscription extends ExampleSubscription {
+				// eslint-disable-next-line class-methods-use-this
+				protected formatSubscriptionResult(): never {
+					throw new Error('undecodable');
+				}
+			}
+			const subscription = new ThrowingSubscription(
+				{ param1: 'value' },
+				{ subscriptionManager },
+			);
+			const errors: unknown[] = [];
+			const data: unknown[] = [];
+			subscription.on('error', error => {
+				errors.push(error);
+			});
+			subscription.on('data', item => {
+				data.push(item);
+			});
+
+			subscription.processSubscriptionData({
+				jsonrpc: '2.0',
+				method: 'qrl_subscription',
+				params: { subscription: '0x5ab1d', result: { foo: 1 } },
+			} as never);
+
+			expect(data).toEqual([]);
+			expect(errors).toHaveLength(1);
+			expect((errors[0] as Error).message).toBe('undecodable');
 		});
 	});
 });

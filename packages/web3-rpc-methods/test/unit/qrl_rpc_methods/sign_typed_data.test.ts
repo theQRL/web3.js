@@ -49,7 +49,7 @@ describe('signTypedData', () => {
 			const validatorSpy = jest.spyOn(validator, 'validate');
 			await qrlRpcMethods.signTypedData(requestManager, ...inputParameters);
 			expect(validatorSpy).toHaveBeenCalledWith(
-				['address', 'eip712TypedData'],
+				['address', 'qrlTypedData'],
 				[inputParameters[0], inputParameters[1]],
 			);
 		},

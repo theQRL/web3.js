@@ -46,7 +46,6 @@
 		"hygiene": "node scripts/check-repo-hygiene.js",
 		"pos:start": "./scripts/local_testnet/start_local_testnet.sh",
 		"pos:stop": "./scripts/local_testnet/stop_local_testnet.sh",
-		"pos:clef:setup": "./scripts/local_testnet/setup_clef.sh",
 		"lint": "turbo run lint --filter=\"./packages/*\" --filter=\"./tools/*\"",
 		"lint:budget": "node scripts/lint-budget.js",
 		"lint:fix": "turbo run lint:fix --filter=\"./packages/*\" --filter=\"./tools/*\"",
@@ -58,25 +57,26 @@
 		"test:integration": "turbo run test:integration --filter=\"./packages/*\" --filter=\"./tools/*\"",
 		"test:e2e:gqrl:http": "./scripts/test-runner.sh gqrl http",
 		"test:e2e:gqrl:ws": "./scripts/test-runner.sh gqrl ws",
-		"test:e2e:gqrl:ipc": "./scripts/test-runner.sh gqrl ipc",
 		"test:e2e:coverage": "./scripts/test-runner.sh coverage",
 		"test:e2e:mainnet:http": "./scripts/test-runner.sh mainnet http",
 		"test:e2e:mainnet:ws": "./scripts/test-runner.sh mainnet ws",
 		"test:e2e:testnet:http": "./scripts/test-runner.sh testnet http",
 		"test:e2e:testnet:ws": "./scripts/test-runner.sh testnet ws",
 		"husky:install": "husky install",
-		"husky:uninstall": "husky uninstall",
-		"compile:contracts": "node ./scripts/compile_contracts.js && pnpm run format && pnpm run lint:fix",
-		"release": "multi-semantic-release --ignore-private-packages",
-		"release:dry-run": "multi-semantic-release --ignore-private-packages --dry-run",
+		"husky:uninstall": "git config --unset core.hooksPath",
+		"compile:contracts": "node ./scripts/compile_contracts.js",
+		"release": "multi-semantic-release --ignore-private-packages --deps.prefix=^",
+		"release:dry-run": "multi-semantic-release --ignore-private-packages --deps.prefix=^ --dry-run",
 		"release:inspect-packages": "node scripts/release/inspect-packages.js",
 		"release:pack-packages": "node scripts/release/pack-packages.js",
 		"release:packages": "node scripts/release/packages.js list",
 		"release:published-versions": "node scripts/release/published-versions.js",
+		"release:publish-tarballs": "node scripts/release/publish-tarballs.js",
 		"release:smoke-tarballs": "node scripts/release/smoke-tarballs.js",
 		"release:touch-packages": "node scripts/release/touch-packages.js",
 		"doctor": "node scripts/doctor.js",
-		"audit:supply-chain": "command -v docker >/dev/null 2>&1 || { echo 'audit:supply-chain runs Trivy 0.70.0 from a pinned container image and needs Docker. Install Docker, or install Trivy 0.70.0 yourself and run: trivy fs --scanners vuln --severity HIGH,CRITICAL --exit-code 1 --ignorefile .trivyignore pnpm-lock.yaml' >&2; exit 1; }; scan() { docker run --rm -v \"$PWD\":/work -w /work -v qrl-web3-trivy-db:/root/.cache/trivy ghcr.io/aquasecurity/trivy:0.70.0@sha256:be1190afcb28352bfddc4ddeb71470835d16462af68d310f9f4bca710961a41e \"$@\"; }; scan fs --scanners vuln --severity HIGH,CRITICAL --exit-code 1 --ignorefile .trivyignore pnpm-lock.yaml; status=$?; scan version; exit $status"
+		"check:dependencies": "node scripts/check-package-dependencies.js",
+		"audit:supply-chain": "command -v docker >/dev/null 2>&1 || { echo 'audit:supply-chain runs Trivy 0.70.0 from a pinned container image and needs Docker. Install Docker, or install Trivy 0.70.0 yourself and run: trivy fs --scanners vuln --include-dev-deps --severity HIGH,CRITICAL --exit-code 1 --ignorefile .trivyignore pnpm-lock.yaml' >&2; exit 1; }; scan() { docker run --rm -v \"$PWD\":/work:ro -w /work -v qrl-web3-trivy-db:/root/.cache/trivy ghcr.io/aquasecurity/trivy:0.70.0@sha256:be1190afcb28352bfddc4ddeb71470835d16462af68d310f9f4bca710961a41e \"$@\"; }; scan fs --scanners vuln --include-dev-deps --severity HIGH,CRITICAL --exit-code 1 --ignorefile .trivyignore pnpm-lock.yaml; status=$?; scan version; exit $status"
 	},
 	"devDependencies": {
 		"@cypress/webpack-preprocessor": "7.1.0",
@@ -86,8 +86,9 @@
 		"@semantic-release/github": "12.0.8",
 		"@semantic-release/release-notes-generator": "14.1.1",
 		"@theqrl/eslint-config-base-web3": "workspace:*",
-		"@theqrl/hypc": "0.0.2",
-		"@theqrl/qrl-contracts": "0.1.0",
+		"@theqrl/hypc": "0.2.0",
+		"@theqrl/qrl-contracts": "github:theQRL/qrl-contracts#d3c84eedac4e051f6e99892397c5e42f0f0a2266",
+		"@types/jest": "30.0.0",
 		"@types/node": "25.9.1",
 		"assert": "2.1.0",
 		"buffer": "6.0.3",
@@ -117,10 +118,9 @@
 		"typescript": "6.0.3",
 		"utf-8-validate": "6.0.6",
 		"webpack": "5.107.1",
-		"webpack-cli": "7.0.2"
+		"webpack-bundle-analyzer": "5.3.0",
+		"webpack-cli": "7.0.2",
+		"yaml": "2.8.4"
 	},
-	"packageManager": "pnpm@10.27.0",
-	"dependencies": {
-		"webpack-bundle-analyzer": "5.3.0"
-	}
+	"packageManager": "pnpm@10.27.0"
 }

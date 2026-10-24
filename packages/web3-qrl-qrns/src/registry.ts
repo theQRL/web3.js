@@ -16,25 +16,41 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { Web3ContextObject } from '@theqrl/web3-core';
-import { TransactionRevertInstructionError } from '@theqrl/web3-errors';
+import {
+	BaseWeb3Error,
+	ContractExecutionError,
+	TransactionRevertInstructionError,
+	Web3ContractError,
+} from '@theqrl/web3-errors';
 import { Contract } from '@theqrl/web3-qrl-contract';
 import { Address } from '@theqrl/web3-types';
 import { isAddressString } from '@theqrl/web3-validator';
 import { QRNSRegistryAbi } from './abi/qrns/QRNSRegistry.js';
 import { PublicResolverAbi } from './abi/qrns/PublicResolver.js';
-import { registryAddresses } from './config.js';
+import { QRL_ZERO_ADDRESS } from './config.js';
 import { namehash } from './utils.js';
 
-// A QRL address is 'Q' + 128 hex characters, so the zero address has 128 zeros.
-const QRL_ZERO_ADDRESS = `Q${'0'.repeat(128)}`;
-
-// Wrap a failed contract call in a typed error while preserving the original
-// cause (message and error object) instead of discarding it in an empty Error.
+/**
+ * Maps a failed registry call to a typed error: a revert reported by the node becomes a
+ * `TransactionRevertInstructionError`, any other web3 error (an ABI decoding failure, a
+ * malformed reply, a connection error) is passed through unchanged, and anything else is
+ * wrapped in a `Web3ContractError` that keeps the cause as `innerError` (L-26).
+ */
 const wrapContractCallError = (error: unknown): Error => {
+	if (error instanceof ContractExecutionError) {
+		const revertError = new TransactionRevertInstructionError(
+			error.innerError?.message ?? error.message,
+		);
+		revertError.innerError = error;
+		return revertError;
+	}
+	if (error instanceof BaseWeb3Error) {
+		return error;
+	}
 	const cause = error instanceof Error ? error : new Error(String(error));
-	const revertError = new TransactionRevertInstructionError(cause.message);
-	revertError.innerError = cause;
-	return revertError;
+	const wrapped = new Web3ContractError(`QRNS registry call failed: ${cause.message}`);
+	wrapped.innerError = cause;
+	return wrapped;
 };
 
 export class Registry {
@@ -42,19 +58,25 @@ export class Registry {
 	private readonly context: Web3ContextObject;
 
 	public constructor(context: Web3ContextObject, customRegistryAddress?: Address) {
-		this.contract = new Contract(
-			QRNSRegistryAbi,
-			customRegistryAddress ?? registryAddresses.main,
-			context,
-		);
+		this.contract = new Contract(QRNSRegistryAbi, customRegistryAddress, context);
 
 		this.context = context;
 	}
 
+	/**
+	 * The address of the registry contract the queries are sent to. Settable, so that the
+	 * owning {@link QRNS} can repoint the registry at the address it resolved (L-62).
+	 */
+	public get address(): Address | undefined {
+		return this.contract.options.address;
+	}
+
+	public set address(value: Address | undefined) {
+		this.contract.options.address = value;
+	}
+
 	public async getOwner(name: string) {
 		try {
-			// Await inside the try so async rejections are actually caught here
-			// rather than bypassing the catch block.
 			return await this.contract.methods.owner(namehash(name)).call();
 		} catch (error) {
 			throw wrapContractCallError(error);
@@ -80,23 +102,21 @@ export class Registry {
 	public async getResolver(name: string) {
 		let address: unknown;
 		try {
-			// Await inside the try so a failed/reverted call surfaces a
-			// cause-preserving typed error.
 			address = await this.contract.methods.resolver(namehash(name)).call();
 		} catch (error) {
 			throw wrapContractCallError(error);
 		}
 
-		// Validation happens outside the try so the specific messages below are
-		// not swallowed/re-wrapped as generic contract-call failures.
 		if (typeof address !== 'string') {
-			throw new Error('QRNS registry returned non-string resolver address');
+			throw new Web3ContractError('QRNS registry returned non-string resolver address');
 		}
 		if (!isAddressString(address)) {
-			throw new Error(`QRNS registry returned invalid resolver address: ${address}`);
+			throw new Web3ContractError(
+				`QRNS registry returned invalid resolver address: ${address}`,
+			);
 		}
 		if (address.toLowerCase() === QRL_ZERO_ADDRESS.toLowerCase()) {
-			throw new Error('QRNS registry returned zero resolver address');
+			throw new Web3ContractError('QRNS registry returned zero resolver address');
 		}
 		return new Contract(PublicResolverAbi, address, this.context);
 	}

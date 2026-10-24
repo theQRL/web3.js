@@ -26,6 +26,7 @@ The required status checks for `main` must include:
 - `Docs Build`
 - `Dependency Review`
 - `Lint workflow files`
+- `zizmor (Actions security analysis)`
 
 `Package Inspection` is release-relevant: it builds packages, builds browser
 bundles, inspects package metadata, packs tarballs, and smoke-tests the packed
@@ -40,7 +41,10 @@ The current ownership model is:
 
 - Repository default: `@theQRL/core`
 - QRL account, transaction, and contract packages: `@theQRL/crypto`
-- CI/CD and repository automation: `@theQRL/devops`
+- CI/CD and repository automation: `@theQRL/devops` — `.github/`,
+  `scripts/release/`, `.releaserc.json`, and the manifests that decide what the
+  release pipeline installs and publishes: the root `package.json`,
+  `pnpm-workspace.yaml` and `pnpm-lock.yaml`.
 
 Review teams must exist in the upstream GitHub organization before branch
 protection is enabled. If a team name changes, update `CODEOWNERS` and this
@@ -55,7 +59,9 @@ The environment must:
 - Be restricted to the `main` branch.
 - Require approval from release maintainers before jobs proceed.
 - Exclude ordinary contributors and automation-only accounts from approvers.
-- Be used only by `.github/workflows/release.yml`.
+- Be used only by the `prepare` and `publish` jobs of
+  `.github/workflows/release.yml` (a push release and a manual re-publish run
+  each need both approvals).
 
 The release workflow is additionally guarded by `github.repository ==
 'theQRL/web3.js'`, pushes to `refs/heads/main`, and the repository variable
@@ -67,20 +73,35 @@ and release-readiness sign-off are complete.
 Set default repository Actions permissions to read-only. Workflows should request
 write permissions only on jobs that need them.
 
-The release workflow needs elevated permissions only for release preparation,
-publishing, artefact attestation, and release uploads. Ordinary pull-request CI
-must keep `contents: read`.
+The release workflow needs elevated permissions only for release preparation
+(`prepare`: `contents: write` for tags and draft releases), publishing
+(`publish`: `id-token: write` only), attestation and release uploads (`attest`
+and the SLSA jobs). SBOM generation runs third-party tooling and therefore gets
+neither an OIDC token nor write permissions; every job that consumes the
+release-candidate artifact verifies it against the digests the `prepare` job
+recorded as job outputs before using it. Ordinary pull-request CI must keep
+`contents: read`.
 
 ## npm Trusted Publishing
 
-Each publishable `@theqrl/*` npm package must be configured for trusted
-publishing with:
+Each publishable `@theqrl/*` npm package (the list printed by
+`node scripts/release/packages.js list`; private workspace tools such as
+`@theqrl/eslint-config-base-web3` are not published) must be configured for
+trusted publishing with:
 
 - GitHub owner: `theQRL`
 - GitHub repository: `web3.js`
 - Workflow: `.github/workflows/release.yml`
 - Environment: `npm-publish`
-- Publish job: `publish`
+
+npm scopes the trust to the repository, the workflow file and the environment;
+it cannot name a job. The workflow therefore keeps the two apart itself: the
+`publish` job is the only one that combines `environment: npm-publish` with
+`id-token: write`, and it runs nothing but the artifact verification and
+`npm publish`. The jobs that also need an OIDC token (`attest` for the GitHub
+attestations, the SLSA generator) run outside the environment, so a token
+minted there is rejected by npm's environment check even if one of their
+third-party steps were compromised.
 
 Do not add long-lived npm tokens for the normal release path. If a break-glass
 token is ever needed, document its owner, expiry, storage location, and
@@ -110,3 +131,5 @@ review as ordinary pull requests.
 Dependency policy, pnpm hardening settings, audit commands, and lockfile review
 requirements are documented in
 [`docs/supply-chain-security.md`](supply-chain-security.md).
+
+The publish job pins `NODE_PUBLISH_VERSION` to [Node 24.22.1](https://nodejs.org/en/blog/release/v24.22.1) and fails before publishing unless its bundled npm is at least 11.5.1. Release inspection (`inspect-packages.js --release <package-name> ...`) rejects non-semver sibling ranges, including `workspace:*`, for packages selected for publication. Ordinary workspace inspection permits development manifests with `workspace:^`.

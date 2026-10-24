@@ -90,8 +90,17 @@ jobs:
       # and `pnpm run audit:supply-chain` (which runs the same Trivy release from
       # a digest-pinned image) cannot drift apart. scripts/doctor.js fails if the
       # two stop agreeing; bump both together.
+      #
+      # devDependencies are in scope: the release, docs and CI toolchain executes
+      # them with write-capable tokens, and Trivy's pnpm analyzer drops dev-only
+      # importers unless told otherwise. The action exposes no input for the
+      # flag, so it is set through Trivy's environment (TRIVY_INCLUDE_DEV_DEPS
+      # == --include-dev-deps); scripts/doctor.js checks parity with the
+      # --include-dev-deps flag of the local script.
       - name: Trivy vulnerability scan (high/critical)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        env:
+          TRIVY_INCLUDE_DEV_DEPS: "true"
         with:
           version: v0.70.0
           scan-type: fs
@@ -140,7 +149,10 @@ jobs:
     name: Unit Coverage
     runs-on: ubuntu-latest
     env:
-      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      # Only this boolean reaches the job environment (and the test step); the
+      # token itself is handed to the two upload steps alone. A step `if` cannot
+      # read the secrets context, hence the flag.
+      HAS_CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN != '' }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -162,10 +174,10 @@ jobs:
         run: pnpm run test:coverage:unit
 
       - name: Upload unit coverage to Codecov
-        if: env.CODECOV_TOKEN != '' && github.event_name == 'push'
+        if: env.HAS_CODECOV_TOKEN == 'true' && github.event_name == 'push'
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
-          token: ${{ env.CODECOV_TOKEN }}
+          token: ${{ secrets.CODECOV_TOKEN }}
           files: ./packages/*/.coverage/unit/*.json,./tools/*/.coverage/unit/*.json
           disable_search: true
           flags: unit
@@ -173,10 +185,10 @@ jobs:
           fail_ci_if_error: true
 
       - name: Upload unit coverage to Codecov (PR)
-        if: env.CODECOV_TOKEN != '' && github.event_name == 'pull_request'
+        if: env.HAS_CODECOV_TOKEN == 'true' && github.event_name == 'pull_request'
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
-          token: ${{ env.CODECOV_TOKEN }}
+          token: ${{ secrets.CODECOV_TOKEN }}
           files: ./packages/*/.coverage/unit/*.json,./tools/*/.coverage/unit/*.json
           disable_search: true
           flags: unit
@@ -184,7 +196,7 @@ jobs:
           fail_ci_if_error: false
 
       - name: Skip Codecov upload without token
-        if: env.CODECOV_TOKEN == ''
+        if: env.HAS_CODECOV_TOKEN != 'true'
         run: echo "Skipping Codecov upload because CODECOV_TOKEN is not available in this workflow context."
 
   docs:

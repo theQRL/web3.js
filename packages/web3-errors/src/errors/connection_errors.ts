@@ -15,8 +15,6 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/* eslint-disable max-classes-per-file */
-
 import { ConnectionEvent } from '@theqrl/web3-types';
 import {
 	ERR_CONN,
@@ -27,8 +25,9 @@ import {
 	ERR_CONN_MAX_ATTEMPTS,
 	ERR_CONN_PENDING_REQUESTS,
 	ERR_REQ_ALREADY_SENT,
+	ERR_CONN_HTTP_STATUS,
 } from '../error_codes.js';
-import { BaseWeb3Error } from '../web3_error_base.js';
+import { BaseWeb3Error, truncateEchoedText, toJsonSafe } from '../web3_error_base.js';
 
 export class ConnectionError extends BaseWeb3Error {
 	public code = ERR_CONN;
@@ -49,9 +48,22 @@ export class ConnectionError extends BaseWeb3Error {
 	}
 }
 
+/**
+ * The endpoint could not be reached. `host` is the `host:port` of the endpoint, never the
+ * full URL; `event.reason`, when given, is the transport's error code (`ECONNREFUSED`,
+ * `ENOTFOUND`, ...) and is appended to the message.
+ */
 export class InvalidConnectionError extends ConnectionError {
-	public constructor(public host: string, event?: ConnectionEvent) {
-		super(`CONNECTION ERROR: Couldn't connect to node ${host}.`, event);
+	public constructor(
+		public host: string,
+		event?: ConnectionEvent,
+	) {
+		super(
+			`CONNECTION ERROR: Couldn't connect to node ${host}.${
+				event?.reason ? ` Reason: ${event.reason}` : ''
+			}`,
+			event,
+		);
 		this.code = ERR_CONN_INVALID;
 	}
 
@@ -108,5 +120,66 @@ export class RequestAlreadySentError extends ConnectionError {
 	public constructor(id: number | string) {
 		super(`Request already sent with following id: ${id}`);
 		this.code = ERR_REQ_ALREADY_SENT;
+	}
+}
+
+/** HTTP statuses that conventionally invite a retry after a back-off. */
+const RETRYABLE_HTTP_STATUSES = new Set([408, 425, 429, 500, 502, 503, 504]);
+
+/**
+ * Thrown by the HTTP provider when the endpoint answers with a non-2xx status (L-47).
+ *
+ * - `status` / `statusText`: the HTTP status line, also exposed as `errorCode` /
+ *   `errorReason` like every {@link ConnectionError}.
+ * - `retryAfter`: the `Retry-After` header in **seconds** (a delta or an HTTP date, both
+ *   converted), `undefined` when absent or unparseable.
+ * - `retryable`: `true` for 408, 425, 429 and the 5xx gateway/server statuses.
+ * - `innerError`: a `ResponseError` built from the body when it was a JSON-RPC error reply
+ *   (some endpoints pair a 4xx/5xx with one); an HTML or plain-text error page is dropped.
+ * - `data`: that reply's `error.data`, kept at the top level as well so that a revert
+ *   reported with a non-2xx status stays decodable (`ContractExecutionError` reads it).
+ */
+export class HttpStatusError extends ConnectionError {
+	public readonly retryable: boolean;
+	public data?: unknown;
+
+	public constructor(
+		public status: number,
+		public statusText?: string,
+		public retryAfter?: number,
+		innerError?: Error,
+	) {
+		super(
+			`HTTP STATUS ERROR: the JSON-RPC endpoint answered with HTTP ${status}${
+				statusText ? ` (${truncateEchoedText(statusText)})` : ''
+			}${retryAfter === undefined ? '' : `, retry after ${retryAfter}s`}${
+				// The inner error usually wraps the node's reply. One of this library's errors
+				// has bounded the node's text itself; any other error's message is bounded here
+				// like every echoed, node-supplied text (P4-L-24).
+				typeof innerError?.message === 'string' && innerError.message
+					? `. ${
+							innerError instanceof BaseWeb3Error
+								? innerError.message
+								: truncateEchoedText(innerError.message)
+						}`
+					: ''
+			}`,
+			{ code: status, reason: statusText },
+		);
+		this.code = ERR_CONN_HTTP_STATUS;
+		this.innerError = innerError;
+		this.data = (innerError as { data?: unknown } | undefined)?.data;
+		this.retryable = RETRYABLE_HTTP_STATUSES.has(status);
+	}
+
+	public toJSON() {
+		return {
+			...super.toJSON(),
+			status: this.status,
+			statusText: this.statusText,
+			retryAfter: this.retryAfter,
+			retryable: this.retryable,
+			data: toJsonSafe(this.data),
+		};
 	}
 }

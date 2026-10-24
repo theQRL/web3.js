@@ -15,11 +15,24 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import { Web3Context } from '@theqrl/web3-core';
-import { format } from '@theqrl/web3-utils';
-import { DEFAULT_RETURN_FORMAT, Web3QRLExecutionAPI } from '@theqrl/web3-types';
+import { format, sha3Raw } from '@theqrl/web3-utils';
+import {
+	Bytes,
+	DataFormat,
+	DEFAULT_RETURN_FORMAT,
+	FMT_BYTES,
+	FMT_NUMBER,
+	QRL_DATA_FORMAT,
+	Web3QRLExecutionAPI,
+} from '@theqrl/web3-types';
 import { qrlRpcMethods } from '@theqrl/web3-rpc-methods';
 import { TransactionFactory } from '@theqrl/web3-qrl-accounts';
-import { InvalidResponseError } from '@theqrl/web3-errors';
+import {
+	BaseWeb3Error,
+	InvalidResponseError,
+	TransactionError,
+	TransactionRevertedWithoutReasonError,
+} from '@theqrl/web3-errors';
 
 import { sendSignedTransaction } from '../../../src/rpc_method_wrappers';
 import * as WaitForTransactionReceipt from '../../../src/utils/wait_for_transaction_receipt';
@@ -32,8 +45,20 @@ import {
 import { transactionReceiptSchema } from '../../../src/schemas';
 
 jest.mock('@theqrl/web3-rpc-methods');
+
+beforeEach(() => {
+	(qrlRpcMethods.call as jest.Mock).mockResolvedValue('0x');
+});
 jest.mock('../../../src/utils/wait_for_transaction_receipt');
 jest.mock('../../../src/utils/watch_transaction_for_confirmations');
+
+// A `null` result is one of the reply shapes under test.
+// eslint-disable-next-line no-null/no-null
+const NULL_REPLY: unknown = null;
+
+// The hash of a raw transaction is `keccak256` of its bytes; the node has to answer it (P4-L-9).
+const localHashOf = (signedTransaction: Bytes) =>
+	sha3Raw(format({ format: 'bytes' }, signedTransaction, DEFAULT_RETURN_FORMAT));
 
 describe('sendTransaction', () => {
 	const testMessage =
@@ -43,6 +68,16 @@ describe('sendTransaction', () => {
 
 	beforeAll(() => {
 		web3Context = new Web3Context('http://127.0.0.1:8545');
+	});
+
+	beforeEach(() => {
+		// The send pipeline checks the node's replies: `qrl_sendRawTransaction` must answer the
+		// local hash (P4-L-9) and the block number read by the block-timeout watcher must be a
+		// quantity (P4-L-13), so the automocked `undefined` replies need well-formed defaults.
+		(qrlRpcMethods.sendRawTransaction as jest.Mock).mockImplementation(
+			(_requestManager: unknown, raw: string) => sha3Raw(raw),
+		);
+		(qrlRpcMethods.getBlockNumber as jest.Mock).mockResolvedValue('0x1');
 	});
 
 	afterEach(() => jest.resetAllMocks());
@@ -123,16 +158,12 @@ describe('sendTransaction', () => {
 				WaitForTransactionReceipt.waitForTransactionReceipt as jest.Mock
 			).mockResolvedValueOnce(expectedTransactionReceipt);
 
-			(qrlRpcMethods.sendRawTransaction as jest.Mock).mockResolvedValueOnce(
-				expectedTransactionHash,
-			);
-
 			await sendSignedTransaction(
 				web3Context,
 				inputSignedTransaction,
 				DEFAULT_RETURN_FORMAT,
 			).on('transactionHash', transactionHash => {
-				expect(transactionHash).toStrictEqual(expectedTransactionHash);
+				expect(transactionHash).toStrictEqual(localHashOf(inputSignedTransaction));
 			});
 
 			expect.assertions(1);
@@ -142,18 +173,16 @@ describe('sendTransaction', () => {
 	it.each(testData)(
 		`should call WaitForTransactionReceipt.waitForTransactionReceipt with expected parameters\n ${testMessage}`,
 		async (_, inputSignedTransaction) => {
-			(qrlRpcMethods.sendRawTransaction as jest.Mock).mockResolvedValueOnce(
-				expectedTransactionHash,
-			);
 			(
 				WaitForTransactionReceipt.waitForTransactionReceipt as jest.Mock
 			).mockResolvedValueOnce(expectedTransactionReceipt);
 
 			await sendSignedTransaction(web3Context, inputSignedTransaction, DEFAULT_RETURN_FORMAT);
+			// The receipt is always awaited in the wire format (H-1), for the local hash (P4-L-9).
 			expect(WaitForTransactionReceipt.waitForTransactionReceipt).toHaveBeenCalledWith(
 				web3Context,
-				expectedTransactionHash,
-				DEFAULT_RETURN_FORMAT,
+				localHashOf(inputSignedTransaction),
+				QRL_DATA_FORMAT,
 			);
 		},
 	);
@@ -165,16 +194,12 @@ describe('sendTransaction', () => {
 				.spyOn(WaitForTransactionReceipt, 'waitForTransactionReceipt')
 				.mockResolvedValueOnce(expectedTransactionReceipt);
 
-			(qrlRpcMethods.sendRawTransaction as jest.Mock).mockResolvedValueOnce(
-				expectedTransactionHash,
-			);
-
 			await sendSignedTransaction(web3Context, inputSignedTransaction, DEFAULT_RETURN_FORMAT);
 
 			expect(waitForTransactionReceiptSpy).toHaveBeenCalledWith(
 				web3Context,
-				expectedTransactionHash,
-				DEFAULT_RETURN_FORMAT,
+				localHashOf(inputSignedTransaction),
+				QRL_DATA_FORMAT,
 			);
 		},
 	);
@@ -239,9 +264,6 @@ describe('sendTransaction', () => {
 				DEFAULT_RETURN_FORMAT,
 			);
 
-			(qrlRpcMethods.sendRawTransaction as jest.Mock).mockResolvedValueOnce(
-				expectedTransactionHash,
-			);
 			(
 				WaitForTransactionReceipt.waitForTransactionReceipt as jest.Mock
 			).mockResolvedValueOnce(expectedTransactionReceipt);
@@ -254,16 +276,17 @@ describe('sendTransaction', () => {
 
 			await promiEvent;
 
+			// The receipt is always awaited in the wire format (H-1), for the local hash (P4-L-9).
 			expect(WaitForTransactionReceipt.waitForTransactionReceipt).toHaveBeenCalledWith(
 				web3Context,
-				expectedTransactionHash,
-				DEFAULT_RETURN_FORMAT,
+				localHashOf(inputTransaction),
+				QRL_DATA_FORMAT,
 			);
 			expect(watchTransactionForConfirmationsSpy).toHaveBeenCalledWith(
 				web3Context,
 				promiEvent,
 				formattedTransactionReceipt,
-				expectedTransactionHash,
+				localHashOf(inputTransaction),
 				DEFAULT_RETURN_FORMAT,
 			);
 		},
@@ -334,11 +357,7 @@ describe('sendTransaction', () => {
 
 		it('rejects (rather than hanging) when the pre-flight formatting throws', async () => {
 			const outcome = await settleWithin(async () =>
-				sendSignedTransaction(
-					web3Context,
-					unformattableTransaction,
-					DEFAULT_RETURN_FORMAT,
-				),
+				sendSignedTransaction(web3Context, unformattableTransaction, DEFAULT_RETURN_FORMAT),
 			);
 
 			expect(outcome).not.toBe(NOT_SETTLED);
@@ -360,16 +379,16 @@ describe('sendTransaction', () => {
 			expect((outcome as { reason: unknown }).reason).toBeInstanceOf(Error);
 		});
 
-		it('rejects without emitting error for an unclassified deserialization failure', async () => {
-			// The Promise rejection is authoritative; the error event is supplementary
-			// and gated on the same typed-error classification used elsewhere.
+		it('emits a wrapped typed error for an unclassified deserialization failure when subscribed (M-7b)', async () => {
+			// Every failure reaches an attached listener; one that is not a web3 error is
+			// wrapped in a TransactionError. The Promise still rejects with the original.
 			const promiEvent = sendSignedTransaction(
 				web3Context,
 				undeserializableTransaction,
 				DEFAULT_RETURN_FORMAT,
 			);
 			const emitSpy = jest.spyOn(promiEvent, 'emit');
-			const errorListener = jest.fn();
+			const errorListener = jest.fn<void, [BaseWeb3Error]>();
 			promiEvent.on('error', errorListener);
 
 			const outcome = await settleWithin(async () => promiEvent);
@@ -377,8 +396,13 @@ describe('sendTransaction', () => {
 
 			expect(outcome).not.toBe(NOT_SETTLED);
 			expect(outcome).toMatchObject({ status: 'rejected' });
-			expect(errorListener).not.toHaveBeenCalled();
-			expect(countErrorEmits(emitSpy)).toBe(0);
+			expect(errorListener).toHaveBeenCalledTimes(1);
+			expect(errorListener.mock.calls[0][0]).toBeInstanceOf(TransactionError);
+			expect(errorListener.mock.calls[0][0].innerError).toBe(
+				(outcome as { reason: unknown }).reason,
+			);
+			expect(countErrorEmits(emitSpy)).toBe(1);
+			expect(unhandledRejections).toStrictEqual([]);
 		});
 
 		it('emits exactly one error event for a classified deserialization failure when subscribed', async () => {
@@ -447,6 +471,171 @@ describe('sendTransaction', () => {
 			await flushMacrotasks();
 
 			expect(unhandledRejections).toStrictEqual([]);
+		});
+	});
+
+	describe('receipt status (H-1)', () => {
+		const signedTransaction = testData[0][1];
+		const options = { checkRevertBeforeSending: false };
+		const formats: [string, DataFormat][] = [
+			['BIGINT/HEX', { number: FMT_NUMBER.BIGINT, bytes: FMT_BYTES.HEX }],
+			['HEX/HEX', { number: FMT_NUMBER.HEX, bytes: FMT_BYTES.HEX }],
+			['NUMBER/HEX', { number: FMT_NUMBER.NUMBER, bytes: FMT_BYTES.HEX }],
+			['STR/HEX', { number: FMT_NUMBER.STR, bytes: FMT_BYTES.HEX }],
+			['BIGINT/UINT8ARRAY', { number: FMT_NUMBER.BIGINT, bytes: FMT_BYTES.UINT8ARRAY }],
+		];
+		const failing: [string, unknown][] = [
+			["'0x0'", '0x0'],
+			["'0'", '0'],
+			['0 (number)', 0],
+			['missing', undefined],
+			// eslint-disable-next-line no-null/no-null
+			['null', null],
+			['true', true],
+			["'0x'", '0x'],
+			["'abc'", 'abc'],
+		];
+		const succeeding: [string, unknown][] = [
+			["'0x1'", '0x1'],
+			["'0x01'", '0x01'],
+			['1 (number)', 1],
+		];
+
+		const receiptWithStatus = (status: unknown) => {
+			const receipt: Record<string, unknown> = { ...expectedTransactionReceipt, status };
+			if (status === undefined) delete receipt.status;
+			return receipt;
+		};
+
+		describe.each(formats)('with returnFormat %s', (_, returnFormat) => {
+			it.each(failing)('rejects a receipt whose status is %s', async (__, status) => {
+				(
+					WaitForTransactionReceipt.waitForTransactionReceipt as jest.Mock
+				).mockResolvedValueOnce(receiptWithStatus(status));
+
+				await expect(
+					sendSignedTransaction(web3Context, signedTransaction, returnFormat, options),
+				).rejects.toThrow(TransactionRevertedWithoutReasonError);
+			});
+
+			it.each(succeeding)('resolves a receipt whose status is %s', async (__, status) => {
+				(
+					WaitForTransactionReceipt.waitForTransactionReceipt as jest.Mock
+				).mockResolvedValueOnce(receiptWithStatus(status));
+
+				const receipt = await sendSignedTransaction(
+					web3Context,
+					signedTransaction,
+					returnFormat,
+					options,
+				);
+				expect(receipt.transactionHash).toStrictEqual(
+					format(
+						{ format: 'bytes32' },
+						expectedTransactionReceipt.transactionHash,
+						returnFormat,
+					),
+				);
+				expect(receipt.status).toStrictEqual(format({ format: 'uint' }, 1, returnFormat));
+			});
+		});
+	});
+
+	describe('transaction hash reply (P4-L-9)', () => {
+		const signedTransaction = testData[0][1];
+		const options = { checkRevertBeforeSending: false };
+
+		it.each([
+			['a different 32-byte hash', expectedTransactionHash],
+			['the all-0xee hash of the PoC', `0x${'ee'.repeat(32)}`],
+			["'abc'", 'abc'],
+			['a 20-byte value', `0x${'ab'.repeat(20)}`],
+			['null', NULL_REPLY],
+			['an object', {}],
+		])(
+			'rejects %s as the qrl_sendRawTransaction reply before waiting for a receipt',
+			async (_, reply) => {
+				(qrlRpcMethods.sendRawTransaction as jest.Mock).mockResolvedValueOnce(reply);
+
+				await expect(
+					sendSignedTransaction(
+						web3Context,
+						signedTransaction,
+						DEFAULT_RETURN_FORMAT,
+						options,
+					),
+				).rejects.toThrow(InvalidResponseError);
+				expect(WaitForTransactionReceipt.waitForTransactionReceipt).not.toHaveBeenCalled();
+			},
+		);
+
+		it('accepts the local hash in upper case and continues with the local spelling', async () => {
+			const localHash = localHashOf(signedTransaction);
+			(qrlRpcMethods.sendRawTransaction as jest.Mock).mockResolvedValueOnce(
+				`0x${localHash.slice(2).toUpperCase()}`,
+			);
+			(
+				WaitForTransactionReceipt.waitForTransactionReceipt as jest.Mock
+			).mockResolvedValueOnce(expectedTransactionReceipt);
+			const emittedHashes: unknown[] = [];
+
+			await sendSignedTransaction(
+				web3Context,
+				signedTransaction,
+				DEFAULT_RETURN_FORMAT,
+				options,
+			).on('transactionHash', hash => {
+				emittedHashes.push(hash);
+			});
+
+			expect(emittedHashes).toStrictEqual([localHash]);
+			expect(WaitForTransactionReceipt.waitForTransactionReceipt).toHaveBeenCalledWith(
+				web3Context,
+				localHash,
+				QRL_DATA_FORMAT,
+			);
+		});
+	});
+
+	describe('listener exceptions (P4-L-10)', () => {
+		const signedTransaction = testData[0][1];
+		const options = { checkRevertBeforeSending: false };
+
+		it('still resolves with the receipt when a receipt listener throws after the broadcast', async () => {
+			const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+			(
+				WaitForTransactionReceipt.waitForTransactionReceipt as jest.Mock
+			).mockResolvedValueOnce(expectedTransactionReceipt);
+			const promiEvent = sendSignedTransaction(
+				web3Context,
+				signedTransaction,
+				DEFAULT_RETURN_FORMAT,
+				options,
+			);
+			promiEvent.on('receipt', () => {
+				throw new Error('receipt listener boom');
+			});
+
+			await expect(promiEvent).resolves.toStrictEqual(
+				format(transactionReceiptSchema, expectedTransactionReceipt, DEFAULT_RETURN_FORMAT),
+			);
+			expect(warn).toHaveBeenCalledTimes(1);
+		});
+
+		it('rejects, instead of staying pending, when the error listener throws', async () => {
+			const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+			const promiEvent = sendSignedTransaction(
+				web3Context,
+				'0xdeadbeef',
+				DEFAULT_RETURN_FORMAT,
+				options,
+			);
+			promiEvent.on('error', () => {
+				throw new Error('listener boom');
+			});
+
+			await expect(promiEvent).rejects.toThrow();
+			expect(warn).toHaveBeenCalledTimes(1);
 		});
 	});
 });

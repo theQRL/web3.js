@@ -38,12 +38,15 @@ export function checkResultErrors(
 		if (!Array.isArray(object)) {
 			return;
 		}
-		for (const key in object) {
+		// Named properties alias positional entries. Visiting both is exponential for
+		// nested named tuples and reports every deferred error more than once.
+		for (let index = 0; index < object.length; index += 1) {
+			const key = String(index);
 			const childPath = path.slice();
 			childPath.push(key);
 
 			try {
-				checkErrors(childPath, object[key]);
+				checkErrors(childPath, object[index]);
 			} catch (error: any) {
 				errors.push({ path: childPath, error });
 			}
@@ -58,11 +61,11 @@ export type CoerceFunc = (type: string, value: any) => any;
 
 export abstract class Coder {
 	// The coder name:
-	//   - address, uint256, tuple, array, etc.
+	//   - address, uint512, tuple, array, etc.
 	readonly name: string;
 
 	// The fully expanded type, including composite types:
-	//   - address, uint256, tuple(address,bytes), uint256[3][4][],  etc.
+	//   - address, uint512, tuple(address,bytes), uint512[3][4][],  etc.
 	readonly type: string;
 
 	// The localName bound in the signature, in this example it is "baz":
@@ -71,7 +74,7 @@ export abstract class Coder {
 
 	// Whether this type is dynamic:
 	//  - Dynamic: bytes, string, address[], tuple(boolean[]), etc.
-	//  - Not Dynamic: address, uint256, boolean[3], tuple(address, uint8)
+	//  - Not Dynamic: address, uint512, boolean[3], tuple(address, uint8)
 	readonly dynamic: boolean;
 
 	constructor(name: string, type: string, localName: string, dynamic: boolean) {
@@ -82,8 +85,8 @@ export abstract class Coder {
 		this.dynamic = dynamic;
 	}
 
-	_throwError(message: string, value: any): void {
-		logger.throwArgumentError(message, this.localName, value);
+	_throwError(message: string, value: any): never {
+		return logger.throwArgumentError(message, this.localName, value);
 	}
 
 	abstract encode(writer: Writer, value: any): number;
@@ -162,6 +165,15 @@ export class Writer {
 	}
 }
 
+// Diff vs ethers v5 (M-9): node-supplied data can make every element of a dynamic array point
+// at the same bytes, so the number of bytes the coders read is not bounded by the input length.
+// Like ethers v6 (`maxInflation`), a decode may read at most this many times the input length
+// before it is rejected. Canonical encodings read every byte once, so legitimate results stay
+// far below the limit however large they are.
+export const MAX_INFLATION = 16;
+// Floor of the array-element budget, so that a one-word input can still hold a few elements.
+export const MIN_ELEMENT_BUDGET = 256;
+
 export class Reader {
 	readonly wordSize: number;
 	readonly allowLoose: boolean;
@@ -171,13 +183,37 @@ export class Reader {
 
 	_offset: number;
 
-	constructor(data: BytesLike, wordSize?: number, coerceFunc?: CoerceFunc, allowLoose?: boolean) {
-		defineReadOnly(this, '_data', arrayify(data));
+	// Diff vs ethers v5 (M-9): the reader every sub-reader descends from. It owns the read
+	// budget shared by the whole decode; `_bytesRead` is only maintained on the root.
+	public readonly _root: Reader;
+	public _bytesRead: number;
+	// Diff vs ethers v5 (M-10): array elements decoded so far, shared like `_bytesRead`. A
+	// zero-size element type (`tuple()`) consumes no bytes, so the byte budget alone cannot
+	// bound the number of result objects a nested array can produce.
+	public _elementsDecoded: number;
+
+	constructor(
+		data: BytesLike,
+		wordSize?: number,
+		coerceFunc?: CoerceFunc,
+		allowLoose?: boolean,
+		parent?: Reader,
+	) {
+		// A sub-reader is handed a view on its parent's buffer; `arrayify` would copy it.
+		defineReadOnly(this, '_data', parent && data instanceof Uint8Array ? data : arrayify(data));
 		defineReadOnly(this, 'wordSize', wordSize || 64);
 		defineReadOnly(this, '_coerceFunc', coerceFunc);
 		defineReadOnly(this, 'allowLoose', allowLoose);
+		// Not enumerable: the root reader refers to itself.
+		Object.defineProperty(this, '_root', {
+			enumerable: false,
+			writable: false,
+			value: parent ? parent._root : this,
+		});
 
 		this._offset = 0;
+		this._bytesRead = 0;
+		this._elementsDecoded = 0;
 	}
 
 	get data(): string {
@@ -185,6 +221,58 @@ export class Reader {
 	}
 	get consumed(): number {
 		return this._offset;
+	}
+	// Total bytes read through this reader and every sub-reader sharing its buffer (M-9).
+	public get bytesRead(): number {
+		return this._root._bytesRead;
+	}
+
+	public _incrementBytesRead(count: number): void {
+		const root = this._root;
+		root._bytesRead += count;
+		if (root._bytesRead > MAX_INFLATION * root._data.length) {
+			logger.throwError(
+				`compressed ABI data exceeds inflation ratio of ${MAX_INFLATION}`,
+				Logger.errors.BUFFER_OVERRUN,
+				{
+					length: root._data.length,
+					offset: this._offset,
+					bytesRead: root._bytesRead,
+				},
+			);
+		}
+	}
+
+	// Every valid encoding spends at least one word per array element, so a decode may never
+	// produce more elements than MAX_INFLATION times the number of words in the input (with a
+	// small floor for tiny inputs). Zero-size element types are the only way past the byte
+	// budget, and this bound closes it (M-10).
+	public _incrementElementsDecoded(count: number): void {
+		// A count that is not a non-negative safe integer (a negative or string array length
+		// from a forged ParamType) would drive the budget negative or turn it into text (P4-M-2).
+		if (!Number.isSafeInteger(count) || count < 0) {
+			logger.throwError('invalid array element count', Logger.errors.BUFFER_OVERRUN, {
+				count,
+				offset: this._offset,
+			});
+		}
+		const root = this._root;
+		root._elementsDecoded += count;
+		const budget = Math.max(
+			MAX_INFLATION * Math.ceil(root._data.length / root.wordSize),
+			MIN_ELEMENT_BUDGET,
+		);
+		if (root._elementsDecoded > budget) {
+			logger.throwError(
+				`decoded array elements exceed the budget of ${budget} for ${root._data.length} bytes of data`,
+				Logger.errors.BUFFER_OVERRUN,
+				{
+					length: root._data.length,
+					offset: this._offset,
+					elementsDecoded: root._elementsDecoded,
+				},
+			);
+		}
 	}
 
 	// The default Coerce function
@@ -218,17 +306,21 @@ export class Reader {
 		return this._data.slice(this._offset, this._offset + alignedLength);
 	}
 
+	// Diff vs ethers v5 (M-9): the sub-reader shares this reader's buffer (`subarray`) instead
+	// of copying the rest of it, so creating one is O(1) rather than O(remaining bytes).
 	subReader(offset: number): Reader {
 		return new Reader(
-			this._data.slice(this._offset + offset),
+			this._data.subarray(this._offset + offset),
 			this.wordSize,
 			this._coerceFunc,
 			this.allowLoose,
+			this,
 		);
 	}
 
 	readBytes(length: number, loose?: boolean): Uint8Array {
 		const bytes = this._peekBytes(0, length, !!loose);
+		this._incrementBytesRead(length);
 		this._offset += bytes.length;
 		// @TODO: Make sure the length..end bytes are all 0?
 		return bytes.slice(0, length);

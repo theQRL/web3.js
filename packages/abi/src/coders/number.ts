@@ -16,9 +16,11 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { BigNumber, BigNumberish } from '@ethersproject/bignumber';
-import { MaxUint256, NegativeOne, One, Zero } from '@ethersproject/constants';
+import { NegativeOne, One, Zero } from '@ethersproject/constants';
 
 import { Coder, Reader, Writer } from './abstract-coder.js';
+
+const MaxUint512 = BigNumber.from(2).pow(512).sub(One);
 
 export class NumberCoder extends Coder {
 	readonly size: number;
@@ -37,10 +39,16 @@ export class NumberCoder extends Coder {
 	}
 
 	encode(writer: Writer, value: BigNumberish): number {
+		if (
+			!['number', 'bigint', 'string'].includes(typeof value) &&
+			!BigNumber.isBigNumber(value)
+		) {
+			this._throwError('expected a number, bigint, BigNumber or integer string', value);
+		}
 		let v = BigNumber.from(value);
 
 		// Check bounds are safe for encoding
-		const maxUintValue = MaxUint256.mask(writer.wordSize * 8);
+		const maxUintValue = MaxUint512.mask(writer.wordSize * 8);
 		if (this.signed) {
 			const bounds = maxUintValue.mask(this.size * 8 - 1);
 			if (v.gt(bounds) || v.lt(bounds.add(One).mul(NegativeOne))) {
@@ -60,10 +68,19 @@ export class NumberCoder extends Coder {
 	}
 
 	decode(reader: Reader): any {
-		let value = reader.readValue().mask(this.size * 8);
+		const word = reader.readValue();
+		let value = word.mask(this.size * 8);
 
 		if (this.signed) {
 			value = value.fromTwos(this.size * 8);
+		}
+
+		// A canonical word carries the value zero-extended (unsigned) or sign-extended
+		// (signed) to the full word, which is also what the on-chain decoder validates.
+		// Any other word is not an encoding of this type and must not decode silently.
+		const canonical = this.signed ? value.toTwos(reader.wordSize * 8) : value;
+		if (!canonical.eq(word)) {
+			this._throwError('value out-of-bounds', word);
 		}
 
 		return reader.coerce(this.name, value);

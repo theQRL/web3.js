@@ -65,7 +65,6 @@ describeIf(isHttp)('watch polling transaction', () => {
 			});
 			const confirmationPromise = new Promise((resolve: Resolve) => {
 				// Tx promise is handled separately
-				// eslint-disable-next-line no-void
 				void sentTx.on(
 					'confirmation',
 					async ({ confirmations }: { confirmations: bigint }) => {
@@ -85,7 +84,6 @@ describeIf(isHttp)('watch polling transaction', () => {
 			});
 			await new Promise((resolve: Resolve) => {
 				// Tx promise is handled separately
-				// eslint-disable-next-line no-void
 				void sentTx.on('receipt', (params: TransactionReceipt) => {
 					expect(params.status).toBe(BigInt(1));
 					resolve();

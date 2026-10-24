@@ -17,6 +17,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 import { OperationTimeoutError } from '@theqrl/web3-errors';
 import { Web3DeferredPromiseInterface } from '@theqrl/web3-types';
+import { validateTimeout } from './provider_bounds.js';
 
 /**
  * The class is a simple implementation of a deferred promise with optional timeout functionality,
@@ -47,8 +48,8 @@ export class Web3DeferredPromise<T> implements Promise<T>, Web3DeferredPromiseIn
 			timeout,
 			eagerStart,
 			timeoutMessage,
-		}: { timeout: number; eagerStart: boolean; timeoutMessage: string } = {
-			timeout: 0,
+		}: { timeout?: number; eagerStart: boolean; timeoutMessage: string } = {
+			timeout: undefined,
 			eagerStart: false,
 			timeoutMessage: 'DeferredPromise timed out',
 		},
@@ -57,6 +58,11 @@ export class Web3DeferredPromise<T> implements Promise<T>, Web3DeferredPromiseIn
 			this._resolve = resolve;
 			this._reject = reject;
 		});
+
+		// A delay a timer cannot hold would fire after 1 ms instead of "never" (P4-L-5).
+		if (timeout !== undefined) {
+			validateTimeout(timeout, 'timeout');
+		}
 
 		this._timeoutMessage = timeoutMessage;
 		this._timeoutInterval = timeout;
@@ -101,7 +107,7 @@ export class Web3DeferredPromise<T> implements Promise<T>, Web3DeferredPromiseIn
 	 * @param onfinally - (optional) The callback to execute when the promise is settled (fulfilled or rejected).
 	 * @returns
 	 */
-	public async finally(onfinally?: (() => void) | undefined): Promise<T> {
+	public async finally(onfinally?: () => void): Promise<T> {
 		return this._promise.finally(onfinally);
 	}
 
@@ -110,8 +116,13 @@ export class Web3DeferredPromise<T> implements Promise<T>, Web3DeferredPromiseIn
 	 * @param value - The value to resolve the promise with.
 	 */
 	public resolve(value: T | PromiseLike<T>): void {
-		this._resolve(value);
+		// A promise settles once; `state` must keep reporting the outcome that actually
+		// happened rather than flip on a late `reject()` (I-11).
+		if (this._state !== 'pending') {
+			return;
+		}
 		this._state = 'fulfilled';
+		this._resolve(value);
 		this._clearTimeout();
 	}
 
@@ -120,17 +131,26 @@ export class Web3DeferredPromise<T> implements Promise<T>, Web3DeferredPromiseIn
 	 * @param reason - The reason to reject the promise with.
 	 */
 	public reject(reason?: unknown): void {
-		this._reject(reason);
+		if (this._state !== 'pending') {
+			return;
+		}
 		this._state = 'rejected';
+		this._reject(reason);
 		this._clearTimeout();
 	}
 
 	/**
-	 * Starts the timeout timer for the promise.
+	 * Starts the timeout timer for the promise. Calling it again restarts the timer instead
+	 * of leaking the previous one (I-11).
 	 */
 	public startTimer() {
-		if (this._timeoutInterval && this._timeoutInterval > 0) {
+		this._clearTimeout();
+		if (this._state === 'pending' && this._timeoutInterval && this._timeoutInterval > 0) {
 			this._timeoutId = setTimeout(this._checkTimeout.bind(this), this._timeoutInterval);
+			// A pending deferred promise must not, by itself, keep a Node process alive.
+			if (typeof this._timeoutId.unref === 'function') {
+				this._timeoutId.unref();
+			}
 		}
 	}
 
@@ -143,6 +163,7 @@ export class Web3DeferredPromise<T> implements Promise<T>, Web3DeferredPromiseIn
 	private _clearTimeout() {
 		if (this._timeoutId) {
 			clearTimeout(this._timeoutId);
+			this._timeoutId = undefined;
 		}
 	}
 }

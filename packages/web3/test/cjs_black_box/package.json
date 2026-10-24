@@ -1,23 +1,24 @@
 {
 	"name": "web3_black_box_cjs_tests",
 	"version": "1.0.0",
+	"description": "Manual black-box smoke test (not run in CI): installs the published @theqrl/web3 release named below with --ignore-workspace and exercises it from a CommonJS project. Keep the @theqrl/* versions in step with the current package versions.",
 	"main": "index.js",
 	"author": "The QRL Contributors",
 	"license": "LGPL-3.0",
 	"type": "commonjs",
 	"scripts": {
 		"test:gqrl:http": "WEB3_SYSTEM_TEST_BACKEND=gqrl WEB3_SYSTEM_TEST_PROVIDER=http://localhost:8545 jest",
-		"test:gqrl:ws": "WEB3_SYSTEM_TEST_BACKEND=gqrl WEB3_SYSTEM_TEST_PROVIDER=ws://localhost:8545 jest --forceExit"
+		"test:gqrl:ws": "WEB3_SYSTEM_TEST_BACKEND=gqrl WEB3_SYSTEM_TEST_PROVIDER=ws://localhost:8546 jest --forceExit"
 	},
 	"dependencies": {
-		"@theqrl/web3": "5.0.0"
+		"@theqrl/web3": "0.5.0"
 	},
 	"devDependencies": {
 		"jest": "30.4.2",
 		"ts-jest": "29.4.11",
-		"@theqrl/web3-qrl": "^0.1.0",
-		"@theqrl/web3-qrl-contract": "^0.1.0",
-		"@theqrl/web3-validator": "^0.1.0"
+		"@theqrl/web3-qrl": "0.5.0",
+		"@theqrl/web3-qrl-contract": "0.5.0",
+		"@theqrl/web3-validator": "0.5.0"
 	},
 	"engines": {
 		"node": ">=20.19.0"

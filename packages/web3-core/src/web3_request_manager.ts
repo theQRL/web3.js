@@ -1,4 +1,4 @@
-﻿/*
+/*
 This file is part of web3.js.
 
 web3.js is free software: you can redistribute it and/or modify
@@ -18,11 +18,11 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import {
 	BaseWeb3Error,
 	ContractExecutionError,
+	InvalidProviderError,
 	InvalidResponseError,
 	ProviderError,
 	ResponseError,
-	rpcErrorsMap,
-	RpcError,
+	redactClientUrl,
 } from '@theqrl/web3-errors';
 import HttpProvider from '@theqrl/web3-providers-http';
 import WSProvider from '@theqrl/web3-providers-ws';
@@ -52,6 +52,12 @@ import {
 	isLegacySendProvider,
 	isWeb3Provider,
 } from './utils.js';
+import {
+	isEip1193ProviderErrorCode,
+	isRevertError,
+	toEip1193ProviderError,
+	toRpcSpecificationError,
+} from './rpc_error_mapping.js';
 import { Web3EventEmitter } from './web3_event_emitter.js';
 
 export enum Web3RequestManagerEvent {
@@ -67,13 +73,16 @@ const availableProviders: {
 	WebsocketProvider: WSProvider as unknown as Web3BaseProviderConstructor,
 };
 
+const NULLISH_RESPONSE_MESSAGE = 'Got a "nullish" response from provider.';
+
 export class Web3RequestManager<
 	API extends Web3APISpec = QRLExecutionAPI,
 > extends Web3EventEmitter<{
 	[key in Web3RequestManagerEvent]: SupportedProviders<API> | undefined;
 }> {
 	private _provider?: SupportedProviders<API>;
-	private readonly useRpcCallSpecification?: boolean;
+	/** Maps EIP-1474 error replies to their typed classes when set; the owning context keeps it in step with its config. */
+	public useRpcCallSpecification?: boolean;
 	public constructor(
 		provider?: SupportedProviders<API> | string,
 		useRpcCallSpecification?: boolean,
@@ -113,28 +122,50 @@ export class Web3RequestManager<
 	/**
 	 * Use to set provider. Provider can be a provider instance or a string.
 	 *
+	 * A `http(s)://` or `ws(s)://` URL is turned into the matching built-in provider; any other
+	 * string (an IPC path included: construct an `IpcProvider` from `@theqrl/web3-providers-ipc`
+	 * and pass the instance) throws a {@link ProviderError}. An empty or blank string throws an
+	 * {@link InvalidProviderError} instead of being stored and failing on the first request, and a
+	 * value that is neither a string nor an object throws a {@link ProviderError} (I-14).
+	 *
+	 * Setting the provider instance that is already set is a no-op: the change events are not
+	 * emitted, so live subscriptions are kept (L-36).
+	 *
 	 * @param provider - The provider to set
 	 */
 	public setProvider(provider?: SupportedProviders<API> | string): boolean {
 		let newProvider: SupportedProviders<API> | undefined;
 
-		// autodetect provider
-		if (provider && typeof provider === 'string' && this.providers) {
-			// HTTP
-			if (/^http(s)?:\/\//i.test(provider)) {
-				newProvider = new this.providers.HttpProvider<API>(provider);
+		if (typeof provider === 'string') {
+			if (provider.trim() === '') {
+				throw new InvalidProviderError(provider);
+			}
 
-				// WS
+			// autodetect provider
+			if (/^http(s)?:\/\//i.test(provider)) {
+				// HTTP
+				newProvider = new this.providers.HttpProvider<API>(provider);
 			} else if (/^ws(s)?:\/\//i.test(provider)) {
+				// WS
 				newProvider = new this.providers.WebsocketProvider<API>(provider);
 			} else {
-				throw new ProviderError(`Can't autodetect provider for "${provider}"`);
+				throw new ProviderError(
+					`Can't autodetect provider for "${redactClientUrl(provider)}"`,
+				);
 			}
 		} else if (isNullish(provider)) {
 			// In case want to unset the provider
 			newProvider = undefined;
+		} else if (typeof provider !== 'object' && typeof provider !== 'function') {
+			throw new ProviderError(
+				`Invalid provider: expected a provider URL or a provider instance, got ${typeof provider}`,
+			);
 		} else {
-			newProvider = provider as SupportedProviders<API>;
+			newProvider = provider;
+		}
+
+		if (newProvider === this._provider) {
+			return true;
 		}
 
 		this.emit(Web3RequestManagerEvent.BEFORE_PROVIDER_CHANGE, this._provider);
@@ -166,6 +197,11 @@ export class Web3RequestManager<
 
 	/**
 	 * Same as send, but, will execute a batch of requests
+	 *
+	 * Resolves with the array of replies, which may contain error replies next to result
+	 * replies; a reply that is not an array of result/error replies (a `null` member, a member
+	 * without `result` and `error`, a bare value) rejects with a {@link ResponseError} on every
+	 * provider kind (L-38).
 	 *
 	 * @param request {@link JsonRpcBatchRequest} The batch request to send
 	 */
@@ -213,6 +249,9 @@ export class Web3RequestManager<
 		}
 
 		if (isEIP1193Provider(provider)) {
+			// Two-argument `then`: an error thrown while processing the reply (an id mismatch,
+			// for example) propagates as it is instead of being re-classified as a provider
+			// failure by the rejection handler (P4-L-8).
 			return (provider as Web3BaseProvider<API>)
 				.request<Method, ResponseType>(payload as Web3APIPayload<API, Method>)
 				.then(
@@ -221,17 +260,17 @@ export class Web3RequestManager<
 							legacy: true,
 							error: false,
 						}) as JsonRpcResponseWithResult<ResponseType>,
-				)
-				.catch(error => {
-					if (!Web3RequestManager._isJsonRpcResponse<ResponseType>(error)) {
-						throw Web3RequestManager._buildNonJsonRpcError(error);
-					}
+					error => {
+						if (!Web3RequestManager._isJsonRpcResponse<ResponseType>(error)) {
+							throw Web3RequestManager._buildNonJsonRpcError(error);
+						}
 
-					return this._processJsonRpcResponse(payload, error, {
-						legacy: true,
-						error: true,
-					});
-				});
+						return this._processJsonRpcResponse(payload, error, {
+							legacy: true,
+							error: true,
+						});
+					},
+				);
 		}
 
 		// NOTE(rgeraldes24): there are unit/integration tests that depend on the legacy providers
@@ -244,12 +283,20 @@ export class Web3RequestManager<
 						return;
 					}
 
-					reject(
-						this._processJsonRpcResponse(payload, err, {
-							legacy: true,
-							error: true,
-						}),
-					);
+					// A reply the provider delivered through its error path is still a reply:
+					// `_processJsonRpcResponse` throws the typed error for a single error reply
+					// and returns the array for a batch, which is reported per entry like on the
+					// other provider kinds instead of rejecting with a raw array (P4-L-7).
+					try {
+						resolve(
+							this._processJsonRpcResponse(payload, err, {
+								legacy: true,
+								error: true,
+							}),
+						);
+					} catch (processingError) {
+						reject(processingError as Error);
+					}
 				};
 
 				const resolveWithResponse = (response: JsonRpcResponse<ResponseType>) =>
@@ -263,11 +310,28 @@ export class Web3RequestManager<
 					payload,
 					// a callback that is expected to be called after getting the response:
 					(err, response) => {
-						if (err) {
-							return rejectWithError(err);
-						}
+						try {
+							// A falsy error such as `0` or `''` is still an error; only a nullish
+							// one means "no error" (L-42).
+							if (!isNullish(err)) {
+								return rejectWithError(err);
+							}
 
-						return resolveWithResponse(response);
+							// A callback that carries neither an error nor a response reported a
+							// failure the provider could not describe; it is not a `null` result
+							// (L-42).
+							if (isNullish(response)) {
+								return reject(
+									new ResponseError({} as never, NULLISH_RESPONSE_MESSAGE),
+								);
+							}
+
+							return resolveWithResponse(response);
+						} catch (processingError) {
+							// An asynchronous callback runs outside the Promise executor.
+							// eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors -- Preserve JSON-RPC batch rejection values.
+							return reject(processingError);
+						}
 					},
 				);
 				// Some providers, that follow a previous drafted version of EIP1193, has a `request` function
@@ -281,24 +345,33 @@ export class Web3RequestManager<
 					const responsePromise = result as unknown as Promise<
 						JsonRpcResponse<ResponseType>
 					>;
-					responsePromise.then(resolveWithResponse).catch(error => {
-						if (!Web3RequestManager._isJsonRpcResponse<ResponseType>(error)) {
-							reject(Web3RequestManager._buildNonJsonRpcError(error));
-							return;
-						}
+					responsePromise.then(
+						response => {
+							try {
+								resolveWithResponse(response);
+							} catch (processingError) {
+								reject(processingError as Error);
+							}
+						},
+						error => {
+							if (!Web3RequestManager._isJsonRpcResponse<ResponseType>(error)) {
+								reject(Web3RequestManager._buildNonJsonRpcError(error));
+								return;
+							}
 
-						try {
-							// Attempt to process the error response
-							const processedError = this._processJsonRpcResponse(payload, error, {
-								legacy: true,
-								error: true,
-							});
-							reject(processedError);
-						} catch (processingError) {
-							// Catch any errors that occur during the error processing
-							reject(processingError);
-						}
-					});
+							// See `rejectWithError` above (P4-L-7).
+							try {
+								resolve(
+									this._processJsonRpcResponse(payload, error, {
+										legacy: true,
+										error: true,
+									}),
+								);
+							} catch (processingError) {
+								reject(processingError as Error);
+							}
+						},
+					);
 				}
 			});
 		}
@@ -307,46 +380,46 @@ export class Web3RequestManager<
 		if (isLegacySendProvider(provider)) {
 			return new Promise<JsonRpcResponse<ResponseType>>((resolve, reject): void => {
 				provider.send<ResponseType>(payload, (err, response) => {
-					if (err) {
-						if (!Web3RequestManager._isJsonRpcResponse<ResponseType>(err)) {
-							return reject(Web3RequestManager._buildNonJsonRpcError(err));
+					try {
+						if (!isNullish(err)) {
+							if (!Web3RequestManager._isJsonRpcResponse<ResponseType>(err)) {
+								return reject(Web3RequestManager._buildNonJsonRpcError(err));
+							}
+
+							// A batch reply delivered as the callback's error is reported per
+							// entry (P4-L-7); a single error reply throws its typed error below.
+							return resolve(
+								this._processJsonRpcResponse(payload, err, {
+									legacy: true,
+									error: true,
+								}) as JsonRpcResponse<ResponseType>,
+							);
 						}
 
-						return reject(
-							this._processJsonRpcResponse(payload, err, {
+						if (isNullish(response)) {
+							return reject(new ResponseError({} as never, NULLISH_RESPONSE_MESSAGE));
+						}
+
+						return resolve(
+							this._processJsonRpcResponse(payload, response, {
 								legacy: true,
-								error: true,
+								error: false,
 							}),
 						);
+					} catch (processingError) {
+						// eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors -- Preserve JSON-RPC batch rejection values.
+						return reject(processingError);
 					}
-
-					if (isNullish(response)) {
-						return reject(
-							new ResponseError(
-								{} as never,
-								'Got a "nullish" response from provider.',
-							),
-						);
-					}
-
-					return resolve(
-						this._processJsonRpcResponse(payload, response, {
-							legacy: true,
-							error: false,
-						}),
-					);
 				});
 			});
 		}
 
 		// TODO: This could be deprecated and removed.
 		if (isLegacySendAsyncProvider(provider)) {
-			return provider
-				.sendAsync<ResponseType>(payload)
-				.then(response =>
+			return provider.sendAsync<ResponseType>(payload).then(
+				response =>
 					this._processJsonRpcResponse(payload, response, { legacy: true, error: false }),
-				)
-				.catch(error => {
+				error => {
 					if (!Web3RequestManager._isJsonRpcResponse<ResponseType>(error)) {
 						throw Web3RequestManager._buildNonJsonRpcError(error);
 					}
@@ -355,7 +428,8 @@ export class Web3RequestManager<
 						legacy: true,
 						error: true,
 					});
-				});
+				},
+			);
 		}
 
 		throw new ProviderError('Provider does not have a request method to use.');
@@ -367,14 +441,14 @@ export class Web3RequestManager<
 	 * value. Verify the shape with the shared JSON-RPC predicates before treating it
 	 * as a response, instead of casting it blindly.
 	 *
-	 * Nullish values are accepted because `_processJsonRpcResponse` has an explicit
-	 * branch that treats them as a valid empty response.
+	 * A nullish value is not a response either: `throw undefined` / `reject()` is a failure the
+	 * provider could not describe and must not become a successful `null` result (L-42).
 	 */
 	private static _isJsonRpcResponse<ResultType, ErrorType = unknown>(
 		value: unknown,
 	): value is JsonRpcResponse<ResultType, ErrorType> {
 		if (isNullish(value)) {
-			return true;
+			return false;
 		}
 
 		const response = value as JsonRpcResponse<ResultType, ErrorType>;
@@ -392,17 +466,53 @@ export class Web3RequestManager<
 	 * or `reject` with it without risking a second, unrelated failure.
 	 */
 	private static _buildNonJsonRpcError(value: unknown): Error {
-		if (value instanceof Error) {
-			// A real `Error` already is the real failure, so surface it unchanged. The
-			// revert check is kept because `_processJsonRpcResponse` used to apply it to
-			// `Error` instances, and an EIP-838 revert must still decode as one.
-			try {
-				Web3RequestManager._isReverted(value as unknown as JsonRpcResponse<never, never>);
-			} catch (revertError) {
-				return revertError as Error;
+		if (
+			typeof value === 'object' &&
+			!isNullish(value) &&
+			isEip1193ProviderErrorCode((value as { code?: unknown }).code)
+		) {
+			return toEip1193ProviderError({ error: value } as JsonRpcResponseWithError);
+		}
+		if (value instanceof BaseWeb3Error) {
+			// An error the library typed already describes the failure. The one thing still
+			// extracted is a JSON-RPC revert reply a transport wrapped (an `HttpStatusError`
+			// carrying the node's `{ code: 3, data }` for a non-2xx status): it decodes as a
+			// `ContractExecutionError` built from the reply itself, not from the wrapper, so
+			// the inner `code` stays the node's. The wrapper's own message is never run through
+			// the substring heuristic (P4-L-8).
+			const rpcError = Web3RequestManager._wrappedJsonRpcError(value);
+			if (!isNullish(rpcError) && isRevertError(rpcError)) {
+				return new ContractExecutionError(rpcError);
 			}
-
 			return value;
+		}
+
+		if (value instanceof Error) {
+			// A structured RPC error can be an Error instance; a transport error's
+			// message alone is never evidence of contract execution.
+			if (
+				typeof (value as unknown as JsonRpcError).code === 'number' &&
+				isRevertError(value as unknown as JsonRpcError)
+			) {
+				return new ContractExecutionError(value as unknown as JsonRpcError);
+			}
+			return value;
+		}
+		if (
+			typeof value === 'object' &&
+			!isNullish(value) &&
+			typeof (value as JsonRpcError).code === 'number' &&
+			isRevertError(value as JsonRpcError)
+		) {
+			return new ContractExecutionError(value as JsonRpcError);
+		}
+
+		if (isNullish(value)) {
+			return new ProviderError(
+				`Provider rejected the request without an error value (got ${
+					value === undefined ? 'undefined' : 'null'
+				})`,
+			);
 		}
 
 		let description: string;
@@ -423,12 +533,45 @@ export class Web3RequestManager<
 		return error;
 	}
 
-	// eslint-disable-next-line class-methods-use-this
+	/**
+	 * The JSON-RPC error object a transport-level error wraps, if any: walks `innerError` through
+	 * the library's own error wrappers (`HttpStatusError` → `ResponseError` → the node's error
+	 * member) and returns the first plain object that has a `code`. Errors the request manager
+	 * itself raised for a malformed reply are not unwrapped.
+	 */
+	private static _wrappedJsonRpcError(error: BaseWeb3Error): JsonRpcError | undefined {
+		let current: unknown = error;
+		for (let depth = 0; depth < 4; depth += 1) {
+			if (current instanceof InvalidResponseError) {
+				return undefined;
+			}
+			if (!(current instanceof BaseWeb3Error)) {
+				break;
+			}
+			const inner: unknown = current.innerError;
+			if (
+				!isNullish(inner) &&
+				typeof inner === 'object' &&
+				!Array.isArray(inner) &&
+				!(inner instanceof Error) &&
+				'code' in inner
+			) {
+				return inner as JsonRpcError;
+			}
+			current = inner;
+		}
+		return undefined;
+	}
+
 	private _processJsonRpcResponse<ResultType, ErrorType, RequestType>(
 		payload: JsonRpcPayload<RequestType>,
 		response: JsonRpcResponse<ResultType, ErrorType>,
 		{ legacy, error }: { legacy: boolean; error: boolean },
 	): JsonRpcResponse<ResultType> | never {
+		if (jsonRpc.isBatchRequest(payload)) {
+			return Web3RequestManager._processBatchJsonRpcResponse(response);
+		}
+
 		if (isNullish(response)) {
 			return this._buildResponse(
 				payload,
@@ -438,27 +581,54 @@ export class Web3RequestManager<
 				error,
 			);
 		}
+		// Bare result arrays are valid for EIP-1193 (accounts, logs, ...). An array
+		// containing RPC envelopes is a batch reply and cannot answer this request.
+		if (
+			Array.isArray(response) &&
+			(!legacy || response.some(item => Web3RequestManager._isJsonRpcEnvelope(item)))
+		) {
+			throw new ResponseError(response, 'Got batch response for a normal request.');
+		}
+		if (
+			Web3RequestManager._isJsonRpcEnvelope(response) &&
+			!jsonRpc.isResponseWithResult(response) &&
+			!jsonRpc.isResponseWithError(response)
+		) {
+			throw new InvalidResponseError<ErrorType, RequestType>(response, payload);
+		}
+
+		// Check correlation before returning a result or interpreting a remote error.
+		// IDs retain their type, and zero and the empty string are valid IDs.
+		if (
+			!jsonRpc.isBatchRequest(payload) &&
+			(jsonRpc.isResponseWithResult(response) || jsonRpc.isResponseWithError(response)) &&
+			payload.id !== response.id
+		) {
+			throw new InvalidResponseError<ErrorType, RequestType>(response, payload);
+		}
 
 		// This is the majority of the cases so check these first
 		// A valid JSON-RPC response with error object
 		if (jsonRpc.isResponseWithError<ErrorType>(response)) {
-			// check if its an rpc error
-			if (
-				this.useRpcCallSpecification &&
-				isResponseRpcError(response as JsonRpcResponseWithError)
-			) {
-				const rpcErrorResponse = response as JsonRpcResponseWithError;
-				// check if rpc error flag is on and response error code match an EIP-1474 or a standard rpc error code
-				if (rpcErrorsMap.get(rpcErrorResponse.error.code)) {
-					// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-					const Err = rpcErrorsMap.get(rpcErrorResponse.error.code)!.error;
-					throw new Err(rpcErrorResponse);
-				} else {
-					throw new RpcError(rpcErrorResponse);
-				}
-			} else if (!Web3RequestManager._isReverted(response)) {
-				throw new InvalidResponseError<ErrorType, RequestType>(response, payload);
+			const rpcErrorResponse = response as JsonRpcResponseWithError;
+
+			// A revert is a revert in both modes: the contract layer decodes `error.data` from
+			// the ContractExecutionError, which `useRpcCallSpecification` used to replace with
+			// an InvalidInputError (-32000) or a bare RpcError (code 3) (I-14).
+			Web3RequestManager._isReverted(response);
+
+			// An EIP-1193 provider error (4001 user rejected, ...) keeps its code instead of
+			// being reported as an InvalidResponseError with the code buried in innerError (I-14).
+			if (isEip1193ProviderErrorCode(rpcErrorResponse.error.code)) {
+				throw toEip1193ProviderError(rpcErrorResponse);
 			}
+
+			// check if rpc error flag is on and response error code match an EIP-1474 or a standard rpc error code
+			if (this.useRpcCallSpecification && isResponseRpcError(rpcErrorResponse)) {
+				throw toRpcSpecificationError(rpcErrorResponse);
+			}
+
+			throw new InvalidResponseError<ErrorType, RequestType>(response, payload);
 		}
 
 		// This is the majority of the cases so check these first
@@ -468,21 +638,7 @@ export class Web3RequestManager<
 		}
 
 		if ((response as unknown) instanceof Error) {
-			Web3RequestManager._isReverted(response);
-			throw response;
-		}
-
-		if (!legacy && jsonRpc.isBatchRequest(payload) && jsonRpc.isBatchResponse(response)) {
-			return response as JsonRpcBatchResponse<ResultType>;
-		}
-
-		if (legacy && !error && jsonRpc.isBatchRequest(payload)) {
-			return response as JsonRpcBatchResponse<ResultType>;
-		}
-
-		if (legacy && error && jsonRpc.isBatchRequest(payload)) {
-			// In case of error batch response we don't want to throw Invalid response
-			throw response;
+			throw Web3RequestManager._buildNonJsonRpcError(response);
 		}
 
 		if (
@@ -490,27 +646,70 @@ export class Web3RequestManager<
 			!jsonRpc.isResponseWithError(response) &&
 			!jsonRpc.isResponseWithResult(response)
 		) {
+			// A legacy provider may hand back a bare result, which is wrapped into an envelope
+			// here. A reply that already is an envelope (`jsonrpc` and `id` present) but carries
+			// neither a result nor an error object, such as `"error": null`, is malformed and
+			// must not be returned to the caller as data.
+			if (!error && Web3RequestManager._isJsonRpcEnvelope(response)) {
+				throw new ResponseError(response, 'Invalid response');
+			}
 			return this._buildResponse(payload, response, error);
 		}
 
-		if (jsonRpc.isBatchRequest(payload) && !Array.isArray(response)) {
-			throw new ResponseError(response, 'Got normal response for a batch request.');
-		}
-
-		if (!jsonRpc.isBatchRequest(payload) && Array.isArray(response)) {
+		if (Array.isArray(response)) {
 			throw new ResponseError(response, 'Got batch response for a normal request.');
 		}
 
-		if (
-			(jsonRpc.isResponseWithError(response) || jsonRpc.isResponseWithResult(response)) &&
-			!jsonRpc.isBatchRequest(payload)
-		) {
-			if (response.id && payload.id !== response.id) {
-				throw new InvalidResponseError<ErrorType>(response);
-			}
+		throw new ResponseError(response, 'Invalid response');
+	}
+
+	/**
+	 * The reply to a batch request is held to one shape on every provider path, whether the
+	 * provider returned it or threw it: an array in which every member is a result or an error
+	 * reply. A member without either would leave its batch entry pending forever, a `null`
+	 * member would be dereferenced, and a single object (the one error reply a node sends for a
+	 * batch it could not parse, JSON-RPC 2.0 section 6) is not a batch result (L-38). A thrown
+	 * batch response is still a batch response: its error members are reported per entry.
+	 */
+	private static _processBatchJsonRpcResponse<ResultType, ErrorType>(
+		response: JsonRpcResponse<ResultType, ErrorType>,
+	): JsonRpcBatchResponse<ResultType> | never {
+		if ((response as unknown) instanceof Error) {
+			throw Web3RequestManager._buildNonJsonRpcError(response);
 		}
 
-		throw new ResponseError(response, 'Invalid response');
+		if (isNullish(response)) {
+			throw new ResponseError(response, 'Got a "nullish" response for a batch request.');
+		}
+
+		if (!Array.isArray(response)) {
+			const message = (response as { error?: { message?: unknown } }).error?.message;
+			throw new ResponseError(
+				response,
+				typeof message === 'string'
+					? `Batch request failed: ${message}`
+					: 'Got normal response for a batch request.',
+			);
+		}
+
+		if (jsonRpc.isBatchResponse(response)) {
+			return response as JsonRpcBatchResponse<ResultType>;
+		}
+
+		throw new ResponseError(
+			response,
+			'Invalid batch response: expected an array of JSON-RPC result or error replies',
+		);
+	}
+
+	private static _isJsonRpcEnvelope(response: unknown): boolean {
+		return (
+			typeof response === 'object' &&
+			!isNullish(response) &&
+			!Array.isArray(response) &&
+			('jsonrpc' in response ||
+				('id' in response && ('result' in response || 'error' in response)))
+		);
 	}
 
 	private static _isReverted<ResultType, ErrorType>(
@@ -527,11 +726,7 @@ export class Web3RequestManager<
 		// This message means that there was an error while executing the code of the smart contract
 		// However, more processing will happen at a higher level to decode the error data,
 		//	according to the Error ABI, if it was available as of EIP-838.
-		// `error` is provider supplied and is not guaranteed to carry a string `message`, so the
-		// type is checked first: a bare `error?.message.includes(...)` throws a misleading
-		// `TypeError` for an otherwise well-formed response such as `{ error: { code: -1 } }`.
-		if (typeof error?.message === 'string' && error.message.includes('revert'))
-			throw new ContractExecutionError(error);
+		if (isRevertError(error)) throw new ContractExecutionError(error as JsonRpcError);
 
 		return false;
 	}
@@ -544,14 +739,13 @@ export class Web3RequestManager<
 	): JsonRpcResponse<ResultType> {
 		const res = {
 			jsonrpc: '2.0',
-			// eslint-disable-next-line no-nested-ternary
 			id: jsonRpc.isBatchRequest(payload)
 				? payload[0].id
 				: 'id' in payload
-				? payload.id
-				: // Have to use the null here explicitly
-				  // eslint-disable-next-line no-null/no-null
-				  null,
+					? payload.id
+					: // Have to use the null here explicitly
+						// eslint-disable-next-line no-null/no-null
+						null,
 		};
 
 		if (error) {

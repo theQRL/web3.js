@@ -254,15 +254,15 @@ export const PublicResolverAbi = [
 			},
 			{
 				indexed: false,
-				internalType: 'bytes32',
-				name: 'x',
-				type: 'bytes32',
+				internalType: 'bytes',
+				name: 'publicKey',
+				type: 'bytes',
 			},
 			{
 				indexed: false,
-				internalType: 'bytes32',
-				name: 'y',
-				type: 'bytes32',
+				internalType: 'bytes',
+				name: 'descriptor',
+				type: 'bytes',
 			},
 		],
 		name: 'PubkeyChanged',
@@ -515,14 +515,14 @@ export const PublicResolverAbi = [
 		name: 'pubkey',
 		outputs: [
 			{
-				internalType: 'bytes32',
-				name: 'x',
-				type: 'bytes32',
+				internalType: 'bytes',
+				name: 'publicKey',
+				type: 'bytes',
 			},
 			{
-				internalType: 'bytes32',
-				name: 'y',
-				type: 'bytes32',
+				internalType: 'bytes',
+				name: 'descriptor',
+				type: 'bytes',
 			},
 		],
 		stateMutability: 'view',
@@ -588,6 +588,24 @@ export const PublicResolverAbi = [
 			},
 		],
 		stateMutability: 'view',
+		type: 'function',
+	},
+	{
+		inputs: [
+			{
+				internalType: 'bytes32',
+				name: 'node',
+				type: 'bytes32',
+			},
+			{
+				internalType: 'address',
+				name: 'a',
+				type: 'address',
+			},
+		],
+		name: 'setAddr',
+		outputs: [],
+		stateMutability: 'nonpayable',
 		type: 'function',
 	},
 ] as const;

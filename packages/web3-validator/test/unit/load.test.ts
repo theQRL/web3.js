@@ -108,26 +108,22 @@ describe('instance of validator', () => {
 		validator = new Web3Validator();
 	});
 
-	it('huge schema', () => {
-		let t = 0;
-		expect(() => {
-			const t1 = Number(new Date());
-			validator.validateJSONSchema(hugeSchema, hugeData as object);
-			t = Number(new Date()) - t1;
-		}).not.toThrow();
-		expect(t).toBeLessThan(30000);
-		expect(t).toBeGreaterThan(0);
+	it.each([
+		[hugeSchema, hugeData],
+		[hugeSchema1000, hugeData1000],
+	])('rejects deeply nested inputs before schema traversal', (schema, data) => {
+		expect(() => validator.validateJSONSchema(schema, data as object)).toThrow(
+			'Validation input exceeds 64 nesting levels',
+		);
 	});
 
-	it('huge schema 1000', () => {
-		let t = 0;
-		expect(() => {
-			const t1 = Number(new Date());
-			validator.validateJSONSchema(hugeSchema1000, hugeData1000 as object);
-			t = Number(new Date()) - t1;
-		}).not.toThrow();
-		expect(t).toBeLessThan(50000);
-		expect(t).toBeGreaterThan(0);
+	it('accepts nested input within the traversal budget', () => {
+		const { schema, data } = createHugeSchema(
+			simpleSchema as JsonSchema,
+			simpleData as Json,
+			32,
+		);
+		expect(() => validator.validateJSONSchema(schema, data as object)).not.toThrow();
 	});
 
 	it('simple schema multiple times', () => {

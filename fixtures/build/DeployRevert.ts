@@ -17,5 +17,4 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 export const DeployRevertAbi = [
 	{ inputs: [], stateMutability: 'nonpayable', type: 'constructor' },
 ] as const;
-export const DeployRevertBytecode =
-	'0x6080604052348015600e575f80fd5b505f6017575f80fd5b603e8060225f395ff3fe60806040525f80fdfea2646970667358221220fa38571b8dfcaa315c964f584d24c12693f06ac4f4fba5012d72845a2b29eaa06468797063430000020033';
+export const DeployRevertBytecode = '0x61010060805234a015600f575fa0fd5b5fa0fdfe';

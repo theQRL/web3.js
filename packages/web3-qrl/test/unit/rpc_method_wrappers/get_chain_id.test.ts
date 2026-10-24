@@ -36,6 +36,7 @@ describe('getChainId', () => {
 	});
 
 	it('should call rpcMethods.getBlockNumber with expected parameters', async () => {
+		(qrlRpcMethods.getChainId as jest.Mock).mockResolvedValueOnce('0x1');
 		await getChainId(web3Context, DEFAULT_RETURN_FORMAT);
 		expect(qrlRpcMethods.getChainId).toHaveBeenCalledWith(web3Context.requestManager);
 	});

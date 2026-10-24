@@ -14,6 +14,7 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
+import { toChecksumAddress } from '@theqrl/web3-utils';
 import {
 	AbiCoder,
 	ConstructorFragment,
@@ -54,7 +55,7 @@ describe('@theqrl/abi public surface', () => {
 	});
 
 	it('encodes and decodes through the public entry point', () => {
-		const address = `Q${'ab'.repeat(64)}`;
+		const address = toChecksumAddress(`Q${'ab'.repeat(64)}`);
 		const encoded = defaultAbiCoder.encode(['address', 'uint8'], [address, 7]);
 		expect(defaultAbiCoder.decode(['address', 'uint8'], encoded)).toEqual([address, 7]);
 	});

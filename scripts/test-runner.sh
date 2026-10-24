@@ -5,7 +5,7 @@ ORIGARGS=("$@")
 . scripts/env.sh
 
 helpFunction() {
-	echo "Usage: $0 <gqrl | testnet | mainnet> <http | ws> [node | electron | firefox | chrome] [coverage | sync]"
+	echo "Usage: $0 <gqrl | testnet | mainnet> <http | ws> [node | electron | firefox | chrome] [coverage]"
 	exit 1 # Exit script after printing help
 }
 BACKEND=${ORIGARGS[0]}
@@ -14,10 +14,10 @@ ENGINE=${ORIGARGS[2]}
 TEST_OPTION=${ORIGARGS[3]}
 
 SUPPORTED_BACKENDS=("gqrl" "testnet" "mainnet")
-SUPPORTED_MODE=("http" "ws" "ipc")
+SUPPORTED_MODE=("http" "ws")
 # if you will add a new browser please also add it in the system_test_utils.ts => isBrowser
 SUPPORTED_ENGINES=("node" "electron" "firefox" "chrome" "")
-SUPPORTED_TEST_OPTIONS=("coverage" "sync" "")
+SUPPORTED_TEST_OPTIONS=("coverage" "")
 
 if [[ ! " ${SUPPORTED_BACKENDS[*]} " =~ " ${BACKEND} " ]]; then
 	helpFunction
@@ -35,21 +35,20 @@ if [[ ! " ${SUPPORTED_TEST_OPTIONS[*]} " =~ " ${TEST_OPTION} " ]]; then
 	helpFunction
 fi
 
+if [[ $MODE == "ws" ]]; then
+	export WEB3_SYSTEM_TEST_PORT=8546
+fi
+
 echo "Node software used for tests: " $BACKEND
 echo "Node running on: " "$MODE://127.0.0.1:$WEB3_SYSTEM_TEST_PORT"
 
-export WEB3_SYTEM_TEST_MODE=$MODE
+export WEB3_SYSTEM_TEST_MODE=$MODE
 export WEB3_SYSTEM_TEST_PROVIDER="$MODE://127.0.0.1:$WEB3_SYSTEM_TEST_PORT"
 export WEB3_SYSTEM_TEST_BACKEND=$BACKEND
 export WEB3_SYSTEM_TEST_ENGINE=$ENGINE
 
 TEST_COMMAND_KIND=""
 TEST_TASK=""
-
-if [[ $MODE == "ipc" ]]; then
-        export WEB3_SYSTEM_TEST_PROVIDER=$IPC_PATH
-        BACKEND=gqrl-binary
-fi
 
 if [[ $ENGINE == "node" ]] || [[ $ENGINE == "" ]]; then
 	if [[ $TEST_OPTION == "coverage" ]]; then
@@ -67,16 +66,8 @@ else
 	TEST_TASK="test:e2e:$ENGINE"
 fi
 
-run_test_command() {
-	if [[ $TEST_COMMAND_KIND == "turbo" ]]; then
-		pnpm exec turbo run "$TEST_TASK"
-	else
-		pnpm run "$TEST_TASK"
-	fi
-}
-
-if [[ $BACKEND == "gqrl" || $BACKEND == "gqrl-binary" ]]; then
-	pnpm run "$BACKEND:start:background" && pnpm run generate:accounts && run_test_command && pnpm run "$BACKEND:stop"
+if [[ $TEST_COMMAND_KIND == "turbo" ]]; then
+	pnpm exec turbo run "$TEST_TASK"
 else
-	run_test_command
+	pnpm run "$TEST_TASK"
 fi

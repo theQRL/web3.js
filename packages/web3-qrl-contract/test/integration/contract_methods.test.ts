@@ -15,7 +15,6 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import { ContractExecutionError } from '@theqrl/web3-errors';
-import { isNullish } from '@theqrl/web3-utils';
 import { Contract } from '../../src';
 import { BasicAbi, BasicBytecode } from '../shared_fixtures/build/Basic';
 import { getSystemTestProvider, createTempAccount } from '../fixtures/system_test_utils';
@@ -38,7 +37,7 @@ describe('contract', () => {
 			arguments: [10, 'string init value'],
 		};
 
-		sendOptions = { from: acc.address, gas: '1000000' };
+		sendOptions = { from: acc.address, gas: '1200000' };
 
 		contractDeployed = await contract.deploy(deployOptions).send(sendOptions);
 	});
@@ -61,7 +60,7 @@ describe('contract', () => {
 					provider: getSystemTestProvider(),
 					data: BasicBytecode,
 					from: acc.address,
-					gas: '1000000',
+					gas: '1200000',
 				});
 				const deployedTempContract = await tempContract
 					.deploy({ arguments: [10, 'string init value'] })
@@ -79,9 +78,7 @@ describe('contract', () => {
 						error = err;
 					}
 
-					// eslint-disable-next-line jest/no-standalone-expect
 					expect(error).toBeDefined();
-					// eslint-disable-next-line jest/no-standalone-expect
 					expect(error?.innerError.message).toContain('REVERTED WITH REVERT');
 				});
 			});
@@ -137,7 +134,7 @@ describe('contract', () => {
 					provider: getSystemTestProvider(),
 					input: BasicBytecode,
 					from: acc.address,
-					gas: '1000000',
+					gas: '1200000',
 				});
 				const deployedTempContract = await tempContract
 					.deploy({ arguments: [10, 'string init value'] })
@@ -153,16 +150,14 @@ describe('contract', () => {
 				).rejects.toMatchObject({
 					name: 'TransactionRevertedWithoutReasonError',
 					receipt: {
-						cumulativeGasUsed: BigInt(21537),
+						cumulativeGasUsed: BigInt(21355),
 						from: acc.address,
-						gasUsed: BigInt(21537),
+						gasUsed: BigInt(21355),
 						logs: [],
 						logsBloom:
 							'0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
 						status: BigInt(0),
-						to: isNullish(contractDeployed.options.address)
-							? contractDeployed.options.address
-							: `Q${contractDeployed.options.address.slice(1).toLowerCase()}`,
+						to: contractDeployed.options.address,
 						transactionIndex: BigInt(0),
 						type: BigInt(2),
 					},

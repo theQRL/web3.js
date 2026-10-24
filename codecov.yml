@@ -42,9 +42,6 @@ component_management:
     - component_id: "@theqrl/web3-qrl-qrns"
       paths:
           - /packages/web3-qrl-qrns/src/
-    - component_id: "@theqrl/web3-qrl-iban"
-      paths:
-          - /packages/web3-qrl-iban/src/
     - component_id: "@theqrl/web3-net"
       paths:
           - /packages/web3-net/src/

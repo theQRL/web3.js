@@ -37,4 +37,16 @@ describe('validation', () => {
 			},
 		);
 	});
+
+	describe('compareBlockNumbers typed errors (L-26)', () => {
+		it.each([
+			['abc', 1],
+			[1.5, 1],
+			['', 5],
+			['0x', 1],
+			[1, '1e3'],
+		])('throws InvalidBlockError for the non-numeric block %s / %s', (a, b) => {
+			expect(() => compareBlockNumbers(a as never, b as never)).toThrow(InvalidBlockError);
+		});
+	});
 });

@@ -16,12 +16,30 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { Transaction, DataFormat, DEFAULT_RETURN_FORMAT, FormatType } from '@theqrl/web3-types';
-import { isNullish, ValidationSchemaInput } from '@theqrl/web3-validator';
-import { mergeDeep, format, bytesToHex, toHex } from '@theqrl/web3-utils';
+import { isNullish, ValidationSchemaInput, Web3ValidatorError } from '@theqrl/web3-validator';
+import { mergeDeep, format, bytesToHex, toHex, toBigInt } from '@theqrl/web3-utils';
 import { TransactionDataAndInputError } from '@theqrl/web3-errors';
 
 import { transactionInfoSchema, transactionSchema } from '../schemas.js';
+import { validateTransactionQuantities } from './transaction_input.js';
 
+const isSameQuantity = (a: unknown, b: unknown): boolean => {
+	try {
+		return toBigInt(a) === toBigInt(b);
+	} catch {
+		return a === b;
+	}
+};
+
+/**
+ * Formats a transaction object (caller input or a node reply) into `returnFormat`.
+ *
+ * @throws InvalidNumberError for a quantity given as a JavaScript number that is not a safe
+ * integer (L-55).
+ * @throws TransactionDataAndInputError when `data` and `input` are both given and differ.
+ * @throws Web3ValidatorError when `gas` and `gasLimit` are both given and differ (L-50); when
+ * they agree, `gasLimit` is folded into `gas`.
+ */
 export function formatTransaction<
 	ReturnFormat extends DataFormat = typeof DEFAULT_RETURN_FORMAT,
 	TransactionType extends Transaction = Transaction,
@@ -36,6 +54,7 @@ export function formatTransaction<
 		fillInputAndData: false,
 	},
 ): FormatType<TransactionType, ReturnFormat> {
+	validateTransactionQuantities(transaction);
 	let formattedTransaction = mergeDeep({}, transaction as Record<string, unknown>) as Transaction;
 	if (!isNullish(transaction?.common)) {
 		formattedTransaction.common = { ...transaction.common };
@@ -68,6 +87,27 @@ export function formatTransaction<
 	}
 
 	if (!isNullish(formattedTransaction.gasLimit)) {
+		if (
+			!isNullish(formattedTransaction.gas) &&
+			!isSameQuantity(formattedTransaction.gas, formattedTransaction.gasLimit)
+		) {
+			// `gasLimit` used to override `gas` silently, so a caller giving both signed with
+			// a limit they did not expect (L-50).
+			throw new Web3ValidatorError([
+				{
+					keyword: 'gasLimit',
+					instancePath: '/gasLimit',
+					schemaPath: '#/properties/gasLimit',
+					params: {
+						gas: String(formattedTransaction.gas),
+						gasLimit: String(formattedTransaction.gasLimit),
+					},
+					message: `must equal "gas" when both are given (gas: ${String(
+						formattedTransaction.gas,
+					)}, gasLimit: ${String(formattedTransaction.gasLimit)})`,
+				},
+			]);
+		}
 		formattedTransaction.gas = formattedTransaction.gasLimit;
 		delete formattedTransaction.gasLimit;
 	}

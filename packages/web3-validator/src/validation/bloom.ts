@@ -67,17 +67,14 @@ export const isInBloom = (bloom: string, value: string | Uint8Array): boolean =>
 	for (let i = 0; i < 12; i += 4) {
 		// calculate bit position in bloom filter that must be active
 		const bitpos =
-			// eslint-disable-next-line no-bitwise
 			((parseInt(hash.slice(i, i + 2), 16) << 8) + parseInt(hash.slice(i + 2, i + 4), 16)) &
 			2047;
 
 		// test if bitpos in bloom is active
 		const code = codePointToInt(bloom.charCodeAt(bloom.length - 1 - Math.floor(bitpos / 4)));
 
-		// eslint-disable-next-line no-bitwise
 		const offset = 1 << bitpos % 4;
 
-		// eslint-disable-next-line no-bitwise
 		if ((code & offset) !== offset) {
 			return false;
 		}

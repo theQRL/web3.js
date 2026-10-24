@@ -16,31 +16,28 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import { Bytes, Numbers, BlockHeaderOutput, TransactionReceipt } from '@theqrl/web3-types';
 import { format } from '@theqrl/web3-utils';
-import { isHexStrict } from '@theqrl/web3-validator';
 
 import { DataFormat } from '@theqrl/web3-types';
 import { NewHeadsSubscription } from '../web3_subscriptions.js';
 import { transactionReceiptSchema } from '../schemas.js';
+import { isHash32, isValidUnsignedHexNumber } from './hex_guards.js';
+import { reportWatcherError, emitConfirmation } from './promi_event_errors.js';
+import {
+	missingReceiptError,
+	recheckReceipt,
+	changedReceiptStatusError,
+} from './receipt_recheck.js';
+import { MAX_CONSECUTIVE_POLLING_ERRORS } from '../constants.js';
 import { WaitProps, watchTransactionByPolling } from './watch_transaction_by_pooling.js';
-
-const isValidUnsignedHexNumber = (value: unknown): value is string | number | bigint => {
-	if (typeof value === 'bigint' || typeof value === 'number') {
-		return value >= 0;
-	}
-	if (typeof value !== 'string') {
-		return false;
-	}
-	if (value.startsWith('-')) return false;
-	if (!isHexStrict(value)) return false;
-	return true;
-};
-
-const isValidBlockHash = (value: unknown): value is string =>
-	typeof value === 'string' && /^0x[0-9a-fA-F]{64}$/.test(value);
 
 /**
  * This function watches a Transaction by subscribing to new heads.
  * It is used by `watchTransactionForConfirmations`, in case the provider supports subscription.
+ *
+ * Exactly one source counts confirmations at any time: the `newHeads` subscription, or polling
+ * once the subscription failed or stayed silent for `blockHeaderTimeout` seconds. Starting the
+ * polling fallback drops the subscription and a header arriving in time cancels the fallback,
+ * so confirmations are never counted twice (L-54).
  */
 export const watchTransactionBySubscription = <
 	ReturnFormat extends DataFormat,
@@ -51,82 +48,142 @@ export const watchTransactionBySubscription = <
 	transactionPromiEvent,
 	returnFormat,
 }: WaitProps<ReturnFormat, ResolveType>) => {
-	// The following variable will stay true except if the data arrived,
-	//	or if watching started after an error had occurred.
-	let needToWatchLater = true;
-	let lastCaughtBlockHash: string;
+	let polling = false;
+	let rechecks = Promise.resolve();
+	let missingReceipts = 0;
+	let headerReceived = false;
+	let subscription: NewHeadsSubscription | undefined;
+	let lastCaughtBlockHash: string | undefined;
+	let fallbackTimer: ReturnType<typeof setTimeout> | undefined;
+	// The receipt confirmations are counted from; replaced when a reorg moved the transaction.
+	let receipt: TransactionReceipt = transactionReceipt;
+
+	const dropSubscription = (sub: NewHeadsSubscription | undefined) => {
+		if (sub === undefined) return;
+		if (sub === subscription) subscription = undefined;
+		web3Context.subscriptionManager?.removeSubscription(sub).catch(() => {
+			// Already removed (for example by `subscriptionManager.clear()`): nothing to do.
+		});
+	};
+
+	const cancelFallback = () => {
+		if (fallbackTimer !== undefined) {
+			clearTimeout(fallbackTimer);
+			fallbackTimer = undefined;
+		}
+	};
+
+	const startPolling = () => {
+		if (polling) return;
+		polling = true;
+		cancelFallback();
+		dropSubscription(subscription);
+		watchTransactionByPolling({
+			web3Context,
+			transactionReceipt: receipt,
+			transactionPromiEvent,
+			returnFormat,
+		});
+	};
+
 	setImmediate(() => {
 		web3Context.subscriptionManager
 			?.subscribe('newHeads')
-			.then((subscription: NewHeadsSubscription) => {
-				subscription.on('data', async (newBlockHeader: BlockHeaderOutput) => {
-					needToWatchLater = false;
+			.then((sub: NewHeadsSubscription) => {
+				if (polling) {
+					// The fallback fired while the subscription was being set up.
+					dropSubscription(sub);
+					return;
+				}
+				subscription = sub;
+				sub.on('data', (newBlockHeader: BlockHeaderOutput) => {
+					if (polling || subscription !== sub) return;
 					if (
 						!newBlockHeader?.number ||
 						!isValidUnsignedHexNumber(newBlockHeader.number) ||
-						!isValidBlockHash(newBlockHeader.parentHash) ||
+						!isHash32(newBlockHeader.parentHash) ||
 						// For some cases, the on-data event is fired couple times for the same block!
 						// This needs investigation but seems to be because of multiple `subscription.on('data'...)` even this should not cause that.
 						lastCaughtBlockHash === newBlockHeader?.parentHash
 					) {
 						return;
 					}
-					lastCaughtBlockHash = newBlockHeader?.parentHash as string;
+					headerReceived = true;
+					cancelFallback();
+					lastCaughtBlockHash = newBlockHeader?.parentHash;
+					const headerNumber = BigInt(newBlockHeader.number);
 
-					const confirmations =
-						BigInt(newBlockHeader.number) -
-						BigInt(transactionReceipt.blockNumber) +
-						BigInt(1);
+					// A new head arrived; make sure the transaction is still in the chain it
+					// extends before counting it as a confirmation (reorg awareness).
+					rechecks = rechecks
+						.then(async () =>
+							polling || subscription !== sub
+								? undefined
+								: recheckReceipt(web3Context, receipt),
+						)
+						.then(recheck => {
+							if (!recheck || polling || subscription !== sub) return;
+							if (recheck.kind === 'missing') {
+								missingReceipts += 1;
+								if (missingReceipts < MAX_CONSECUTIVE_POLLING_ERRORS) return;
+								dropSubscription(sub);
+								reportWatcherError(
+									transactionPromiEvent,
+									missingReceiptError(receipt, returnFormat),
+								);
+								return;
+							}
+							if (recheck.kind !== 'unknown') missingReceipts = 0;
+							if (recheck.kind === 'moved') {
+								const changed = changedReceiptStatusError(receipt, recheck.receipt);
+								if (changed) {
+									dropSubscription(sub);
+									reportWatcherError(transactionPromiEvent, changed);
+									return;
+								}
+								receipt = recheck.receipt;
+							}
 
-					transactionPromiEvent.emit('confirmation', {
-						confirmations: format(
-							{ format: 'uint' },
-							confirmations as Numbers,
-							returnFormat,
-						),
-						receipt: format(transactionReceiptSchema, transactionReceipt, returnFormat),
-						latestBlockHash: format(
-							{ format: 'bytes32' },
-							newBlockHeader.parentHash as Bytes,
-							returnFormat,
-						),
-					});
-					if (confirmations >= web3Context.transactionConfirmationBlocks) {
-						await web3Context.subscriptionManager?.removeSubscription(subscription);
-					}
+							const confirmations =
+								headerNumber - BigInt(receipt.blockNumber) + BigInt(1);
+							// A header below the (new) receipt block confirms nothing.
+							if (confirmations < BigInt(2)) return;
+
+							emitConfirmation(transactionPromiEvent, {
+								confirmations: format(
+									{ format: 'uint' },
+									confirmations as Numbers,
+									returnFormat,
+								),
+								receipt: format(transactionReceiptSchema, receipt, returnFormat),
+								latestBlockHash: format(
+									{ format: 'bytes32' },
+									newBlockHeader.parentHash as Bytes,
+									returnFormat,
+								),
+							});
+							if (confirmations >= web3Context.transactionConfirmationBlocks) {
+								dropSubscription(sub);
+							}
+						})
+						.catch(error => {
+							dropSubscription(sub);
+							reportWatcherError(transactionPromiEvent, error);
+						});
 				});
-				subscription.on('error', async () => {
-					await web3Context.subscriptionManager?.removeSubscription(subscription);
-
-					needToWatchLater = false;
-					watchTransactionByPolling({
-						web3Context,
-						transactionReceipt,
-						transactionPromiEvent,
-						returnFormat,
-					});
+				sub.on('error', () => {
+					startPolling();
 				});
 			})
 			.catch(() => {
-				needToWatchLater = false;
-				watchTransactionByPolling({
-					web3Context,
-					transactionReceipt,
-					transactionPromiEvent,
-					returnFormat,
-				});
+				startPolling();
 			});
 	});
 
-	// Fallback to polling if tx receipt didn't arrived in "blockHeaderTimeout" [10 seconds]
-	setTimeout(() => {
-		if (needToWatchLater) {
-			watchTransactionByPolling({
-				web3Context,
-				transactionReceipt,
-				transactionPromiEvent,
-				returnFormat,
-			});
+	// Fallback to polling if no block header arrived within "blockHeaderTimeout" [10 seconds]
+	fallbackTimer = setTimeout(() => {
+		if (!headerReceived) {
+			startPolling();
 		}
 	}, web3Context.blockHeaderTimeout * 1000);
 };

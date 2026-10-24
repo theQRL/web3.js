@@ -131,10 +131,10 @@ export const hyperionSha3Data: [TypedObject[] | TypedObjectAbbreviated[], string
 		[
 			{
 				type: 'address',
-				value: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000407d73d8a49eeb85d32cf465507dd71d507100c1',
+				value: 'Q83cd1122848dd1b2E3AF9ca60a1340e595B2C6d5b3B340AfD625e38EEf9067bc9C28db215702Aa8B3C0243Bb13785a9365A35ee1Fe8e57983b1D47d9fff835a3',
 			},
 		],
-		'0x7366780612997ea07d07e3470e2d4b5909f14f30b404671e990440b99adc5762',
+		'0xf5b7a6a98c10864489aa345ddc519146e5344a579efbe7a78cbcc4bd24da3686',
 	],
 	[
 		[{ t: 'bytes32', v: '0x407D73d8a49eeb85D32Cf465507dd71d507100c1' }],
@@ -146,10 +146,10 @@ export const hyperionSha3Data: [TypedObject[] | TypedObjectAbbreviated[], string
 			{ t: 'int8', v: -23 },
 			{
 				t: 'address',
-				v: 'Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000085f43d8a49eeb85d32cf465507dd71d507100c1d',
+				v: 'Q64667193714B974543f3eF370c44f875588022C996f1Fa61C942E5F1266c920F25a833031DaDa57723F7af72D806C515AeEC1Ef1a744b0de76D8e7BD50007f8D',
 			},
 		],
-		'0x2ec0c1383940c11780c7a9dcddc33ff42280dd5e0a31cef11c0cc5fd01c2bd99',
+		'0x240a4ab7cd81b734fe4ead6304bf3f2f4339da47ca736b934394082fc19f55e9',
 	],
 	[
 		[{ t: 'int256', v: '32309054545061485574011236401' }],
@@ -187,27 +187,18 @@ export const hyperionSha3InvalidData: [any, string][] = [
 
 export const encodePackData: [TypedObject[] | TypedObjectAbbreviated[], any][] = [
 	[[{ type: 'string', value: '31323334' }], '0x3331333233333334'],
-	[
-		[{ type: 'int[]', value: '01' }],
-		'0x0000000000000000000000000000000000000000000000000000000000000001',
-	],
-	[
-		[{ type: 'uint[]', value: '01' }],
-		'0x0000000000000000000000000000000000000000000000000000000000000001',
-	],
-	[
-		[{ type: 'int', value: 31323334 }],
-		'0x0000000000000000000000000000000000000000000000000000000001ddf4c6',
-	],
+	[[{ type: 'int[]', value: [1] }], `0x${'0'.repeat(127)}1`],
+	[[{ type: 'uint[]', value: [1] }], `0x${'0'.repeat(127)}1`],
+	[[{ type: 'int', value: 31323334 }], `0x${'0'.repeat(57)}1ddf4c6`],
 	[[{ type: 'string', value: '' }], '0x'],
 	[
 		[
 			{
 				type: 'address',
-				value: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c1912fee45d61c87cc5ea59dae31190fffff232d',
+				value: 'Q444BAacb272fd62Bd34b98cD204F4E88ebF3bAa8F4436c84Cdbb77280c12f12FD995122fC3F8B548e0e1D3d6d15B03BB45e0116dc5E303C5608de0A087bD4eea',
 			},
 		],
-		'0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c1912fee45d61c87cc5ea59dae31190fffff232d',
+		'0x444baacb272fd62bd34b98cd204f4e88ebf3baa8f4436c84cdbb77280c12f12fd995122fc3f8b548e0e1d3d6d15b03bb45e0116dc5e303c5608de0a087bd4eea',
 	],
 	[[{ type: 'bool', value: true }], '0x01'],
 	[[{ type: 'bool', value: false }], '0x00'],
@@ -234,17 +225,17 @@ export const encodePackData: [TypedObject[] | TypedObjectAbbreviated[], any][] =
 	[
 		[
 			{
-				v: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000407d73d8a49eeb85d32cf465507dd71d507100c1',
+				v: 'Q83cd1122848dd1b2E3AF9ca60a1340e595B2C6d5b3B340AfD625e38EEf9067bc9C28db215702Aa8B3C0243Bb13785a9365A35ee1Fe8e57983b1D47d9fff835a3',
 				t: 'address',
 			},
 		],
-		'0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000407d73d8a49eeb85d32cf465507dd71d507100c1',
+		'0x83cd1122848dd1b2e3af9ca60a1340e595b2c6d5b3b340afd625e38eef9067bc9c28db215702aa8b3c0243bb13785a9365a35ee1fe8e57983b1d47d9fff835a3',
 	],
 	[
 		[{ v: '0x407D73d8a49eeb85D32Cf465507dd71d507100c1', t: 'bytes' }],
 		'0x407d73d8a49eeb85d32cf465507dd71d507100c1',
 	],
-	[[{ t: 'int', v: '0' }], '0x0000000000000000000000000000000000000000000000000000000000000000'],
+	[[{ t: 'int', v: '0' }], `0x${'0'.repeat(64)}`],
 	[
 		[{ type: 'int256', value: '1234' }],
 		'0x00000000000000000000000000000000000000000000000000000000000004d2',
@@ -257,9 +248,17 @@ export const encodePackData: [TypedObject[] | TypedObjectAbbreviated[], any][] =
 		[{ type: 'int256', value: 1234 }], // same as type int256 when value is a string
 		'0x00000000000000000000000000000000000000000000000000000000000004d2',
 	],
+	[[{ type: 'int8', value: -128 }], '0x80'],
+	[[{ type: 'int8', value: 127 }], '0x7f'],
+	[[{ type: 'int512', value: -(BigInt(1) << BigInt(511)) }], `0x8${'0'.repeat(127)}`],
+	[[{ type: 'int512', value: (BigInt(1) << BigInt(511)) - BigInt(1) }], `0x7${'f'.repeat(127)}`],
+	[
+		[{ type: 'uint512', value: (BigInt(1) << BigInt(511)) + BigInt(1) }],
+		`0x8${'0'.repeat(126)}1`,
+	],
 	[
 		[{ type: 'int128[]', value: [12345, 324, 1, 2] }],
-		'0x00000000000000000000000000003039000000000000000000000000000001440000000000000000000000000000000100000000000000000000000000000002',
+		`0x${'3039'.padStart(128, '0')}${'144'.padStart(128, '0')}${'1'.padStart(128, '0')}${'2'.padStart(128, '0')}`,
 	],
 	[
 		[
@@ -271,9 +270,12 @@ export const encodePackData: [TypedObject[] | TypedObjectAbbreviated[], any][] =
 				],
 			},
 		],
-		'0x12480000000000000000000000000000000000000000000000000000000000003c69a194aaf415ba5d6afca734660d0a3d45acdc05d54cd1ca89a8988e7625b4',
+		`0x1248${'00'.repeat(62)}3c69a194aaf415ba5d6afca734660d0a3d45acdc05d54cd1ca89a8988e7625b4${'00'.repeat(32)}`,
 	],
-	[[{ type: 'bytes4[]', value: ['0x11223344', '0x22334455'] }], '0x1122334422334455'],
+	[
+		[{ type: 'bytes4[]', value: ['0x11223344', '0x22334455'] }],
+		`0x11223344${'00'.repeat(60)}22334455${'00'.repeat(60)}`,
+	],
 ];
 
 export const encodePackedInvalidData: [any, string][] = [
@@ -293,6 +295,19 @@ export const encodePackedInvalidData: [any, string][] = [
 		'Invalid value given "-1". Error: not a valid unsigned integer.',
 	],
 	[{ type: 'int255', value: 100 }, 'Invalid value given "int255". Error: invalid size given.'],
+	[
+		{ type: 'int8', value: -129 },
+		'Invalid value given "-129". Error: value is larger than size.',
+	],
+	[{ type: 'int8', value: 128 }, 'Invalid value given "128". Error: value is larger than size.'],
+	[
+		{ type: 'int512', value: BigInt(1) << BigInt(511) },
+		`Invalid value given "${BigInt(1) << BigInt(511)}". Error: value is larger than size.`,
+	],
+	[
+		{ type: 'int512', value: -(BigInt(1) << BigInt(511)) - BigInt(1) },
+		`Invalid value given "${-(BigInt(1) << BigInt(511)) - BigInt(1)}". Error: value is larger than size.`,
+	],
 	[
 		{ type: 'bytes32', value: '0x1' },
 		'Invalid value given "0x1". Error: can not parse as byte data.',

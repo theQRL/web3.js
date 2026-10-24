@@ -24,7 +24,7 @@ import {
 } from '@theqrl/web3-types';
 import { Web3Context, Web3PromiEvent } from '@theqrl/web3-core';
 import { format } from '@theqrl/web3-utils';
-import { isNullish } from '@theqrl/web3-validator';
+import { isNullish, isUInt } from '@theqrl/web3-validator';
 
 import {
 	TransactionMissingReceiptOrBlockHashError,
@@ -35,8 +35,20 @@ import {
 	watchTransactionByPolling,
 	Web3PromiEventEventTypeBase,
 } from './watch_transaction_by_pooling.js';
+import { isBlockHash } from './hex_guards.js';
+import { emitConfirmation } from './promi_event_errors.js';
+import { invalidResponseError } from './invalid_response_error.js';
 import { watchTransactionBySubscription } from './watch_transaction_by_subscription.js';
 
+/**
+ * Emits the first `confirmation` for the receipt's own block and, while fewer than
+ * `transactionConfirmationBlocks` confirmations have been emitted, watches the chain for the
+ * next ones (through a `newHeads` subscription when the provider supports one, by polling
+ * otherwise).
+ *
+ * @throws TransactionMissingReceiptOrBlockHashError / TransactionReceiptMissingBlockNumberError
+ * for a receipt that cannot be watched; the caller reports it through the PromiEvent (L-54).
+ */
 export function watchTransactionForConfirmations<
 	ReturnFormat extends DataFormat,
 	ResolveType = TransactionReceipt,
@@ -54,17 +66,28 @@ export function watchTransactionForConfirmations<
 			transactionHash: format({ format: 'bytes32' }, transactionHash, returnFormat),
 		});
 
-	if (!transactionReceipt.blockNumber)
+	if (isNullish(transactionReceipt.blockNumber))
 		throw new TransactionReceiptMissingBlockNumberError({ receipt: transactionReceipt });
 
+	if (!isBlockHash(transactionReceipt.blockHash) || !isUInt(transactionReceipt.blockNumber)) {
+		throw invalidResponseError(
+			'qrl_getTransactionReceipt',
+			'a receipt with a 32-byte block hash and an unsigned block number',
+			transactionReceipt,
+		);
+	}
 	const firstConfirmation: Numbers = 1;
 
 	// As we have the receipt, it's the first confirmation that tx is accepted.
-	transactionPromiEvent.emit('confirmation', {
+	emitConfirmation(transactionPromiEvent, {
 		confirmations: format({ format: 'uint' }, firstConfirmation, returnFormat),
 		receipt: format(transactionReceiptSchema, transactionReceipt, returnFormat),
 		latestBlockHash: format({ format: 'bytes32' }, transactionReceipt.blockHash, returnFormat),
 	});
+
+	// One confirmation already satisfies a threshold of 0 or 1: no watcher is started, which
+	// used to emit a second `confirmation` and send one request regardless (L-54).
+	if (web3Context.transactionConfirmationBlocks <= 1) return;
 
 	// so a subscription for newBlockHeaders can be made instead of polling
 	const provider: Web3BaseProvider = web3Context.requestManager.provider as Web3BaseProvider;

@@ -16,9 +16,11 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import { Bytes, HexString, QPrefixedHexString, Numbers } from './primitives_types.js';
 
-export type ValueTypes = 'address' | 'bool' | 'string' | 'int256' | 'uint256' | 'bytes' | 'bigint';
+export type ValueTypes = 'address' | 'bool' | 'string' | 'int512' | 'uint512' | 'bytes' | 'bigint';
 // Hex encoded 32 bytes
 export type HexString32Bytes = HexString;
+// Hex encoded 64 bytes
+export type HexString64Bytes = HexString;
 // Hex encoded 16 bytes
 export type HexString16Bytes = HexString;
 // Hex encoded 8 bytes
@@ -38,8 +40,7 @@ export type Uint256 = HexString;
 // Q-prefixed hex encoded address
 export type Address = QPrefixedHexString;
 
-// https://github.com/ethereum/execution-apis/blob/main/src/schemas/filter.json#L59
-export type Topic = HexString32Bytes;
+export type Topic = HexString64Bytes;
 
 export type TransactionHash = HexString;
 export enum BlockTags {
@@ -139,6 +140,11 @@ export interface BlockOutput {
 	readonly parentHash?: HexString32Bytes;
 }
 
+/**
+ * @deprecated Ethereum beacon-chain withdrawals do not exist on QRL and no node reply
+ * carries them. Kept only so that existing type references keep compiling; it will be
+ * removed in the next major version.
+ */
 export interface Withdrawals {
 	readonly index: Numbers;
 	readonly validatorIndex: Numbers;
@@ -153,6 +159,7 @@ export interface BlockHeaderOutput {
 	readonly miner?: QPrefixedHexString;
 	readonly stateRoot?: HexString32Bytes;
 	readonly transactionsRoot?: HexString32Bytes;
+	/** @deprecated Ethereum leftover: QRL block headers carry no withdrawals root. */
 	readonly withdrawalsRoot?: HexString32Bytes;
 	readonly logsBloom?: Bytes;
 	readonly number?: Numbers;
@@ -187,34 +194,68 @@ export interface ReceiptOutput {
 	readonly effectiveGasPrice?: bigint | number;
 }
 
+/** The raw `qrl_syncing` progress object (go-qrl `SyncProgress`, hex quantities). */
 export interface SyncInput {
 	readonly startingBlock: HexString;
 	readonly currentBlock: HexString;
 	readonly highestBlock: HexString;
-	readonly knownStates?: HexString;
-	readonly pulledStates?: HexString;
+	readonly syncedAccounts?: HexString;
+	readonly syncedAccountBytes?: HexString;
+	readonly syncedBytecodes?: HexString;
+	readonly syncedBytecodeBytes?: HexString;
+	readonly syncedStorage?: HexString;
+	readonly syncedStorageBytes?: HexString;
+	readonly healedTrienodes?: HexString;
+	readonly healedTrienodeBytes?: HexString;
+	readonly healedBytecodes?: HexString;
+	readonly healedBytecodeBytes?: HexString;
+	readonly healingTrienodes?: HexString;
+	readonly healingBytecode?: HexString;
 }
 
+/** The `qrl_syncing` progress object as go-qrl reports it (`SyncProgress`). */
 export interface SyncOutput {
 	readonly startingBlock: Numbers;
 	readonly currentBlock: Numbers;
 	readonly highestBlock: Numbers;
-	readonly knownStates?: Numbers;
-	readonly pulledStates?: Numbers;
+	readonly syncedAccounts?: Numbers;
+	readonly syncedAccountBytes?: Numbers;
+	readonly syncedBytecodes?: Numbers;
+	readonly syncedBytecodeBytes?: Numbers;
+	readonly syncedStorage?: Numbers;
+	readonly syncedStorageBytes?: Numbers;
+	readonly healedTrienodes?: Numbers;
+	readonly healedTrienodeBytes?: Numbers;
+	readonly healedBytecodes?: Numbers;
+	readonly healedBytecodeBytes?: Numbers;
+	readonly healingTrienodes?: Numbers;
+	readonly healingBytecode?: Numbers;
 }
 
 export type Receipt = Record<string, unknown>;
 
-type FilterOption = Record<string, Numbers | Numbers[] | boolean | boolean[]>;
+// Indexed filter values: scalars, OR-lists of scalars and, for indexed reference types, byte arrays,
+// object-form tuples, OR-lists of tuples and nested arrays, which are hashed into the topic.
+type FilterOption = Record<
+	string,
+	| Numbers
+	| Numbers[]
+	| boolean
+	| boolean[]
+	| Uint8Array
+	| Record<string, unknown>
+	| Record<string, unknown>[]
+	| unknown[][]
+>;
 
 // https://github.com/ethereum/execution-apis/blob/main/src/schemas/filter.json#L28
 export interface Filter {
 	readonly fromBlock?: BlockNumberOrTag;
 	readonly toBlock?: BlockNumberOrTag;
 	readonly address?: Address | Address[];
-	readonly blockHash?: Address;
+	/** Restricts the filter to the logs of one block; a 32-byte block hash, not an address. */
+	readonly blockHash?: HexString32Bytes;
 	// Using "null" type intentionally to match specifications
-	// eslint-disable-next-line @typescript-eslint/ban-types
 	readonly topics?: (null | Topic | Topic[])[];
 	readonly filter?: FilterOption;
 }
@@ -268,7 +309,6 @@ export interface TransactionReceiptBase<numberType, hashByteType, logsBloomByteT
 	readonly contractAddress?: Address;
 	readonly logs: logsType[];
 	readonly logsBloom: logsBloomByteType;
-	readonly root: hashByteType;
 	readonly status: numberType;
 	readonly type?: numberType;
 }
@@ -311,7 +351,6 @@ interface TransactionBase {
 
 export interface Transaction extends TransactionBase {
 	from?: Address;
-	// eslint-disable-next-line @typescript-eslint/ban-types
 	to?: Address | null;
 }
 
@@ -403,9 +442,10 @@ export type Block = BlockBase<
 
 export interface FeeHistoryBase<NumberType> {
 	readonly oldestBlock: NumberType;
-	readonly baseFeePerGas: NumberType;
+	readonly baseFeePerGas: NumberType[];
 	readonly reward: NumberType[][];
-	readonly gasUsedRatio: NumberType[];
+	/** JSON floating-point ratios; these are not hex quantities. */
+	readonly gasUsedRatio: number[];
 }
 
 export type FeeHistory = FeeHistoryBase<Numbers>;
@@ -425,14 +465,16 @@ export interface AccountObject {
 	readonly storageProof: StorageProof[];
 }
 
-export interface Eip712TypeDetails {
+export interface QRLTypedDataTypeDetails {
 	name: string;
 	type: string;
 }
-export interface Eip712TypedData {
+
+/** QRL Typed Structured Data payload. */
+export interface QRLTypedData {
 	readonly types: {
-		EIP712Domain: Eip712TypeDetails[];
-		[key: string]: Eip712TypeDetails[];
+		QRLTypedDataDomain: QRLTypedDataTypeDetails[];
+		[key: string]: QRLTypedDataTypeDetails[];
 	};
 	readonly primaryType: string;
 	readonly domain: Record<string, string | number>;

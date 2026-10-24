@@ -39,11 +39,19 @@ import {
 } from '@theqrl/web3-types';
 import { Web3Context } from '@theqrl/web3-core';
 import { format } from '@theqrl/web3-utils';
-import { isBlockTag, isBytes, isNullish } from '@theqrl/web3-validator';
+import { isBlockTag, isNullish, isObject } from '@theqrl/web3-validator';
 import { qrlRpcMethods } from '@theqrl/web3-rpc-methods';
 
 import { blockSchema, transactionReceiptSchema } from '../schemas.js';
 import { formatTransaction } from './format_transaction.js';
+import { isBlockHash } from './hex_guards.js';
+import {
+	expectQuantityReply,
+	expectBytesReply,
+	assertRpcResult,
+	invalidResponseError,
+} from './invalid_response_error.js';
+import { validateTransactionInput } from './transaction_input.js';
 
 /**
  * View additional documentations here: {@link Web3QRL.getBlockNumber}
@@ -55,7 +63,13 @@ export async function getBlockNumber<ReturnFormat extends DataFormat>(
 ) {
 	const response = await qrlRpcMethods.getBlockNumber(web3Context.requestManager);
 
-	return format({ format: 'uint' }, response as Numbers, returnFormat);
+	// A reply that is not a quantity (`null`, `'abc'`) used to be handed back as it came; the
+	// block-timeout watchers then computed with `NaN` and never fired (P4-L-13).
+	return format(
+		{ format: 'uint' },
+		expectQuantityReply('qrl_blockNumber', response),
+		returnFormat,
+	);
 }
 
 /**
@@ -69,7 +83,8 @@ export async function getBlock<ReturnFormat extends DataFormat>(
 	returnFormat: ReturnFormat,
 ) {
 	let response;
-	if (isBytes(block)) {
+	// Only a 32-byte value is a block hash; `'0x10'` is a block number (P4-L-11).
+	if (isBlockHash(block)) {
 		const blockHashFormatted = format({ format: 'bytes32' }, block, QRL_DATA_FORMAT);
 		response = await qrlRpcMethods.getBlockByHash(
 			web3Context.requestManager,
@@ -86,6 +101,7 @@ export async function getBlock<ReturnFormat extends DataFormat>(
 			hydrated,
 		);
 	}
+	if (!isNullish(response)) assertRpcResult('qrl_getBlock', response, blockSchema);
 	return format(blockSchema, response as unknown as Block, returnFormat);
 }
 
@@ -108,13 +124,18 @@ export async function getTransactionReceipt<ReturnFormat extends DataFormat>(
 		transactionHashFormatted,
 	);
 
-	return isNullish(response)
-		? response
-		: (format(
-				transactionReceiptSchema,
-				response as unknown as TransactionReceipt,
-				returnFormat,
-		  ) as TransactionReceipt);
+	if (isNullish(response)) return response;
+	// A receipt that is not an object (`'abc'`) used to be handed back as is (L-26).
+	if (!isObject(response)) {
+		throw invalidResponseError('qrl_getTransactionReceipt', 'a receipt object', response);
+	}
+
+	assertRpcResult('qrl_getTransactionReceipt', response, transactionReceiptSchema);
+	return format(
+		transactionReceiptSchema,
+		response as unknown as TransactionReceipt,
+		returnFormat,
+	) as TransactionReceipt;
 }
 
 /**
@@ -136,7 +157,11 @@ export async function getTransactionCount<ReturnFormat extends DataFormat>(
 		blockNumberFormatted,
 	);
 
-	return format({ format: 'uint' }, response as Numbers, returnFormat);
+	return format(
+		{ format: 'uint' },
+		expectQuantityReply('qrl_getTransactionCount', response),
+		returnFormat,
+	);
 }
 
 // TODO - Investigate whether response is padded as 1.x docs suggest
@@ -150,6 +175,7 @@ export async function estimateGas<ReturnFormat extends DataFormat>(
 	blockNumber: BlockNumberOrTag = web3Context.defaultBlock,
 	returnFormat: ReturnFormat,
 ) {
+	validateTransactionInput(transaction);
 	const transactionFormatted = formatTransaction(transaction, QRL_DATA_FORMAT);
 	const blockNumberFormatted = isBlockTag(blockNumber as string)
 		? (blockNumber as BlockTag)
@@ -161,7 +187,11 @@ export async function estimateGas<ReturnFormat extends DataFormat>(
 		blockNumberFormatted,
 	);
 
-	return format({ format: 'uint' }, response as Numbers, returnFormat);
+	return format(
+		{ format: 'uint' },
+		expectQuantityReply('qrl_estimateGas', response),
+		returnFormat,
+	);
 }
 
 /**
@@ -174,12 +204,9 @@ export async function getChainId<ReturnFormat extends DataFormat>(
 ) {
 	const response = await qrlRpcMethods.getChainId(web3Context.requestManager);
 
-	return format(
-		{ format: 'uint' },
-		// Response is number in hex formatted string
-		response as unknown as number,
-		returnFormat,
-	);
+	// `qrl_chainId` answers a hex quantity. Anything else (`'0x'`, `'abc'`, `null`) used to
+	// surface as a raw `SyntaxError` or a mis-typed number error far down the signing path (L-26).
+	return format({ format: 'uint' }, expectQuantityReply('qrl_chainId', response), returnFormat);
 }
 
 // TODO Decide what to do with transaction.to
@@ -194,6 +221,7 @@ export async function call<ReturnFormat extends DataFormat>(
 	blockNumber: BlockNumberOrTag = web3Context.defaultBlock,
 	returnFormat: ReturnFormat,
 ) {
+	validateTransactionInput(transaction);
 	const blockNumberFormatted = isBlockTag(blockNumber as string)
 		? (blockNumber as BlockTag)
 		: format({ format: 'uint' }, blockNumber as Numbers, QRL_DATA_FORMAT);
@@ -204,5 +232,5 @@ export async function call<ReturnFormat extends DataFormat>(
 		blockNumberFormatted,
 	);
 
-	return format({ format: 'bytes' }, response as Bytes, returnFormat);
+	return format({ format: 'bytes' }, expectBytesReply('qrl_call', response), returnFormat);
 }

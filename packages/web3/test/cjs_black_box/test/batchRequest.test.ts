@@ -14,14 +14,13 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-/* eslint-disable import/no-relative-packages */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 import {
 	getSystemTestProvider,
 	closeOpenConnection,
 	isWs,
 } from '../../shared_fixtures/system_tests_utils';
-// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const Web3 = require('@theqrl/web3').default;
 
 describe('CJS - Black Box Unit Tests - web3.BatchRequest', () => {
@@ -39,12 +38,12 @@ describe('CJS - Black Box Unit Tests - web3.BatchRequest', () => {
 		const request1 = {
 			id: 42,
 			method: 'qrl_getBalance',
-			params: ['Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000004242000000000000000000000000000000000000', 'latest'],
+			params: ['Q3FB31Fc85e37591c3E9446C14Ca0fFC2F04EF1B4FDfE3338F85C628Ba458dea30fA8A49Bc21721c7cE517129dDDd976fb39c6FD828A0fE69D8F704AaF304d0f3', 'latest'],
 		};
 		const request2 = {
 			id: 24,
 			method: 'qrl_getBalance',
-			params: ['Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000002424000000000000000000000000000000000000', 'latest'],
+			params: ['QD1fcb72f994b92A5fa025f17C7473bA30c648a5F266c887b774cd59767dD3aA4DE240349078874fDF5c27ba4C6A31e76c3Df9b8Fa4BEA7fE09b6106ADFE78cA4', 'latest'],
 		};
 
 		const batch = new web3.BatchRequest();

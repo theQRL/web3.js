@@ -14,9 +14,9 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { Contract } from '@theqrl/web3-qrl-contract';
 import { hexToNumber, numberToHex } from '@theqrl/web3-utils';
+import { InvalidMethodParamsError } from '@theqrl/web3-errors';
 import {
 	TransactionBuilder,
 	TransactionTypeParser,
@@ -33,7 +33,6 @@ import {
 } from '@theqrl/web3-types';
 import {
 	detectTransactionType,
-	prepareTransactionForSigning,
 	SendTransactionEvents,
 	transactionBuilder,
 	Web3QRL,
@@ -129,8 +128,8 @@ describe('defaults', () => {
 				value: '0x1',
 				type: BigInt(2),
 			});
-			expect(tx.from).toBe(`Q${tempAcc.address.slice(1).toLowerCase()}`);
-			expect(txSend.from).toBe(`Q${tempAcc.address.slice(1).toLowerCase()}`);
+			expect(tx.from).toBe(tempAcc.address);
+			expect(txSend.from).toBe(tempAcc.address);
 
 			const tx2 = await contractMsgFrom.methods.setTestString('test3').send({
 				from: tempAcc2.address,
@@ -140,8 +139,8 @@ describe('defaults', () => {
 				value: '0x1',
 				from: tempAcc2.address,
 			});
-			expect(tx2.from).toBe(`Q${tempAcc2.address.slice(1).toLowerCase()}`);
-			expect(tx2Send.from).toBe(`Q${tempAcc2.address.slice(1).toLowerCase()}`);
+			expect(tx2.from).toBe(tempAcc2.address);
+			expect(tx2Send.from).toBe(tempAcc2.address);
 
 			const fromDefault = await contractMsgFrom.methods?.from().call();
 			const fromPass = await contractMsgFrom.methods?.from().call({ from: tempAcc.address });
@@ -312,14 +311,12 @@ describe('defaults', () => {
 		});
 		it('transactionConfirmationBlocks', () => {
 			// default
-			// eslint-disable-next-line jest/no-standalone-expect
 			expect(web3QRL.transactionConfirmationBlocks).toBe(24);
 
 			// after set
 			web3QRL.setConfig({
 				transactionConfirmationBlocks: 3,
 			});
-			// eslint-disable-next-line jest/no-standalone-expect
 			expect(web3QRL.transactionConfirmationBlocks).toBe(3);
 
 			// set by create new instance
@@ -328,7 +325,6 @@ describe('defaults', () => {
 					transactionConfirmationBlocks: 4,
 				},
 			});
-			// eslint-disable-next-line jest/no-standalone-expect
 			expect(qrl2.transactionConfirmationBlocks).toBe(4);
 		});
 		it('transactionConfirmationBlocks implementation', async () => {
@@ -352,7 +348,6 @@ describe('defaults', () => {
 
 			const receiptPromise = new Promise((resolve: Resolve) => {
 				// Tx promise is handled separately
-				// eslint-disable-next-line no-void
 				void sentTx.on('receipt', (params: TransactionReceipt) => {
 					expect(Number(params.status)).toBe(1);
 					resolve();
@@ -361,7 +356,6 @@ describe('defaults', () => {
 			let shouldBe = 1;
 			const confirmationPromise = new Promise((resolve: Resolve) => {
 				// Tx promise is handled separately
-				// eslint-disable-next-line no-void
 				void sentTx.on('confirmation', ({ confirmations }) => {
 					expect(Number(confirmations)).toBeGreaterThanOrEqual(shouldBe);
 					shouldBe += 1;
@@ -488,9 +482,9 @@ describe('defaults', () => {
 
 		it('enableExperimentalFeatures useSubscriptionWhenCheckingBlockTimeout', () => {
 			// default
-			expect(
-				web3QRL.enableExperimentalFeatures.useSubscriptionWhenCheckingBlockTimeout,
-			).toBe(false);
+			expect(web3QRL.enableExperimentalFeatures.useSubscriptionWhenCheckingBlockTimeout).toBe(
+				false,
+			);
 
 			// after set
 			web3QRL.setConfig({
@@ -499,9 +493,9 @@ describe('defaults', () => {
 					useRpcCallSpecification: false,
 				},
 			});
-			expect(
-				web3QRL.enableExperimentalFeatures.useSubscriptionWhenCheckingBlockTimeout,
-			).toBe(true);
+			expect(web3QRL.enableExperimentalFeatures.useSubscriptionWhenCheckingBlockTimeout).toBe(
+				true,
+			);
 
 			// set by create new instance
 			qrl2 = new Web3QRL({
@@ -582,7 +576,6 @@ describe('defaults', () => {
 
 			const confirmationPromise = new Promise((resolve: (status: bigint) => void) => {
 				// Tx promise is handled separately
-				// eslint-disable-next-line no-void
 				void sentTx.on(
 					'confirmation',
 					async ({
@@ -653,8 +646,8 @@ describe('defaults', () => {
 			expect(qrl2.defaultNetworkId).toBe(4);
 			const res = await defaultTransactionBuilder({
 				transaction: {
-					from: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000eb014f8c8b418db6b45774c326a0e64c78914dc0',
-					to: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000003535353535353535353535353535353535353535',
+					from: 'QdBb14ea952DfAedB0788Beae4fD92393f215CAa2c115ac22bc68805E171cfadE76CFF540c1ADC7B13017E4c66b6109135f25ff73412650da569E458E4A43800b',
+					to: 'QFcAc5a47dc5363999c60BC3b4288720E870a423A1383F00cFaa9E1135a60E43eA809688917A789EE0BDd6828dB2dcd848Bc632c28023794f8187af3Bac5DB018',
 					value: '0x174876e800',
 					gas: '0x5208',
 				},
@@ -665,8 +658,8 @@ describe('defaults', () => {
 			// pass network id
 			const resWithPassNetworkId = await defaultTransactionBuilder({
 				transaction: {
-					from: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000eb014f8c8b418db6b45774c326a0e64c78914dc0',
-					to: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000003535353535353535353535353535353535353535',
+					from: 'QdBb14ea952DfAedB0788Beae4fD92393f215CAa2c115ac22bc68805E171cfadE76CFF540c1ADC7B13017E4c66b6109135f25ff73412650da569E458E4A43800b',
+					to: 'QFcAc5a47dc5363999c60BC3b4288720E870a423A1383F00cFaa9E1135a60E43eA809688917A789EE0BDd6828dB2dcd848Bc632c28023794f8187af3Bac5DB018',
 					value: '0x174876e800',
 					gas: '0x5208',
 					networkId: 5,
@@ -681,65 +674,48 @@ describe('defaults', () => {
 			expect(web3QRL.defaultChain).toBe('mainnet');
 
 			// after set
-			web3QRL.setConfig({
-				defaultChain: 'ropsten',
-			});
-			expect(web3QRL.defaultChain).toBe('ropsten');
+			expect(() => web3QRL.setConfig({ defaultChain: 'ropsten' })).toThrow(
+				InvalidMethodParamsError,
+			);
+			expect(web3QRL.defaultChain).toBe('mainnet');
 
 			// set by create new instance
 			qrl2 = new Web3QRL({
 				provider: web3QRL.provider,
 				config: {
-					defaultChain: 'rinkeby',
+					defaultChain: 'mainnet',
 				},
 			});
-			expect(qrl2.defaultChain).toBe('rinkeby');
+			expect(qrl2.defaultChain).toBe('mainnet');
 			const res = await defaultTransactionBuilder({
 				transaction: {
-					from: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000eb014f8c8b418db6b45774c326a0e64c78914dc0',
-					to: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000003535353535353535353535353535353535353535',
+					from: 'QdBb14ea952DfAedB0788Beae4fD92393f215CAa2c115ac22bc68805E171cfadE76CFF540c1ADC7B13017E4c66b6109135f25ff73412650da569E458E4A43800b',
+					to: 'QFcAc5a47dc5363999c60BC3b4288720E870a423A1383F00cFaa9E1135a60E43eA809688917A789EE0BDd6828dB2dcd848Bc632c28023794f8187af3Bac5DB018',
 					value: '0x174876e800',
 					gas: '0x5208',
 				},
 				web3Context: qrl2 as Web3Context,
 			});
-			expect(res.chain).toBe('rinkeby');
+			expect(res.chain).toBe('mainnet');
 		});
-		it('defaultHardfork', async () => {
+		it('defaultHardfork rejects unsupported forks at configuration time', () => {
 			// default
 			expect(web3QRL.defaultHardfork).toBe('zond');
 
 			// after set
-			web3QRL.setConfig({
-				defaultHardfork: 'dao',
-			});
-			expect(web3QRL.defaultHardfork).toBe('dao');
+			expect(() => web3QRL.setConfig({ defaultHardfork: 'dao' })).toThrow(
+				InvalidMethodParamsError,
+			);
+			expect(web3QRL.defaultHardfork).toBe('zond');
 
 			// set by create new instance
-			qrl2 = new Web3QRL({
-				provider: web3QRL.provider,
-				config: {
-					defaultHardfork: 'istanbul',
-				},
-			});
-			expect(qrl2.defaultHardfork).toBe('istanbul');
-
-			const res = await prepareTransactionForSigning(
-				{
-					from: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000eb014f8c8b418db6b45774c326a0e64c78914dc0',
-					to: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000003535353535353535353535353535353535353535',
-					value: '0x174876e800',
-					gas: '0x5208',
-					maxFeePerGas: '0x4a817c800',
-					maxPriorityFeePerGas: '0x1c9c380',
-					data: '0x0',
-					nonce: '0x4',
-					chainId: '0x1',
-					gasLimit: '0x5208',
-				},
-				qrl2,
-			);
-			expect(res.common.hardfork()).toBe('istanbul');
+			expect(
+				() =>
+					new Web3QRL({
+						provider: web3QRL.provider,
+						config: { defaultHardfork: 'istanbul' },
+					}),
+			).toThrow(InvalidMethodParamsError);
 		});
 		it('defaultCommon', () => {
 			// default
@@ -759,7 +735,9 @@ describe('defaults', () => {
 			web3QRL.setConfig({
 				defaultCommon: common,
 			});
-			expect(web3QRL.defaultCommon).toBe(common);
+			expect(web3QRL.defaultCommon).toEqual(common);
+			expect(web3QRL.defaultCommon).not.toBe(common);
+			expect(Object.isFrozen(web3QRL.defaultCommon?.customChain)).toBe(true);
 
 			// set by create new instance
 			qrl2 = new Web3QRL({
@@ -767,7 +745,8 @@ describe('defaults', () => {
 					defaultCommon: common,
 				},
 			});
-			expect(qrl2.defaultCommon).toBe(common);
+			expect(qrl2.defaultCommon).toEqual(common);
+			expect(qrl2.defaultCommon).not.toBe(common);
 		});
 		it('defaultTransactionType', () => {
 			// default
@@ -788,8 +767,8 @@ describe('defaults', () => {
 
 			const res = getTransactionType(
 				{
-					from: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000eb014f8c8b418db6b45774c326a0e64c78914dc0',
-					to: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000003535353535353535353535353535353535353535',
+					from: 'QdBb14ea952DfAedB0788Beae4fD92393f215CAa2c115ac22bc68805E171cfadE76CFF540c1ADC7B13017E4c66b6109135f25ff73412650da569E458E4A43800b',
+					to: 'QFcAc5a47dc5363999c60BC3b4288720E870a423A1383F00cFaa9E1135a60E43eA809688917A789EE0BDd6828dB2dcd848Bc632c28023794f8187af3Bac5DB018',
 					value: '0x174876e800',
 					gas: '0x5208',
 					data: '0x0',
@@ -803,8 +782,8 @@ describe('defaults', () => {
 
 			const maxFeePerGasOverride = getTransactionType(
 				{
-					from: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000eb014f8c8b418db6b45774c326a0e64c78914dc0',
-					to: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000003535353535353535353535353535353535353535',
+					from: 'QdBb14ea952DfAedB0788Beae4fD92393f215CAa2c115ac22bc68805E171cfadE76CFF540c1ADC7B13017E4c66b6109135f25ff73412650da569E458E4A43800b',
+					to: 'QFcAc5a47dc5363999c60BC3b4288720E870a423A1383F00cFaa9E1135a60E43eA809688917A789EE0BDd6828dB2dcd848Bc632c28023794f8187af3Bac5DB018',
 					value: '0x174876e800',
 					gas: '0x5208',
 					data: '0x0',
@@ -818,8 +797,8 @@ describe('defaults', () => {
 			expect(maxFeePerGasOverride).toBe('0x2');
 			const maxPriorityFeePerGasOverride = getTransactionType(
 				{
-					from: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000eb014f8c8b418db6b45774c326a0e64c78914dc0',
-					to: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000003535353535353535353535353535353535353535',
+					from: 'QdBb14ea952DfAedB0788Beae4fD92393f215CAa2c115ac22bc68805E171cfadE76CFF540c1ADC7B13017E4c66b6109135f25ff73412650da569E458E4A43800b',
+					to: 'QFcAc5a47dc5363999c60BC3b4288720E870a423A1383F00cFaa9E1135a60E43eA809688917A789EE0BDd6828dB2dcd848Bc632c28023794f8187af3Bac5DB018',
 					value: '0x174876e800',
 					gas: '0x5208',
 					data: '0x0',
@@ -833,8 +812,8 @@ describe('defaults', () => {
 			expect(maxPriorityFeePerGasOverride).toBe('0x2');
 			const hardforkOverride = getTransactionType(
 				{
-					from: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000eb014f8c8b418db6b45774c326a0e64c78914dc0',
-					to: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000003535353535353535353535353535353535353535',
+					from: 'QdBb14ea952DfAedB0788Beae4fD92393f215CAa2c115ac22bc68805E171cfadE76CFF540c1ADC7B13017E4c66b6109135f25ff73412650da569E458E4A43800b',
+					to: 'QFcAc5a47dc5363999c60BC3b4288720E870a423A1383F00cFaa9E1135a60E43eA809688917A789EE0BDd6828dB2dcd848Bc632c28023794f8187af3Bac5DB018',
 					value: '0x174876e800',
 					gas: '0x5208',
 					data: '0x0',
@@ -848,8 +827,8 @@ describe('defaults', () => {
 			expect(hardforkOverride).toBe('0x2');
 			const commonOverride = getTransactionType(
 				{
-					from: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000eb014f8c8b418db6b45774c326a0e64c78914dc0',
-					to: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000003535353535353535353535353535353535353535',
+					from: 'QdBb14ea952DfAedB0788Beae4fD92393f215CAa2c115ac22bc68805E171cfadE76CFF540c1ADC7B13017E4c66b6109135f25ff73412650da569E458E4A43800b',
+					to: 'QFcAc5a47dc5363999c60BC3b4288720E870a423A1383F00cFaa9E1135a60E43eA809688917A789EE0BDd6828dB2dcd848Bc632c28023794f8187af3Bac5DB018',
 					value: '0x174876e800',
 					gas: '0x5208',
 					data: '0x0',
@@ -867,8 +846,8 @@ describe('defaults', () => {
 
 			const accessListOverride = getTransactionType(
 				{
-					from: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000eb014f8c8b418db6b45774c326a0e64c78914dc0',
-					to: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000003535353535353535353535353535353535353535',
+					from: 'QdBb14ea952DfAedB0788Beae4fD92393f215CAa2c115ac22bc68805E171cfadE76CFF540c1ADC7B13017E4c66b6109135f25ff73412650da569E458E4A43800b',
+					to: 'QFcAc5a47dc5363999c60BC3b4288720E870a423A1383F00cFaa9E1135a60E43eA809688917A789EE0BDd6828dB2dcd848Bc632c28023794f8187af3Bac5DB018',
 					value: '0x174876e800',
 					gas: '0x5208',
 					data: '0x0',
@@ -879,7 +858,8 @@ describe('defaults', () => {
 					maxFeePerGas: '0x4a817c800',
 					accessList: [
 						{
-							address: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000eb014f8c8b418db6b45774c326a0e64c78914dc0',
+							address:
+								'QdBb14ea952DfAedB0788Beae4fD92393f215CAa2c115ac22bc68805E171cfadE76CFF540c1ADC7B13017E4c66b6109135f25ff73412650da569E458E4A43800b',
 							storageKeys: ['0x3535353535353535353535353535353535353535'],
 						},
 					],
@@ -890,8 +870,8 @@ describe('defaults', () => {
 
 			const hardforkBerlinOverride = getTransactionType(
 				{
-					from: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000eb014f8c8b418db6b45774c326a0e64c78914dc0',
-					to: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000003535353535353535353535353535353535353535',
+					from: 'QdBb14ea952DfAedB0788Beae4fD92393f215CAa2c115ac22bc68805E171cfadE76CFF540c1ADC7B13017E4c66b6109135f25ff73412650da569E458E4A43800b',
+					to: 'QFcAc5a47dc5363999c60BC3b4288720E870a423A1383F00cFaa9E1135a60E43eA809688917A789EE0BDd6828dB2dcd848Bc632c28023794f8187af3Bac5DB018',
 					value: '0x174876e800',
 					gas: '0x5208',
 					data: '0x0',
@@ -906,8 +886,8 @@ describe('defaults', () => {
 
 			const commonBerlinOverride = getTransactionType(
 				{
-					from: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000eb014f8c8b418db6b45774c326a0e64c78914dc0',
-					to: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000003535353535353535353535353535353535353535',
+					from: 'QdBb14ea952DfAedB0788Beae4fD92393f215CAa2c115ac22bc68805E171cfadE76CFF540c1ADC7B13017E4c66b6109135f25ff73412650da569E458E4A43800b',
+					to: 'QFcAc5a47dc5363999c60BC3b4288720E870a423A1383F00cFaa9E1135a60E43eA809688917A789EE0BDd6828dB2dcd848Bc632c28023794f8187af3Bac5DB018',
 					value: '0x174876e800',
 					gas: '0x5208',
 					data: '0x0',
@@ -943,8 +923,8 @@ describe('defaults', () => {
 
 			const res = await getTransactionGasPricing(
 				{
-					from: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000eb014f8c8b418db6b45774c326a0e64c78914dc0',
-					to: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000003535353535353535353535353535353535353535',
+					from: 'QdBb14ea952DfAedB0788Beae4fD92393f215CAa2c115ac22bc68805E171cfadE76CFF540c1ADC7B13017E4c66b6109135f25ff73412650da569E458E4A43800b',
+					to: 'QFcAc5a47dc5363999c60BC3b4288720E870a423A1383F00cFaa9E1135a60E43eA809688917A789EE0BDd6828dB2dcd848Bc632c28023794f8187af3Bac5DB018',
 					value: '0x174876e800',
 					type: '0x2',
 					gas: '0x5208',
@@ -961,8 +941,8 @@ describe('defaults', () => {
 			// override test
 			const resOverride = await getTransactionGasPricing(
 				{
-					from: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000eb014f8c8b418db6b45774c326a0e64c78914dc0',
-					to: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000003535353535353535353535353535353535353535',
+					from: 'QdBb14ea952DfAedB0788Beae4fD92393f215CAa2c115ac22bc68805E171cfadE76CFF540c1ADC7B13017E4c66b6109135f25ff73412650da569E458E4A43800b',
+					to: 'QFcAc5a47dc5363999c60BC3b4288720E870a423A1383F00cFaa9E1135a60E43eA809688917A789EE0BDd6828dB2dcd848Bc632c28023794f8187af3Bac5DB018',
 					value: '0x174876e800',
 					type: '0x2',
 					gas: '0x5208',
@@ -1001,8 +981,8 @@ describe('defaults', () => {
 
 			await transactionBuilder({
 				transaction: {
-					from: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000eb014f8c8b418db6b45774c326a0e64c78914dc0',
-					to: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000003535353535353535353535353535353535353535',
+					from: 'QdBb14ea952DfAedB0788Beae4fD92393f215CAa2c115ac22bc68805E171cfadE76CFF540c1ADC7B13017E4c66b6109135f25ff73412650da569E458E4A43800b',
+					to: 'QFcAc5a47dc5363999c60BC3b4288720E870a423A1383F00cFaa9E1135a60E43eA809688917A789EE0BDd6828dB2dcd848Bc632c28023794f8187af3Bac5DB018',
 					value: '0x174876e800',
 					gas: '0x5208',
 					maxFeePerGas: '0x4a817c800',
@@ -1035,8 +1015,8 @@ describe('defaults', () => {
 			expect(qrl2.transactionTypeParser).toBe(newParserMock);
 			detectTransactionType(
 				{
-					from: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000eb014f8c8b418db6b45774c326a0e64c78914dc0',
-					to: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000003535353535353535353535353535353535353535',
+					from: 'QdBb14ea952DfAedB0788Beae4fD92393f215CAa2c115ac22bc68805E171cfadE76CFF540c1ADC7B13017E4c66b6109135f25ff73412650da569E458E4A43800b',
+					to: 'QFcAc5a47dc5363999c60BC3b4288720E870a423A1383F00cFaa9E1135a60E43eA809688917A789EE0BDd6828dB2dcd848Bc632c28023794f8187af3Bac5DB018',
 					value: '0x174876e800',
 					gas: '0x5208',
 					maxFeePerGas: '0x4a817c800',

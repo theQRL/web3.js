@@ -24,9 +24,7 @@ describe('registry', () => {
 	let object: Web3ContextObject;
 	let registry: Registry;
 	const mockAddress = 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000';
-	// A structurally valid, non-zero QRL address (Q + 128 hex chars).
 	const nonZeroAddress = `Q${'0'.repeat(127)}1`;
-	// The QRL zero address (Q + 128 zeros) — must be rejected as a resolver.
 	const zeroResolverAddress = `Q${'0'.repeat(128)}`;
 	const QRNS_NAME = 'web3js.qrl';
 
@@ -78,8 +76,6 @@ describe('registry', () => {
 		});
 		it('getOwner surfaces a non-empty, cause-preserving error', async () => {
 			const underlying = new Error('underlying call failure');
-			// Reject asynchronously so the failure only surfaces if the call is
-			// actually awaited inside the try/catch.
 			const call = jest
 				.spyOn({ call: async () => undefined }, 'call')
 				.mockRejectedValue(underlying);
@@ -163,7 +159,6 @@ describe('registry', () => {
 
 	describe('resolver', () => {
 		it('resolver', async () => {
-			// eslint-disable-next-line @typescript-eslint/no-empty-function
 			const call = jest
 				.spyOn(
 					{
@@ -187,8 +182,6 @@ describe('registry', () => {
 		});
 
 		it('resolver (rejects a zero resolver address)', async () => {
-			// A real QRL zero address (Q + 128 zeros) is structurally valid but must
-			// be rejected by the zero-resolver guard.
 			const call = jest
 				.spyOn(
 					{
@@ -214,7 +207,6 @@ describe('registry', () => {
 		});
 
 		it('resolver (return non string)', async () => {
-			// eslint-disable-next-line @typescript-eslint/no-empty-function
 			const call = jest
 				.spyOn(
 					{

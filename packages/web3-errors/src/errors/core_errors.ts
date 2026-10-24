@@ -15,10 +15,8 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/* eslint-disable max-classes-per-file */
-
 import { BaseWeb3Error } from '../web3_error_base.js';
-import { ERR_CORE_HARDFORK_MISMATCH } from '../error_codes.js';
+import { ERR_CORE_CHAIN_MISMATCH, ERR_CORE_HARDFORK_MISMATCH } from '../error_codes.js';
 
 export class ConfigHardforkMismatchError extends BaseWeb3Error {
 	public code = ERR_CORE_HARDFORK_MISMATCH;
@@ -31,11 +29,11 @@ export class ConfigHardforkMismatchError extends BaseWeb3Error {
 }
 
 export class ConfigChainMismatchError extends BaseWeb3Error {
-	public code = ERR_CORE_HARDFORK_MISMATCH;
+	public code = ERR_CORE_CHAIN_MISMATCH;
 
-	public constructor(defaultHardfork: string, commonHardFork: string) {
+	public constructor(defaultChain: string, commonChain: string) {
 		super(
-			`Web3Config chain doesnt match in defaultHardfork ${defaultHardfork} and common.hardfork ${commonHardFork}`,
+			`Web3Config chain does not match: defaultChain ${defaultChain} and common.baseChain ${commonChain}`,
 		);
 	}
 }

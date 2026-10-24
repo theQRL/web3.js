@@ -16,7 +16,6 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 // Disabling because returnTypes must be last param to match 1.x params
-/* eslint-disable default-param-last */
 
 import {
 	SupportedProviders,
@@ -36,7 +35,7 @@ import {
 	TransactionForAccessList,
 	DataFormat,
 	DEFAULT_RETURN_FORMAT,
-	Eip712TypedData,
+	QRLTypedData,
 	FeeData,
 	FMT_BYTES,
 	FMT_NUMBER,
@@ -44,9 +43,11 @@ import {
 import { isSupportedProvider, Web3Context, Web3ContextInitOptions } from '@theqrl/web3-core';
 import { TransactionNotFound } from '@theqrl/web3-errors';
 import { toChecksumAddress, isNullish, qrlUnitMap } from '@theqrl/web3-utils';
+import { isObject } from '@theqrl/web3-validator';
 import { qrlRpcMethods } from '@theqrl/web3-rpc-methods';
 
 import * as rpcMethodsWrappers from './rpc_method_wrappers.js';
+import { invalidResponseError } from './utils/invalid_response_error.js';
 import { SendTransactionOptions } from './types.js';
 import {
 	LogsSubscription,
@@ -100,18 +101,6 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 		});
 	}
 
-	/**
-	 * @returns Returns the qrl protocol version of the node.
-	 *
-	 * ```ts
-	 * web3.qrl.getProtocolVersion().then(console.log);
-	 * > "63"
-	 * ```
-	 */
-	public async getProtocolVersion() {
-		return qrlRpcMethods.getProtocolVersion(this.requestManager);
-	}
-
 	// TODO Add returnFormat parameter
 	/**
 	 * Checks if the node is currently syncing.
@@ -121,11 +110,21 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 * ```ts
 	 * web3.qrl.isSyncing().then(console.log);
 	 * > {
-	 *     startingBlock: 100,
-	 *     currentBlock: 312,
-	 *     highestBlock: 512,
-	 *     knownStates: 234566,
-	 *     pulledStates: 123455
+	 *     startingBlock: '0x64',
+	 *     currentBlock: '0x138',
+	 *     highestBlock: '0x200',
+	 *     syncedAccounts: '0x0',
+	 *     syncedAccountBytes: '0x0',
+	 *     syncedBytecodes: '0x0',
+	 *     syncedBytecodeBytes: '0x0',
+	 *     syncedStorage: '0x0',
+	 *     syncedStorageBytes: '0x0',
+	 *     healedTrienodes: '0x0',
+	 *     healedTrienodeBytes: '0x0',
+	 *     healedBytecodes: '0x0',
+	 *     healedBytecodeBytes: '0x0',
+	 *     healingTrienodes: '0x0',
+	 *     healingBytecode: '0x0'
 	 * }
 	 * ```
 	 */
@@ -202,7 +201,19 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 			false,
 		);
 
+		// The block is node supplied: a `baseFeePerGas` that is not a quantity used to be
+		// concatenated into the result or to throw a raw `TypeError` (L-26).
+		if (!isNullish(block) && !isObject(block)) {
+			throw invalidResponseError('qrl_getBlockByNumber', 'a block object', block);
+		}
 		const baseFeePerGas: bigint | undefined = block?.baseFeePerGas ?? undefined; // use undefined if it was null
+		if (!isNullish(baseFeePerGas) && typeof baseFeePerGas !== 'bigint') {
+			throw invalidResponseError(
+				'qrl_getBlockByNumber',
+				'a block with a hex quantity in baseFeePerGas',
+				baseFeePerGas,
+			);
+		}
 
 		let maxPriorityFeePerGas: bigint | undefined;
 		try {
@@ -235,12 +246,17 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 *
 	 * ```ts
 	 * web3.qrl.getAccounts().then(console.log);
-	 * > ["Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000011f4d0a3c12e86b4b5f39b213f7e19d048276dae", "Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000dcc6960376d6c6dea93647383ffb245cfced97cf"]
+	 * > ["Q0B425Ed8E7399aF5dEFFE13a09e7F1776996a32466aa3c1BB1a34ad61760A2Eb72705C904aB988e3e089E55d1D8081DA21F20544E04CB5f0ac85aA6d5940e38D", "QBab966a8535dDCB13253eEbC4fE4BFDAd118B33774fc9ec787489De78DB2859c81314EF8614478C67Ec192dd6bd02E3d01B8d369985e89A7E8E0896917942795"]
 	 * ```
 	 */
 	public async getAccounts() {
-		const hexAddresses = (await qrlRpcMethods.getAccounts(this.requestManager)) ?? [];
-		return hexAddresses.map(address => toChecksumAddress(address));
+		const addresses: unknown = (await qrlRpcMethods.getAccounts(this.requestManager)) ?? [];
+		// `qrl_accounts` answers an array of addresses; anything else used to surface as a
+		// raw `TypeError` (L-26).
+		if (!Array.isArray(addresses) || addresses.some(address => typeof address !== 'string')) {
+			throw invalidResponseError('qrl_accounts', 'an array of addresses', addresses);
+		}
+		return addresses.map((address: string) => toChecksumAddress(address));
 	}
 
 	/**
@@ -270,10 +286,10 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 * @returns The current balance for the given address in `planck`.
 	 *
 	 * ```ts
-	 * web3.qrl.getBalance("Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000407d73d8a49eeb85d32cf465507dd71d507100c1").then(console.log);
+	 * web3.qrl.getBalance("Q83cd1122848dd1b2E3AF9ca60a1340e595B2C6d5b3B340AfD625e38EEf9067bc9C28db215702Aa8B3C0243Bb13785a9365A35ee1Fe8e57983b1D47d9fff835a3").then(console.log);
 	 * > 1000000000000n
 	 *
-	 * web3.qrl.getBalance("Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000407d73d8a49eeb85d32cf465507dd71d507100c1").then(console.log);
+	 * web3.qrl.getBalance("Q83cd1122848dd1b2E3AF9ca60a1340e595B2C6d5b3B340AfD625e38EEf9067bc9C28db215702Aa8B3C0243Bb13785a9365A35ee1Fe8e57983b1D47d9fff835a3").then(console.log);
 	 * > "0xe8d4a51000"
 	 * ```
 	 */
@@ -295,11 +311,11 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 * @returns The value in storage at the given position.
 	 *
 	 * ```ts
-	 * web3.qrl.getStorageAt("0x033456732123ffff2342342dd12342434324234234fd234fd23fd4f23d4234", 0).then(console.log);
+	 * web3.qrl.getStorageAt("Q83cd1122848dd1b2E3AF9ca60a1340e595B2C6d5b3B340AfD625e38EEf9067bc9C28db215702Aa8B3C0243Bb13785a9365A35ee1Fe8e57983b1D47d9fff835a3", 0).then(console.log);
 	 * > "0x033456732123ffff2342342dd12342434324234234fd234fd23fd4f23d4234"
 	 *
 	 * web3.qrl.getStorageAt(
-	 *      "0x033456732123ffff2342342dd12342434324234234fd234fd23fd4f23d4234",
+	 *      "Q83cd1122848dd1b2E3AF9ca60a1340e595B2C6d5b3B340AfD625e38EEf9067bc9C28db215702Aa8B3C0243Bb13785a9365A35ee1Fe8e57983b1D47d9fff835a3",
 	 *      0,
 	 *      undefined,
 	 *      { number: FMT_NUMBER.HEX , bytes: FMT_BYTES.UINT8ARRAY }
@@ -336,11 +352,11 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 * @returns The [data](https://ethereum.org/en/developers/docs/transactions/#the-data-field) at the provided `address`.
 	 *
 	 * ```ts
-	 * web3.qrl.getCode("0x033456732123ffff2342342dd12342434324234234fd234fd23fd4f23d4234").then(console.log);
+	 * web3.qrl.getCode("Q83cd1122848dd1b2E3AF9ca60a1340e595B2C6d5b3B340AfD625e38EEf9067bc9C28db215702Aa8B3C0243Bb13785a9365A35ee1Fe8e57983b1D47d9fff835a3").then(console.log);
 	 * > "0x600160008035811a818181146012578301005b601b6001356025565b8060005260206000f25b600060078202905091905056"
 	 *
 	 * web3.qrl.getCode(
-	 *      "Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000407d73d8a49eeb85d32cf465507dd71d507100c1",
+	 *      "Q83cd1122848dd1b2E3AF9ca60a1340e595B2C6d5b3B340AfD625e38EEf9067bc9C28db215702Aa8B3C0243Bb13785a9365A35ee1Fe8e57983b1D47d9fff835a3",
 	 *      undefined,
 	 *      { number: FMT_NUMBER.HEX , bytes: FMT_BYTES.UINT8ARRAY }
 	 * ).then(console.log);
@@ -429,11 +445,11 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 * @returns The number of transactions in the provided block.
 	 *
 	 * ```ts
-	 * web3.qrl.getBlockTransactionCount("Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000407d73d8a49eeb85d32cf465507dd71d507100c1").then(console.log);
+	 * web3.qrl.getBlockTransactionCount("Q83cd1122848dd1b2E3AF9ca60a1340e595B2C6d5b3B340AfD625e38EEf9067bc9C28db215702Aa8B3C0243Bb13785a9365A35ee1Fe8e57983b1D47d9fff835a3").then(console.log);
 	 * > 1n
 	 *
 	 * web3.qrl.getBlockTransactionCount(
-	 *     "Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000407d73d8a49eeb85d32cf465507dd71d507100c1",
+	 *     "Q83cd1122848dd1b2E3AF9ca60a1340e595B2C6d5b3B340AfD625e38EEf9067bc9C28db215702Aa8B3C0243Bb13785a9365A35ee1Fe8e57983b1D47d9fff835a3",
 	 *     { number: FMT_NUMBER.NUMBER , bytes: FMT_BYTES.HEX }
 	 * ).then(console.log);
 	 * > 1
@@ -462,8 +478,8 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 *    blockHash: '0x43202bd16b6bd54bea1b310736bd78bdbe93a64ad940f7586739d9eb25ad8d00',
 	 *    blockNumber: 1n,
 	 *    transactionIndex: 0n,
-	 *    from: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006e599da0bff7a6598ac1224e4985430bf16458a4',
-	 *    to: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006f1df96865d09d21e8f3f9a7fba3b17a11c7c53c',
+	 *    from: 'Q9Fa83f21CE9bd493B02D7460E03d82D44a77B4612d8B6a0Acc94655106Fbb96152d3E16a0ba414C368653BaE2fe868cB109c05727Ca47148114749451afb7Cc1',
+	 *    to: 'Q32bC304efeA6eeDA861cf8949EBb480da50B91dA5F7f8d5918779865C88e16C790935cB72a27613327126Ad142b767616784022611b0A345fF346F4E81fA1499',
 	 *    value: 1n,
 	 *    gas: 90000n,
 	 *    maxFeePerGas: 2000000000n,
@@ -476,7 +492,7 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 *  }
 	 *
 	 * web3.qrl.getTransaction(
-	 *     web3.utils.hexToBytes("0x30755ed65396facf86c53e6217c52b4daebe72aa4941d89635409de4c9c7f9466d4e9aaec7977f05e923889b33c0d0dd27d7226b6e6f56ce737465c5cfd04be400"),
+	 *     web3.utils.hexToBytes("0x3a2b…"),
 	 *     { number: FMT_NUMBER.NUMBER , bytes: FMT_BYTES.HEX }
 	 * ).then(console.log);
 	 * {
@@ -486,8 +502,8 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 *    blockHash: '0x43202bd16b6bd54bea1b310736bd78bdbe93a64ad940f7586739d9eb25ad8d00',
 	 *    blockNumber: 1,
 	 *    transactionIndex: 0,
-	 *    from: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006e599da0bff7a6598ac1224e4985430bf16458a4',
-	 *    to: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006f1df96865d09d21e8f3f9a7fba3b17a11c7c53c',
+	 *    from: 'Q9Fa83f21CE9bd493B02D7460E03d82D44a77B4612d8B6a0Acc94655106Fbb96152d3E16a0ba414C368653BaE2fe868cB109c05727Ca47148114749451afb7Cc1',
+	 *    to: 'Q32bC304efeA6eeDA861cf8949EBb480da50B91dA5F7f8d5918779865C88e16C790935cB72a27613327126Ad142b767616784022611b0A345fF346F4E81fA1499',
 	 *    value: 1,
 	 *    gas: 90000,
 	 *    maxFeePerGas: 2000000000,
@@ -529,8 +545,8 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 *          blockHash: '0x0000000000000000000000000000000000000000000000000000000000000000',
 	 *          blockNumber: null,
 	 *          transactionIndex: 0n,
-	 *          from: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006e599da0bff7a6598ac1224e4985430bf16458a4',
-	 *          to: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006f1df96865d09d21e8f3f9a7fba3b17a11c7c53c',
+	 *          from: 'Q9Fa83f21CE9bd493B02D7460E03d82D44a77B4612d8B6a0Acc94655106Fbb96152d3E16a0ba414C368653BaE2fe868cB109c05727Ca47148114749451afb7Cc1',
+	 *          to: 'Q32bC304efeA6eeDA861cf8949EBb480da50B91dA5F7f8d5918779865C88e16C790935cB72a27613327126Ad142b767616784022611b0A345fF346F4E81fA1499',
 	 *          value: 1n,
 	 *          gas: 90000n,
 	 *          maxFeePerGas: 2000000000n,
@@ -548,8 +564,8 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 *          blockHash: '0x0000000000000000000000000000000000000000000000000000000000000000',
 	 *          blockNumber: null,
 	 *          transactionIndex: 0n,
-	 *          from: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006e599da0bff7a6598ac1224e4985430bf16458a4',
-	 *          to: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006f1df96865d09d21e8f3f9a7fba3b17a11c7c53c',
+	 *          from: 'Q9Fa83f21CE9bd493B02D7460E03d82D44a77B4612d8B6a0Acc94655106Fbb96152d3E16a0ba414C368653BaE2fe868cB109c05727Ca47148114749451afb7Cc1',
+	 *          to: 'Q32bC304efeA6eeDA861cf8949EBb480da50B91dA5F7f8d5918779865C88e16C790935cB72a27613327126Ad142b767616784022611b0A345fF346F4E81fA1499',
 	 *          value: 1n,
 	 *          gas: 90000n,
 	 *          maxFeePerGas: 2000000000n,
@@ -571,8 +587,8 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 *          blockHash: '0x0000000000000000000000000000000000000000000000000000000000000000',
 	 *          blockNumber: null,
 	 *          transactionIndex: 0,
-	 *          from: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006e599da0bff7a6598ac1224e4985430bf16458a4',
-	 *          to: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006f1df96865d09d21e8f3f9a7fba3b17a11c7c53c',
+	 *          from: 'Q9Fa83f21CE9bd493B02D7460E03d82D44a77B4612d8B6a0Acc94655106Fbb96152d3E16a0ba414C368653BaE2fe868cB109c05727Ca47148114749451afb7Cc1',
+	 *          to: 'Q32bC304efeA6eeDA861cf8949EBb480da50B91dA5F7f8d5918779865C88e16C790935cB72a27613327126Ad142b767616784022611b0A345fF346F4E81fA1499',
 	 *          value: 1,
 	 *          gas: 90000,
 	 *          maxFeePerGas: 2000000000,
@@ -590,8 +606,8 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 *          blockHash: '0x0000000000000000000000000000000000000000000000000000000000000000',
 	 *          blockNumber: null,
 	 *          transactionIndex: 0,
-	 *          from: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006e599da0bff7a6598ac1224e4985430bf16458a4',
-	 *          to: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006f1df96865d09d21e8f3f9a7fba3b17a11c7c53c',
+	 *          from: 'Q9Fa83f21CE9bd493B02D7460E03d82D44a77B4612d8B6a0Acc94655106Fbb96152d3E16a0ba414C368653BaE2fe868cB109c05727Ca47148114749451afb7Cc1',
+	 *          to: 'Q32bC304efeA6eeDA861cf8949EBb480da50B91dA5F7f8d5918779865C88e16C790935cB72a27613327126Ad142b767616784022611b0A345fF346F4E81fA1499',
 	 *          value: 1,
 	 *          gas: 90000,
 	 *          maxFeePerGas: 2000000000,
@@ -626,8 +642,8 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 *    blockHash: '0x43202bd16b6bd54bea1b310736bd78bdbe93a64ad940f7586739d9eb25ad8d00',
 	 *    blockNumber: 1n,
 	 *    transactionIndex: 0n,
-	 *    from: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006e599da0bff7a6598ac1224e4985430bf16458a4',
-	 *    to: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006f1df96865d09d21e8f3f9a7fba3b17a11c7c53c',
+	 *    from: 'Q9Fa83f21CE9bd493B02D7460E03d82D44a77B4612d8B6a0Acc94655106Fbb96152d3E16a0ba414C368653BaE2fe868cB109c05727Ca47148114749451afb7Cc1',
+	 *    to: 'Q32bC304efeA6eeDA861cf8949EBb480da50B91dA5F7f8d5918779865C88e16C790935cB72a27613327126Ad142b767616784022611b0A345fF346F4E81fA1499',
 	 *    value: 1n,
 	 *    gas: 90000n,
 	 *    maxFeePerGas: 2000000000n,
@@ -640,7 +656,7 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 *  }
 	 *
 	 * web3.qrl.getTransactionFromBlock(
-	 *     hexToBytes("0x30755ed65396facf86c53e6217c52b4daebe72aa4941d89635409de4c9c7f9466d4e9aaec7977f05e923889b33c0d0dd27d7226b6e6f56ce737465c5cfd04be400"),
+	 *     hexToBytes("0x3a2b…"),
 	 *     0,
 	 *     { number: FMT_NUMBER.NUMBER , bytes: FMT_BYTES.HEX }
 	 * ).then(console.log);
@@ -651,8 +667,8 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 *    blockHash: '0x43202bd16b6bd54bea1b310736bd78bdbe93a64ad940f7586739d9eb25ad8d00',
 	 *    blockNumber: 1,
 	 *    transactionIndex: 0,
-	 *    from: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006e599da0bff7a6598ac1224e4985430bf16458a4',
-	 *    to: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006f1df96865d09d21e8f3f9a7fba3b17a11c7c53c',
+	 *    from: 'Q9Fa83f21CE9bd493B02D7460E03d82D44a77B4612d8B6a0Acc94655106Fbb96152d3E16a0ba414C368653BaE2fe868cB109c05727Ca47148114749451afb7Cc1',
+	 *    to: 'Q32bC304efeA6eeDA861cf8949EBb480da50B91dA5F7f8d5918779865C88e16C790935cB72a27613327126Ad142b767616784022611b0A345fF346F4E81fA1499',
 	 *    value: 1,
 	 *    gas: 90000,
 	 *    maxFeePerGas: 2000000000,
@@ -692,8 +708,8 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 *      transactionIndex: 0n,
 	 *      blockNumber: 2n,
 	 *      blockHash: '0xeb1565a08b23429552dafa92e32409f42eb43944f7611963c63ce40e7243941a',
-	 *      from: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006e599da0bff7a6598ac1224e4985430bf16458a4',
-	 *      to: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006f1df96865d09d21e8f3f9a7fba3b17a11c7c53c',
+	 *      from: 'Q9Fa83f21CE9bd493B02D7460E03d82D44a77B4612d8B6a0Acc94655106Fbb96152d3E16a0ba414C368653BaE2fe868cB109c05727Ca47148114749451afb7Cc1',
+	 *      to: 'Q32bC304efeA6eeDA861cf8949EBb480da50B91dA5F7f8d5918779865C88e16C790935cB72a27613327126Ad142b767616784022611b0A345fF346F4E81fA1499',
 	 *      cumulativeGasUsed: 21000n,
 	 *      gasUsed: 21000n,
 	 *      logs: [],
@@ -712,8 +728,8 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 *      transactionIndex: 0,
 	 *      blockNumber: 2,
 	 *      blockHash: '0xeb1565a08b23429552dafa92e32409f42eb43944f7611963c63ce40e7243941a',
-	 *      from: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006e599da0bff7a6598ac1224e4985430bf16458a4',
-	 *      to: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006f1df96865d09d21e8f3f9a7fba3b17a11c7c53c',
+	 *      from: 'Q9Fa83f21CE9bd493B02D7460E03d82D44a77B4612d8B6a0Acc94655106Fbb96152d3E16a0ba414C368653BaE2fe868cB109c05727Ca47148114749451afb7Cc1',
+	 *      to: 'Q32bC304efeA6eeDA861cf8949EBb480da50B91dA5F7f8d5918779865C88e16C790935cB72a27613327126Ad142b767616784022611b0A345fF346F4E81fA1499',
 	 *      cumulativeGasUsed: 21000,
 	 *      gasUsed: 21000,
 	 *      logs: [],
@@ -745,11 +761,11 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 * @returns The number of transactions sent from the provided address.
 	 *
 	 * ```ts
-	 * web3.qrl.getTransactionCount("Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000407d73d8a49eeb85d32cf465507dd71d507100c1").then(console.log);
+	 * web3.qrl.getTransactionCount("Q83cd1122848dd1b2E3AF9ca60a1340e595B2C6d5b3B340AfD625e38EEf9067bc9C28db215702Aa8B3C0243Bb13785a9365A35ee1Fe8e57983b1D47d9fff835a3").then(console.log);
 	 * > 1n
 	 *
 	 * web3.qrl.getTransactionCount(
-	 *     "Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000407d73d8a49eeb85d32cf465507dd71d507100c1",
+	 *     "Q83cd1122848dd1b2E3AF9ca60a1340e595B2C6d5b3B340AfD625e38EEf9067bc9C28db215702Aa8B3C0243Bb13785a9365A35ee1Fe8e57983b1D47d9fff835a3",
 	 *     undefined,
 	 *     { number: FMT_NUMBER.NUMBER , bytes: FMT_BYTES.HEX }
 	 * ).then(console.log);
@@ -767,30 +783,46 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	}
 
 	/**
-	 * @param transaction The {@link Transaction}, {@link TransactionWithFromLocalWalletIndex}, {@link TransactionWithToLocalWalletIndex} or {@link TransactionWithFromAndToLocalWalletIndex} to send. __Note:__ In the `to` and `from` fields when hex strings are used, it is assumed they are addresses, for any other form (number, string number, etc.) it is assumed they are wallet indexes.
+	 * @param transaction - The {@link Transaction}, {@link TransactionWithFromLocalWalletIndex}, {@link TransactionWithToLocalWalletIndex} or {@link TransactionWithFromAndToLocalWalletIndex} to send. __Note:__ In the `to` and `from` fields a string is an address and must be a QRL (`Q`-prefixed) address; a non-negative integer `number` is the index of an account in the local wallet (`web3.qrl.accounts.wallet`). Any other value (a hex string, a decimal string, a bigint) is rejected.
 	 * @param returnFormat ({@link DataFormat} defaults to {@link DEFAULT_RETURN_FORMAT}) Specifies how the return data should be formatted.
 	 * @param options A configuration object used to change the behavior of the `sendTransaction` method.
-	 * @returns If `await`ed or `.then`d (i.e. the promise resolves), the transaction hash is returned.
+	 * @returns If `await`ed or `.then`d (i.e. the promise resolves), the {@link TransactionReceipt} of the mined transaction is returned. The promise resolves only for a receipt with `status` 1; a reverted transaction rejects with a `TransactionRevertedWithoutReasonError`, `TransactionRevertInstructionError` or `TransactionRevertWithCustomError`, whatever `returnFormat` is. When `options.transactionResolver` is given, the resolver decides the outcome from the receipt and this `status` check is bypassed.
+	 *
+	 * __Note:__ Every failure rejects the returned promise. Either `await` (or `.catch`) the returned {@link Web3PromiEvent}, or attach an `error` listener with `.on('error', ...)`: with a listener attached the failure is delivered to it as a typed error and the rejection is marked as handled, without one an unobserved rejection is reported by the runtime as an unhandled rejection.
 	 * ```ts
 	 * const transaction = {
-	 *   from: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006e599da0bff7a6598ac1224e4985430bf16458a4',
-	 *   to: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006f1df96865d09d21e8f3f9a7fba3b17a11c7c53c',
+	 *   from: 'Q9Fa83f21CE9bd493B02D7460E03d82D44a77B4612d8B6a0Acc94655106Fbb96152d3E16a0ba414C368653BaE2fe868cB109c05727Ca47148114749451afb7Cc1',
+	 *   to: 'Q32bC304efeA6eeDA861cf8949EBb480da50B91dA5F7f8d5918779865C88e16C790935cB72a27613327126Ad142b767616784022611b0A345fF346F4E81fA1499',
 	 *   value: '0x1'
 	 * }
 	 *
-	 * const transactionHash = await web3.qrl.sendTransaction(transaction);
-	 * console.log(transactionHash);
-	 * > 0xdf7756865c2056ce34c4eabe4eff42ad251a9f920a1c620c00b4ea0988731d3f
+	 * const receipt = await web3.qrl.sendTransaction(transaction);
+	 * console.log(receipt);
+	 * > {
+	 *      transactionHash: '0xdf7756865c2056ce34c4eabe4eff42ad251a9f920a1c620c00b4ea0988731d3f',
+	 *      transactionIndex: 0n,
+	 *      blockNumber: 2n,
+	 *      blockHash: '0xeb1565a08b23429552dafa92e32409f42eb43944f7611963c63ce40e7243941a',
+	 *      from: 'Q9Fa83f21CE9bd493B02D7460E03d82D44a77B4612d8B6a0Acc94655106Fbb96152d3E16a0ba414C368653BaE2fe868cB109c05727Ca47148114749451afb7Cc1',
+	 *      to: 'Q32bC304efeA6eeDA861cf8949EBb480da50B91dA5F7f8d5918779865C88e16C790935cB72a27613327126Ad142b767616784022611b0A345fF346F4E81fA1499',
+	 *      cumulativeGasUsed: 21000n,
+	 *      gasUsed: 21000n,
+	 *      logs: [],
+	 *      logsBloom: '0x00…00',
+	 *      status: 1n,
+	 *      effectiveGasPrice: 2000000000n,
+	 *      type: 2n
+	 *   }
 	 *
 	 * web3.qrl.sendTransaction(transaction).then(console.log);
-	 * > 0xdf7756865c2056ce34c4eabe4eff42ad251a9f920a1c620c00b4ea0988731d3f
+	 * > { transactionHash: '0xdf7756865c2056ce34c4eabe4eff42ad251a9f920a1c620c00b4ea0988731d3f', status: 1n, ... }
 	 *
 	 * web3.qrl.sendTransaction(transaction).catch(console.log);
 	 * > <Some TransactionError>
 	 *
 	 * // Example using options.ignoreGasPricing = true
 	 * web3.qrl.sendTransaction(transaction, undefined, { ignoreGasPricing: true }).then(console.log);
-	 * > 0xdf7756865c2056ce34c4eabe4eff42ad251a9f920a1c620c00b4ea0988731d3f
+	 * > { transactionHash: '0xdf7756865c2056ce34c4eabe4eff42ad251a9f920a1c620c00b4ea0988731d3f', status: 1n, ... }
 	 * ```
 	 *
 	 *
@@ -799,8 +831,8 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 * ```ts
 	 * web3.qrl.sendTransaction(transaction).on('sending', transactionToBeSent => console.log(transactionToBeSent));
 	 * > {
-	 *    from: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006e599da0bff7a6598ac1224e4985430bf16458a4',
-	 *    to: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006f1df96865d09d21e8f3f9a7fba3b17a11c7c53c',
+	 *    from: 'Q9Fa83f21CE9bd493B02D7460E03d82D44a77B4612d8B6a0Acc94655106Fbb96152d3E16a0ba414C368653BaE2fe868cB109c05727Ca47148114749451afb7Cc1',
+	 *    to: 'Q32bC304efeA6eeDA861cf8949EBb480da50B91dA5F7f8d5918779865C88e16C790935cB72a27613327126Ad142b767616784022611b0A345fF346F4E81fA1499',
 	 *    value: '0x1',
 	 *    maxFeePerGas: '0x77359400',
 	 *    maxPriorityFeePerGas: '0x0'
@@ -810,8 +842,8 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 * ```ts
 	 * web3.qrl.sendTransaction(transaction).on('sent', sentTransaction => console.log(sentTransaction));
 	 * > {
-	 *    from: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006e599da0bff7a6598ac1224e4985430bf16458a4',
-	 *    to: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006f1df96865d09d21e8f3f9a7fba3b17a11c7c53c',
+	 *    from: 'Q9Fa83f21CE9bd493B02D7460E03d82D44a77B4612d8B6a0Acc94655106Fbb96152d3E16a0ba414C368653BaE2fe868cB109c05727Ca47148114749451afb7Cc1',
+	 *    to: 'Q32bC304efeA6eeDA861cf8949EBb480da50B91dA5F7f8d5918779865C88e16C790935cB72a27613327126Ad142b767616784022611b0A345fF346F4E81fA1499',
 	 *    value: '0x1',
 	 *    maxFeePerGas: '0x77359400',
 	 *    maxPriorityFeePerGas: '0x0'
@@ -830,8 +862,8 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 *      transactionIndex: 0n,
 	 *      blockNumber: 2n,
 	 *      blockHash: '0xeb1565a08b23429552dafa92e32409f42eb43944f7611963c63ce40e7243941a',
-	 *      from: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006e599da0bff7a6598ac1224e4985430bf16458a4',
-	 *      to: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006f1df96865d09d21e8f3f9a7fba3b17a11c7c53c',
+	 *      from: 'Q9Fa83f21CE9bd493B02D7460E03d82D44a77B4612d8B6a0Acc94655106Fbb96152d3E16a0ba414C368653BaE2fe868cB109c05727Ca47148114749451afb7Cc1',
+	 *      to: 'Q32bC304efeA6eeDA861cf8949EBb480da50B91dA5F7f8d5918779865C88e16C790935cB72a27613327126Ad142b767616784022611b0A345fF346F4E81fA1499',
 	 *      cumulativeGasUsed: 21000n,
 	 *      gasUsed: 21000n,
 	 *      logs: [],
@@ -851,8 +883,8 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 *         transactionIndex: 0n,
 	 *         blockNumber: 5n,
 	 *         blockHash: '0xb57fbe6f145cefd86a305a9a024a4351d15d4d39607d7af53d69a319bc3b5548',
-	 *         from: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006e599da0bff7a6598ac1224e4985430bf16458a4',
-	 *         to: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006f1df96865d09d21e8f3f9a7fba3b17a11c7c53c',
+	 *         from: 'Q9Fa83f21CE9bd493B02D7460E03d82D44a77B4612d8B6a0Acc94655106Fbb96152d3E16a0ba414C368653BaE2fe868cB109c05727Ca47148114749451afb7Cc1',
+	 *         to: 'Q32bC304efeA6eeDA861cf8949EBb480da50B91dA5F7f8d5918779865C88e16C790935cB72a27613327126Ad142b767616784022611b0A345fF346F4E81fA1499',
 	 *         cumulativeGasUsed: 21000n,
 	 *         gasUsed: 21000n,
 	 *         logs: [],
@@ -864,9 +896,9 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 *     latestBlockHash: '0xb57fbe6f145cefd86a305a9a024a4351d15d4d39607d7af53d69a319bc3b5548'
 	 * }
 	 * ```
-	 * - `error`
+	 * - `error` (emitted for every failure, as a typed error, when a listener is attached; see the note above)
 	 * ```ts
-	 * web3.qrl.sendTransaction(transaction).on('error', error => console.log);
+	 * web3.qrl.sendTransaction(transaction).on('error', error => console.log(error));
 	 * > <Some TransactionError>
 	 * ```
 	 */
@@ -885,16 +917,20 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	/**
 	 * @param transaction Signed transaction in one of the valid {@link Bytes} format.
 	 * @param returnFormat ({@link DataFormat} defaults to {@link DEFAULT_RETURN_FORMAT}) Specifies how the return data should be formatted.
-	 * @returns If `await`ed or `.then`d (i.e. the promise resolves), the transaction hash is returned.
-	 * ```ts
-	 * const signedTransaction = "0xf86580843b9aca0182520894e899f0130fd099c0b896b2ce4e5e15a25b23139a0180820a95a03a42d53ca5b71f845e1cd4c65359b05446a85d16881372d3bfaab8980935cb04a0711497bc8dd3b541152e2fed14fe650a647f1f0edab0d386ad9506f0e642410f"
+	 * @returns If `await`ed or `.then`d (i.e. the promise resolves), the {@link TransactionReceipt} of the mined transaction is returned. The promise resolves only for a receipt with `status` 1; a reverted transaction rejects, whatever `returnFormat` is. When `options.transactionResolver` is given, the resolver decides the outcome from the receipt and this `status` check is bypassed.
 	 *
-	 * const transactionHash = await web3.qrl.sendSignedTransaction(signedTransaction);
-	 * console.log(transactionHash);
-	 * > 0xed8c241ea44d57f4605dc22c63500de46254d6c7844fd65fa438b128c80cf700
+	 * __Note:__ As for {@link Web3QRL.sendTransaction}, either `await` (or `.catch`) the returned {@link Web3PromiEvent} or attach an `error` listener; an unobserved failure is an unhandled rejection.
+	 * ```ts
+	 * // A signed type-2 QRL transaction: 0x02 || rlp([..., descriptor, extraParams, signature, publicKey]),
+	 * // as produced by web3.qrl.accounts.signTransaction (the full string is several kilobytes).
+	 * const signedTransaction = "0x02f9…"
+	 *
+	 * const receipt = await web3.qrl.sendSignedTransaction(signedTransaction);
+	 * console.log(receipt.transactionHash, receipt.status);
+	 * > 0xed8c241ea44d57f4605dc22c63500de46254d6c7844fd65fa438b128c80cf700 1n
 	 *
 	 * web3.qrl.sendSignedTransaction(signedTransaction).then(console.log);
-	 * > 0xed8c241ea44d57f4605dc22c63500de46254d6c7844fd65fa438b128c80cf700
+	 * > { transactionHash: '0xed8c241ea44d57f4605dc22c63500de46254d6c7844fd65fa438b128c80cf700', status: 1n, ... }
 	 *
 	 * web3.qrl.sendSignedTransaction(signedTransaction).catch(console.log);
 	 * > <Some TransactionError>
@@ -905,12 +941,12 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 * - `sending`
 	 * ```ts
 	 * web3.qrl.sendSignedTransaction(signedTransaction).on('sending', transactionToBeSent => console.log(transactionToBeSent));
-	 * > "0xf86580843b9aca0182520894e899f0130fd099c0b896b2ce4e5e15a25b23139a0180820a95a03a42d53ca5b71f845e1cd4c65359b05446a85d16881372d3bfaab8980935cb04a0711497bc8dd3b541152e2fed14fe650a647f1f0edab0d386ad9506f0e642410f"
+	 * > "0x02f9…"
 	 * ```
 	 * - `sent`
 	 * ```ts
 	 * web3.qrl.sendSignedTransaction(signedTransaction).on('sent', sentTransaction => console.log(sentTransaction));
-	 * > "0xf86580843b9aca0182520894e899f0130fd099c0b896b2ce4e5e15a25b23139a0180820a95a03a42d53ca5b71f845e1cd4c65359b05446a85d16881372d3bfaab8980935cb04a0711497bc8dd3b541152e2fed14fe650a647f1f0edab0d386ad9506f0e642410f"
+	 * > "0x02f9…"
 	 * ```
 	 * - `transactionHash`
 	 * ```ts
@@ -925,12 +961,12 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 *      blockNumber: 1n,
 	 *      cumulativeGasUsed: 21000n,
 	 *      effectiveGasPrice: 1000000001n,
-	 *      from: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e899f0130fd099c0b896b2ce4e5e15a25b23139a',
+	 *      from: 'QB6Aa85bE02Fb82afb189A265E585973d4b4A246452dd047dD1f5afBEcf085225070Cb47972ED30dff99e8bBa0f62b3E58Eb52b342d5df4E719aD0ff37076E285',
 	 *      gasUsed: 21000n,
 	 *      logs: [],
 	 *      logsBloom: '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
 	 *      status: 1n,
-	 *      to: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e899f0130fd099c0b896b2ce4e5e15a25b23139a',
+	 *      to: 'QB6Aa85bE02Fb82afb189A265E585973d4b4A246452dd047dD1f5afBEcf085225070Cb47972ED30dff99e8bBa0f62b3E58Eb52b342d5df4E719aD0ff37076E285',
 	 *      transactionHash: '0xed8c241ea44d57f4605dc22c63500de46254d6c7844fd65fa438b128c80cf700',
 	 *      transactionIndex: 0n,
 	 *      type: 2n
@@ -946,12 +982,12 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 *          blockNumber: 1n,
 	 *          cumulativeGasUsed: 21000n,
 	 *          effectiveGasPrice: 1000000001n,
-	 *          from: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e899f0130fd099c0b896b2ce4e5e15a25b23139a',
+	 *          from: 'QB6Aa85bE02Fb82afb189A265E585973d4b4A246452dd047dD1f5afBEcf085225070Cb47972ED30dff99e8bBa0f62b3E58Eb52b342d5df4E719aD0ff37076E285',
 	 *          gasUsed: 21000n,
 	 *          logs: [],
 	 *          logsBloom: '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
 	 *          status: 1n,
-	 *          to: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e899f0130fd099c0b896b2ce4e5e15a25b23139a',
+	 *          to: 'QB6Aa85bE02Fb82afb189A265E585973d4b4A246452dd047dD1f5afBEcf085225070Cb47972ED30dff99e8bBa0f62b3E58Eb52b342d5df4E719aD0ff37076E285',
 	 *          transactionHash: '0xed8c241ea44d57f4605dc22c63500de46254d6c7844fd65fa438b128c80cf700',
 	 *          transactionIndex: 0n,
 	 *          type: 2n
@@ -981,24 +1017,19 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 *
 	 * ```ts
 	 * // Using an unlocked account managed by connected RPC client
-	 * web3.qrl.sign("0x48656c6c6f20776f726c64", "Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000011f4d0a3c12e86b4b5f39b213f7e19d048276dae").then(console.log);
-	 * > "0x30755ed65396facf86c53e6217c52b4daebe72aa4941d89635409de4c9c7f9466d4e9aaec7977f05e923889b33c0d0dd27d7226b6e6f56ce737465c5cfd04be400"
+	 * web3.qrl.sign("0x48656c6c6f20776f726c64", "Q0B425Ed8E7399aF5dEFFE13a09e7F1776996a32466aa3c1BB1a34ad61760A2Eb72705C904aB988e3e089E55d1D8081DA21F20544E04CB5f0ac85aA6d5940e38D").then(console.log);
+	 * > "0x3a2b…"
 	 *
 	 * // Using an unlocked account managed by connected RPC client
-	 * web3.qrl.sign("0x48656c6c6f20776f726c64", "Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000011f4d0a3c12e86b4b5f39b213f7e19d048276dae", { number: FMT_NUMBER.NUMBER , bytes: FMT_BYTES.UINT8ARRAY }).then(console.log);
-	 * > Uint8Array(65) [
-	 *    48, 117,  94, 214,  83, 150, 250, 207, 134, 197,  62,
-	 *    98,  23, 197,  43,  77, 174, 190, 114, 170,  73,  65,
-	 *   216, 150,  53,  64, 157, 228, 201, 199, 249,  70, 109,
-	 *    78, 154, 174, 199, 151, 127,   5, 233,  35, 136, 155,
-	 *    51, 192, 208, 221,  39, 215,  34, 107, 110, 111,  86,
-	 *   206, 115, 116, 101, 197, 207, 208,  75, 228,   0
+	 * web3.qrl.sign("0x48656c6c6f20776f726c64", "Q0B425Ed8E7399aF5dEFFE13a09e7F1776996a32466aa3c1BB1a34ad61760A2Eb72705C904aB988e3e089E55d1D8081DA21F20544E04CB5f0ac85aA6d5940e38D", { number: FMT_NUMBER.NUMBER , bytes: FMT_BYTES.UINT8ARRAY }).then(console.log);
+	 * > Uint8Array(4627) [
+	 *    58,  43, ... // the 4627-byte ML-DSA-87 signature
 	 * ]
 	 * ```
 	 *
 	 * // Using an indexed account managed by local Web3 wallet
 	 * web3.qrl.sign("0x48656c6c6f20776f726c64", 0).then(console.log);
-	 * > "0x30755ed65396facf86c53e6217c52b4daebe72aa4941d89635409de4c9c7f9466d4e9aaec7977f05e923889b33c0d0dd27d7226b6e6f56ce737465c5cfd04be400"
+	 * > "0x3a2b…"
 	 */
 	public async sign<ReturnFormat extends DataFormat = typeof DEFAULT_RETURN_FORMAT>(
 		message: Bytes,
@@ -1015,8 +1046,8 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 *
 	 * ```ts
 	 * const transaction = {
-	 *      from: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e899f0130fd099c0b896b2ce4e5e15a25b23139a',
-	 *      to: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e899f0130fd099c0b896b2ce4e5e15a25b23139a',
+	 *      from: 'QB6Aa85bE02Fb82afb189A265E585973d4b4A246452dd047dD1f5afBEcf085225070Cb47972ED30dff99e8bBa0f62b3E58Eb52b342d5df4E719aD0ff37076E285',
+	 *      to: 'QB6Aa85bE02Fb82afb189A265E585973d4b4A246452dd047dD1f5afBEcf085225070Cb47972ED30dff99e8bBa0f62b3E58Eb52b342d5df4E719aD0ff37076E285',
 	 *      value: '0x1',
 	 *      gas: '21000',
 	 *      maxFeePerGas: '1000000001',
@@ -1027,7 +1058,8 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 *
 	 * web3.qrl.signTransaction(transaction).then(console.log);
 	 * > {
-	 *   raw: '0xf86501843b9aca0182520894e899f0130fd099c0b896b2ce4e5e15a25b23139a0180820a96a0adb3468dbb4dce89fe1785ea9182e85fb56b399b378f82b93af7a8a12a4f9679a027d37d736e9bcf00121f78b2d10e4404fa5c45856d62b746574345f5cd278097',
+	 *   // A signed type-2 QRL transaction: 0x02 || rlp([..., descriptor, extraParams, signature, publicKey]); several kilobytes long.
+	 *   raw: '0x02f9…',
 	 *   tx: {
 	 *      type: 2n,
 	 *      nonce: 1n,
@@ -1039,14 +1071,14 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 *      extraParams: '0x',
 	 *      signature: '0x27d37d736e9bcf00121f78b2d10e4404fa5c45856d62b746574345f5cd278097',
 	 *      publicKey: '0xadb3468dbb4dce89fe1785ea9182e85fb56b399b378f82b93af7a8a12a4f9679',
-	 *      to: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e899f0130fd099c0b896b2ce4e5e15a25b23139a',
+	 *      to: 'QB6Aa85bE02Fb82afb189A265E585973d4b4A246452dd047dD1f5afBEcf085225070Cb47972ED30dff99e8bBa0f62b3E58Eb52b342d5df4E719aD0ff37076E285',
 	 *      data: '0x'
 	 *   }
 	 * }
 	 *
 	 * web3.qrl.signTransaction(transaction, { number: FMT_NUMBER.NUMBER , bytes: FMT_BYTES.HEX }).then(console.log);
 	 * > {
-	 *   raw: '0xf86501843b9aca0182520894e899f0130fd099c0b896b2ce4e5e15a25b23139a0180820a96a0adb3468dbb4dce89fe1785ea9182e85fb56b399b378f82b93af7a8a12a4f9679a027d37d736e9bcf00121f78b2d10e4404fa5c45856d62b746574345f5cd278097',
+	 *   raw: '0x02f9…',
 	 *   tx: {
 	 *      type: 2,
 	 *      nonce: 1,
@@ -1058,7 +1090,7 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 *      extraParams: '0x',
 	 *      signature: '0x27d37d736e9bcf00121f78b2d10e4404fa5c45856d62b746574345f5cd278097',
 	 *      publicKey: '0xadb3468dbb4dce89fe1785ea9182e85fb56b399b378f82b93af7a8a12a4f9679',
-	 *      to: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e899f0130fd099c0b896b2ce4e5e15a25b23139a',
+	 *      to: 'QB6Aa85bE02Fb82afb189A265E585973d4b4A246452dd047dD1f5afBEcf085225070Cb47972ED30dff99e8bBa0f62b3E58Eb52b342d5df4E719aD0ff37076E285',
 	 *      data: '0x'
 	 *   }
 	 * }
@@ -1102,8 +1134,8 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 *
 	 * ```ts
 	 * const transaction = {
-	 *       from: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e899f0130fd099c0b896b2ce4e5e15a25b23139a',
-	 *       to: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e899f0130fd099c0b896b2ce4e5e15a25b23139a',
+	 *       from: 'QB6Aa85bE02Fb82afb189A265E585973d4b4A246452dd047dD1f5afBEcf085225070Cb47972ED30dff99e8bBa0f62b3E58Eb52b342d5df4E719aD0ff37076E285',
+	 *       to: 'QB6Aa85bE02Fb82afb189A265E585973d4b4A246452dd047dD1f5afBEcf085225070Cb47972ED30dff99e8bBa0f62b3E58Eb52b342d5df4E719aD0ff37076E285',
 	 *       value: '0x1',
 	 *       nonce: '0x1',
 	 *       type: '0x2'
@@ -1133,7 +1165,7 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 *
 	 * ```ts
 	 * web3.qrl.getPastLogs({
-	 *      address: "Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000011f4d0a3c12e86b4b5f39b213f7e19d048276dae",
+	 *      address: "Q0B425Ed8E7399aF5dEFFE13a09e7F1776996a32466aa3c1BB1a34ad61760A2Eb72705C904aB988e3e089E55d1D8081DA21F20544E04CB5f0ac85aA6d5940e38D",
 	 *      topics: ["0x033456732123ffff2342342dd12342434324234234fd234fd23fd4f23d4234"]
 	 *  }).then(console.log);
 	 * > [{
@@ -1144,13 +1176,13 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 *       transactionHash: '0x7f9fade1c0d57a7af66ab4ead79fade1c0d57a7af66ab4ead7c2c2eb7b11a91385',
 	 *       blockHash: '0xfd43ade1c09fade1c0d57a7af66ab4ead7c2c2eb7b11a91ffdd57a7af66ab4ead7',
 	 *       blockNumber: 1234n,
-	 *       address: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000de0b295669a9fd93d5f28d9ec85e40f4cb697bae'
+	 *       address: 'QCfeC0cbeE560cbD6ed89580204AF71448f1fB8c577e60e9afC6E697019E2312cF3B24B98Eb763627a1C38c96ecd7E7c20BA9774cb6c0a810B78E8ea529ccdc40'
 	 *   },
 	 *   {...}]
 	 *
 	 * web3.qrl.getPastLogs(
 	 *     {
-	 *       address: "Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000011f4d0a3c12e86b4b5f39b213f7e19d048276dae",
+	 *       address: "Q0B425Ed8E7399aF5dEFFE13a09e7F1776996a32466aa3c1BB1a34ad61760A2Eb72705C904aB988e3e089E55d1D8081DA21F20544E04CB5f0ac85aA6d5940e38D",
 	 *       topics: ["0x033456732123ffff2342342dd12342434324234234fd234fd23fd4f23d4234"]
 	 *     },
 	 *     { number: FMT_NUMBER.NUMBER , bytes: FMT_BYTES.HEX }
@@ -1163,7 +1195,7 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 *       transactionHash: '0x7f9fade1c0d57a7af66ab4ead79fade1c0d57a7af66ab4ead7c2c2eb7b11a91385',
 	 *       blockHash: '0xfd43ade1c09fade1c0d57a7af66ab4ead7c2c2eb7b11a91ffdd57a7af66ab4ead7',
 	 *       blockNumber: 1234,
-	 *       address: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000de0b295669a9fd93d5f28d9ec85e40f4cb697bae'
+	 *       address: 'QCfeC0cbeE560cbD6ed89580204AF71448f1fB8c577e60e9afC6E697019E2312cF3B24B98Eb763627a1C38c96ecd7E7c20BA9774cb6c0a810B78E8ea529ccdc40'
 	 *   },
 	 *   {...}]
 	 * ```
@@ -1185,7 +1217,7 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 *
 	 * ```ts
 	 * web3.qrl.requestAccounts().then(console.log);
-	 * > ['Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000ae0b295369a9fd31d5f28d9ec85e40f4cb692baf', 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000de0b295669a9fd93d5f28d9ec85e40f4cb697bae']
+	 * > ['Q3bE0b52e494F2D9D40C1E8F8DFa8bEd7C9eAAf5e9F9B73886941319093d32Fb8a0FA9cCeFE06523ddD92ab9a987D169f1644df11F07aC14EA49Dff5Ad80fc0B3', 'QCfeC0cbeE560cbD6ed89580204AF71448f1fB8c577e60e9afC6E697019E2312cF3B24B98Eb763627a1C38c96ecd7E7c20BA9774cb6c0a810B78E8ea529ccdc40']
 	 * ```
 	 */
 	public async requestAccounts() {
@@ -1231,12 +1263,12 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 *
 	 * ```ts
 	 * web3.qrl.getProof(
-	 *     "Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000001234567890123456789012345678901234567890",
+	 *     "Qd5812F6Cf4a0f645aa620cd57319a0Ed649dd8f5519A9dde7770ae5b0E49e547985f35eB972A2a07041561aa39c65A3991478f9B1e6749e05277dcf58A9A8B72",
 	 *     ["0x0000000000000000000000000000000000000000000000000000000000000000","0x0000000000000000000000000000000000000000000000000000000000000001"],
 	 *     "latest"
 	 * ).then(console.log);
 	 * > {
-	 *     "address": "Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000001234567890123456789012345678901234567890",
+	 *     "address": "Qd5812F6Cf4a0f645aa620cd57319a0Ed649dd8f5519A9dde7770ae5b0E49e547985f35eB972A2a07041561aa39c65A3991478f9B1e6749e05277dcf58A9A8B72",
 	 *     "accountProof": [
 	 *         "0xf90211a090dcaf88c40c7bbc95a912cbdde67c175767b31173df9ee4b0d733bfdd511c43a0babe369f6b12092f49181ae04ca173fb68d1a5456f18d20fa32cba73954052bda0473ecf8a7e36a829e75039a3b055e51b8332cbf03324ab4af2066bbd6fbf0021a0bbda34753d7aa6c38e603f360244e8f59611921d9e1f128372fec0d586d4f9e0a04e44caecff45c9891f74f6a2156735886eedf6f1a733628ebc802ec79d844648a0a5f3f2f7542148c973977c8a1e154c4300fec92f755f7846f1b734d3ab1d90e7a0e823850f50bf72baae9d1733a36a444ab65d0a6faaba404f0583ce0ca4dad92da0f7a00cbe7d4b30b11faea3ae61b7f1f2b315b61d9f6bd68bfe587ad0eeceb721a07117ef9fc932f1a88e908eaead8565c19b5645dc9e5b1b6e841c5edbdfd71681a069eb2de283f32c11f859d7bcf93da23990d3e662935ed4d6b39ce3673ec84472a0203d26456312bbc4da5cd293b75b840fc5045e493d6f904d180823ec22bfed8ea09287b5c21f2254af4e64fca76acc5cd87399c7f1ede818db4326c98ce2dc2208a06fc2d754e304c48ce6a517753c62b1a9c1d5925b89707486d7fc08919e0a94eca07b1c54f15e299bd58bdfef9741538c7828b5d7d11a489f9c20d052b3471df475a051f9dd3739a927c89e357580a4c97b40234aa01ed3d5e0390dc982a7975880a0a089d613f26159af43616fd9455bb461f4869bfede26f2130835ed067a8b967bfb80",
 	 *         "0xf90211a0395d87a95873cd98c21cf1df9421af03f7247880a2554e20738eec2c7507a494a0bcf6546339a1e7e14eb8fb572a968d217d2a0d1f3bc4257b22ef5333e9e4433ca012ae12498af8b2752c99efce07f3feef8ec910493be749acd63822c3558e6671a0dbf51303afdc36fc0c2d68a9bb05dab4f4917e7531e4a37ab0a153472d1b86e2a0ae90b50f067d9a2244e3d975233c0a0558c39ee152969f6678790abf773a9621a01d65cd682cc1be7c5e38d8da5c942e0a73eeaef10f387340a40a106699d494c3a06163b53d956c55544390c13634ea9aa75309f4fd866f312586942daf0f60fb37a058a52c1e858b1382a8893eb9c1f111f266eb9e21e6137aff0dddea243a567000a037b4b100761e02de63ea5f1fcfcf43e81a372dafb4419d126342136d329b7a7ba032472415864b08f808ba4374092003c8d7c40a9f7f9fe9cc8291f62538e1cc14a074e238ff5ec96b810364515551344100138916594d6af966170ff326a092fab0a0d31ac4eef14a79845200a496662e92186ca8b55e29ed0f9f59dbc6b521b116fea090607784fe738458b63c1942bba7c0321ae77e18df4961b2bc66727ea996464ea078f757653c1b63f72aff3dcc3f2a2e4c8cb4a9d36d1117c742833c84e20de994a0f78407de07f4b4cb4f899dfb95eedeb4049aeb5fc1635d65cf2f2f4dfd25d1d7a0862037513ba9d45354dd3e36264aceb2b862ac79d2050f14c95657e43a51b85c80",
@@ -1262,13 +1294,13 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 * }
 	 *
 	 * web3.qrl.getProof(
-	 *     "Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000001234567890123456789012345678901234567890",
+	 *     "Qd5812F6Cf4a0f645aa620cd57319a0Ed649dd8f5519A9dde7770ae5b0E49e547985f35eB972A2a07041561aa39c65A3991478f9B1e6749e05277dcf58A9A8B72",
 	 *     ["0x0000000000000000000000000000000000000000000000000000000000000000","0x0000000000000000000000000000000000000000000000000000000000000001"],
 	 *     undefined,
 	 *     { number: FMT_NUMBER.NUMBER , bytes: FMT_BYTES.HEX }
 	 * ).then(console.log);
 	 * > {
-	 *     "address": "Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000001234567890123456789012345678901234567890",
+	 *     "address": "Qd5812F6Cf4a0f645aa620cd57319a0Ed649dd8f5519A9dde7770ae5b0E49e547985f35eB972A2a07041561aa39c65A3991478f9B1e6749e05277dcf58A9A8B72",
 	 *     "accountProof": [
 	 *         "0xf90211a090dcaf88c40c7bbc95a912cbdde67c175767b31173df9ee4b0d733bfdd511c43a0babe369f6b12092f49181ae04ca173fb68d1a5456f18d20fa32cba73954052bda0473ecf8a7e36a829e75039a3b055e51b8332cbf03324ab4af2066bbd6fbf0021a0bbda34753d7aa6c38e603f360244e8f59611921d9e1f128372fec0d586d4f9e0a04e44caecff45c9891f74f6a2156735886eedf6f1a733628ebc802ec79d844648a0a5f3f2f7542148c973977c8a1e154c4300fec92f755f7846f1b734d3ab1d90e7a0e823850f50bf72baae9d1733a36a444ab65d0a6faaba404f0583ce0ca4dad92da0f7a00cbe7d4b30b11faea3ae61b7f1f2b315b61d9f6bd68bfe587ad0eeceb721a07117ef9fc932f1a88e908eaead8565c19b5645dc9e5b1b6e841c5edbdfd71681a069eb2de283f32c11f859d7bcf93da23990d3e662935ed4d6b39ce3673ec84472a0203d26456312bbc4da5cd293b75b840fc5045e493d6f904d180823ec22bfed8ea09287b5c21f2254af4e64fca76acc5cd87399c7f1ede818db4326c98ce2dc2208a06fc2d754e304c48ce6a517753c62b1a9c1d5925b89707486d7fc08919e0a94eca07b1c54f15e299bd58bdfef9741538c7828b5d7d11a489f9c20d052b3471df475a051f9dd3739a927c89e357580a4c97b40234aa01ed3d5e0390dc982a7975880a0a089d613f26159af43616fd9455bb461f4869bfede26f2130835ed067a8b967bfb80",
 	 *         "0xf90211a0395d87a95873cd98c21cf1df9421af03f7247880a2554e20738eec2c7507a494a0bcf6546339a1e7e14eb8fb572a968d217d2a0d1f3bc4257b22ef5333e9e4433ca012ae12498af8b2752c99efce07f3feef8ec910493be749acd63822c3558e6671a0dbf51303afdc36fc0c2d68a9bb05dab4f4917e7531e4a37ab0a153472d1b86e2a0ae90b50f067d9a2244e3d975233c0a0558c39ee152969f6678790abf773a9621a01d65cd682cc1be7c5e38d8da5c942e0a73eeaef10f387340a40a106699d494c3a06163b53d956c55544390c13634ea9aa75309f4fd866f312586942daf0f60fb37a058a52c1e858b1382a8893eb9c1f111f266eb9e21e6137aff0dddea243a567000a037b4b100761e02de63ea5f1fcfcf43e81a372dafb4419d126342136d329b7a7ba032472415864b08f808ba4374092003c8d7c40a9f7f9fe9cc8291f62538e1cc14a074e238ff5ec96b810364515551344100138916594d6af966170ff326a092fab0a0d31ac4eef14a79845200a496662e92186ca8b55e29ed0f9f59dbc6b521b116fea090607784fe738458b63c1942bba7c0321ae77e18df4961b2bc66727ea996464ea078f757653c1b63f72aff3dcc3f2a2e4c8cb4a9d36d1117c742833c84e20de994a0f78407de07f4b4cb4f899dfb95eedeb4049aeb5fc1635d65cf2f2f4dfd25d1d7a0862037513ba9d45354dd3e36264aceb2b862ac79d2050f14c95657e43a51b85c80",
@@ -1388,19 +1420,19 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 * @example
 	 * ```ts
 	 * web3.qrl.createAccessList({
-	 * from: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000de95305a63302c3aa4d3a9b42654659aea72b694',
+	 * from: 'Q0D54671A5bB2dfB3bd480215000eB508E1196c42d902b42042b40053CB5908e63CA2509D499dEf8dFE9DABc5DD756ff98375fbE8A66fc339C76f5e646ef68911',
 	 * data: '0x9a67c8b100000000000000000000000000000000000000000000000000000000000004d0',
 	 * maxFeePerGas: '0x3b9aca00',
 	 * maxPriorityFeePerGas: '0x0',
 	 * gas: '0x3d0900',
-	 * to: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000940b25304947ae863568b3804434ec77e2160b87'
+	 * to: 'Q9c94d2a70E998E1741b4C32d89d33EaD11365EbEca7035d0bb66dD34b33c05168bb6776321f0e68EEB5d50ef85AB643b7D6040ee9566E5539A659D5E4f7131AE'
 	 * })
 	 * .then(console.log);
 	 *
 	 * > {
 	 *  "accessList": [
 	 *     {
-	 *       "address": "Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000015859bdf5aff2080a9968f6a410361e9598df62f",
+	 *       "address": "QE5A56080716c3E4d0E1965dD1Af6012ecc96a0bA89811854D099547372eb4eE56F92761cfc57202EF56e39b724A6Ec6698737E5D92052A698933aef847B73295",
 	 *       "storageKeys": [
 	 *         "0x0000000000000000000000000000000000000000000000000000000000000000"
 	 *       ]
@@ -1419,7 +1451,7 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	}
 
 	/**
-	 * This method sends EIP-712 typed data to the connected wallet provider to be signed.
+	 * This method sends QRL Typed Structured Data to the connected wallet provider to be signed.
 	 *
 	 * Typed-data signing is a **wallet** capability, not a node one: the request is answered by
 	 * a wallet provider (for example the QRL web3 wallet extension, which implements
@@ -1427,13 +1459,13 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 * where `eth_signTypedData_v4` is implemented by wallets rather than by the node.
 	 *
 	 * @param address The address that corresponds with the private key used to sign the typed data.
-	 * @param typedData The EIP-712 typed data object.
+	 * @param typedData The QRL typed-data object.
 	 * @param returnFormat ({@link DataFormat} defaults to {@link DEFAULT_RETURN_FORMAT}) - Specifies how the signed typed data should be formatted.
 	 * @returns The signed typed data.
 	 */
 	public async signTypedData<ReturnFormat extends DataFormat = typeof DEFAULT_RETURN_FORMAT>(
 		address: Address,
-		typedData: Eip712TypedData,
+		typedData: QRLTypedData,
 		returnFormat: ReturnFormat = DEFAULT_RETURN_FORMAT as ReturnFormat,
 	) {
 		return rpcMethodsWrappers.signTypedData(this, address, typedData, returnFormat);
@@ -1458,12 +1490,15 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 	 * - on("error") - Fires when an error in the subscription occurs.
 	 * - on("connected") - Fires once after the subscription successfully connected. Returns the subscription id.
 	 *
+	 * `subscribe()` returns a promise: `await` it (or `.then` it) to get the subscription object before attaching listeners.
+	 * When a subscription has no `error` listener, a subscription error (a backfill of past logs that failed, a notification the subscription cannot decode) is logged with `console.warn` instead.
+	 *
 	 * @example **Subscribe to Smart Contract events**
 	 * ```ts
 	 * // Subscribe to `logs`
-	 * const logSubscription = web3.qrl.subscribe('logs', {
-	 *     address: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000001234567890123456789012345678901234567890',
-	 *     topics: ['0x033456732123ffff2342342dd12342434324234234fd234fd23fd4f23d4234']
+	 * const logSubscription = await web3.qrl.subscribe('logs', {
+	 *     address: 'Qd5812F6Cf4a0f645aa620cd57319a0Ed649dd8f5519A9dde7770ae5b0E49e547985f35eB972A2a07041561aa39c65A3991478f9B1e6749e05277dcf58A9A8B72',
+	 *     topics: ['0x033456732123ffff2342342dd12342434324234234fd234fd23fd4f23d42340000000000000000000000000000000000000000000000000000000000000000']
 	 * });
 	 * logSubscription.on('data', (data: any) => console.log(data));
 	 * logSubscription.on('error', (error: any) => console.log(error));
@@ -1503,6 +1538,10 @@ export class Web3QRL extends Web3Context<Web3QRLExecutionAPI, RegisteredSubscrip
 			!isNullish((args as any).fromBlock) &&
 			Number.isFinite(Number((args as any).fromBlock))
 		) {
+			// The backfill runs after the caller got the subscription back, so the logs reach
+			// the `data` listeners attached after the `await`. A failed backfill is reported
+			// through the subscription's guarded error path: the `error` event when a listener
+			// is attached, a warning otherwise; it never becomes an unhandled rejection (M-7d).
 			setImmediate(() => {
 				this.getPastLogs(args)
 					.then(logs => {

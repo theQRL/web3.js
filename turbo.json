@@ -42,39 +42,67 @@
 			"dependsOn": ["build", "^build"]
 		},
 		"test:integration": {
-			"dependsOn": ["build", "^build"]
+			"cache": false,
+			"dependsOn": ["build", "^build"],
+			"env": ["WEB3_SYSTEM_TEST_*"]
 		},
 		"test:coverage:unit": {
 			"dependsOn": ["build", "^build"],
 			"outputs": [".coverage/**"]
 		},
 		"test:coverage:integration": {
+			"cache": false,
 			"dependsOn": ["build", "^build"],
+			"env": ["WEB3_SYSTEM_TEST_*"],
 			"outputs": [".coverage/**"]
 		},
 		"test:e2e:gqrl": {
 			"cache": false,
-			"dependsOn": ["build"]
+			"dependsOn": ["build"],
+			"env": ["WEB3_SYSTEM_TEST_*"]
 		},
 		"test:e2e:mainnet": {
 			"cache": false,
-			"dependsOn": ["build"]
+			"dependsOn": ["build"],
+			"env": [
+				"WEB3_SYSTEM_TEST_*",
+				"QRL_TESTNET_HTTP",
+				"QRL_TESTNET_WS",
+				"QRL_MAINNET_HTTP",
+				"QRL_MAINNET_WS",
+				"TEST_ACCOUNT_ADDRESS",
+				"TEST_ACCOUNT_PRIVATE_KEY",
+				"ALLOWED_SEND_TRANSACTION"
+			]
 		},
 		"test:e2e:testnet": {
 			"cache": false,
-			"dependsOn": ["build"]
+			"dependsOn": ["build"],
+			"env": [
+				"WEB3_SYSTEM_TEST_*",
+				"QRL_TESTNET_HTTP",
+				"QRL_TESTNET_WS",
+				"QRL_MAINNET_HTTP",
+				"QRL_MAINNET_WS",
+				"TEST_ACCOUNT_ADDRESS",
+				"TEST_ACCOUNT_PRIVATE_KEY",
+				"ALLOWED_SEND_TRANSACTION"
+			]
 		},
 		"test:e2e:electron": {
 			"cache": false,
-			"dependsOn": ["build"]
+			"dependsOn": ["build"],
+			"env": ["WEB3_SYSTEM_TEST_*"]
 		},
 		"test:e2e:chrome": {
 			"cache": false,
-			"dependsOn": ["build"]
+			"dependsOn": ["build"],
+			"env": ["WEB3_SYSTEM_TEST_*"]
 		},
 		"test:e2e:firefox": {
 			"cache": false,
-			"dependsOn": ["build"]
+			"dependsOn": ["build"],
+			"env": ["WEB3_SYSTEM_TEST_*"]
 		}
 	}
 }

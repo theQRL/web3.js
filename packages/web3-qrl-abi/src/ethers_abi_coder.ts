@@ -24,7 +24,7 @@ const ethersAbiCoder = new AbiCoder((_, value) => {
 	}
 
 	// Because of the type def from @ethersproject/abi
-	// eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+	// eslint-disable-next-line @typescript-eslint/no-unsafe-return
 	return value;
 });
 

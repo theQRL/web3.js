@@ -20,6 +20,9 @@ export const accessListItemSchema = {
 		address: {
 			format: 'address',
 		},
+		// Storage keys stay 32 bytes on QRL: go-qrl's `common.HashLength` is 32 and an access-list
+		// tuple carries `[]common.Hash` (`getStorageSlotNumForLongString` hashes a 64-byte word
+		// but returns the 32-byte keccak that is the key).
 		storageKeys: {
 			type: 'array',
 			items: {
@@ -43,6 +46,11 @@ export const accessListResultSchema = {
 			...accessListSchema,
 		},
 		gasUsed: {
+			type: 'string',
+		},
+		// Set by go-qrl when the simulated call failed; without it a reverted simulation was
+		// indistinguishable from a successful one (L-73).
+		error: {
 			type: 'string',
 		},
 	},
@@ -155,15 +163,18 @@ export const transactionInfoSchema = {
 	properties: {
 		...transactionSchema.properties,
 		blockHash: {
+			nullable: true,
 			format: 'bytes32',
 		},
 		blockNumber: {
+			nullable: true,
 			format: 'uint',
 		},
 		hash: {
 			format: 'bytes32',
 		},
 		transactionIndex: {
+			nullable: true,
 			format: 'uint',
 		},
 		from: {
@@ -217,6 +228,29 @@ export const transactionInfoSchema = {
 		publicKey: {
 			format: 'bytes',
 		},
+		// The effective gas price go-qrl reports for a mined transaction (L-73). It is an output
+		// field only: a `gasPrice` given as input is rejected (L-50).
+		gasPrice: {
+			format: 'uint',
+		},
+	},
+};
+
+export const withdrawalsSchema = {
+	type: 'object',
+	properties: {
+		index: {
+			format: 'uint',
+		},
+		validatorIndex: {
+			format: 'uint',
+		},
+		address: {
+			format: 'address',
+		},
+		amount: {
+			format: 'uint',
+		},
 	},
 };
 
@@ -227,6 +261,7 @@ export const blockSchema = {
 			format: 'bytes32',
 		},
 		miner: {
+			nullableWhen: 'hash',
 			format: 'address',
 		},
 		stateRoot: {
@@ -282,25 +317,17 @@ export const blockSchema = {
 			],
 		},
 		hash: {
+			nullableWhen: 'miner',
 			format: 'bytes32',
 		},
-	},
-};
-
-export const withdrawalsSchema = {
-	type: 'object',
-	properties: {
-		index: {
-			format: 'uint',
-		},
-		validatorIndex: {
-			format: 'uint',
-		},
-		address: {
+		withdrawalsRoot: {
 			format: 'bytes32',
 		},
-		amount: {
-			format: 'uint',
+		withdrawals: {
+			type: 'array',
+			items: {
+				...withdrawalsSchema,
+			},
 		},
 	},
 };
@@ -321,7 +348,7 @@ export const blockHeaderSchema = {
 			format: 'bytes32',
 		},
 		miner: {
-			format: 'bytes',
+			format: 'address',
 		},
 		stateRoot: {
 			format: 'bytes32',
@@ -407,11 +434,13 @@ export const logSchema = {
 		topics: {
 			type: 'array',
 			items: {
-				format: 'bytes32',
+				format: 'bytes64',
 			},
 		},
 	},
 };
+// The fields of go-qrl's `qrl_syncing` reply (`internal/qrlapi/api.go`); Ethereum's
+// `knownStates`/`pulledStates`, which go-qrl never sends, are no longer declared (L-73).
 export const syncSchema = {
 	type: 'object',
 	properties: {
@@ -424,10 +453,40 @@ export const syncSchema = {
 		highestBlock: {
 			format: 'string',
 		},
-		knownStates: {
+		syncedAccounts: {
 			format: 'string',
 		},
-		pulledStates: {
+		syncedAccountBytes: {
+			format: 'string',
+		},
+		syncedBytecodes: {
+			format: 'string',
+		},
+		syncedBytecodeBytes: {
+			format: 'string',
+		},
+		syncedStorage: {
+			format: 'string',
+		},
+		syncedStorageBytes: {
+			format: 'string',
+		},
+		healedTrienodes: {
+			format: 'string',
+		},
+		healedTrienodeBytes: {
+			format: 'string',
+		},
+		healedBytecodes: {
+			format: 'string',
+		},
+		healedBytecodeBytes: {
+			format: 'string',
+		},
+		healingTrienodes: {
+			format: 'string',
+		},
+		healingBytecode: {
 			format: 'string',
 		},
 	},
@@ -452,6 +511,7 @@ export const transactionReceiptSchema = {
 			format: 'address',
 		},
 		to: {
+			nullable: true,
 			format: 'address',
 		},
 		cumulativeGasUsed: {
@@ -464,6 +524,7 @@ export const transactionReceiptSchema = {
 			format: 'uint',
 		},
 		contractAddress: {
+			nullable: true,
 			format: 'address',
 		},
 		logs: {
@@ -473,9 +534,6 @@ export const transactionReceiptSchema = {
 			},
 		},
 		logsBloom: {
-			format: 'bytes',
-		},
-		root: {
 			format: 'bytes',
 		},
 		status: {
@@ -535,15 +593,15 @@ export const storageProofSchema = {
 	type: 'object',
 	properties: {
 		key: {
-			format: 'bytes32',
+			oneOf: [{ format: 'uint' }, { format: 'bytes32' }],
 		},
 		value: {
-			format: 'uint',
+			format: 'uint512',
 		},
 		proof: {
 			type: 'array',
 			items: {
-				format: 'bytes32',
+				format: 'bytes',
 			},
 		},
 	},
@@ -552,6 +610,9 @@ export const storageProofSchema = {
 export const accountSchema = {
 	type: 'object',
 	properties: {
+		address: {
+			format: 'address',
+		},
 		balance: {
 			format: 'uint',
 		},
@@ -567,7 +628,7 @@ export const accountSchema = {
 		accountProof: {
 			type: 'array',
 			items: {
-				format: 'bytes32',
+				format: 'bytes',
 			},
 		},
 		storageProof: {

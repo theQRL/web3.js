@@ -1,0 +1,1259 @@
+// SPDX-License-Identifier: MIT
+pragma hyperion >=0.0;
+
+// VM64 fixture port of ens-contracts d9e260dcb87843c6b0161be019aeb55e2da6ef5d.
+
+// registry/ENS.sol
+interface QRNS {
+    // Logged when the owner of a node assigns a new owner to a subnode.
+    event NewOwner(bytes32 indexed node, bytes32 indexed label, address owner);
+
+    // Logged when the owner of a node transfers ownership to a new account.
+    event Transfer(bytes32 indexed node, address owner);
+
+    // Logged when the resolver for a node changes.
+    event NewResolver(bytes32 indexed node, address resolver);
+
+    // Logged when the TTL of a node changes
+    event NewTTL(bytes32 indexed node, uint64 ttl);
+
+    // Logged when an operator is added or removed.
+    event ApprovalForAll(
+        address indexed owner,
+        address indexed operator,
+        bool approved
+    );
+
+    function setRecord(
+        bytes32 node,
+        address owner,
+        address resolver,
+        uint64 ttl
+    ) external;
+
+    function setSubnodeRecord(
+        bytes32 node,
+        bytes32 label,
+        address owner,
+        address resolver,
+        uint64 ttl
+    ) external;
+
+    function setSubnodeOwner(
+        bytes32 node,
+        bytes32 label,
+        address owner
+    ) external returns (bytes32);
+
+    function setResolver(bytes32 node, address resolver) external;
+
+    function setOwner(bytes32 node, address owner) external;
+
+    function setTTL(bytes32 node, uint64 ttl) external;
+
+    function setApprovalForAll(address operator, bool approved) external;
+
+    function owner(bytes32 node) external view returns (address);
+
+    function resolver(bytes32 node) external view returns (address);
+
+    function ttl(bytes32 node) external view returns (uint64);
+
+    function recordExists(bytes32 node) external view returns (bool);
+
+    function isApprovedForAll(address owner, address operator)
+        external
+        view
+        returns (bool);
+}
+
+// @openzeppelin/contracts/utils/introspection/IERC165.sol
+interface IERC165 {
+    function supportsInterface(bytes4 interfaceId) external view returns (bool);
+}
+
+// @openzeppelin/contracts/utils/introspection/ERC165.sol
+abstract contract ERC165 is IERC165 {
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override
+        returns (bool)
+    {
+        return interfaceId == type(IERC165).interfaceId;
+    }
+}
+
+// resolvers/ResolverBase.sol
+abstract contract ResolverBase is ERC165 {
+    function isAuthorised(bytes32 node) internal view virtual returns (bool);
+
+    modifier authorised(bytes32 node) {
+        require(isAuthorised(node));
+        _;
+    }
+}
+
+// resolvers/profiles/IABIResolver.sol
+interface IABIResolver {
+    event ABIChanged(bytes32 indexed node, uint256 indexed contentType);
+
+    /**
+     * Returns the ABI associated with an QRNS node.
+     * Defined in EIP205.
+     * @param node The QRNS node to query
+     * @param contentTypes A bitwise OR of the ABI formats accepted by the caller.
+     * @return contentType The content type of the return value
+     * @return data The ABI data
+     */
+    function ABI(bytes32 node, uint256 contentTypes)
+        external
+        view
+        returns (uint256, bytes memory);
+}
+
+// resolvers/profiles/ABIResolver.sol
+abstract contract ABIResolver is IABIResolver, ResolverBase {
+    mapping(bytes32 => mapping(uint256 => bytes)) abis;
+
+    /**
+     * Sets the ABI associated with an QRNS node.
+     * Nodes may have one ABI of each content type. To remove an ABI, set it to
+     * the empty string.
+     * @param node The node to update.
+     * @param contentType The content type of the ABI
+     * @param data The ABI data.
+     */
+    function setABI(
+        bytes32 node,
+        uint256 contentType,
+        bytes calldata data
+    ) external virtual authorised(node) {
+        // Content types must be powers of 2
+        require(((contentType - 1) & contentType) == 0);
+
+        abis[node][contentType] = data;
+        emit ABIChanged(node, contentType);
+    }
+
+    /**
+     * Returns the ABI associated with an QRNS node.
+     * Defined in EIP205.
+     * @param node The QRNS node to query
+     * @param contentTypes A bitwise OR of the ABI formats accepted by the caller.
+     * @return contentType The content type of the return value
+     * @return data The ABI data
+     */
+    function ABI(bytes32 node, uint256 contentTypes)
+        external
+        view
+        virtual
+        override
+        returns (uint256, bytes memory)
+    {
+        mapping(uint256 => bytes) storage abiset = abis[node];
+
+        for (
+            uint256 contentType = 1;
+            contentType <= contentTypes;
+            contentType <<= 1
+        ) {
+            if (
+                (contentType & contentTypes) != 0 &&
+                abiset[contentType].length > 0
+            ) {
+                return (contentType, abiset[contentType]);
+            }
+        }
+
+        return (0, bytes(""));
+    }
+
+    function supportsInterface(bytes4 interfaceID)
+        public
+        view
+        virtual
+        override
+        returns (bool)
+    {
+        return
+            interfaceID == type(IABIResolver).interfaceId ||
+            super.supportsInterface(interfaceID);
+    }
+}
+
+// resolvers/profiles/IAddrResolver.sol
+/**
+ * Interface for the legacy (ETH-only) addr function.
+ */
+interface IAddrResolver {
+    event AddrChanged(bytes32 indexed node, address a);
+
+    /**
+     * Returns the address associated with an QRNS node.
+     * @param node The QRNS node to query.
+     * @return The associated address.
+     */
+    function addr(bytes32 node) external view returns (address payable);
+}
+
+// resolvers/profiles/IAddressResolver.sol
+/**
+ * Interface for the new (multicoin) addr function.
+ */
+interface IAddressResolver {
+    event AddressChanged(
+        bytes32 indexed node,
+        uint256 coinType,
+        bytes newAddress
+    );
+
+    function addr(bytes32 node, uint256 coinType)
+        external
+        view
+        returns (bytes memory);
+}
+
+// resolvers/profiles/AddrResolver.sol
+abstract contract AddrResolver is
+    IAddrResolver,
+    IAddressResolver,
+    ResolverBase
+{
+    uint256 private constant COIN_TYPE_ETH = 60;
+
+    mapping(bytes32 => mapping(uint256 => bytes)) _addresses;
+
+    /**
+     * Sets the address associated with an QRNS node.
+     * May only be called by the owner of that node in the QRNS registry.
+     * @param node The node to update.
+     * @param a The address to set.
+     */
+    function setAddr(bytes32 node, address a)
+        external
+        virtual
+        authorised(node)
+    {
+        setAddr(node, COIN_TYPE_ETH, addressToBytes(a));
+    }
+
+    /**
+     * Returns the address associated with an QRNS node.
+     * @param node The QRNS node to query.
+     * @return The associated address.
+     */
+    function addr(bytes32 node)
+        public
+        view
+        virtual
+        override
+        returns (address payable)
+    {
+        bytes memory a = addr(node, COIN_TYPE_ETH);
+        if (a.length == 0) {
+            return payable(0);
+        }
+        return bytesToAddress(a);
+    }
+
+    function setAddr(
+        bytes32 node,
+        uint256 coinType,
+        bytes memory a
+    ) public virtual authorised(node) {
+        emit AddressChanged(node, coinType, a);
+        if (coinType == COIN_TYPE_ETH) {
+            emit AddrChanged(node, bytesToAddress(a));
+        }
+        _addresses[node][coinType] = a;
+    }
+
+    function addr(bytes32 node, uint256 coinType)
+        public
+        view
+        virtual
+        override
+        returns (bytes memory)
+    {
+        return _addresses[node][coinType];
+    }
+
+    function supportsInterface(bytes4 interfaceID)
+        public
+        view
+        virtual
+        override
+        returns (bool)
+    {
+        return
+            interfaceID == type(IAddrResolver).interfaceId ||
+            interfaceID == type(IAddressResolver).interfaceId ||
+            super.supportsInterface(interfaceID);
+    }
+
+    function bytesToAddress(bytes memory b)
+        internal
+        pure
+        returns (address payable a)
+    {
+        require(b.length == 64);
+        assembly {
+            a := mload(add(b, 64))
+        }
+    }
+
+    function addressToBytes(address a) internal pure returns (bytes memory b) {
+        b = new bytes(64);
+        assembly {
+            mstore(add(b, 64), a)
+        }
+    }
+}
+
+// resolvers/profiles/IContentHashResolver.sol
+interface IContentHashResolver {
+    event ContenthashChanged(bytes32 indexed node, bytes hash);
+
+    /**
+     * Returns the contenthash associated with an QRNS node.
+     * @param node The QRNS node to query.
+     * @return The associated contenthash.
+     */
+    function contenthash(bytes32 node) external view returns (bytes memory);
+}
+
+// resolvers/profiles/ContentHashResolver.sol
+abstract contract ContentHashResolver is IContentHashResolver, ResolverBase {
+    mapping(bytes32 => bytes) hashes;
+
+    /**
+     * Sets the contenthash associated with an QRNS node.
+     * May only be called by the owner of that node in the QRNS registry.
+     * @param node The node to update.
+     * @param hash The contenthash to set
+     */
+    function setContenthash(bytes32 node, bytes calldata hash)
+        external
+        virtual
+        authorised(node)
+    {
+        hashes[node] = hash;
+        emit ContenthashChanged(node, hash);
+    }
+
+    /**
+     * Returns the contenthash associated with an QRNS node.
+     * @param node The QRNS node to query.
+     * @return The associated contenthash.
+     */
+    function contenthash(bytes32 node)
+        external
+        view
+        virtual
+        override
+        returns (bytes memory)
+    {
+        return hashes[node];
+    }
+
+    function supportsInterface(bytes4 interfaceID)
+        public
+        view
+        virtual
+        override
+        returns (bool)
+    {
+        return
+            interfaceID == type(IContentHashResolver).interfaceId ||
+            super.supportsInterface(interfaceID);
+    }
+}
+
+// dnssec-oracle/BytesUtils.sol
+library BytesUtils {
+    function readUint8(bytes memory self, uint256 idx)
+        internal
+        pure
+        returns (uint8)
+    {
+        return uint8(self[idx]);
+    }
+
+    function readUint16(bytes memory self, uint256 idx)
+        internal
+        pure
+        returns (uint16)
+    {
+        require(idx + 2 <= self.length);
+        return (uint16(uint8(self[idx])) << 8) | uint16(uint8(self[idx + 1]));
+    }
+    function readUint32(bytes memory self, uint256 idx)
+        internal
+        pure
+        returns (uint32)
+    {
+        require(idx + 4 <= self.length);
+        return (uint32(readUint16(self, idx)) << 16) | uint32(readUint16(self, idx + 2));
+    }
+    function equals(bytes memory self, bytes memory other)
+        internal
+        pure
+        returns (bool)
+    {
+        return self.length == other.length && keccak256(self) == keccak256(other);
+    }
+    function substring(bytes memory self, uint256 offset, uint256 len)
+        internal
+        pure
+        returns (bytes memory)
+    {
+        require(offset + len <= self.length);
+        bytes memory result = new bytes(len);
+        for (uint256 i = 0; i < len; i++) result[i] = self[offset + i];
+        return result;
+    }
+}
+
+// dnssec-oracle/RRUtils.sol
+library RRUtils {
+    using BytesUtils for *;
+
+    function nameLength(bytes memory self, uint256 offset)
+        internal
+        pure
+        returns (uint256)
+    {
+        uint256 idx = offset;
+        while (true) {
+            assert(idx < self.length);
+            uint256 labelLen = self.readUint8(idx);
+            idx += labelLen + 1;
+            if (labelLen == 0) {
+                break;
+            }
+        }
+        return idx - offset;
+    }
+
+    struct RRIterator {
+        bytes data;
+        uint256 offset;
+        uint16 dnstype;
+        uint16 class;
+        uint32 ttl;
+        uint256 rdataOffset;
+        uint256 nextOffset;
+    }
+
+    /**
+     * @dev Begins iterating over resource records.
+     * @param self The byte string to read from.
+     * @param offset The offset to start reading at.
+     * @return ret An iterator object.
+     */
+    function iterateRRs(bytes memory self, uint256 offset)
+        internal
+        pure
+        returns (RRIterator memory ret)
+    {
+        ret.data = self;
+        ret.nextOffset = offset;
+        next(ret);
+    }
+
+    /**
+     * @dev Returns true iff there are more RRs to iterate.
+     * @param iter The iterator to check.
+     * @return True iff the iterator has finished.
+     */
+    function done(RRIterator memory iter) internal pure returns (bool) {
+        return iter.offset >= iter.data.length;
+    }
+
+    /**
+     * @dev Moves the iterator to the next resource record.
+     * @param iter The iterator to advance.
+     */
+    function next(RRIterator memory iter) internal pure {
+        iter.offset = iter.nextOffset;
+        if (iter.offset >= iter.data.length) {
+            return;
+        }
+
+        // Skip the name
+        uint256 off = iter.offset + nameLength(iter.data, iter.offset);
+
+        // Read type, class, and ttl
+        iter.dnstype = iter.data.readUint16(off);
+        off += 2;
+        iter.class = iter.data.readUint16(off);
+        off += 2;
+        iter.ttl = iter.data.readUint32(off);
+        off += 4;
+
+        // Read the rdata
+        uint256 rdataLength = iter.data.readUint16(off);
+        off += 2;
+        iter.rdataOffset = off;
+        iter.nextOffset = off + rdataLength;
+    }
+
+    /**
+     * @dev Returns the name of the current record.
+     * @param iter The iterator.
+     * @return A new bytes object containing the owner name from the RR.
+     */
+    function name(RRIterator memory iter) internal pure returns (bytes memory) {
+        return
+            iter.data.substring(
+                iter.offset,
+                nameLength(iter.data, iter.offset)
+            );
+    }
+
+    /**
+     * @dev Returns the rdata portion of the current record.
+     * @param iter The iterator.
+     * @return A new bytes object containing the RR's RDATA.
+     */
+    function rdata(RRIterator memory iter)
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return
+            iter.data.substring(
+                iter.rdataOffset,
+                iter.nextOffset - iter.rdataOffset
+            );
+    }
+}
+
+// resolvers/profiles/IDNSRecordResolver.sol
+interface IDNSRecordResolver {
+    // DNSRecordChanged is emitted whenever a given node/name/resource's RRSET is updated.
+    event DNSRecordChanged(
+        bytes32 indexed node,
+        bytes name,
+        uint16 resource,
+        bytes record
+    );
+    // DNSRecordDeleted is emitted whenever a given node/name/resource's RRSET is deleted.
+    event DNSRecordDeleted(bytes32 indexed node, bytes name, uint16 resource);
+    // DNSZoneCleared is emitted whenever a given node's zone information is cleared.
+    event DNSZoneCleared(bytes32 indexed node);
+
+    /**
+     * Obtain a DNS record.
+     * @param node the namehash of the node for which to fetch the record
+     * @param name the keccak-256 hash of the fully-qualified name for which to fetch the record
+     * @param resource the ID of the resource as per https://en.wikipedia.org/wiki/List_of_DNS_record_types
+     * @return the DNS record in wire format if present, otherwise empty
+     */
+    function dnsRecord(
+        bytes32 node,
+        bytes32 name,
+        uint16 resource
+    ) external view returns (bytes memory);
+}
+
+// resolvers/profiles/IDNSZoneResolver.sol
+interface IDNSZoneResolver {
+    // DNSZonehashChanged is emitted whenever a given node's zone hash is updated.
+    event DNSZonehashChanged(
+        bytes32 indexed node,
+        bytes lastzonehash,
+        bytes zonehash
+    );
+
+    /**
+     * zonehash obtains the hash for the zone.
+     * @param node The QRNS node to query.
+     * @return The associated contenthash.
+     */
+    function zonehash(bytes32 node) external view returns (bytes memory);
+}
+
+// resolvers/profiles/DNSResolver.sol
+abstract contract DNSResolver is
+    IDNSRecordResolver,
+    IDNSZoneResolver,
+    ResolverBase
+{
+    using RRUtils for *;
+    using BytesUtils for bytes;
+
+    // Zone hashes for the domains.
+    // A zone hash is an EIP-1577 content hash in binary format that should point to a
+    // resource containing a single zonefile.
+    // node => contenthash
+    mapping(bytes32 => bytes) private zonehashes;
+
+    // Version the mapping for each zone.  This allows users who have lost
+    // track of their entries to effectively delete an entire zone by bumping
+    // the version number.
+    // node => version
+    mapping(bytes32 => uint256) private versions;
+
+    // The records themselves.  Stored as binary RRSETs
+    // node => version => name => resource => data
+    mapping(bytes32 => mapping(uint256 => mapping(bytes32 => mapping(uint16 => bytes))))
+        private records;
+
+    // Count of number of entries for a given name.  Required for DNS resolvers
+    // when resolving wildcards.
+    // node => version => name => number of records
+    mapping(bytes32 => mapping(uint256 => mapping(bytes32 => uint16)))
+        private nameEntriesCount;
+
+    /**
+     * Set one or more DNS records.  Records are supplied in wire-format.
+     * Records with the same node/name/resource must be supplied one after the
+     * other to ensure the data is updated correctly. For example, if the data
+     * was supplied:
+     *     a.example.com IN A 1.2.3.4
+     *     a.example.com IN A 5.6.7.8
+     *     www.example.com IN CNAME a.example.com.
+     * then this would store the two A records for a.example.com correctly as a
+     * single RRSET, however if the data was supplied:
+     *     a.example.com IN A 1.2.3.4
+     *     www.example.com IN CNAME a.example.com.
+     *     a.example.com IN A 5.6.7.8
+     * then this would store the first A record, the CNAME, then the second A
+     * record which would overwrite the first.
+     *
+     * @param node the namehash of the node for which to set the records
+     * @param data the DNS wire format records to set
+     */
+    function setDNSRecords(bytes32 node, bytes calldata data)
+        external
+        virtual
+        authorised(node)
+    {
+        uint16 resource = 0;
+        uint256 offset = 0;
+        bytes memory name;
+        bytes memory value;
+        bytes32 nameHash;
+        // Iterate over the data to add the resource records
+        for (
+            RRUtils.RRIterator memory iter = data.iterateRRs(0);
+            !iter.done();
+            iter.next()
+        ) {
+            if (resource == 0) {
+                resource = iter.dnstype;
+                name = iter.name();
+                nameHash = keccak256(abi.encodePacked(name));
+                value = bytes(iter.rdata());
+            } else {
+                bytes memory newName = iter.name();
+                if (resource != iter.dnstype || !name.equals(newName)) {
+                    setDNSRRSet(
+                        node,
+                        name,
+                        resource,
+                        data,
+                        offset,
+                        iter.offset - offset,
+                        value.length == 0
+                    );
+                    resource = iter.dnstype;
+                    offset = iter.offset;
+                    name = newName;
+                    nameHash = keccak256(name);
+                    value = bytes(iter.rdata());
+                }
+            }
+        }
+        if (name.length > 0) {
+            setDNSRRSet(
+                node,
+                name,
+                resource,
+                data,
+                offset,
+                data.length - offset,
+                value.length == 0
+            );
+        }
+    }
+
+    /**
+     * Obtain a DNS record.
+     * @param node the namehash of the node for which to fetch the record
+     * @param name the keccak-256 hash of the fully-qualified name for which to fetch the record
+     * @param resource the ID of the resource as per https://en.wikipedia.org/wiki/List_of_DNS_record_types
+     * @return the DNS record in wire format if present, otherwise empty
+     */
+    function dnsRecord(
+        bytes32 node,
+        bytes32 name,
+        uint16 resource
+    ) public view virtual override returns (bytes memory) {
+        return records[node][versions[node]][name][resource];
+    }
+
+    /**
+     * Check if a given node has records.
+     * @param node the namehash of the node for which to check the records
+     * @param name the namehash of the node for which to check the records
+     */
+    function hasDNSRecords(bytes32 node, bytes32 name)
+        public
+        view
+        virtual
+        returns (bool)
+    {
+        return (nameEntriesCount[node][versions[node]][name] != 0);
+    }
+
+    /**
+     * Clear all information for a DNS zone.
+     * @param node the namehash of the node for which to clear the zone
+     */
+    function clearDNSZone(bytes32 node) public virtual authorised(node) {
+        versions[node]++;
+        emit DNSZoneCleared(node);
+    }
+
+    /**
+     * setZonehash sets the hash for the zone.
+     * May only be called by the owner of that node in the QRNS registry.
+     * @param node The node to update.
+     * @param hash The zonehash to set
+     */
+    function setZonehash(bytes32 node, bytes calldata hash)
+        external
+        virtual
+        authorised(node)
+    {
+        bytes memory oldhash = zonehashes[node];
+        zonehashes[node] = hash;
+        emit DNSZonehashChanged(node, oldhash, hash);
+    }
+
+    /**
+     * zonehash obtains the hash for the zone.
+     * @param node The QRNS node to query.
+     * @return The associated contenthash.
+     */
+    function zonehash(bytes32 node)
+        external
+        view
+        virtual
+        override
+        returns (bytes memory)
+    {
+        return zonehashes[node];
+    }
+
+    function supportsInterface(bytes4 interfaceID)
+        public
+        view
+        virtual
+        override
+        returns (bool)
+    {
+        return
+            interfaceID == type(IDNSRecordResolver).interfaceId ||
+            interfaceID == type(IDNSZoneResolver).interfaceId ||
+            super.supportsInterface(interfaceID);
+    }
+
+    function setDNSRRSet(
+        bytes32 node,
+        bytes memory name,
+        uint16 resource,
+        bytes memory data,
+        uint256 offset,
+        uint256 size,
+        bool deleteRecord
+    ) private {
+        uint256 version = versions[node];
+        bytes32 nameHash = keccak256(name);
+        bytes memory rrData = data.substring(offset, size);
+        if (deleteRecord) {
+            if (records[node][version][nameHash][resource].length != 0) {
+                nameEntriesCount[node][version][nameHash]--;
+            }
+            delete (records[node][version][nameHash][resource]);
+            emit DNSRecordDeleted(node, name, resource);
+        } else {
+            if (records[node][version][nameHash][resource].length == 0) {
+                nameEntriesCount[node][version][nameHash]++;
+            }
+            records[node][version][nameHash][resource] = rrData;
+            emit DNSRecordChanged(node, name, resource, rrData);
+        }
+    }
+}
+
+// resolvers/profiles/IInterfaceResolver.sol
+interface IInterfaceResolver {
+    event InterfaceChanged(
+        bytes32 indexed node,
+        bytes4 indexed interfaceID,
+        address implementer
+    );
+
+    /**
+     * Returns the address of a contract that implements the specified interface for this name.
+     * If an implementer has not been set for this interfaceID and name, the resolver will query
+     * the contract at `addr()`. If `addr()` is set, a contract exists at that address, and that
+     * contract implements EIP165 and returns `true` for the specified interfaceID, its address
+     * will be returned.
+     * @param node The QRNS node to query.
+     * @param interfaceID The EIP 165 interface ID to check for.
+     * @return The address that implements this interface, or 0 if the interface is unsupported.
+     */
+    function interfaceImplementer(bytes32 node, bytes4 interfaceID)
+        external
+        view
+        returns (address);
+}
+
+// resolvers/profiles/InterfaceResolver.sol
+abstract contract InterfaceResolver is IInterfaceResolver, AddrResolver {
+    mapping(bytes32 => mapping(bytes4 => address)) interfaces;
+
+    /**
+     * Sets an interface associated with a name.
+     * Setting the address to 0 restores the default behaviour of querying the contract at `addr()` for interface support.
+     * @param node The node to update.
+     * @param interfaceID The EIP 165 interface ID.
+     * @param implementer The address of a contract that implements this interface for this node.
+     */
+    function setInterface(
+        bytes32 node,
+        bytes4 interfaceID,
+        address implementer
+    ) external virtual authorised(node) {
+        interfaces[node][interfaceID] = implementer;
+        emit InterfaceChanged(node, interfaceID, implementer);
+    }
+
+    /**
+     * Returns the address of a contract that implements the specified interface for this name.
+     * If an implementer has not been set for this interfaceID and name, the resolver will query
+     * the contract at `addr()`. If `addr()` is set, a contract exists at that address, and that
+     * contract implements EIP165 and returns `true` for the specified interfaceID, its address
+     * will be returned.
+     * @param node The QRNS node to query.
+     * @param interfaceID The EIP 165 interface ID to check for.
+     * @return The address that implements this interface, or 0 if the interface is unsupported.
+     */
+    function interfaceImplementer(bytes32 node, bytes4 interfaceID)
+        external
+        view
+        virtual
+        override
+        returns (address)
+    {
+        address implementer = interfaces[node][interfaceID];
+        if (implementer != address(0)) {
+            return implementer;
+        }
+
+        address a = addr(node);
+        if (a == address(0)) {
+            return address(0);
+        }
+
+        (bool success, bytes memory returnData) = a.staticcall(
+            abi.encodeWithSignature(
+                "supportsInterface(bytes4)",
+                type(IERC165).interfaceId
+            )
+        );
+        if (!success || returnData.length < 64 || returnData[63] == 0) {
+            // EIP 165 not supported by target
+            return address(0);
+        }
+
+        (success, returnData) = a.staticcall(
+            abi.encodeWithSignature("supportsInterface(bytes4)", interfaceID)
+        );
+        if (!success || returnData.length < 64 || returnData[63] == 0) {
+            // Specified interface not supported by target
+            return address(0);
+        }
+
+        return a;
+    }
+
+    function supportsInterface(bytes4 interfaceID)
+        public
+        view
+        virtual
+        override
+        returns (bool)
+    {
+        return
+            interfaceID == type(IInterfaceResolver).interfaceId ||
+            super.supportsInterface(interfaceID);
+    }
+}
+
+// resolvers/profiles/INameResolver.sol
+interface INameResolver {
+    event NameChanged(bytes32 indexed node, string name);
+
+    /**
+     * Returns the name associated with an QRNS node, for reverse records.
+     * Defined in EIP181.
+     * @param node The QRNS node to query.
+     * @return The associated name.
+     */
+    function name(bytes32 node) external view returns (string memory);
+}
+
+// resolvers/profiles/NameResolver.sol
+abstract contract NameResolver is INameResolver, ResolverBase {
+    mapping(bytes32 => string) names;
+
+    /**
+     * Sets the name associated with an QRNS node, for reverse records.
+     * May only be called by the owner of that node in the QRNS registry.
+     * @param node The node to update.
+     */
+    function setName(bytes32 node, string calldata newName)
+        external
+        virtual
+        authorised(node)
+    {
+        names[node] = newName;
+        emit NameChanged(node, newName);
+    }
+
+    /**
+     * Returns the name associated with an QRNS node, for reverse records.
+     * Defined in EIP181.
+     * @param node The QRNS node to query.
+     * @return The associated name.
+     */
+    function name(bytes32 node)
+        external
+        view
+        virtual
+        override
+        returns (string memory)
+    {
+        return names[node];
+    }
+
+    function supportsInterface(bytes4 interfaceID)
+        public
+        view
+        virtual
+        override
+        returns (bool)
+    {
+        return
+            interfaceID == type(INameResolver).interfaceId ||
+            super.supportsInterface(interfaceID);
+    }
+}
+
+// resolvers/profiles/IPubkeyResolver.sol
+interface IPubkeyResolver {
+    event PubkeyChanged(
+        bytes32 indexed node,
+        bytes publicKey,
+        bytes descriptor
+    );
+
+    /**
+     * Returns the ML-DSA-87 public key and descriptor associated with a QRNS node.
+     * @param node The QRNS node to query
+     * @return publicKey The ML-DSA-87 public key.
+     * @return descriptor The QRL descriptor.
+     */
+    function pubkey(bytes32 node)
+        external
+        view
+        returns (bytes memory publicKey, bytes memory descriptor);
+}
+
+// resolvers/profiles/PubkeyResolver.sol
+abstract contract PubkeyResolver is IPubkeyResolver, ResolverBase {
+    uint256 private constant MLDSA87_PUBLIC_KEY_LENGTH = 2592;
+    uint256 private constant DESCRIPTOR_LENGTH = 3;
+    uint8 private constant WALLET_TYPE_ML_DSA_87 = 1;
+
+    struct PublicKey {
+        bytes publicKey;
+        bytes descriptor;
+    }
+
+    mapping(bytes32 => PublicKey) pubkeys;
+
+    /**
+     * Sets the ML-DSA-87 public key associated with a QRNS node.
+     * @param node The QRNS node to query
+     * @param publicKey The ML-DSA-87 public key.
+     * @param descriptor The QRL descriptor.
+     */
+    function setPubkey(
+        bytes32 node,
+        bytes calldata publicKey,
+        bytes calldata descriptor
+    ) external virtual authorised(node) {
+        require(publicKey.length == MLDSA87_PUBLIC_KEY_LENGTH);
+        require(
+            descriptor.length == DESCRIPTOR_LENGTH &&
+                uint8(descriptor[0]) == WALLET_TYPE_ML_DSA_87 &&
+                descriptor[1] == 0 &&
+                descriptor[2] == 0
+        );
+        pubkeys[node] = PublicKey(publicKey, descriptor);
+        emit PubkeyChanged(node, publicKey, descriptor);
+    }
+
+    /**
+     * Returns the ML-DSA-87 public key and descriptor associated with a QRNS node.
+     * @param node The QRNS node to query
+     * @return publicKey The ML-DSA-87 public key.
+     * @return descriptor The QRL descriptor.
+     */
+    function pubkey(bytes32 node)
+        external
+        view
+        virtual
+        override
+        returns (bytes memory publicKey, bytes memory descriptor)
+    {
+        return (pubkeys[node].publicKey, pubkeys[node].descriptor);
+    }
+
+    function supportsInterface(bytes4 interfaceID)
+        public
+        view
+        virtual
+        override
+        returns (bool)
+    {
+        return
+            interfaceID == type(IPubkeyResolver).interfaceId ||
+            super.supportsInterface(interfaceID);
+    }
+}
+
+// resolvers/profiles/ITextResolver.sol
+interface ITextResolver {
+    event TextChanged(
+        bytes32 indexed node,
+        string indexed indexedKey,
+        string key
+    );
+
+    /**
+     * Returns the text data associated with an QRNS node and key.
+     * @param node The QRNS node to query.
+     * @param key The text data key to query.
+     * @return The associated text data.
+     */
+    function text(bytes32 node, string calldata key)
+        external
+        view
+        returns (string memory);
+}
+
+// resolvers/profiles/TextResolver.sol
+abstract contract TextResolver is ITextResolver, ResolverBase {
+    mapping(bytes32 => mapping(string => string)) texts;
+
+    /**
+     * Sets the text data associated with an QRNS node and key.
+     * May only be called by the owner of that node in the QRNS registry.
+     * @param node The node to update.
+     * @param key The key to set.
+     * @param value The text data value to set.
+     */
+    function setText(
+        bytes32 node,
+        string calldata key,
+        string calldata value
+    ) external virtual authorised(node) {
+        texts[node][key] = value;
+        emit TextChanged(node, key, key);
+    }
+
+    /**
+     * Returns the text data associated with an QRNS node and key.
+     * @param node The QRNS node to query.
+     * @param key The text data key to query.
+     * @return The associated text data.
+     */
+    function text(bytes32 node, string calldata key)
+        external
+        view
+        virtual
+        override
+        returns (string memory)
+    {
+        return texts[node][key];
+    }
+
+    function supportsInterface(bytes4 interfaceID)
+        public
+        view
+        virtual
+        override
+        returns (bool)
+    {
+        return
+            interfaceID == type(ITextResolver).interfaceId ||
+            super.supportsInterface(interfaceID);
+    }
+}
+
+// resolvers/IMulticallable.sol
+interface IMulticallable {
+    function multicall(bytes[] calldata data)
+        external
+        returns (bytes[] memory results);
+}
+
+// resolvers/Multicallable.sol
+abstract contract Multicallable is IMulticallable, ERC165 {
+    function multicall(bytes[] calldata data)
+        external
+        override
+        returns (bytes[] memory results)
+    {
+        results = new bytes[](data.length);
+        for (uint256 i = 0; i < data.length; i++) {
+            (bool success, bytes memory result) = address(this).delegatecall(
+                data[i]
+            );
+            require(success);
+            results[i] = result;
+        }
+        return results;
+    }
+
+    function supportsInterface(bytes4 interfaceID)
+        public
+        view
+        virtual
+        override
+        returns (bool)
+    {
+        return
+            interfaceID == type(IMulticallable).interfaceId ||
+            super.supportsInterface(interfaceID);
+    }
+}
+
+// resolvers/PublicResolver.sol
+interface INameWrapper {
+    function ownerOf(uint256 id) external view returns (address);
+}
+
+/**
+ * A simple resolver anyone can use; only allows the owner of a node to set its
+ * address.
+ */
+contract PublicResolver is
+    Multicallable,
+    ABIResolver,
+    AddrResolver,
+    ContentHashResolver,
+    DNSResolver,
+    InterfaceResolver,
+    NameResolver,
+    PubkeyResolver,
+    TextResolver
+{
+    QRNS immutable qrns;
+    INameWrapper immutable nameWrapper;
+    address immutable trustedETHController;
+    address immutable trustedReverseRegistrar;
+
+    /**
+     * A mapping of operators. An address that is authorised for an address
+     * may make any changes to the name that the owner could, but may not update
+     * the set of authorisations.
+     * (owner, operator) => approved
+     */
+    mapping(address => mapping(address => bool)) private _operatorApprovals;
+
+    // Logged when an operator is added or removed.
+    event ApprovalForAll(
+        address indexed owner,
+        address indexed operator,
+        bool approved
+    );
+
+    constructor(
+        QRNS _qrns,
+        INameWrapper wrapperAddress,
+        address _trustedETHController,
+        address _trustedReverseRegistrar
+    ) {
+        qrns = _qrns;
+        nameWrapper = wrapperAddress;
+        trustedETHController = _trustedETHController;
+        trustedReverseRegistrar = _trustedReverseRegistrar;
+    }
+
+    /**
+     * @dev See {IERC1155-setApprovalForAll}.
+     */
+    function setApprovalForAll(address operator, bool approved) external {
+        require(
+            msg.sender != operator,
+            "ERC1155: setting approval status for self"
+        );
+
+        _operatorApprovals[msg.sender][operator] = approved;
+        emit ApprovalForAll(msg.sender, operator, approved);
+    }
+
+    /**
+     * @dev See {IERC1155-isApprovedForAll}.
+     */
+    function isApprovedForAll(address account, address operator)
+        public
+        view
+        returns (bool)
+    {
+        return _operatorApprovals[account][operator];
+    }
+
+    function isAuthorised(bytes32 node) internal view override returns (bool) {
+        if (
+            msg.sender == trustedETHController ||
+            msg.sender == trustedReverseRegistrar
+        ) {
+            return true;
+        }
+        address owner = qrns.owner(node);
+        if (owner == address(nameWrapper)) {
+            owner = nameWrapper.ownerOf(uint256(node));
+        }
+        return owner == msg.sender || isApprovedForAll(owner, msg.sender);
+    }
+
+    function supportsInterface(bytes4 interfaceID)
+        public
+        view
+        override(
+            Multicallable,
+            ABIResolver,
+            AddrResolver,
+            ContentHashResolver,
+            DNSResolver,
+            InterfaceResolver,
+            NameResolver,
+            PubkeyResolver,
+            TextResolver
+        )
+        returns (bool)
+    {
+        return super.supportsInterface(interfaceID);
+    }
+}

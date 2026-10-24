@@ -15,7 +15,6 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import { SupportedProviders, TransactionInfo, TransactionReceipt } from '@theqrl/web3-types';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { Contract } from '@theqrl/web3-qrl-contract';
 import { Web3QRL } from '../../../src';
 import {
@@ -90,13 +89,12 @@ describe('rpc with block', () => {
 
 	describe('methods', () => {
 		it('getTransactionFromBlock', async () => {
-			// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 			const tx = (await web3QRL.getTransactionFromBlock(
 				blockData.blockNumber,
 				blockData.transactionIndex,
 			))!;
 
-			validateTransaction(tx as TransactionInfo);
+			validateTransaction(tx as unknown as TransactionInfo);
 			expect(tx?.hash).toBe(blockData.transactionHash);
 		});
 	});

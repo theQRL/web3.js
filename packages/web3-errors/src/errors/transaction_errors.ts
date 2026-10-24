@@ -15,8 +15,6 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/* eslint-disable max-classes-per-file */
-
 import {
 	Bytes,
 	HexString,
@@ -30,6 +28,7 @@ import {
 	ERR_TX_BLOCK_TIMEOUT,
 	ERR_TX_CONTRACT_NOT_STORED,
 	ERR_TX_CHAIN_ID_MISMATCH,
+	ERR_TX_NODE_CHAIN_ID_MISMATCH,
 	ERR_TX_DATA_AND_INPUT,
 	ERR_TX_CHAIN_MISMATCH,
 	ERR_TX_HARDFORK_MISMATCH,
@@ -63,25 +62,38 @@ import {
 	ERR_TX_INVALID_PROPERTIES_FOR_TYPE,
 	ERR_TX_MISSING_GAS_INNER_ERROR,
 } from '../error_codes.js';
-import { InvalidValueError, BaseWeb3Error } from '../web3_error_base.js';
+import {
+	InvalidValueError,
+	BaseWeb3Error,
+	toJsonSafe,
+	truncateEchoedText,
+} from '../web3_error_base.js';
 
 export class TransactionError<ReceiptType = TransactionReceipt> extends BaseWeb3Error {
 	public code = ERR_TX;
 
-	public constructor(message: string, public receipt?: ReceiptType) {
+	public constructor(
+		message: string,
+		public receipt?: ReceiptType,
+	) {
 		super(message);
 	}
 
 	public toJSON() {
-		return { ...super.toJSON(), receipt: this.receipt };
+		return { ...super.toJSON(), receipt: toJsonSafe(this.receipt) };
 	}
 }
 
 export class RevertInstructionError extends BaseWeb3Error {
 	public code = ERR_TX_REVERT_INSTRUCTION;
 
-	public constructor(public reason: string, public signature: string) {
-		super(`Your request got reverted with the following reason string: ${reason}`);
+	public constructor(
+		public reason: string,
+		public signature: string,
+	) {
+		super(
+			`Your request got reverted with the following reason string: ${truncateEchoedText(reason)}`,
+		);
 	}
 
 	public toJSON() {
@@ -101,8 +113,10 @@ export class TransactionRevertInstructionError<
 		public data?: string,
 	) {
 		super(
-			`Transaction has been reverted by the QRVM${
-				receipt === undefined ? '' : `:\n ${BaseWeb3Error.convertToString(receipt)}`
+			`${receipt === undefined ? 'Transaction execution was rejected or failed during simulation' : 'Transaction has been reverted by the QRVM'}${
+				receipt === undefined
+					? ''
+					: `:\n ${truncateEchoedText(BaseWeb3Error.convertToString(receipt))}`
 			}`,
 		);
 	}
@@ -112,8 +126,8 @@ export class TransactionRevertInstructionError<
 			...super.toJSON(),
 			reason: this.reason,
 			signature: this.signature,
-			receipt: this.receipt,
-			data: this.data,
+			receipt: toJsonSafe(this.receipt),
+			data: toJsonSafe(this.data),
 		};
 	}
 }
@@ -137,7 +151,7 @@ export class TransactionRevertWithCustomError<
 		public receipt?: ReceiptType,
 		public data?: string,
 	) {
-		super(reason);
+		super(reason, signature, receipt, data);
 	}
 
 	public toJSON() {
@@ -146,10 +160,10 @@ export class TransactionRevertWithCustomError<
 			reason: this.reason,
 			customErrorName: this.customErrorName,
 			customErrorDecodedSignature: this.customErrorDecodedSignature,
-			customErrorArguments: this.customErrorArguments,
+			customErrorArguments: toJsonSafe(this.customErrorArguments),
 			signature: this.signature,
-			receipt: this.receipt,
-			data: this.data,
+			receipt: toJsonSafe(this.receipt),
+			data: toJsonSafe(this.data),
 		};
 	}
 }
@@ -161,7 +175,7 @@ export class NoContractAddressFoundError extends TransactionError {
 	}
 
 	public toJSON() {
-		return { ...super.toJSON(), receipt: this.receipt };
+		return { ...super.toJSON(), receipt: toJsonSafe(this.receipt) };
 	}
 }
 
@@ -177,8 +191,10 @@ export class TransactionRevertedWithoutReasonError<
 > extends TransactionError<ReceiptType> {
 	public constructor(receipt?: ReceiptType) {
 		super(
-			`Transaction has been reverted by the QRVM${
-				receipt === undefined ? '' : `:\n ${BaseWeb3Error.convertToString(receipt)}`
+			`${receipt === undefined ? 'Transaction execution was rejected or failed during simulation' : 'Transaction has been reverted by the QRVM'}${
+				receipt === undefined
+					? ''
+					: `:\n ${truncateEchoedText(BaseWeb3Error.convertToString(receipt))}`
 			}`,
 			receipt,
 		);
@@ -189,11 +205,7 @@ export class TransactionRevertedWithoutReasonError<
 export class TransactionOutOfGasError extends TransactionError {
 	public constructor(receipt: TransactionReceipt) {
 		super(
-			`Transaction ran out of gas. Please provide more gas:\n ${JSON.stringify(
-				receipt,
-				undefined,
-				2,
-			)}`,
+			`Transaction ran out of gas. Please provide more gas:\n ${truncateEchoedText(BaseWeb3Error.convertToString(receipt))}`,
 			receipt,
 		);
 		this.code = ERR_TX_OUT_OF_GAS;
@@ -262,8 +274,24 @@ export class ChainIdMismatchError extends InvalidValueError {
 
 	public constructor(value: { txChainId: unknown; customChainId: unknown }) {
 		super(
-			JSON.stringify(value),
+			BaseWeb3Error.convertToString(value),
 			'Chain Id doesnt match in tx.chainId tx.common.customChain.chainId',
+		);
+	}
+}
+
+/**
+ * The transaction names a chain id that is not the one the connected node serves. The node
+ * would reject the signed transaction, while the signature would be valid on the other chain:
+ * the transaction is not signed.
+ */
+export class NodeChainIdMismatchError extends InvalidValueError {
+	public code = ERR_TX_NODE_CHAIN_ID_MISMATCH;
+
+	public constructor(value: { txChainId: unknown; nodeChainId: unknown }) {
+		super(
+			BaseWeb3Error.convertToString(value),
+			'the transaction names a chain id (txChainId) that the connected node does not serve (nodeChainId)',
 		);
 	}
 }
@@ -272,7 +300,10 @@ export class ChainMismatchError extends InvalidValueError {
 	public code = ERR_TX_CHAIN_MISMATCH;
 
 	public constructor(value: { txChain: unknown; baseChain: unknown }) {
-		super(JSON.stringify(value), 'Chain doesnt match in tx.chain tx.common.basechain');
+		super(
+			BaseWeb3Error.convertToString(value),
+			'Chain doesnt match in tx.chain tx.common.basechain',
+		);
 	}
 }
 
@@ -280,7 +311,10 @@ export class HardforkMismatchError extends InvalidValueError {
 	public code = ERR_TX_HARDFORK_MISMATCH;
 
 	public constructor(value: { txHardfork: unknown; commonHardfork: unknown }) {
-		super(JSON.stringify(value), 'hardfork doesnt match in tx.hardfork tx.common.hardfork');
+		super(
+			BaseWeb3Error.convertToString(value),
+			'hardfork doesnt match in tx.hardfork tx.common.hardfork',
+		);
 	}
 }
 
@@ -330,7 +364,7 @@ export class MissingGasError extends InvalidValueError {
 			`gas: ${value.gas ?? 'undefined'}, maxPriorityFeePerGas: ${
 				value.maxPriorityFeePerGas ?? 'undefined'
 			}, maxFeePerGas: ${value.maxFeePerGas ?? 'undefined'}`,
-			'"gas" is missing',
+			'Gas limit or fee fields are missing',
 		);
 		this.innerError = new MissingGasInnerError();
 	}
@@ -355,7 +389,7 @@ export class InvalidMaxPriorityFeePerGasOrMaxFeePerGas extends InvalidValueError
 			`maxPriorityFeePerGas: ${value.maxPriorityFeePerGas ?? 'undefined'}, maxFeePerGas: ${
 				value.maxFeePerGas ?? 'undefined'
 			}`,
-			'maxPriorityFeePerGas or maxFeePerGas is lower than 0',
+			'Fee fields must be unsigned 256-bit quantities and maxPriorityFeePerGas must not exceed maxFeePerGas',
 		);
 	}
 }
@@ -463,10 +497,10 @@ export class TransactionMissingReceiptOrBlockHashError extends InvalidValueError
 		transactionHash: Bytes;
 	}) {
 		super(
-			`receipt: ${JSON.stringify(
+			`receipt: ${BaseWeb3Error.convertToString(
 				value.receipt,
 			)}, blockHash: ${value.blockHash?.toString()}, transactionHash: ${value.transactionHash?.toString()}`,
-			`Receipt missing or blockHash null`,
+			`Receipt missing or blockHash null; during confirmation this can indicate a chain reorganization`,
 		);
 	}
 }
@@ -475,7 +509,10 @@ export class TransactionReceiptMissingBlockNumberError extends InvalidValueError
 	public code = ERR_TX_RECEIPT_MISSING_BLOCK_NUMBER;
 
 	public constructor(value: { receipt: TransactionReceipt }) {
-		super(`receipt: ${JSON.stringify(value.receipt)}`, `Receipt missing block number`);
+		super(
+			`receipt: ${BaseWeb3Error.convertToString(value.receipt)}`,
+			`Receipt missing block number`,
+		);
 	}
 }
 

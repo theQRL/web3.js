@@ -44,6 +44,13 @@ export const DEFAULT_MAX_RESPONSE_BYTES = 10 * 1024 * 1024;
 export const DEFAULT_MAX_IN_FLIGHT_REQUESTS = 256;
 
 /**
+ * The longest delay a JavaScript timer can hold: 2^31 - 1 milliseconds (about 24.8 days).
+ * Node and browsers silently clamp a longer `setTimeout` delay to 1 ms, so a timeout above
+ * this value would fire immediately instead of "never" (P4-L-5).
+ */
+export const MAX_TIMER_DELAY_MS = 2_147_483_647;
+
+/**
  * Constructor-level bounds shared by the HTTP and socket (WebSocket / IPC) providers.
  *
  * Every field is optional; unset fields fall back to the `DEFAULT_*` constants in this
@@ -96,9 +103,10 @@ export interface RequestBoundsOptions {
 /**
  * Validates a timeout option.
  *
- * Rejects `Infinity`, `NaN`, non-numbers and non-positive values. Notably there is no
- * "infinite" or "disabled" opt-out: a caller that wants a long deadline must name a
- * finite one, so a request can never hang forever by configuration.
+ * Rejects `Infinity`, `NaN`, non-numbers, non-positive values and values above
+ * {@link MAX_TIMER_DELAY_MS}, which a JavaScript timer cannot hold (it would fire after 1 ms
+ * instead, P4-L-5). Notably there is no "infinite" or "disabled" opt-out: a caller that wants a
+ * long deadline must name a finite one, so a request can never hang forever by configuration.
  *
  * @param value - the candidate timeout in milliseconds
  * @param optionName - the option name, used in the error message
@@ -110,6 +118,14 @@ export const validateTimeout = (value: number, optionName: string): number => {
 			`Invalid ${optionName}: expected a finite number of milliseconds greater than 0, got ${String(
 				value,
 			)}. Timeouts cannot be disabled or infinite.`,
+		);
+	}
+
+	if (value > MAX_TIMER_DELAY_MS) {
+		throw new ProviderError(
+			`Invalid ${optionName}: ${String(
+				value,
+			)} ms exceeds the longest delay a timer can hold (${MAX_TIMER_DELAY_MS} ms, about 24.8 days); a longer value would fire after 1 ms.`,
 		);
 	}
 

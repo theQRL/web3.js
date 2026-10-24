@@ -190,12 +190,12 @@ describe('Web3SubscriptionManager', () => {
 			await subManager.addSubscription(sub);
 		});
 
-		it('should throw error if a subscription id does not exists', async () => {
+		it('cancels an owned subscription without a current node id', async () => {
 			delete (sub as any).id;
 
-			await expect(subManager.removeSubscription(sub)).rejects.toThrow(
-				'Subscription is not subscribed yet.',
-			);
+			await expect(subManager.removeSubscription(sub)).resolves.toBeUndefined();
+			expect(subManager.hasSubscription(sub)).toBe(false);
+			expect(subManager.subscriptions.size).toBe(0);
 		});
 
 		it('should throw error if a subscription does not exists', async () => {

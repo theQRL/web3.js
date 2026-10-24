@@ -16,8 +16,8 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { AbiError } from '@theqrl/web3-errors';
-import { AbiCoder, ParamType } from '@theqrl/abi';
-import { isNullish, leftPad, rightPad, toHex } from '@theqrl/web3-utils';
+import { AbiCoder, ParamType, booleanToBit } from '@theqrl/abi';
+import { isNullish, leftPad } from '@theqrl/web3-utils';
 import {
 	AbiInput,
 	AbiCoderStruct,
@@ -67,6 +67,7 @@ export const isSimplifiedStructFormat = (
 	type: string | Partial<AbiParameter> | Partial<AbiInput>,
 ): type is Omit<AbiParameter, 'components' | 'name'> =>
 	typeof type === 'object' &&
+	typeof (type as { type: unknown }).type === 'undefined' &&
 	typeof (type as { components: unknown }).components === 'undefined' &&
 	typeof (type as { name: unknown }).name === 'undefined';
 
@@ -118,15 +119,16 @@ export const mapTypes = (
 			modifiedType = { ...type };
 		}
 
-		// A 64-byte QRL address plus a 4-byte selector is 68 bytes, which no
-		// longer fits in one VM word. Keep this unsupported until the chain and
-		// ABI spec define a QRL-specific function-pointer representation.
-		if (typeof type === 'object' && type.type === 'function') {
-			throw new AbiError('ABI function type is not supported for 64-byte QRL addresses.');
-		}
-
 		if (isSimplifiedStructFormat(modifiedType)) {
 			const structName = Object.keys(modifiedType)[0] as unknown as keyof typeof modifiedType;
+			// An empty object is neither a type string, an ABI parameter nor a struct (I-10).
+			if (typeof structName !== 'string') {
+				throw new AbiError(
+					`Invalid ABI parameter: expected a type string, an object with a "type" or a struct definition, got ${JSON.stringify(
+						modifiedType,
+					)}`,
+				);
+			}
 
 			mappedTypes.push({
 				...mapStructNameAndType(structName),
@@ -155,75 +157,80 @@ export const formatOddHexstrings = (param: string): string =>
 	isOddHexstring(param) ? `0x0${param.substring(2)}` : param;
 
 /**
- * Handle some formatting of params for backwards compatibility with Ethers V4
+ * Handle some formatting of params for backwards compatibility with Ethers V4.
+ *
+ * A `bool` is normalised to `true`/`false` from exactly the forms the library's validator
+ * (`web3-validator`'s `bool` format) accepts, mapped by value: `0`/`1`, `0n`/`1n`, `'0'`/`'1'`
+ * and `'0x0'`/`'0x1'`. Any other value is passed through for the coder to reject, so `'0'`
+ * and `'0x0'` encode as `false` on every path and `'false'` is an error (H-3).
  */
-export const formatParam = (type: string, _param: unknown): unknown => {
-	// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+const STRICT_HEX = /^-?0x[0-9a-f]+$/i;
 
-	// clone if _param is an object
+export const formatParam = (type: string, _param: unknown): unknown => {
+	if (type === 'function') {
+		return _param;
+	}
+	if (type === 'bool') {
+		const bit = booleanToBit(_param);
+		return bit === undefined ? _param : bit === 1;
+	}
+	// Preserve binary inputs for the coder: byte coders accept them, while the
+	// number coder rejects them. Converting to hex would bypass that validation.
+	if (_param instanceof Uint8Array) return _param;
 	const param = typeof _param === 'object' && !Array.isArray(_param) ? { ..._param } : _param;
 	const paramTypeBytes = /^bytes([0-9]*)$/;
 	const paramTypeBytesArray = /^bytes([0-9]*)\[\]$/;
 	const paramTypeNumber = /^(u?int)([0-9]*)$/;
 	const paramTypeNumberArray = /^(u?int)([0-9]*)\[\]$/;
+	const paramTypeBoolArray = /^bool\[\]$/;
 
 	// Format BN to string
 	if (param instanceof BigInt) {
 		return param.toString(10);
 	}
 
-	if (paramTypeBytesArray.exec(type) || paramTypeNumberArray.exec(type)) {
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-return
-		const paramClone = [...(param as Array<unknown>)];
-		return paramClone.map(p => formatParam(type.replace('[]', ''), p));
+	if (
+		paramTypeBytesArray.exec(type) ||
+		paramTypeNumberArray.exec(type) ||
+		paramTypeBoolArray.exec(type)
+	) {
+		// Only an array is mapped element-wise: spreading a string split `'123'` into
+		// `['1', '2', '3']` and encoded a value the caller never wrote (P4-L-34). Anything else
+		// is left to the coder, which rejects it.
+		if (!Array.isArray(param)) {
+			return param;
+		}
+		return (param as unknown[]).map(p => formatParam(type.replace('[]', ''), p));
 	}
 
 	// Format correct width for u?int[0-9]*
 	let match = paramTypeNumber.exec(type);
 	if (match) {
-		const size = parseInt(match[2] ?? '256', 10);
-		if (size / 8 < (param as { length: number }).length) {
+		const size = parseInt(match[2] ? match[2] : '256', 10);
+		// Only a hex string carries a width worth normalising. A decimal string is a plain
+		// number to the coder, and left-padding it with zeros turned '-57' into '00000-57',
+		// which no longer parsed as a number for any `intN` narrower than 256 bits.
+		if (typeof param === 'string' && STRICT_HEX.test(param) && size / 8 < param.length) {
 			// pad to correct bit width
-			return leftPad(param as string, size);
+			return leftPad(param, size);
 		}
 	}
 
-	// Format correct length for bytes[0-9]+
+	// Fixed bytes must already have their declared width. Let the coder validate
+	// them without padding or normalizing away a missing nibble.
 	match = paramTypeBytes.exec(type);
 	if (match) {
-		const hexParam = param instanceof Uint8Array ? toHex(param) : param;
-
-		// format to correct length
-		const size = parseInt(match[1], 10);
-		if (size) {
-			let maxSize = size * 2;
-
-			if ((param as string).startsWith('0x')) {
-				maxSize += 2;
-			}
-			// pad to correct length
-			const paddedParam =
-				(hexParam as string).length < maxSize
-					? rightPad(param as string, size * 2)
-					: hexParam;
-			return formatOddHexstrings(paddedParam as string);
-		}
-
-		return formatOddHexstrings(hexParam as string);
+		return match[1] ? param : formatOddHexstrings(param as string);
 	}
 	return param;
 };
 
-// eslint-disable-next-line consistent-return
 export const modifyParams = (
 	coder: ReturnType<AbiCoder['_getCoder']>,
 	param: unknown[],
-	// eslint-disable-next-line consistent-return
 ): unknown => {
 	if (coder.name === 'array') {
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-return
 		return param.map(p =>
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-return
 			modifyParams(ethersAbiCoder._getCoder(ParamType.from(coder.type.replace('[]', ''))), [
 				p,
 			]),
@@ -232,11 +239,9 @@ export const modifyParams = (
 
 	// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-explicit-any
 	(coder as any).coders.forEach((c: ReturnType<AbiCoder['_getCoder']>, i: number) => {
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
 		if (c.name === 'tuple') {
 			modifyParams(c, [param[i]]);
 		} else {
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, no-param-reassign
 			param[i] = formatParam(c.name, param[i]);
 		}
 	});
@@ -254,6 +259,13 @@ export const flattenTypes = (
 	const types: string[] = [];
 
 	puts.forEach(param => {
+		// ABI JSON is untrusted input: a parameter without a string `type` is an error, not a
+		// raw TypeError from `.startsWith` / `.replace` below (I-10).
+		if (typeof param?.type !== 'string') {
+			throw new AbiError(
+				`Invalid ABI parameter: missing "type" in ${JSON.stringify(param) ?? 'undefined'}`,
+			);
+		}
 		if (typeof param.components === 'object') {
 			if (!param.type.startsWith('tuple')) {
 				throw new AbiError(
@@ -272,11 +284,21 @@ export const flattenTypes = (
 				types.push(`(${result.join()})`);
 			}
 		} else {
-			types.push(param.type);
+			types.push(param.type.replace(/^(u?int)(?=$|\[)/, '$1256'));
 		}
 	});
 
 	return types;
+};
+
+/** Expand integer aliases in signature parameters, preserving the function/event/error name. */
+export const canonicalizeSignature = (signature: string): string => {
+	const paramsStart = signature.indexOf('(');
+	if (paramsStart < 0) return signature;
+	return (
+		signature.slice(0, paramsStart) +
+		signature.slice(paramsStart).replace(/\b(u?int)\b/g, '$1256')
+	);
 };
 
 /**
@@ -286,7 +308,7 @@ export const flattenTypes = (
 export const jsonInterfaceMethodToString = (json: AbiFragment): string => {
 	if (isAbiErrorFragment(json) || isAbiEventFragment(json) || isAbiFunctionFragment(json)) {
 		if (json.name?.includes('(')) {
-			return json.name;
+			return canonicalizeSignature(json.name);
 		}
 
 		return `${json.name ?? ''}(${flattenTypes(false, json.inputs ?? []).join(',')})`;

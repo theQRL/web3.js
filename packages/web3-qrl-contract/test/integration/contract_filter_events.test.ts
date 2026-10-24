@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { toBigInt } from '@theqrl/web3-utils';
+import { sha3Raw, toBigInt } from '@theqrl/web3-utils';
 import { Contract } from '../../src';
 import { SQRCTF1TokenAbi, SQRCTF1TokenBytecode } from '../shared_fixtures/build/SQRCTF1Token';
 import { BasicAbi, BasicBytecode } from '../shared_fixtures/build/Basic';
@@ -186,6 +186,7 @@ describe('contract getPastEvent filter', () => {
 			await contractDeployed.methods
 				.firesMultiValueIndexedEventWithStringIndexed('str4', 4, true)
 				.send(sendOptions);
+			await contractDeployed.methods.firesIndexedBytesEvent('0x0102').send(sendOptions);
 		});
 
 		it('should filter one event by address with event name and filter param', async () => {
@@ -280,6 +281,27 @@ describe('contract getPastEvent filter', () => {
 			);
 			expect(event.returnValues.val).toBe(BigInt(4));
 			expect(event.returnValues.flag).toBeTruthy();
+		});
+
+		it('should filter events using indexed bytes', async () => {
+			const events = (await contractDeployed.getPastEvents('IndexedBytesEvent', {
+				fromBlock: 'earliest',
+				filter: { value: '0x102' },
+			})) as EventLog[];
+
+			expect(events).toHaveLength(1);
+			expect(events[0]?.returnValues.value).toBe(sha3Raw('0x0102'));
+		});
+
+		it('should filter all events using indexed bytes', async () => {
+			const events = (await contractDeployed.getPastEvents('allEvents', {
+				fromBlock: 'earliest',
+				filter: { value: '0x0102' },
+			})) as EventLog[];
+
+			expect(events).toHaveLength(1);
+			expect(events[0]?.event).toBe('IndexedBytesEvent');
+			expect(events[0]?.returnValues.value).toBe(sha3Raw('0x0102'));
 		});
 	});
 });

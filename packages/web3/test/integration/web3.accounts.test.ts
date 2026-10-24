@@ -120,7 +120,6 @@ describe('web3.accounts', () => {
 			});
 
 			// TODO This test should fail, but it's not. Need to debug further to figure out why.
-			// eslint-disable-next-line jest/no-disabled-tests
 			it.skip('should throw error if signed by private key not associated with "from" field', async () => {
 				const account: Web3Account = web3.qrl.accounts.create();
 

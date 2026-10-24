@@ -21,7 +21,6 @@ import {
 	TransactionReceipt,
 	FMT_NUMBER,
 } from '@theqrl/web3-types';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import Web3 from '@theqrl/web3';
 import { BasicAbi } from '../shared_fixtures/build/Basic';
 import {
@@ -135,7 +134,6 @@ export const mapFormatToType: { [key: string]: string } = {
 	[FMT_NUMBER.STR]: 'string',
 	[FMT_NUMBER.BIGINT]: 'bigint',
 };
-// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 export const eventAbi: AbiEventFragment = BasicAbi.find((e: any) => {
 	return e.name === 'StringEvent' && (e as AbiEventFragment).type === 'event';
 })! as AbiEventFragment;

@@ -77,7 +77,7 @@ This simple smart contract defines a `myNumber` variable that can be set by call
 TODO(now.youtrack.cloud/issue/web3js-12)
 
 :::tip
-📝 Alternatively, you can use something like `npm i @theqrl/hypc && npx @theqrl/hypcjs MyContract.hyp --bin --abi`. And then rename the files to `MyContractBytecode.bin` and `MyContractAbi.json`, in order to keep them the same as they will be used later in this tutorial.
+📝 Alternatively, you can use something like `npm i @theqrl/hypc && npx hypcjs MyContract.hyp --bin --abi` (`hypcjs` is the command-line entrypoint shipped by the `@theqrl/hypc` package). And then rename the files to `MyContractBytecode.bin` and `MyContractAbi.json`, in order to keep them the same as they will be used later in this tutorial.
 More on hypc-js is at https://github.com/theQRL/hypc-js
 :::
 
@@ -97,7 +97,7 @@ Next, create a new file called `compile.js` in your project directory and add th
 
 ```javascript
 // This code will compile smart contract and generate its ABI and bytecode
-// Alternatively, you can use something like `npm i @theqrl/hypc && npx @theqrl/hypcjs MyContract.hyp --bin --abi`
+// Alternatively, you can use something like `npm i @theqrl/hypc && npx hypcjs MyContract.hyp --bin --abi`
 
 import hypc from '@theqrl/hypc';
 import path from 'path';
@@ -221,7 +221,10 @@ const path = require('path');
 
 // Set up a connection to the QRL network
 const web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:8545'));
-web3.qrl.Contract.handleRevert = true;
+// Surface revert reasons on sends. `handleRevert` is a context option: setting it
+// on `web3` applies to `web3.qrl` and to every contract created from this `web3`
+// instance (there is no static `web3.qrl.Contract.handleRevert`).
+web3.handleRevert = true;
 
 // Read the bytecode from the file system
 const bytecodePath = path.join(__dirname, 'MyContractBytecode.bin');
@@ -297,7 +300,7 @@ const path = require('path');
 
 // Set up a connection to the QRL network
 const web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:8545'));
-web3.qrl.Contract.handleRevert = true;
+web3.handleRevert = true; // or `MyContract.handleRevert = true` on one contract instance
 
 // Read the contract address from the file system
 const deployedAddressPath = path.join(__dirname, 'MyContractAddress.bin');

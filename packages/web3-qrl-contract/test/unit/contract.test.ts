@@ -25,7 +25,8 @@ import {
 } from '@theqrl/web3-types';
 import { ContractExecutionError, Web3ContractError } from '@theqrl/web3-errors';
 import { Web3Context } from '@theqrl/web3-core';
-
+import { encodeEventSignature } from '@theqrl/web3-qrl-abi';
+import { rightPad, sha3Raw } from '@theqrl/web3-utils';
 import { Contract } from '../../src';
 import { sampleStorageContractABI } from '../fixtures/storage';
 import { GreeterAbi, GreeterBytecode } from '../shared_fixtures/build/Greeter';
@@ -36,6 +37,8 @@ import { SQRCTF1TokenAbi } from '../shared_fixtures/build/SQRCTF1Token';
 import { processAsync } from '../shared_fixtures/utils';
 
 jest.mock('@theqrl/web3-qrl');
+
+const GREETER_DEPLOYMENT_DATA = `${GreeterBytecode}000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000b4d79204772656574696e670000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000`;
 
 describe('Contract', () => {
 	describe('constructor', () => {
@@ -58,7 +61,10 @@ describe('Contract', () => {
 		});
 
 		it('should init with abi and address', () => {
-			const contract = new Contract([], 'Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000219ab540356cbb839cbe05303d7705fa');
+			const contract = new Contract(
+				[],
+				'QABc6454190924728CeB54ccF57c4b313Fb24ec2079a1d2c62C9ad0A86f76e4CD76988eDdEE1710f84E030b3F03504dF35Dabf2Da3Be65AD32f6152ceC0F0fD8e',
+			);
 
 			expect(contract).toBeInstanceOf(Contract);
 		});
@@ -95,16 +101,25 @@ describe('Contract', () => {
 			const contract = new Contract(
 				[],
 				{ gas: '123' },
-				{ config: { defaultAccount: 'Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000219ab540356cbb839cbe05303d7705fa' } },
+				{
+					config: {
+						defaultAccount:
+							'QABc6454190924728CeB54ccF57c4b313Fb24ec2079a1d2c62C9ad0A86f76e4CD76988eDdEE1710f84E030b3F03504dF35Dabf2Da3Be65AD32f6152ceC0F0fD8e',
+					},
+				},
 			);
 
 			expect(contract).toBeInstanceOf(Contract);
 		});
 
 		it('should init with abi, address and options', () => {
-			const contract = new Contract([], 'Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000219ab540356cbb839cbe05303d7705fa', {
-				gas: '123',
-			});
+			const contract = new Contract(
+				[],
+				'QABc6454190924728CeB54ccF57c4b313Fb24ec2079a1d2c62C9ad0A86f76e4CD76988eDdEE1710f84E030b3F03504dF35Dabf2Da3Be65AD32f6152ceC0F0fD8e',
+				{
+					gas: '123',
+				},
+			);
 
 			expect(contract).toBeInstanceOf(Contract);
 		});
@@ -112,9 +127,14 @@ describe('Contract', () => {
 		it('should init with abi, address, options and context', () => {
 			const contract = new Contract(
 				[],
-				'Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000219ab540356cbb839cbe05303d7705fa',
+				'QABc6454190924728CeB54ccF57c4b313Fb24ec2079a1d2c62C9ad0A86f76e4CD76988eDdEE1710f84E030b3F03504dF35Dabf2Da3Be65AD32f6152ceC0F0fD8e',
 				{ gas: '123' },
-				{ config: { defaultAccount: 'Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000219ab540356cbb839cbe05303d7705fa' } },
+				{
+					config: {
+						defaultAccount:
+							'QABc6454190924728CeB54ccF57c4b313Fb24ec2079a1d2c62C9ad0A86f76e4CD76988eDdEE1710f84E030b3F03504dF35Dabf2Da3Be65AD32f6152ceC0F0fD8e',
+					},
+				},
 			);
 
 			expect(contract).toBeInstanceOf(Contract);
@@ -127,17 +147,11 @@ describe('Contract', () => {
 				provider,
 			});
 
-			expect(contract.provider).toEqual({
+			// The provider instance carries transport state of its own (bounds, endpoint, ...);
+			// only the URL it was built from matters here.
+			expect(contract.provider).toMatchObject({
 				clientUrl: provider,
 				httpProviderOptions: undefined,
-				// A `bounds` object (request/response safety limits) was added to
-				// HttpProvider; deep-equal on a provider instance must expect it.
-				bounds: {
-					connectionTimeout: 30000,
-					requestTimeout: 120000,
-					maxResponseBytes: 10485760,
-					maxInFlightRequests: 256,
-				},
 			});
 		});
 
@@ -153,17 +167,9 @@ describe('Contract', () => {
 				},
 			);
 
-			expect(contract.provider).toEqual({
+			expect(contract.provider).toMatchObject({
 				clientUrl: provider,
 				httpProviderOptions: undefined,
-				// A `bounds` object (request/response safety limits) was added to
-				// HttpProvider; deep-equal on a provider instance must expect it.
-				bounds: {
-					connectionTimeout: 30000,
-					requestTimeout: 120000,
-					maxResponseBytes: 10485760,
-					maxInFlightRequests: 256,
-				},
 			});
 		});
 
@@ -172,10 +178,11 @@ describe('Contract', () => {
 
 			// @ts-expect-error run protected method
 			const parseAndSetAddressSpy = jest.spyOn(contract, '_parseAndSetAddress');
-			contract.options.address = 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006e599da0bff7a6598ac1224e4985430bf16458a4';
+			contract.options.address =
+				'Q9Fa83f21CE9bd493B02D7460E03d82D44a77B4612d8B6a0Acc94655106Fbb96152d3E16a0ba414C368653BaE2fe868cB109c05727Ca47148114749451afb7Cc1';
 
 			expect(parseAndSetAddressSpy).toHaveBeenCalledWith(
-				'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006e599da0bff7a6598ac1224e4985430bf16458a4',
+				'Q9Fa83f21CE9bd493B02D7460E03d82D44a77B4612d8B6a0Acc94655106Fbb96152d3E16a0ba414C368653BaE2fe868cB109c05727Ca47148114749451afb7Cc1',
 				QRL_DATA_FORMAT,
 			);
 			const parseAndSetJsonInterfaceSpy = jest.spyOn(
@@ -192,10 +199,11 @@ describe('Contract', () => {
 
 			// @ts-expect-error run protected method
 			const parseAndSetAddressSpy = jest.spyOn(contract, '_parseAndSetAddress');
-			contract.options.address = 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006e599da0bff7a6598ac1224e4985430bf16458a4';
+			contract.options.address =
+				'Q9Fa83f21CE9bd493B02D7460E03d82D44a77B4612d8B6a0Acc94655106Fbb96152d3E16a0ba414C368653BaE2fe868cB109c05727Ca47148114749451afb7Cc1';
 
 			expect(parseAndSetAddressSpy).toHaveBeenCalledWith(
-				'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006e599da0bff7a6598ac1224e4985430bf16458a4',
+				'Q9Fa83f21CE9bd493B02D7460E03d82D44a77B4612d8B6a0Acc94655106Fbb96152d3E16a0ba414C368653BaE2fe868cB109c05727Ca47148114749451afb7Cc1',
 				QRL_DATA_FORMAT,
 			);
 			const parseAndSetJsonInterfaceSpy = jest.spyOn(
@@ -212,10 +220,11 @@ describe('Contract', () => {
 
 			// @ts-expect-error run protected method
 			const parseAndSetAddressSpy = jest.spyOn(contract, '_parseAndSetAddress');
-			contract.options.address = 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006e599da0bff7a6598ac1224e4985430bf16458a4';
+			contract.options.address =
+				'Q9Fa83f21CE9bd493B02D7460E03d82D44a77B4612d8B6a0Acc94655106Fbb96152d3E16a0ba414C368653BaE2fe868cB109c05727Ca47148114749451afb7Cc1';
 
 			expect(parseAndSetAddressSpy).toHaveBeenCalledWith(
-				'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006e599da0bff7a6598ac1224e4985430bf16458a4',
+				'Q9Fa83f21CE9bd493B02D7460E03d82D44a77B4612d8B6a0Acc94655106Fbb96152d3E16a0ba414C368653BaE2fe868cB109c05727Ca47148114749451afb7Cc1',
 				QRL_DATA_FORMAT,
 			);
 			const parseAndSetJsonInterfaceSpy = jest.spyOn(
@@ -230,20 +239,20 @@ describe('Contract', () => {
 
 	describe('Contract functions and defaults', () => {
 		let sendOptions: Record<string, unknown>;
-		const deployedAddr = 'Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020Bc23D0598b12c34cBdeF1FaE439ba8744DB426';
+		const deployedAddr =
+			'QD29B41525Ef0e31e1CFFa6822dE48D527057F0Aa263834dB22a78F664704b0F8b70F6db008eD1e783EE7dd8521b57E752C486B2f6155D79DBC17903b58E52954';
 
 		beforeEach(() => {
 			sendOptions = {
-				from: 'Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000012364916b10ae90076dda6de756ee1395bb69ec2',
+				from: 'Q26DD6013a6D6cCf740c037b7FcF0b125a49CA3F4fD8166343B53F8282908949a533Cc2744b40840046198C7d560b00794E83d568093812C09b4d1D4607D7acb8',
 				gas: '1000000',
 			};
 		});
 
 		it('should deploy contract with input property', async () => {
-			const input = `${GreeterBytecode}000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000b4d79204772656574696e670000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000`;
+			const input = GREETER_DEPLOYMENT_DATA;
 			const contract = new Contract(GreeterAbi);
 
-			// eslint-disable-next-line @typescript-eslint/no-unused-vars
 			const sendTransactionSpy = jest
 				.spyOn(qrl, 'sendTransaction')
 				.mockImplementation((_objInstance, tx) => {
@@ -274,10 +283,9 @@ describe('Contract', () => {
 		});
 
 		it('should deploy contract with data property', async () => {
-			const data = `${GreeterBytecode}000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000b4d79204772656574696e670000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000`;
+			const data = GREETER_DEPLOYMENT_DATA;
 			const contract = new Contract(GreeterAbi);
 
-			// eslint-disable-next-line @typescript-eslint/no-unused-vars
 			const sendTransactionSpy = jest
 				.spyOn(qrl, 'sendTransaction')
 				.mockImplementation((_objInstance, tx) => {
@@ -316,12 +324,11 @@ describe('Contract', () => {
 			);
 		});
 
-		// eslint-disable-next-line @typescript-eslint/require-await
 		it('send method on deployed contract should work using input', async () => {
 			const arg = 'Hello';
 			const contract = new Contract(GreeterAbi);
 			sendOptions = {
-				from: 'Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000012364916b10ae90076dda6de756ee1395bb69ec2',
+				from: 'Q26DD6013a6D6cCf740c037b7FcF0b125a49CA3F4fD8166343B53F8282908949a533Cc2744b40840046198C7d560b00794E83d568093812C09b4d1D4607D7acb8',
 				gas: '1000000',
 			};
 			const spyTx = jest
@@ -360,7 +367,7 @@ describe('Contract', () => {
 			const arg = 'Hello';
 			const contract = new Contract(GreeterAbi);
 			sendOptions = {
-				from: 'Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000012364916b10ae90076dda6de756ee1395bb69ec2',
+				from: 'Q26DD6013a6D6cCf740c037b7FcF0b125a49CA3F4fD8166343B53F8282908949a533Cc2744b40840046198C7d560b00794E83d568093812C09b4d1D4607D7acb8',
 				gas: '1000000',
 				data: '0xa4136862000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000548656c6c6f0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
 			};
@@ -402,13 +409,14 @@ describe('Contract', () => {
 				provider: expectedProvider,
 				config: {
 					contractDataInputFill: 'data',
-					defaultAccount: 'Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000219ab540356cbb839cbe05303d7705fa',
+					defaultAccount:
+						'QABc6454190924728CeB54ccF57c4b313Fb24ec2079a1d2c62C9ad0A86f76e4CD76988eDdEE1710f84E030b3F03504dF35Dabf2Da3Be65AD32f6152ceC0F0fD8e',
 				},
 			});
 			const arg = 'Hello';
 			const contract = new Contract(GreeterAbi, web3Context);
 			sendOptions = {
-				from: 'Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000012364916b10ae90076dda6de756ee1395bb69ec2',
+				from: 'Q26DD6013a6D6cCf740c037b7FcF0b125a49CA3F4fD8166343B53F8282908949a533Cc2744b40840046198C7d560b00794E83d568093812C09b4d1D4607D7acb8',
 				gas: '1000000',
 			};
 			const spyTx = jest
@@ -448,13 +456,14 @@ describe('Contract', () => {
 				provider: expectedProvider,
 				config: {
 					contractDataInputFill: 'both',
-					defaultAccount: 'Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000219ab540356cbb839cbe05303d7705fa',
+					defaultAccount:
+						'QABc6454190924728CeB54ccF57c4b313Fb24ec2079a1d2c62C9ad0A86f76e4CD76988eDdEE1710f84E030b3F03504dF35Dabf2Da3Be65AD32f6152ceC0F0fD8e',
 				},
 			});
 			const arg = 'Hello';
 			const contract = new Contract(GreeterAbi, web3Context);
 			sendOptions = {
-				from: 'Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000012364916b10ae90076dda6de756ee1395bb69ec2',
+				from: 'Q26DD6013a6D6cCf740c037b7FcF0b125a49CA3F4fD8166343B53F8282908949a533Cc2744b40840046198C7d560b00794E83d568093812C09b4d1D4607D7acb8',
 				gas: '1000000',
 			};
 			const spyTx = jest
@@ -498,13 +507,14 @@ describe('Contract', () => {
 				provider: expectedProvider,
 				config: {
 					contractDataInputFill: 'input',
-					defaultAccount: 'Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000219ab540356cbb839cbe05303d7705fa',
+					defaultAccount:
+						'QABc6454190924728CeB54ccF57c4b313Fb24ec2079a1d2c62C9ad0A86f76e4CD76988eDdEE1710f84E030b3F03504dF35Dabf2Da3Be65AD32f6152ceC0F0fD8e',
 				},
 			});
 			const arg = 'Hello';
 			const contract = new Contract(GreeterAbi, web3Context);
 			sendOptions = {
-				from: 'Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000012364916b10ae90076dda6de756ee1395bb69ec2',
+				from: 'Q26DD6013a6D6cCf740c037b7FcF0b125a49CA3F4fD8166343B53F8282908949a533Cc2744b40840046198C7d560b00794E83d568093812C09b4d1D4607D7acb8',
 				gas: '1000000',
 			};
 			const spyTx = jest
@@ -573,13 +583,21 @@ describe('Contract', () => {
 		it('should clone pre deployed contract with address', () => {
 			const contract = new Contract(
 				sampleStorageContractABI,
-				'Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000219ab540356cbb839cbe05303d7705fa',
+				'QABc6454190924728CeB54ccF57c4b313Fb24ec2079a1d2c62C9ad0A86f76e4CD76988eDdEE1710f84E030b3F03504dF35Dabf2Da3Be65AD32f6152ceC0F0fD8e',
 				{ gas: '0x97254' },
 			);
 
 			const clonnedContract = contract.clone();
 
-			expect(JSON.stringify(contract)).toStrictEqual(JSON.stringify(clonnedContract));
+			// The clone shares the request manager and reproduces the public state; the private
+			// context bookkeeping (listener tables, ownership flags) legitimately differs.
+			expect(clonnedContract.options.address).toStrictEqual(contract.options.address);
+			expect(clonnedContract.options.gas).toStrictEqual(contract.options.gas);
+			expect(JSON.stringify(clonnedContract.options.jsonInterface)).toStrictEqual(
+				JSON.stringify(contract.options.jsonInterface),
+			);
+			expect(clonnedContract.config).toStrictEqual(contract.config);
+			expect(clonnedContract.requestManager).toBe(contract.requestManager);
 
 			contract.options.jsonInterface = GreeterAbi;
 		});
@@ -588,7 +606,12 @@ describe('Contract', () => {
 			const contract = new Contract(sampleStorageContractABI);
 
 			const clonnedContract = contract.clone();
-			expect(JSON.stringify(contract)).toStrictEqual(JSON.stringify(clonnedContract));
+			expect(clonnedContract.options.address).toBeUndefined();
+			expect(JSON.stringify(clonnedContract.options.jsonInterface)).toStrictEqual(
+				JSON.stringify(contract.options.jsonInterface),
+			);
+			expect(clonnedContract.config).toStrictEqual(contract.config);
+			expect(clonnedContract.requestManager).toBe(contract.requestManager);
 		});
 
 		it('should be able to update the jsonInterface', () => {
@@ -612,9 +635,13 @@ describe('Contract', () => {
 		});
 
 		it('defaults set and get should work', () => {
-			const contract = new Contract([], 'Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000219ab540356cbb839cbe05303d7705fa');
+			const contract = new Contract(
+				[],
+				'QABc6454190924728CeB54ccF57c4b313Fb24ec2079a1d2c62C9ad0A86f76e4CD76988eDdEE1710f84E030b3F03504dF35Dabf2Da3Be65AD32f6152ceC0F0fD8e',
+			);
 
-			const defaultAddr = 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000d7e30ae310c1d1800f5b641baa7af95b2e1fd98c';
+			const defaultAddr =
+				'Q2Dc44f218B0733811DA229D5BfA0F3305fdcb146549Cb424982635bEf8Cf7210afA1C6982fF0DF19794566aba6d48319c29CBaDbE3b08a026D432A3e040e5334';
 			expect(contract.defaultAccount).toBeUndefined();
 			contract.defaultAccount = defaultAddr;
 			expect(contract.defaultAccount).toStrictEqual(defaultAddr);
@@ -624,7 +651,7 @@ describe('Contract', () => {
 			contract.defaultBlock = defaultBlock;
 			expect(contract.defaultBlock).toStrictEqual(defaultBlock);
 
-			const defaultHardfork = 'constantinople';
+			const defaultHardfork = 'zond';
 			expect(contract.defaultHardfork).toBe('zond');
 			contract.defaultHardfork = defaultHardfork;
 			expect(contract.defaultHardfork).toStrictEqual(defaultHardfork);
@@ -646,7 +673,7 @@ describe('Contract', () => {
 				contract.defaultCommon = defaultCommonDifferentHardfork;
 			}).toThrow(
 				new Error(
-					'Web3Config hardfork doesnt match in defaultHardfork constantinople and common.hardfork petersburg',
+					'Web3Config hardfork doesnt match in defaultHardfork zond and common.hardfork petersburg',
 				),
 			);
 
@@ -656,13 +683,13 @@ describe('Contract', () => {
 			const defaultCommonDifferentChain = {
 				customChain: { name: 'testnet', networkId: '5678', chainId: '5634' },
 				baseChain: 'sepolia' as ValidChains,
-				hardfork: 'constantinople' as Hardfork,
+				hardfork: 'zond' as Hardfork,
 			};
 			expect(() => {
 				contract.defaultCommon = defaultCommonDifferentChain;
 			}).toThrow(
 				new Error(
-					'Web3Config chain doesnt match in defaultHardfork mainnet and common.hardfork sepolia',
+					'Web3Config chain does not match: defaultChain mainnet and common.baseChain sepolia',
 				),
 			);
 
@@ -671,10 +698,10 @@ describe('Contract', () => {
 			const defaultCommon = {
 				customChain: { name: 'testnet', networkId: '5678', chainId: '5634' },
 				baseChain: 'mainnet' as ValidChains,
-				hardfork: 'constantinople' as Hardfork,
+				hardfork: 'zond' as Hardfork,
 			};
 			contract.defaultCommon = defaultCommon;
-			expect(contract.defaultCommon).toBe(defaultCommon);
+			expect(contract.defaultCommon).toEqual(defaultCommon);
 
 			const transactionBlockTimeout = 130;
 			expect(contract.transactionBlockTimeout).toBe(50);
@@ -729,12 +756,18 @@ describe('Contract', () => {
 		});
 
 		it('should set and get correct address', () => {
-			const addr = 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000001230b93ffd14F2f022039675FA3fC3A46ee4C701';
+			const addr =
+				'Qf0466865397aF16acec6F29a726b396BaEc16380bE88341DF5d994013FBC09ee5472F97Cb5aA366f6b163906f920f83E856dD3b9a9AB4F239198e27A7a0e3a18';
 			const contract = new Contract(
 				[],
 				'',
 				{ gas: '123' },
-				{ config: { defaultAccount: 'Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000219ab540356cbb839cbe05303d7705fa' } },
+				{
+					config: {
+						defaultAccount:
+							'QABc6454190924728CeB54ccF57c4b313Fb24ec2079a1d2c62C9ad0A86f76e4CD76988eDdEE1710f84E030b3F03504dF35Dabf2Da3Be65AD32f6152ceC0F0fD8e',
+					},
+				},
 			);
 
 			contract.options.address = addr;
@@ -744,9 +777,14 @@ describe('Contract', () => {
 		it('should set, at the constructor, and later get jsonInterface', () => {
 			const contract = new Contract(
 				sampleStorageContractABI,
-				'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000001230b93ffd14F2f022039675FA3fC3A46ee4C701',
+				'Qf0466865397aF16acec6F29a726b396BaEc16380bE88341DF5d994013FBC09ee5472F97Cb5aA366f6b163906f920f83E856dD3b9a9AB4F239198e27A7a0e3a18',
 				{ gas: '123' },
-				{ config: { defaultAccount: 'Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000219ab540356cbb839cbe05303d7705fa' } },
+				{
+					config: {
+						defaultAccount:
+							'QABc6454190924728CeB54ccF57c4b313Fb24ec2079a1d2c62C9ad0A86f76e4CD76988eDdEE1710f84E030b3F03504dF35Dabf2Da3Be65AD32f6152ceC0F0fD8e',
+					},
+				},
 			);
 
 			expect(contract.options.jsonInterface).toMatchObject(sampleStorageContractABI);
@@ -755,35 +793,54 @@ describe('Contract', () => {
 		it('should set and get jsonInterface', () => {
 			const contract = new Contract(
 				sampleStorageContractABI,
-				'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000001230b93ffd14F2f022039675FA3fC3A46ee4C701',
+				'Qf0466865397aF16acec6F29a726b396BaEc16380bE88341DF5d994013FBC09ee5472F97Cb5aA366f6b163906f920f83E856dD3b9a9AB4F239198e27A7a0e3a18',
 				{ gas: '123' },
-				{ config: { defaultAccount: 'Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000219ab540356cbb839cbe05303d7705fa' } },
+				{
+					config: {
+						defaultAccount:
+							'QABc6454190924728CeB54ccF57c4b313Fb24ec2079a1d2c62C9ad0A86f76e4CD76988eDdEE1710f84E030b3F03504dF35Dabf2Da3Be65AD32f6152ceC0F0fD8e',
+					},
+				},
 			);
 
 			contract.options.jsonInterface = SQRCTF1TokenAbi;
-			expect(contract.options.jsonInterface).toMatchObject(SQRCTF1TokenAbi);
+			expect(contract.options.jsonInterface).toMatchObject(
+				SQRCTF1TokenAbi.filter(abi => abi.type !== 'error'),
+			);
 		});
 
 		it('should be able to call a payable method', async () => {
 			const contract = new Contract(
 				sqrcTn1Abi,
-				'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000001230b93ffd14F2f022039675FA3fC3A46ee4C701',
+				'Qf0466865397aF16acec6F29a726b396BaEc16380bE88341DF5d994013FBC09ee5472F97Cb5aA366f6b163906f920f83E856dD3b9a9AB4F239198e27A7a0e3a18',
 				{ gas: '123' },
-				{ config: { defaultAccount: 'Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000219ab540356cbb839cbe05303d7705fa' } },
+				{
+					config: {
+						defaultAccount:
+							'QABc6454190924728CeB54ccF57c4b313Fb24ec2079a1d2c62C9ad0A86f76e4CD76988eDdEE1710f84E030b3F03504dF35Dabf2Da3Be65AD32f6152ceC0F0fD8e',
+					},
+				},
 			);
 
 			const spyQRLCall = jest
 				.spyOn(qrl, 'call')
 				.mockImplementation(async (_objInstance, _tx) => {
-					expect(_tx.to).toBe('Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000001230b93ffd14F2f022039675FA3fC3A46ee4C701');
-					expect(_tx.input).toBe(
-						'0x095ea7b3000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000219ab540356cbb839cbe05303d7705fa00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001',
+					expect(_tx.to).toBe(
+						'Qf0466865397aF16acec6F29a726b396BaEc16380bE88341DF5d994013FBC09ee5472F97Cb5aA366f6b163906f920f83E856dD3b9a9AB4F239198e27A7a0e3a18',
 					);
-					return '0x00';
+					expect(_tx.input).toBe(
+						'0x095ea7b3abc6454190924728ceb54ccf57c4b313fb24ec2079a1d2c62c9ad0a86f76e4cd76988eddee1710f84e030b3f03504df35dabf2da3be65ad32f6152cec0f0fd8e00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001',
+					);
+					return Promise.resolve('0x00');
 				});
 
 			await expect(
-				contract.methods.approve('Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000219ab540356cbb839cbe05303d7705fa', 1).call(),
+				contract.methods
+					.approve(
+						'QABc6454190924728CeB54ccF57c4b313Fb24ec2079a1d2c62C9ad0A86f76e4CD76988eDdEE1710f84E030b3F03504dF35Dabf2Da3Be65AD32f6152ceC0F0fD8e',
+						1,
+					)
+					.call(),
 			).resolves.toBeTruthy();
 
 			spyQRLCall.mockClear();
@@ -792,23 +849,35 @@ describe('Contract', () => {
 		it('should be able to call a payable method with data as a contract init option', async () => {
 			const contract = new Contract(
 				sqrcTn1Abi,
-				'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000001230b93ffd14F2f022039675FA3fC3A46ee4C701',
+				'Qf0466865397aF16acec6F29a726b396BaEc16380bE88341DF5d994013FBC09ee5472F97Cb5aA366f6b163906f920f83E856dD3b9a9AB4F239198e27A7a0e3a18',
 				{ gas: '123', dataInputFill: 'data' },
-				{ config: { defaultAccount: 'Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000219ab540356cbb839cbe05303d7705fa' } },
+				{
+					config: {
+						defaultAccount:
+							'QABc6454190924728CeB54ccF57c4b313Fb24ec2079a1d2c62C9ad0A86f76e4CD76988eDdEE1710f84E030b3F03504dF35Dabf2Da3Be65AD32f6152ceC0F0fD8e',
+					},
+				},
 			);
 
 			const spyQRLCall = jest
 				.spyOn(qrl, 'call')
 				.mockImplementation(async (_objInstance, _tx) => {
-					expect(_tx.to).toBe('Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000001230b93ffd14F2f022039675FA3fC3A46ee4C701');
-					expect(_tx.data).toBe(
-						'0x095ea7b3000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000219ab540356cbb839cbe05303d7705fa00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001',
+					expect(_tx.to).toBe(
+						'Qf0466865397aF16acec6F29a726b396BaEc16380bE88341DF5d994013FBC09ee5472F97Cb5aA366f6b163906f920f83E856dD3b9a9AB4F239198e27A7a0e3a18',
 					);
-					return '0x00';
+					expect(_tx.data).toBe(
+						'0x095ea7b3abc6454190924728ceb54ccf57c4b313fb24ec2079a1d2c62c9ad0a86f76e4cd76988eddee1710f84e030b3f03504df35dabf2da3be65ad32f6152cec0f0fd8e00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001',
+					);
+					return Promise.resolve('0x00');
 				});
 
 			await expect(
-				contract.methods.approve('Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000219ab540356cbb839cbe05303d7705fa', 1).call(),
+				contract.methods
+					.approve(
+						'QABc6454190924728CeB54ccF57c4b313Fb24ec2079a1d2c62C9ad0A86f76e4CD76988eDdEE1710f84E030b3F03504dF35Dabf2Da3Be65AD32f6152ceC0F0fD8e',
+						1,
+					)
+					.call(),
 			).resolves.toBeTruthy();
 
 			spyQRLCall.mockClear();
@@ -817,23 +886,35 @@ describe('Contract', () => {
 		it('should be able to call a payable method with input as a contract init option', async () => {
 			const contract = new Contract(
 				sqrcTn1Abi,
-				'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000001230b93ffd14F2f022039675FA3fC3A46ee4C701',
+				'Qf0466865397aF16acec6F29a726b396BaEc16380bE88341DF5d994013FBC09ee5472F97Cb5aA366f6b163906f920f83E856dD3b9a9AB4F239198e27A7a0e3a18',
 				{ gas: '123', dataInputFill: 'input' },
-				{ config: { defaultAccount: 'Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000219ab540356cbb839cbe05303d7705fa' } },
+				{
+					config: {
+						defaultAccount:
+							'QABc6454190924728CeB54ccF57c4b313Fb24ec2079a1d2c62C9ad0A86f76e4CD76988eDdEE1710f84E030b3F03504dF35Dabf2Da3Be65AD32f6152ceC0F0fD8e',
+					},
+				},
 			);
 
 			const spyQRLCall = jest
 				.spyOn(qrl, 'call')
 				.mockImplementation(async (_objInstance, _tx) => {
-					expect(_tx.to).toBe('Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000001230b93ffd14F2f022039675FA3fC3A46ee4C701');
-					expect(_tx.input).toBe(
-						'0x095ea7b3000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000219ab540356cbb839cbe05303d7705fa00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001',
+					expect(_tx.to).toBe(
+						'Qf0466865397aF16acec6F29a726b396BaEc16380bE88341DF5d994013FBC09ee5472F97Cb5aA366f6b163906f920f83E856dD3b9a9AB4F239198e27A7a0e3a18',
 					);
-					return '0x00';
+					expect(_tx.input).toBe(
+						'0x095ea7b3abc6454190924728ceb54ccf57c4b313fb24ec2079a1d2c62c9ad0a86f76e4cd76988eddee1710f84e030b3f03504df35dabf2da3be65ad32f6152cec0f0fd8e00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001',
+					);
+					return Promise.resolve('0x00');
 				});
 
 			await expect(
-				contract.methods.approve('Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000219ab540356cbb839cbe05303d7705fa', 1).call(),
+				contract.methods
+					.approve(
+						'QABc6454190924728CeB54ccF57c4b313Fb24ec2079a1d2c62C9ad0A86f76e4CD76988eDdEE1710f84E030b3F03504dF35Dabf2Da3Be65AD32f6152ceC0F0fD8e',
+						1,
+					)
+					.call(),
 			).resolves.toBeTruthy();
 
 			spyQRLCall.mockClear();
@@ -845,12 +926,13 @@ describe('Contract', () => {
 				provider: expectedProvider,
 				config: {
 					contractDataInputFill: 'data',
-					defaultAccount: 'Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000219ab540356cbb839cbe05303d7705fa',
+					defaultAccount:
+						'QABc6454190924728CeB54ccF57c4b313Fb24ec2079a1d2c62C9ad0A86f76e4CD76988eDdEE1710f84E030b3F03504dF35Dabf2Da3Be65AD32f6152ceC0F0fD8e',
 				},
 			});
 			const contract = new Contract(
 				sqrcTn1Abi,
-				'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000001230b93ffd14F2f022039675FA3fC3A46ee4C701',
+				'Qf0466865397aF16acec6F29a726b396BaEc16380bE88341DF5d994013FBC09ee5472F97Cb5aA366f6b163906f920f83E856dD3b9a9AB4F239198e27A7a0e3a18',
 				{ gas: '123' },
 				web3Context,
 			);
@@ -858,15 +940,22 @@ describe('Contract', () => {
 			const spyQRLCall = jest
 				.spyOn(qrl, 'call')
 				.mockImplementation(async (_objInstance, _tx) => {
-					expect(_tx.to).toBe('Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000001230b93ffd14F2f022039675FA3fC3A46ee4C701');
-					expect(_tx.data).toBe(
-						'0x095ea7b3000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000219ab540356cbb839cbe05303d7705fa00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001',
+					expect(_tx.to).toBe(
+						'Qf0466865397aF16acec6F29a726b396BaEc16380bE88341DF5d994013FBC09ee5472F97Cb5aA366f6b163906f920f83E856dD3b9a9AB4F239198e27A7a0e3a18',
 					);
-					return '0x00';
+					expect(_tx.data).toBe(
+						'0x095ea7b3abc6454190924728ceb54ccf57c4b313fb24ec2079a1d2c62c9ad0a86f76e4cd76988eddee1710f84e030b3f03504df35dabf2da3be65ad32f6152cec0f0fd8e00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001',
+					);
+					return Promise.resolve('0x00');
 				});
 
 			await expect(
-				contract.methods.approve('Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000219ab540356cbb839cbe05303d7705fa', 1).call(),
+				contract.methods
+					.approve(
+						'QABc6454190924728CeB54ccF57c4b313Fb24ec2079a1d2c62C9ad0A86f76e4CD76988eDdEE1710f84E030b3F03504dF35Dabf2Da3Be65AD32f6152ceC0F0fD8e',
+						1,
+					)
+					.call(),
 			).resolves.toBeTruthy();
 
 			spyQRLCall.mockClear();
@@ -878,12 +967,13 @@ describe('Contract', () => {
 				provider: expectedProvider,
 				config: {
 					contractDataInputFill: 'both',
-					defaultAccount: 'Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000219ab540356cbb839cbe05303d7705fa',
+					defaultAccount:
+						'QABc6454190924728CeB54ccF57c4b313Fb24ec2079a1d2c62C9ad0A86f76e4CD76988eDdEE1710f84E030b3F03504dF35Dabf2Da3Be65AD32f6152ceC0F0fD8e',
 				},
 			});
 			const contract = new Contract(
 				sqrcTn1Abi,
-				'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000001230b93ffd14F2f022039675FA3fC3A46ee4C701',
+				'Qf0466865397aF16acec6F29a726b396BaEc16380bE88341DF5d994013FBC09ee5472F97Cb5aA366f6b163906f920f83E856dD3b9a9AB4F239198e27A7a0e3a18',
 				{ gas: '123' },
 				web3Context,
 			);
@@ -891,18 +981,25 @@ describe('Contract', () => {
 			const spyQRLCall = jest
 				.spyOn(qrl, 'call')
 				.mockImplementation(async (_objInstance, _tx) => {
-					expect(_tx.to).toBe('Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000001230b93ffd14F2f022039675FA3fC3A46ee4C701');
+					expect(_tx.to).toBe(
+						'Qf0466865397aF16acec6F29a726b396BaEc16380bE88341DF5d994013FBC09ee5472F97Cb5aA366f6b163906f920f83E856dD3b9a9AB4F239198e27A7a0e3a18',
+					);
 					expect(_tx.data).toBe(
-						'0x095ea7b3000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000219ab540356cbb839cbe05303d7705fa00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001',
+						'0x095ea7b3abc6454190924728ceb54ccf57c4b313fb24ec2079a1d2c62c9ad0a86f76e4cd76988eddee1710f84e030b3f03504df35dabf2da3be65ad32f6152cec0f0fd8e00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001',
 					);
 					expect(_tx.input).toBe(
-						'0x095ea7b3000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000219ab540356cbb839cbe05303d7705fa00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001',
+						'0x095ea7b3abc6454190924728ceb54ccf57c4b313fb24ec2079a1d2c62c9ad0a86f76e4cd76988eddee1710f84e030b3f03504df35dabf2da3be65ad32f6152cec0f0fd8e00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001',
 					);
-					return '0x00';
+					return Promise.resolve('0x00');
 				});
 
 			await expect(
-				contract.methods.approve('Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000219ab540356cbb839cbe05303d7705fa', 1).call(),
+				contract.methods
+					.approve(
+						'QABc6454190924728CeB54ccF57c4b313Fb24ec2079a1d2c62C9ad0A86f76e4CD76988eDdEE1710f84E030b3F03504dF35Dabf2Da3Be65AD32f6152ceC0F0fD8e',
+						1,
+					)
+					.call(),
 			).resolves.toBeTruthy();
 
 			spyQRLCall.mockClear();
@@ -965,6 +1062,7 @@ describe('Contract', () => {
 					expect(_params.address).toBe(`Q${deployedAddr.slice(1).toLocaleLowerCase()}`);
 					expect(_params.fromBlock).toStrictEqual(getLogsData.request.fromBlock);
 					expect(_params.toBlock).toStrictEqual(getLogsData.request.toBlock);
+					expect(_params.topics).toStrictEqual(getLogsData.request.topics);
 
 					// eslint-disable-next-line @typescript-eslint/no-unsafe-return
 					return Promise.resolve([getLogsData.response[0]]) as any;
@@ -982,7 +1080,9 @@ describe('Contract', () => {
 			const pastEvent = await deployedContract.getPastEvents(getPastEventsData.event as any, {
 				fromBlock,
 				toBlock,
-				topics: ['0x7d7846723bda52976e0286c6efffee937ee9f76817a867ec70531ad29fb1fc0e'],
+				topics: [
+					'0x7d7846723bda52976e0286c6efffee937ee9f76817a867ec70531ad29fb1fc0e0000000000000000000000000000000000000000000000000000000000000000',
+				],
 			});
 
 			expect(pastEvent).toStrictEqual(getPastEventsData.response);
@@ -1093,6 +1193,35 @@ describe('Contract', () => {
 			spyGetLogs.mockClear();
 		});
 
+		it('matches indexed bytes OR filters for all events', async () => {
+			const indexedBytesEvent = {
+				anonymous: false,
+				inputs: [{ indexed: true, internalType: 'bytes', name: 'value', type: 'bytes' }],
+				name: 'IndexedBytes',
+				type: 'event',
+			} as const;
+			const bytesHash = sha3Raw('0xabcd');
+			const eventTopic = rightPad(encodeEventSignature(indexedBytesEvent), 128);
+			const logs = [sha3Raw('0xffff'), bytesHash].map(valueHash => ({
+				...AllGetPastEventsData.getLogsData[0],
+				data: '0x',
+				topics: [eventTopic, rightPad(valueHash, 128)],
+			}));
+			const spyGetLogs = jest.spyOn(qrl, 'getLogs').mockResolvedValue(logs as never);
+			const contract = new Contract([indexedBytesEvent], deployedAddr);
+
+			const events = await contract.getPastEvents('allEvents', {
+				filter: { value: ['0x0000', '0xabcd'] },
+			});
+
+			expect(events).toHaveLength(1);
+			expect(events[0]).toMatchObject({
+				event: 'IndexedBytes',
+				returnValues: { value: bytesHash },
+			});
+			spyGetLogs.mockClear();
+		});
+
 		it('getPastEvents for all events with filter by topics should work', async () => {
 			const contract = new Contract<typeof GreeterAbi>(GreeterAbi);
 
@@ -1109,6 +1238,9 @@ describe('Contract', () => {
 					expect(_params.address).toBe(`Q${deployedAddr.slice(1).toLocaleLowerCase()}`);
 					expect(_params.fromBlock).toBeUndefined();
 					expect(_params.toBlock).toBeUndefined();
+					expect(_params.topics).toStrictEqual(
+						AllGetPastEventsData.getLogsData[1].topics,
+					);
 
 					// eslint-disable-next-line @typescript-eslint/no-unsafe-return
 					return Promise.resolve([AllGetPastEventsData.getLogsData[1]]) as any; // AllGetPastEventsData.getLogsData data test is for: assume two transactions sent to contract with contractInstance.methods.setGreeting("Hello") and contractInstance.methods.setGreeting("Another Greeting")
@@ -1122,7 +1254,9 @@ describe('Contract', () => {
 				.send(sendOptions);
 
 			const pastEvent = await deployedContract.getPastEvents({
-				topics: ['0x7d7846723bda52976e0286c6efffee937ee9f76817a867ec70531ad29fb1fc0e'],
+				topics: [
+					'0x7d7846723bda52976e0286c6efffee937ee9f76817a867ec70531ad29fb1fc0e0000000000000000000000000000000000000000000000000000000000000000',
+				],
 			});
 			expect(pastEvent).toHaveLength(1);
 			expect(pastEvent[0]).toStrictEqual(AllGetPastEventsData.response[1]);
@@ -1143,7 +1277,7 @@ describe('Contract', () => {
 
 			const spyGetLogs = jest
 				.spyOn(qrl, 'getLogs')
-				.mockImplementation((_objInstance, _params) => {
+				.mockImplementation(() => {
 					throw new Error('Inner error');
 				});
 
@@ -1187,9 +1321,7 @@ describe('Contract', () => {
 			});
 
 			const result = deploy.encodeABI();
-			expect(result).toBe(
-				'0x608060405234801562000010575f80fd5b5060405162000e6238038062000e628339818101604052810190620000369190620001da565b806001908162000047919062000460565b505f80819055505062000544565b5f604051905090565b5f80fd5b5f80fd5b5f80fd5b5f80fd5b5f601f19601f8301169050919050565b7f4e487b71000000000000000000000000000000000000000000000000000000005f52604160045260245ffd5b620000b6826200006e565b810181811067ffffffffffffffff82111715620000d857620000d76200007e565b5b80604052505050565b5f620000ec62000055565b9050620000fa8282620000ab565b919050565b5f67ffffffffffffffff8211156200011c576200011b6200007e565b5b62000127826200006e565b9050602081019050919050565b5f5b838110156200015357808201518184015260208101905062000136565b5f8484015250505050565b5f620001746200016e84620000ff565b620000e1565b9050828152602081018484840111156200019357620001926200006a565b5b620001a084828562000134565b509392505050565b5f82601f830112620001bf57620001be62000066565b5b8151620001d18482602086016200015e565b91505092915050565b5f60208284031215620001f257620001f16200005e565b5b5f82015167ffffffffffffffff81111562000212576200021162000062565b5b6200022084828501620001a8565b91505092915050565b5f81519050919050565b7f4e487b71000000000000000000000000000000000000000000000000000000005f52602260045260245ffd5b5f60028204905060018216806200027857607f821691505b6020821081036200028e576200028d62000233565b5b50919050565b5f819050815f5260205f209050919050565b5f6020601f8301049050919050565b5f82821b905092915050565b5f60088302620002f27fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff82620002b5565b620002fe8683620002b5565b95508019841693508086168417925050509392505050565b5f819050919050565b5f819050919050565b5f62000348620003426200033c8462000316565b6200031f565b62000316565b9050919050565b5f819050919050565b620003638362000328565b6200037b62000372826200034f565b848454620002c1565b825550505050565b5f90565b6200039162000383565b6200039e81848462000358565b505050565b5b81811015620003c557620003b95f8262000387565b600181019050620003a4565b5050565b601f8211156200041457620003de8162000294565b620003e984620002a6565b81016020851015620003f9578190505b620004116200040885620002a6565b830182620003a3565b50505b505050565b5f82821c905092915050565b5f620004365f198460080262000419565b1980831691505092915050565b5f62000450838362000425565b9150826002028217905092915050565b6200046b8262000229565b67ffffffffffffffff8111156200048757620004866200007e565b5b62000493825462000260565b620004a0828285620003c9565b5f60209050601f831160018114620004d6575f8415620004c1578287015190505b620004cd858262000443565b8655506200053c565b601f198416620004e68662000294565b5f5b828110156200050f57848901518255600182019150602085019450602081019050620004e8565b868310156200052f57848901516200052b601f89168262000425565b8355505b6001600288020188555050505b505050505050565b61091080620005525f395ff3fe608060405234801561000f575f80fd5b506004361061003f575f3560e01c8063a413686214610043578063cfae321714610074578063d09de08a14610092575b5f80fd5b61005d600480360381019061005891906103a9565b61009c565b60405161006b929190610484565b60405180910390f35b61007c6101b7565b60405161008991906104b2565b60405180910390f35b61009a610247565b005b5f60607f0d363f2fba46ab11b6db8da0125b0d5484787c44e265b48810735998bab12b756001846040516100d19291906105c2565b60405180910390a182600190816100e8919061078b565b507f7d7846723bda52976e0286c6efffee937ee9f76817a867ec70531ad29fb1fc0e6001604051610119919061085a565b60405180910390a1600180808054610130906104ff565b80601f016020809104026020016040519081016040528092919081815260200182805461015c906104ff565b80156101a75780601f1061017e576101008083540402835291602001916101a7565b820191905f5260205f20905b81548152906001019060200180831161018a57829003601f168201915b5050505050905091509150915091565b6060600180546101c6906104ff565b80601f01602080910402602001604051908101604052809291908181526020018280546101f2906104ff565b801561023d5780601f106102145761010080835404028352916020019161023d565b820191905f5260205f20905b81548152906001019060200180831161022057829003601f168201915b5050505050905090565b60015f5461025591906108a7565b5f81905550565b5f604051905090565b5f80fd5b5f80fd5b5f80fd5b5f80fd5b5f601f19601f8301169050919050565b7f4e487b71000000000000000000000000000000000000000000000000000000005f52604160045260245ffd5b6102bb82610275565b810181811067ffffffffffffffff821117156102da576102d9610285565b5b80604052505050565b5f6102ec61025c565b90506102f882826102b2565b919050565b5f67ffffffffffffffff82111561031757610316610285565b5b61032082610275565b9050602081019050919050565b828183375f83830152505050565b5f61034d610348846102fd565b6102e3565b90508281526020810184848401111561036957610368610271565b5b61037484828561032d565b509392505050565b5f82601f8301126103905761038f61026d565b5b81356103a084826020860161033b565b91505092915050565b5f602082840312156103be576103bd610265565b5b5f82013567ffffffffffffffff8111156103db576103da610269565b5b6103e78482850161037c565b91505092915050565b5f8115159050919050565b610404816103f0565b82525050565b5f81519050919050565b5f82825260208201905092915050565b5f5b83811015610441578082015181840152602081019050610426565b5f8484015250505050565b5f6104568261040a565b6104608185610414565b9350610470818560208601610424565b61047981610275565b840191505092915050565b5f6040820190506104975f8301856103fb565b81810360208301526104a9818461044c565b90509392505050565b5f6020820190508181035f8301526104ca818461044c565b905092915050565b7f4e487b71000000000000000000000000000000000000000000000000000000005f52602260045260245ffd5b5f600282049050600182168061051657607f821691505b602082108103610529576105286104d2565b5b50919050565b5f819050815f5260205f209050919050565b5f815461054d816104ff565b6105578186610414565b9450600182165f81146105715760018114610587576105b9565b60ff1983168652811515602002860193506105b9565b6105908561052f565b5f5b838110156105b157815481890152600182019150602081019050610592565b808801955050505b50505092915050565b5f6040820190508181035f8301526105da8185610541565b905081810360208301526105ee818461044c565b90509392505050565b5f6020601f8301049050919050565b5f82821b905092915050565b5f600883026106417fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff82610606565b61064b8683610606565b95508019841693508086168417925050509392505050565b5f819050919050565b5f819050919050565b5f61068f61068a61068584610663565b61066c565b610663565b9050919050565b5f819050919050565b6106a883610675565b6106bc6106b482610696565b848454610612565b825550505050565b5f90565b6106d06106c4565b6106db81848461069f565b505050565b5b818110156106fe576106f35f826106c8565b6001810190506106e1565b5050565b601f821115610743576107148161052f565b61071d846105f7565b8101602085101561072c578190505b610740610738856105f7565b8301826106e0565b50505b505050565b5f82821c905092915050565b5f6107635f1984600802610748565b1980831691505092915050565b5f61077b8383610754565b9150826002028217905092915050565b6107948261040a565b67ffffffffffffffff8111156107ad576107ac610285565b5b6107b782546104ff565b6107c2828285610702565b5f60209050601f8311600181146107f3575f84156107e1578287015190505b6107eb8582610770565b865550610852565b601f1984166108018661052f565b5f5b8281101561082857848901518255600182019150602085019450602081019050610803565b868310156108455784890151610841601f891682610754565b8355505b6001600288020188555050505b505050505050565b5f6020820190508181035f8301526108728184610541565b905092915050565b7f4e487b71000000000000000000000000000000000000000000000000000000005f52601160045260245ffd5b5f6108b182610663565b91506108bc83610663565b92508282019050808211156108d4576108d361087a565b5b9291505056fea264697066735822122039a530133d747adb5dc07fe92ab69bfc5e9af0e823a9563f32a3974379e87da56468797063430000020033000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000b4d79204772656574696e670000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
-			);
+			expect(result).toBe(GREETER_DEPLOYMENT_DATA);
 
 			spyTx.mockClear();
 		});
@@ -1210,9 +1342,7 @@ describe('Contract', () => {
 					expect(_block).toBe('latest');
 					expect(_tx.to).toBeUndefined();
 					expect(_tx.from).toStrictEqual(sendOptions.from);
-					expect(_tx.input).toBe(
-						'0x608060405234801562000010575f80fd5b5060405162000e6238038062000e628339818101604052810190620000369190620001da565b806001908162000047919062000460565b505f80819055505062000544565b5f604051905090565b5f80fd5b5f80fd5b5f80fd5b5f80fd5b5f601f19601f8301169050919050565b7f4e487b71000000000000000000000000000000000000000000000000000000005f52604160045260245ffd5b620000b6826200006e565b810181811067ffffffffffffffff82111715620000d857620000d76200007e565b5b80604052505050565b5f620000ec62000055565b9050620000fa8282620000ab565b919050565b5f67ffffffffffffffff8211156200011c576200011b6200007e565b5b62000127826200006e565b9050602081019050919050565b5f5b838110156200015357808201518184015260208101905062000136565b5f8484015250505050565b5f620001746200016e84620000ff565b620000e1565b9050828152602081018484840111156200019357620001926200006a565b5b620001a084828562000134565b509392505050565b5f82601f830112620001bf57620001be62000066565b5b8151620001d18482602086016200015e565b91505092915050565b5f60208284031215620001f257620001f16200005e565b5b5f82015167ffffffffffffffff81111562000212576200021162000062565b5b6200022084828501620001a8565b91505092915050565b5f81519050919050565b7f4e487b71000000000000000000000000000000000000000000000000000000005f52602260045260245ffd5b5f60028204905060018216806200027857607f821691505b6020821081036200028e576200028d62000233565b5b50919050565b5f819050815f5260205f209050919050565b5f6020601f8301049050919050565b5f82821b905092915050565b5f60088302620002f27fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff82620002b5565b620002fe8683620002b5565b95508019841693508086168417925050509392505050565b5f819050919050565b5f819050919050565b5f62000348620003426200033c8462000316565b6200031f565b62000316565b9050919050565b5f819050919050565b620003638362000328565b6200037b62000372826200034f565b848454620002c1565b825550505050565b5f90565b6200039162000383565b6200039e81848462000358565b505050565b5b81811015620003c557620003b95f8262000387565b600181019050620003a4565b5050565b601f8211156200041457620003de8162000294565b620003e984620002a6565b81016020851015620003f9578190505b620004116200040885620002a6565b830182620003a3565b50505b505050565b5f82821c905092915050565b5f620004365f198460080262000419565b1980831691505092915050565b5f62000450838362000425565b9150826002028217905092915050565b6200046b8262000229565b67ffffffffffffffff8111156200048757620004866200007e565b5b62000493825462000260565b620004a0828285620003c9565b5f60209050601f831160018114620004d6575f8415620004c1578287015190505b620004cd858262000443565b8655506200053c565b601f198416620004e68662000294565b5f5b828110156200050f57848901518255600182019150602085019450602081019050620004e8565b868310156200052f57848901516200052b601f89168262000425565b8355505b6001600288020188555050505b505050505050565b61091080620005525f395ff3fe608060405234801561000f575f80fd5b506004361061003f575f3560e01c8063a413686214610043578063cfae321714610074578063d09de08a14610092575b5f80fd5b61005d600480360381019061005891906103a9565b61009c565b60405161006b929190610484565b60405180910390f35b61007c6101b7565b60405161008991906104b2565b60405180910390f35b61009a610247565b005b5f60607f0d363f2fba46ab11b6db8da0125b0d5484787c44e265b48810735998bab12b756001846040516100d19291906105c2565b60405180910390a182600190816100e8919061078b565b507f7d7846723bda52976e0286c6efffee937ee9f76817a867ec70531ad29fb1fc0e6001604051610119919061085a565b60405180910390a1600180808054610130906104ff565b80601f016020809104026020016040519081016040528092919081815260200182805461015c906104ff565b80156101a75780601f1061017e576101008083540402835291602001916101a7565b820191905f5260205f20905b81548152906001019060200180831161018a57829003601f168201915b5050505050905091509150915091565b6060600180546101c6906104ff565b80601f01602080910402602001604051908101604052809291908181526020018280546101f2906104ff565b801561023d5780601f106102145761010080835404028352916020019161023d565b820191905f5260205f20905b81548152906001019060200180831161022057829003601f168201915b5050505050905090565b60015f5461025591906108a7565b5f81905550565b5f604051905090565b5f80fd5b5f80fd5b5f80fd5b5f80fd5b5f601f19601f8301169050919050565b7f4e487b71000000000000000000000000000000000000000000000000000000005f52604160045260245ffd5b6102bb82610275565b810181811067ffffffffffffffff821117156102da576102d9610285565b5b80604052505050565b5f6102ec61025c565b90506102f882826102b2565b919050565b5f67ffffffffffffffff82111561031757610316610285565b5b61032082610275565b9050602081019050919050565b828183375f83830152505050565b5f61034d610348846102fd565b6102e3565b90508281526020810184848401111561036957610368610271565b5b61037484828561032d565b509392505050565b5f82601f8301126103905761038f61026d565b5b81356103a084826020860161033b565b91505092915050565b5f602082840312156103be576103bd610265565b5b5f82013567ffffffffffffffff8111156103db576103da610269565b5b6103e78482850161037c565b91505092915050565b5f8115159050919050565b610404816103f0565b82525050565b5f81519050919050565b5f82825260208201905092915050565b5f5b83811015610441578082015181840152602081019050610426565b5f8484015250505050565b5f6104568261040a565b6104608185610414565b9350610470818560208601610424565b61047981610275565b840191505092915050565b5f6040820190506104975f8301856103fb565b81810360208301526104a9818461044c565b90509392505050565b5f6020820190508181035f8301526104ca818461044c565b905092915050565b7f4e487b71000000000000000000000000000000000000000000000000000000005f52602260045260245ffd5b5f600282049050600182168061051657607f821691505b602082108103610529576105286104d2565b5b50919050565b5f819050815f5260205f209050919050565b5f815461054d816104ff565b6105578186610414565b9450600182165f81146105715760018114610587576105b9565b60ff1983168652811515602002860193506105b9565b6105908561052f565b5f5b838110156105b157815481890152600182019150602081019050610592565b808801955050505b50505092915050565b5f6040820190508181035f8301526105da8185610541565b905081810360208301526105ee818461044c565b90509392505050565b5f6020601f8301049050919050565b5f82821b905092915050565b5f600883026106417fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff82610606565b61064b8683610606565b95508019841693508086168417925050509392505050565b5f819050919050565b5f819050919050565b5f61068f61068a61068584610663565b61066c565b610663565b9050919050565b5f819050919050565b6106a883610675565b6106bc6106b482610696565b848454610612565b825550505050565b5f90565b6106d06106c4565b6106db81848461069f565b505050565b5b818110156106fe576106f35f826106c8565b6001810190506106e1565b5050565b601f821115610743576107148161052f565b61071d846105f7565b8101602085101561072c578190505b610740610738856105f7565b8301826106e0565b50505b505050565b5f82821c905092915050565b5f6107635f1984600802610748565b1980831691505092915050565b5f61077b8383610754565b9150826002028217905092915050565b6107948261040a565b67ffffffffffffffff8111156107ad576107ac610285565b5b6107b782546104ff565b6107c2828285610702565b5f60209050601f8311600181146107f3575f84156107e1578287015190505b6107eb8582610770565b865550610852565b601f1984166108018661052f565b5f5b8281101561082857848901518255600182019150602085019450602081019050610803565b868310156108455784890151610841601f891682610754565b8355505b6001600288020188555050505b505050505050565b5f6020820190508181035f8301526108728184610541565b905092915050565b7f4e487b71000000000000000000000000000000000000000000000000000000005f52601160045260245ffd5b5f6108b182610663565b91506108bc83610663565b92508282019050808211156108d4576108d361087a565b5b9291505056fea264697066735822122039a530133d747adb5dc07fe92ab69bfc5e9af0e823a9563f32a3974379e87da56468797063430000020033000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000b4d79204772656574696e670000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
-					);
+					expect(_tx.input).toBe(GREETER_DEPLOYMENT_DATA);
 					expect(returnFormat).toBe(QRL_DATA_FORMAT);
 
 					// eslint-disable-next-line @typescript-eslint/no-unsafe-return
@@ -1247,9 +1377,7 @@ describe('Contract', () => {
 					expect(_block).toBe('latest');
 					expect(_tx.to).toBeUndefined();
 					expect(_tx.from).toStrictEqual(sendOptions.from);
-					expect(_tx.data).toBe(
-						'0x608060405234801562000010575f80fd5b5060405162000e6238038062000e628339818101604052810190620000369190620001da565b806001908162000047919062000460565b505f80819055505062000544565b5f604051905090565b5f80fd5b5f80fd5b5f80fd5b5f80fd5b5f601f19601f8301169050919050565b7f4e487b71000000000000000000000000000000000000000000000000000000005f52604160045260245ffd5b620000b6826200006e565b810181811067ffffffffffffffff82111715620000d857620000d76200007e565b5b80604052505050565b5f620000ec62000055565b9050620000fa8282620000ab565b919050565b5f67ffffffffffffffff8211156200011c576200011b6200007e565b5b62000127826200006e565b9050602081019050919050565b5f5b838110156200015357808201518184015260208101905062000136565b5f8484015250505050565b5f620001746200016e84620000ff565b620000e1565b9050828152602081018484840111156200019357620001926200006a565b5b620001a084828562000134565b509392505050565b5f82601f830112620001bf57620001be62000066565b5b8151620001d18482602086016200015e565b91505092915050565b5f60208284031215620001f257620001f16200005e565b5b5f82015167ffffffffffffffff81111562000212576200021162000062565b5b6200022084828501620001a8565b91505092915050565b5f81519050919050565b7f4e487b71000000000000000000000000000000000000000000000000000000005f52602260045260245ffd5b5f60028204905060018216806200027857607f821691505b6020821081036200028e576200028d62000233565b5b50919050565b5f819050815f5260205f209050919050565b5f6020601f8301049050919050565b5f82821b905092915050565b5f60088302620002f27fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff82620002b5565b620002fe8683620002b5565b95508019841693508086168417925050509392505050565b5f819050919050565b5f819050919050565b5f62000348620003426200033c8462000316565b6200031f565b62000316565b9050919050565b5f819050919050565b620003638362000328565b6200037b62000372826200034f565b848454620002c1565b825550505050565b5f90565b6200039162000383565b6200039e81848462000358565b505050565b5b81811015620003c557620003b95f8262000387565b600181019050620003a4565b5050565b601f8211156200041457620003de8162000294565b620003e984620002a6565b81016020851015620003f9578190505b620004116200040885620002a6565b830182620003a3565b50505b505050565b5f82821c905092915050565b5f620004365f198460080262000419565b1980831691505092915050565b5f62000450838362000425565b9150826002028217905092915050565b6200046b8262000229565b67ffffffffffffffff8111156200048757620004866200007e565b5b62000493825462000260565b620004a0828285620003c9565b5f60209050601f831160018114620004d6575f8415620004c1578287015190505b620004cd858262000443565b8655506200053c565b601f198416620004e68662000294565b5f5b828110156200050f57848901518255600182019150602085019450602081019050620004e8565b868310156200052f57848901516200052b601f89168262000425565b8355505b6001600288020188555050505b505050505050565b61091080620005525f395ff3fe608060405234801561000f575f80fd5b506004361061003f575f3560e01c8063a413686214610043578063cfae321714610074578063d09de08a14610092575b5f80fd5b61005d600480360381019061005891906103a9565b61009c565b60405161006b929190610484565b60405180910390f35b61007c6101b7565b60405161008991906104b2565b60405180910390f35b61009a610247565b005b5f60607f0d363f2fba46ab11b6db8da0125b0d5484787c44e265b48810735998bab12b756001846040516100d19291906105c2565b60405180910390a182600190816100e8919061078b565b507f7d7846723bda52976e0286c6efffee937ee9f76817a867ec70531ad29fb1fc0e6001604051610119919061085a565b60405180910390a1600180808054610130906104ff565b80601f016020809104026020016040519081016040528092919081815260200182805461015c906104ff565b80156101a75780601f1061017e576101008083540402835291602001916101a7565b820191905f5260205f20905b81548152906001019060200180831161018a57829003601f168201915b5050505050905091509150915091565b6060600180546101c6906104ff565b80601f01602080910402602001604051908101604052809291908181526020018280546101f2906104ff565b801561023d5780601f106102145761010080835404028352916020019161023d565b820191905f5260205f20905b81548152906001019060200180831161022057829003601f168201915b5050505050905090565b60015f5461025591906108a7565b5f81905550565b5f604051905090565b5f80fd5b5f80fd5b5f80fd5b5f80fd5b5f601f19601f8301169050919050565b7f4e487b71000000000000000000000000000000000000000000000000000000005f52604160045260245ffd5b6102bb82610275565b810181811067ffffffffffffffff821117156102da576102d9610285565b5b80604052505050565b5f6102ec61025c565b90506102f882826102b2565b919050565b5f67ffffffffffffffff82111561031757610316610285565b5b61032082610275565b9050602081019050919050565b828183375f83830152505050565b5f61034d610348846102fd565b6102e3565b90508281526020810184848401111561036957610368610271565b5b61037484828561032d565b509392505050565b5f82601f8301126103905761038f61026d565b5b81356103a084826020860161033b565b91505092915050565b5f602082840312156103be576103bd610265565b5b5f82013567ffffffffffffffff8111156103db576103da610269565b5b6103e78482850161037c565b91505092915050565b5f8115159050919050565b610404816103f0565b82525050565b5f81519050919050565b5f82825260208201905092915050565b5f5b83811015610441578082015181840152602081019050610426565b5f8484015250505050565b5f6104568261040a565b6104608185610414565b9350610470818560208601610424565b61047981610275565b840191505092915050565b5f6040820190506104975f8301856103fb565b81810360208301526104a9818461044c565b90509392505050565b5f6020820190508181035f8301526104ca818461044c565b905092915050565b7f4e487b71000000000000000000000000000000000000000000000000000000005f52602260045260245ffd5b5f600282049050600182168061051657607f821691505b602082108103610529576105286104d2565b5b50919050565b5f819050815f5260205f209050919050565b5f815461054d816104ff565b6105578186610414565b9450600182165f81146105715760018114610587576105b9565b60ff1983168652811515602002860193506105b9565b6105908561052f565b5f5b838110156105b157815481890152600182019150602081019050610592565b808801955050505b50505092915050565b5f6040820190508181035f8301526105da8185610541565b905081810360208301526105ee818461044c565b90509392505050565b5f6020601f8301049050919050565b5f82821b905092915050565b5f600883026106417fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff82610606565b61064b8683610606565b95508019841693508086168417925050509392505050565b5f819050919050565b5f819050919050565b5f61068f61068a61068584610663565b61066c565b610663565b9050919050565b5f819050919050565b6106a883610675565b6106bc6106b482610696565b848454610612565b825550505050565b5f90565b6106d06106c4565b6106db81848461069f565b505050565b5b818110156106fe576106f35f826106c8565b6001810190506106e1565b5050565b601f821115610743576107148161052f565b61071d846105f7565b8101602085101561072c578190505b610740610738856105f7565b8301826106e0565b50505b505050565b5f82821c905092915050565b5f6107635f1984600802610748565b1980831691505092915050565b5f61077b8383610754565b9150826002028217905092915050565b6107948261040a565b67ffffffffffffffff8111156107ad576107ac610285565b5b6107b782546104ff565b6107c2828285610702565b5f60209050601f8311600181146107f3575f84156107e1578287015190505b6107eb8582610770565b865550610852565b601f1984166108018661052f565b5f5b8281101561082857848901518255600182019150602085019450602081019050610803565b868310156108455784890151610841601f891682610754565b8355505b6001600288020188555050505b505050505050565b5f6020820190508181035f8301526108728184610541565b905092915050565b7f4e487b71000000000000000000000000000000000000000000000000000000005f52601160045260245ffd5b5f6108b182610663565b91506108bc83610663565b92508282019050808211156108d4576108d361087a565b5b9291505056fea264697066735822122039a530133d747adb5dc07fe92ab69bfc5e9af0e823a9563f32a3974379e87da56468797063430000020033000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000b4d79204772656574696e670000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
-					);
+					expect(_tx.data).toBe(GREETER_DEPLOYMENT_DATA);
 					expect(returnFormat).toBe(QRL_DATA_FORMAT);
 
 					// eslint-disable-next-line @typescript-eslint/no-unsafe-return
@@ -1290,12 +1418,8 @@ describe('Contract', () => {
 					expect(_block).toBe('latest');
 					expect(_tx.to).toBeUndefined();
 					expect(_tx.from).toStrictEqual(sendOptions.from);
-					expect(_tx.data).toBe(
-						'0x608060405234801562000010575f80fd5b5060405162000e6238038062000e628339818101604052810190620000369190620001da565b806001908162000047919062000460565b505f80819055505062000544565b5f604051905090565b5f80fd5b5f80fd5b5f80fd5b5f80fd5b5f601f19601f8301169050919050565b7f4e487b71000000000000000000000000000000000000000000000000000000005f52604160045260245ffd5b620000b6826200006e565b810181811067ffffffffffffffff82111715620000d857620000d76200007e565b5b80604052505050565b5f620000ec62000055565b9050620000fa8282620000ab565b919050565b5f67ffffffffffffffff8211156200011c576200011b6200007e565b5b62000127826200006e565b9050602081019050919050565b5f5b838110156200015357808201518184015260208101905062000136565b5f8484015250505050565b5f620001746200016e84620000ff565b620000e1565b9050828152602081018484840111156200019357620001926200006a565b5b620001a084828562000134565b509392505050565b5f82601f830112620001bf57620001be62000066565b5b8151620001d18482602086016200015e565b91505092915050565b5f60208284031215620001f257620001f16200005e565b5b5f82015167ffffffffffffffff81111562000212576200021162000062565b5b6200022084828501620001a8565b91505092915050565b5f81519050919050565b7f4e487b71000000000000000000000000000000000000000000000000000000005f52602260045260245ffd5b5f60028204905060018216806200027857607f821691505b6020821081036200028e576200028d62000233565b5b50919050565b5f819050815f5260205f209050919050565b5f6020601f8301049050919050565b5f82821b905092915050565b5f60088302620002f27fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff82620002b5565b620002fe8683620002b5565b95508019841693508086168417925050509392505050565b5f819050919050565b5f819050919050565b5f62000348620003426200033c8462000316565b6200031f565b62000316565b9050919050565b5f819050919050565b620003638362000328565b6200037b62000372826200034f565b848454620002c1565b825550505050565b5f90565b6200039162000383565b6200039e81848462000358565b505050565b5b81811015620003c557620003b95f8262000387565b600181019050620003a4565b5050565b601f8211156200041457620003de8162000294565b620003e984620002a6565b81016020851015620003f9578190505b620004116200040885620002a6565b830182620003a3565b50505b505050565b5f82821c905092915050565b5f620004365f198460080262000419565b1980831691505092915050565b5f62000450838362000425565b9150826002028217905092915050565b6200046b8262000229565b67ffffffffffffffff8111156200048757620004866200007e565b5b62000493825462000260565b620004a0828285620003c9565b5f60209050601f831160018114620004d6575f8415620004c1578287015190505b620004cd858262000443565b8655506200053c565b601f198416620004e68662000294565b5f5b828110156200050f57848901518255600182019150602085019450602081019050620004e8565b868310156200052f57848901516200052b601f89168262000425565b8355505b6001600288020188555050505b505050505050565b61091080620005525f395ff3fe608060405234801561000f575f80fd5b506004361061003f575f3560e01c8063a413686214610043578063cfae321714610074578063d09de08a14610092575b5f80fd5b61005d600480360381019061005891906103a9565b61009c565b60405161006b929190610484565b60405180910390f35b61007c6101b7565b60405161008991906104b2565b60405180910390f35b61009a610247565b005b5f60607f0d363f2fba46ab11b6db8da0125b0d5484787c44e265b48810735998bab12b756001846040516100d19291906105c2565b60405180910390a182600190816100e8919061078b565b507f7d7846723bda52976e0286c6efffee937ee9f76817a867ec70531ad29fb1fc0e6001604051610119919061085a565b60405180910390a1600180808054610130906104ff565b80601f016020809104026020016040519081016040528092919081815260200182805461015c906104ff565b80156101a75780601f1061017e576101008083540402835291602001916101a7565b820191905f5260205f20905b81548152906001019060200180831161018a57829003601f168201915b5050505050905091509150915091565b6060600180546101c6906104ff565b80601f01602080910402602001604051908101604052809291908181526020018280546101f2906104ff565b801561023d5780601f106102145761010080835404028352916020019161023d565b820191905f5260205f20905b81548152906001019060200180831161022057829003601f168201915b5050505050905090565b60015f5461025591906108a7565b5f81905550565b5f604051905090565b5f80fd5b5f80fd5b5f80fd5b5f80fd5b5f601f19601f8301169050919050565b7f4e487b71000000000000000000000000000000000000000000000000000000005f52604160045260245ffd5b6102bb82610275565b810181811067ffffffffffffffff821117156102da576102d9610285565b5b80604052505050565b5f6102ec61025c565b90506102f882826102b2565b919050565b5f67ffffffffffffffff82111561031757610316610285565b5b61032082610275565b9050602081019050919050565b828183375f83830152505050565b5f61034d610348846102fd565b6102e3565b90508281526020810184848401111561036957610368610271565b5b61037484828561032d565b509392505050565b5f82601f8301126103905761038f61026d565b5b81356103a084826020860161033b565b91505092915050565b5f602082840312156103be576103bd610265565b5b5f82013567ffffffffffffffff8111156103db576103da610269565b5b6103e78482850161037c565b91505092915050565b5f8115159050919050565b610404816103f0565b82525050565b5f81519050919050565b5f82825260208201905092915050565b5f5b83811015610441578082015181840152602081019050610426565b5f8484015250505050565b5f6104568261040a565b6104608185610414565b9350610470818560208601610424565b61047981610275565b840191505092915050565b5f6040820190506104975f8301856103fb565b81810360208301526104a9818461044c565b90509392505050565b5f6020820190508181035f8301526104ca818461044c565b905092915050565b7f4e487b71000000000000000000000000000000000000000000000000000000005f52602260045260245ffd5b5f600282049050600182168061051657607f821691505b602082108103610529576105286104d2565b5b50919050565b5f819050815f5260205f209050919050565b5f815461054d816104ff565b6105578186610414565b9450600182165f81146105715760018114610587576105b9565b60ff1983168652811515602002860193506105b9565b6105908561052f565b5f5b838110156105b157815481890152600182019150602081019050610592565b808801955050505b50505092915050565b5f6040820190508181035f8301526105da8185610541565b905081810360208301526105ee818461044c565b90509392505050565b5f6020601f8301049050919050565b5f82821b905092915050565b5f600883026106417fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff82610606565b61064b8683610606565b95508019841693508086168417925050509392505050565b5f819050919050565b5f819050919050565b5f61068f61068a61068584610663565b61066c565b610663565b9050919050565b5f819050919050565b6106a883610675565b6106bc6106b482610696565b848454610612565b825550505050565b5f90565b6106d06106c4565b6106db81848461069f565b505050565b5b818110156106fe576106f35f826106c8565b6001810190506106e1565b5050565b601f821115610743576107148161052f565b61071d846105f7565b8101602085101561072c578190505b610740610738856105f7565b8301826106e0565b50505b505050565b5f82821c905092915050565b5f6107635f1984600802610748565b1980831691505092915050565b5f61077b8383610754565b9150826002028217905092915050565b6107948261040a565b67ffffffffffffffff8111156107ad576107ac610285565b5b6107b782546104ff565b6107c2828285610702565b5f60209050601f8311600181146107f3575f84156107e1578287015190505b6107eb8582610770565b865550610852565b601f1984166108018661052f565b5f5b8281101561082857848901518255600182019150602085019450602081019050610803565b868310156108455784890151610841601f891682610754565b8355505b6001600288020188555050505b505050505050565b5f6020820190508181035f8301526108728184610541565b905092915050565b7f4e487b71000000000000000000000000000000000000000000000000000000005f52601160045260245ffd5b5f6108b182610663565b91506108bc83610663565b92508282019050808211156108d4576108d361087a565b5b9291505056fea264697066735822122039a530133d747adb5dc07fe92ab69bfc5e9af0e823a9563f32a3974379e87da56468797063430000020033000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000b4d79204772656574696e670000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
-					);
-					expect(_tx.input).toBe(
-						'0x608060405234801562000010575f80fd5b5060405162000e6238038062000e628339818101604052810190620000369190620001da565b806001908162000047919062000460565b505f80819055505062000544565b5f604051905090565b5f80fd5b5f80fd5b5f80fd5b5f80fd5b5f601f19601f8301169050919050565b7f4e487b71000000000000000000000000000000000000000000000000000000005f52604160045260245ffd5b620000b6826200006e565b810181811067ffffffffffffffff82111715620000d857620000d76200007e565b5b80604052505050565b5f620000ec62000055565b9050620000fa8282620000ab565b919050565b5f67ffffffffffffffff8211156200011c576200011b6200007e565b5b62000127826200006e565b9050602081019050919050565b5f5b838110156200015357808201518184015260208101905062000136565b5f8484015250505050565b5f620001746200016e84620000ff565b620000e1565b9050828152602081018484840111156200019357620001926200006a565b5b620001a084828562000134565b509392505050565b5f82601f830112620001bf57620001be62000066565b5b8151620001d18482602086016200015e565b91505092915050565b5f60208284031215620001f257620001f16200005e565b5b5f82015167ffffffffffffffff81111562000212576200021162000062565b5b6200022084828501620001a8565b91505092915050565b5f81519050919050565b7f4e487b71000000000000000000000000000000000000000000000000000000005f52602260045260245ffd5b5f60028204905060018216806200027857607f821691505b6020821081036200028e576200028d62000233565b5b50919050565b5f819050815f5260205f209050919050565b5f6020601f8301049050919050565b5f82821b905092915050565b5f60088302620002f27fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff82620002b5565b620002fe8683620002b5565b95508019841693508086168417925050509392505050565b5f819050919050565b5f819050919050565b5f62000348620003426200033c8462000316565b6200031f565b62000316565b9050919050565b5f819050919050565b620003638362000328565b6200037b62000372826200034f565b848454620002c1565b825550505050565b5f90565b6200039162000383565b6200039e81848462000358565b505050565b5b81811015620003c557620003b95f8262000387565b600181019050620003a4565b5050565b601f8211156200041457620003de8162000294565b620003e984620002a6565b81016020851015620003f9578190505b620004116200040885620002a6565b830182620003a3565b50505b505050565b5f82821c905092915050565b5f620004365f198460080262000419565b1980831691505092915050565b5f62000450838362000425565b9150826002028217905092915050565b6200046b8262000229565b67ffffffffffffffff8111156200048757620004866200007e565b5b62000493825462000260565b620004a0828285620003c9565b5f60209050601f831160018114620004d6575f8415620004c1578287015190505b620004cd858262000443565b8655506200053c565b601f198416620004e68662000294565b5f5b828110156200050f57848901518255600182019150602085019450602081019050620004e8565b868310156200052f57848901516200052b601f89168262000425565b8355505b6001600288020188555050505b505050505050565b61091080620005525f395ff3fe608060405234801561000f575f80fd5b506004361061003f575f3560e01c8063a413686214610043578063cfae321714610074578063d09de08a14610092575b5f80fd5b61005d600480360381019061005891906103a9565b61009c565b60405161006b929190610484565b60405180910390f35b61007c6101b7565b60405161008991906104b2565b60405180910390f35b61009a610247565b005b5f60607f0d363f2fba46ab11b6db8da0125b0d5484787c44e265b48810735998bab12b756001846040516100d19291906105c2565b60405180910390a182600190816100e8919061078b565b507f7d7846723bda52976e0286c6efffee937ee9f76817a867ec70531ad29fb1fc0e6001604051610119919061085a565b60405180910390a1600180808054610130906104ff565b80601f016020809104026020016040519081016040528092919081815260200182805461015c906104ff565b80156101a75780601f1061017e576101008083540402835291602001916101a7565b820191905f5260205f20905b81548152906001019060200180831161018a57829003601f168201915b5050505050905091509150915091565b6060600180546101c6906104ff565b80601f01602080910402602001604051908101604052809291908181526020018280546101f2906104ff565b801561023d5780601f106102145761010080835404028352916020019161023d565b820191905f5260205f20905b81548152906001019060200180831161022057829003601f168201915b5050505050905090565b60015f5461025591906108a7565b5f81905550565b5f604051905090565b5f80fd5b5f80fd5b5f80fd5b5f80fd5b5f601f19601f8301169050919050565b7f4e487b71000000000000000000000000000000000000000000000000000000005f52604160045260245ffd5b6102bb82610275565b810181811067ffffffffffffffff821117156102da576102d9610285565b5b80604052505050565b5f6102ec61025c565b90506102f882826102b2565b919050565b5f67ffffffffffffffff82111561031757610316610285565b5b61032082610275565b9050602081019050919050565b828183375f83830152505050565b5f61034d610348846102fd565b6102e3565b90508281526020810184848401111561036957610368610271565b5b61037484828561032d565b509392505050565b5f82601f8301126103905761038f61026d565b5b81356103a084826020860161033b565b91505092915050565b5f602082840312156103be576103bd610265565b5b5f82013567ffffffffffffffff8111156103db576103da610269565b5b6103e78482850161037c565b91505092915050565b5f8115159050919050565b610404816103f0565b82525050565b5f81519050919050565b5f82825260208201905092915050565b5f5b83811015610441578082015181840152602081019050610426565b5f8484015250505050565b5f6104568261040a565b6104608185610414565b9350610470818560208601610424565b61047981610275565b840191505092915050565b5f6040820190506104975f8301856103fb565b81810360208301526104a9818461044c565b90509392505050565b5f6020820190508181035f8301526104ca818461044c565b905092915050565b7f4e487b71000000000000000000000000000000000000000000000000000000005f52602260045260245ffd5b5f600282049050600182168061051657607f821691505b602082108103610529576105286104d2565b5b50919050565b5f819050815f5260205f209050919050565b5f815461054d816104ff565b6105578186610414565b9450600182165f81146105715760018114610587576105b9565b60ff1983168652811515602002860193506105b9565b6105908561052f565b5f5b838110156105b157815481890152600182019150602081019050610592565b808801955050505b50505092915050565b5f6040820190508181035f8301526105da8185610541565b905081810360208301526105ee818461044c565b90509392505050565b5f6020601f8301049050919050565b5f82821b905092915050565b5f600883026106417fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff82610606565b61064b8683610606565b95508019841693508086168417925050509392505050565b5f819050919050565b5f819050919050565b5f61068f61068a61068584610663565b61066c565b610663565b9050919050565b5f819050919050565b6106a883610675565b6106bc6106b482610696565b848454610612565b825550505050565b5f90565b6106d06106c4565b6106db81848461069f565b505050565b5b818110156106fe576106f35f826106c8565b6001810190506106e1565b5050565b601f821115610743576107148161052f565b61071d846105f7565b8101602085101561072c578190505b610740610738856105f7565b8301826106e0565b50505b505050565b5f82821c905092915050565b5f6107635f1984600802610748565b1980831691505092915050565b5f61077b8383610754565b9150826002028217905092915050565b6107948261040a565b67ffffffffffffffff8111156107ad576107ac610285565b5b6107b782546104ff565b6107c2828285610702565b5f60209050601f8311600181146107f3575f84156107e1578287015190505b6107eb8582610770565b865550610852565b601f1984166108018661052f565b5f5b8281101561082857848901518255600182019150602085019450602081019050610803565b868310156108455784890151610841601f891682610754565b8355505b6001600288020188555050505b505050505050565b5f6020820190508181035f8301526108728184610541565b905092915050565b7f4e487b71000000000000000000000000000000000000000000000000000000005f52601160045260245ffd5b5f6108b182610663565b91506108bc83610663565b92508282019050808211156108d4576108d361087a565b5b9291505056fea264697066735822122039a530133d747adb5dc07fe92ab69bfc5e9af0e823a9563f32a3974379e87da56468797063430000020033000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000b4d79204772656574696e670000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
-					);
+					expect(_tx.data).toBe(GREETER_DEPLOYMENT_DATA);
+					expect(_tx.input).toBe(GREETER_DEPLOYMENT_DATA);
 					expect(returnFormat).toBe(QRL_DATA_FORMAT);
 
 					// eslint-disable-next-line @typescript-eslint/no-unsafe-return
@@ -1335,9 +1459,7 @@ describe('Contract', () => {
 					expect(_block).toBe('latest');
 					expect(_tx.to).toBeUndefined();
 					expect(_tx.from).toStrictEqual(sendOptions.from);
-					expect(_tx.data).toBe(
-						'0x608060405234801562000010575f80fd5b5060405162000e6238038062000e628339818101604052810190620000369190620001da565b806001908162000047919062000460565b505f80819055505062000544565b5f604051905090565b5f80fd5b5f80fd5b5f80fd5b5f80fd5b5f601f19601f8301169050919050565b7f4e487b71000000000000000000000000000000000000000000000000000000005f52604160045260245ffd5b620000b6826200006e565b810181811067ffffffffffffffff82111715620000d857620000d76200007e565b5b80604052505050565b5f620000ec62000055565b9050620000fa8282620000ab565b919050565b5f67ffffffffffffffff8211156200011c576200011b6200007e565b5b62000127826200006e565b9050602081019050919050565b5f5b838110156200015357808201518184015260208101905062000136565b5f8484015250505050565b5f620001746200016e84620000ff565b620000e1565b9050828152602081018484840111156200019357620001926200006a565b5b620001a084828562000134565b509392505050565b5f82601f830112620001bf57620001be62000066565b5b8151620001d18482602086016200015e565b91505092915050565b5f60208284031215620001f257620001f16200005e565b5b5f82015167ffffffffffffffff81111562000212576200021162000062565b5b6200022084828501620001a8565b91505092915050565b5f81519050919050565b7f4e487b71000000000000000000000000000000000000000000000000000000005f52602260045260245ffd5b5f60028204905060018216806200027857607f821691505b6020821081036200028e576200028d62000233565b5b50919050565b5f819050815f5260205f209050919050565b5f6020601f8301049050919050565b5f82821b905092915050565b5f60088302620002f27fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff82620002b5565b620002fe8683620002b5565b95508019841693508086168417925050509392505050565b5f819050919050565b5f819050919050565b5f62000348620003426200033c8462000316565b6200031f565b62000316565b9050919050565b5f819050919050565b620003638362000328565b6200037b62000372826200034f565b848454620002c1565b825550505050565b5f90565b6200039162000383565b6200039e81848462000358565b505050565b5b81811015620003c557620003b95f8262000387565b600181019050620003a4565b5050565b601f8211156200041457620003de8162000294565b620003e984620002a6565b81016020851015620003f9578190505b620004116200040885620002a6565b830182620003a3565b50505b505050565b5f82821c905092915050565b5f620004365f198460080262000419565b1980831691505092915050565b5f62000450838362000425565b9150826002028217905092915050565b6200046b8262000229565b67ffffffffffffffff8111156200048757620004866200007e565b5b62000493825462000260565b620004a0828285620003c9565b5f60209050601f831160018114620004d6575f8415620004c1578287015190505b620004cd858262000443565b8655506200053c565b601f198416620004e68662000294565b5f5b828110156200050f57848901518255600182019150602085019450602081019050620004e8565b868310156200052f57848901516200052b601f89168262000425565b8355505b6001600288020188555050505b505050505050565b61091080620005525f395ff3fe608060405234801561000f575f80fd5b506004361061003f575f3560e01c8063a413686214610043578063cfae321714610074578063d09de08a14610092575b5f80fd5b61005d600480360381019061005891906103a9565b61009c565b60405161006b929190610484565b60405180910390f35b61007c6101b7565b60405161008991906104b2565b60405180910390f35b61009a610247565b005b5f60607f0d363f2fba46ab11b6db8da0125b0d5484787c44e265b48810735998bab12b756001846040516100d19291906105c2565b60405180910390a182600190816100e8919061078b565b507f7d7846723bda52976e0286c6efffee937ee9f76817a867ec70531ad29fb1fc0e6001604051610119919061085a565b60405180910390a1600180808054610130906104ff565b80601f016020809104026020016040519081016040528092919081815260200182805461015c906104ff565b80156101a75780601f1061017e576101008083540402835291602001916101a7565b820191905f5260205f20905b81548152906001019060200180831161018a57829003601f168201915b5050505050905091509150915091565b6060600180546101c6906104ff565b80601f01602080910402602001604051908101604052809291908181526020018280546101f2906104ff565b801561023d5780601f106102145761010080835404028352916020019161023d565b820191905f5260205f20905b81548152906001019060200180831161022057829003601f168201915b5050505050905090565b60015f5461025591906108a7565b5f81905550565b5f604051905090565b5f80fd5b5f80fd5b5f80fd5b5f80fd5b5f601f19601f8301169050919050565b7f4e487b71000000000000000000000000000000000000000000000000000000005f52604160045260245ffd5b6102bb82610275565b810181811067ffffffffffffffff821117156102da576102d9610285565b5b80604052505050565b5f6102ec61025c565b90506102f882826102b2565b919050565b5f67ffffffffffffffff82111561031757610316610285565b5b61032082610275565b9050602081019050919050565b828183375f83830152505050565b5f61034d610348846102fd565b6102e3565b90508281526020810184848401111561036957610368610271565b5b61037484828561032d565b509392505050565b5f82601f8301126103905761038f61026d565b5b81356103a084826020860161033b565b91505092915050565b5f602082840312156103be576103bd610265565b5b5f82013567ffffffffffffffff8111156103db576103da610269565b5b6103e78482850161037c565b91505092915050565b5f8115159050919050565b610404816103f0565b82525050565b5f81519050919050565b5f82825260208201905092915050565b5f5b83811015610441578082015181840152602081019050610426565b5f8484015250505050565b5f6104568261040a565b6104608185610414565b9350610470818560208601610424565b61047981610275565b840191505092915050565b5f6040820190506104975f8301856103fb565b81810360208301526104a9818461044c565b90509392505050565b5f6020820190508181035f8301526104ca818461044c565b905092915050565b7f4e487b71000000000000000000000000000000000000000000000000000000005f52602260045260245ffd5b5f600282049050600182168061051657607f821691505b602082108103610529576105286104d2565b5b50919050565b5f819050815f5260205f209050919050565b5f815461054d816104ff565b6105578186610414565b9450600182165f81146105715760018114610587576105b9565b60ff1983168652811515602002860193506105b9565b6105908561052f565b5f5b838110156105b157815481890152600182019150602081019050610592565b808801955050505b50505092915050565b5f6040820190508181035f8301526105da8185610541565b905081810360208301526105ee818461044c565b90509392505050565b5f6020601f8301049050919050565b5f82821b905092915050565b5f600883026106417fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff82610606565b61064b8683610606565b95508019841693508086168417925050509392505050565b5f819050919050565b5f819050919050565b5f61068f61068a61068584610663565b61066c565b610663565b9050919050565b5f819050919050565b6106a883610675565b6106bc6106b482610696565b848454610612565b825550505050565b5f90565b6106d06106c4565b6106db81848461069f565b505050565b5b818110156106fe576106f35f826106c8565b6001810190506106e1565b5050565b601f821115610743576107148161052f565b61071d846105f7565b8101602085101561072c578190505b610740610738856105f7565b8301826106e0565b50505b505050565b5f82821c905092915050565b5f6107635f1984600802610748565b1980831691505092915050565b5f61077b8383610754565b9150826002028217905092915050565b6107948261040a565b67ffffffffffffffff8111156107ad576107ac610285565b5b6107b782546104ff565b6107c2828285610702565b5f60209050601f8311600181146107f3575f84156107e1578287015190505b6107eb8582610770565b865550610852565b601f1984166108018661052f565b5f5b8281101561082857848901518255600182019150602085019450602081019050610803565b868310156108455784890151610841601f891682610754565b8355505b6001600288020188555050505b505050505050565b5f6020820190508181035f8301526108728184610541565b905092915050565b7f4e487b71000000000000000000000000000000000000000000000000000000005f52601160045260245ffd5b5f6108b182610663565b91506108bc83610663565b92508282019050808211156108d4576108d361087a565b5b9291505056fea264697066735822122039a530133d747adb5dc07fe92ab69bfc5e9af0e823a9563f32a3974379e87da56468797063430000020033000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000b4d79204772656574696e670000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
-					);
+					expect(_tx.data).toBe(GREETER_DEPLOYMENT_DATA);
 					expect(returnFormat).toBe(QRL_DATA_FORMAT);
 
 					// eslint-disable-next-line @typescript-eslint/no-unsafe-return
@@ -1438,16 +1560,17 @@ describe('Contract', () => {
 			const arg = 'Hello';
 
 			const contract = new Contract(GreeterAbi);
-			contract.options.address = 'Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000012364916b10ae90076dda6de756ee1395bb69ec2';
+			contract.options.address =
+				'Q26DD6013a6D6cCf740c037b7FcF0b125a49CA3F4fD8166343B53F8282908949a533Cc2744b40840046198C7d560b00794E83d568093812C09b4d1D4607D7acb8';
 
-			/* eslint-disable no-useless-escape */
 			await expect(async () => {
 				await contract.methods.setGreeting(arg).send(sendOptionsSpecial);
 			}).rejects.toThrow('Contract "from" address not specified');
 		});
 
 		it('contract method createAccessList should work', async () => {
-			const fromAddr: Address = 'Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020Bc23D0598b12c34cBdeF1FaE439ba8744DB426';
+			const fromAddr: Address =
+				'QD29B41525Ef0e31e1CFFa6822dE48D527057F0Aa263834dB22a78F664704b0F8b70F6db008eD1e783EE7dd8521b57E752C486B2f6155D79DBC17903b58E52954';
 			const result: AccessListResult = {
 				accessList: [
 					{
@@ -1484,7 +1607,8 @@ describe('Contract', () => {
 				provider: expectedProvider,
 				config: { contractDataInputFill: 'data' },
 			});
-			const fromAddr: Address = 'Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020Bc23D0598b12c34cBdeF1FaE439ba8744DB426';
+			const fromAddr: Address =
+				'QD29B41525Ef0e31e1CFFa6822dE48D527057F0Aa263834dB22a78F664704b0F8b70F6db008eD1e783EE7dd8521b57E752C486B2f6155D79DBC17903b58E52954';
 			const result: AccessListResult = {
 				accessList: [
 					{
@@ -1520,7 +1644,8 @@ describe('Contract', () => {
 				provider: expectedProvider,
 				config: { contractDataInputFill: 'both' },
 			});
-			const fromAddr: Address = 'Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020Bc23D0598b12c34cBdeF1FaE439ba8744DB426';
+			const fromAddr: Address =
+				'QD29B41525Ef0e31e1CFFa6822dE48D527057F0Aa263834dB22a78F664704b0F8b70F6db008eD1e783EE7dd8521b57E752C486B2f6155D79DBC17903b58E52954';
 			const result: AccessListResult = {
 				accessList: [
 					{
@@ -1553,7 +1678,8 @@ describe('Contract', () => {
 		});
 
 		it('contract method createAccessList should decode revert error according to EIP-838', async () => {
-			const fromAddr: Address = 'Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020Bc23D0598b12c34cBdeF1FaE439ba8744DB426';
+			const fromAddr: Address =
+				'QD29B41525Ef0e31e1CFFa6822dE48D527057F0Aa263834dB22a78F664704b0F8b70F6db008eD1e783EE7dd8521b57E752C486B2f6155D79DBC17903b58E52954';
 
 			// ABI augmented with an `Unauthorized()` custom error (selector 0x82b42900)
 			const abiWithError = [

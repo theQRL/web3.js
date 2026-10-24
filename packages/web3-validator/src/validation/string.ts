@@ -46,11 +46,15 @@ export const isHex = (hex: ValidInputTypes): boolean =>
 	typeof hex === 'bigint' ||
 	(typeof hex === 'string' && /^((-0x|0x|-)?[0-9a-f]+|(0x))$/i.test(hex));
 
+// Exactly N bytes of hex, no sign: `-0x` + 63 digits and, unprefixed, `0x` + 62 digits used
+// to pass by length alone.
 export const isHexString8Bytes = (value: string, prefixed = true) =>
-	prefixed ? isHexStrict(value) && value.length === 18 : isHex(value) && value.length === 16;
+	typeof value === 'string' &&
+	(prefixed ? /^0x[0-9a-f]{16}$/i.test(value) : /^[0-9a-f]{16}$/i.test(value));
 
 export const isHexString32Bytes = (value: string, prefixed = true) =>
-	prefixed ? isHexStrict(value) && value.length === 66 : isHex(value) && value.length === 64;
+	typeof value === 'string' &&
+	(prefixed ? /^0x[0-9a-f]{64}$/i.test(value) : /^[0-9a-f]{64}$/i.test(value));
 
 /**
  * Returns a `Boolean` on whether or not the a `String` starts with '0x'

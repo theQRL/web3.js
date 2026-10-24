@@ -106,5 +106,10 @@ describe('[TransactionFactory]: Basic functions', () => {
 		expect(() => {
 			TransactionFactory.fromTxData({ value: BigInt('-100') });
 		}).toThrow();
+
+		// `type` is required: there is no legacy default (I-2).
+		expect(() => {
+			TransactionFactory.fromTxData({ value: BigInt(1) });
+		}).toThrow('Tx instantiation with type 0 not supported');
 	});
 });

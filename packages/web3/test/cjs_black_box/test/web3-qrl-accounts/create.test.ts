@@ -22,7 +22,6 @@ import {
 	closeOpenConnection,
 	getSystemTestProvider,
 	isWs,
-	// eslint-disable-next-line import/no-relative-packages
 } from '../../../shared_fixtures/system_tests_utils';
 
 jest.setTimeout(15000);

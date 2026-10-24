@@ -26,11 +26,21 @@ export const validUintData: any[] = [
 	'1',
 	1,
 	BigInt(12),
+	(BigInt(1) << BigInt(256)) - BigInt(1),
 ];
 
-// Using "null" value intentionally for validation
-// eslint-disable-next-line no-null/no-null
-export const invalidUintData: any[] = ['-0x48', '-12', -1, true, undefined, null, ''];
+export const invalidUintData: any[] = [
+	'-0x48',
+	'-12',
+	-1,
+	true,
+	undefined,
+	// Using "null" value intentionally for validation
+	// eslint-disable-next-line no-null/no-null
+	null,
+	'',
+	BigInt(1) << BigInt(256),
+];
 
 export const validUintDataWithSize: [any, number][] = [
 	['0x48', 8],
@@ -75,11 +85,19 @@ export const validIntData: any[] = [
 	'-1',
 	-1,
 	BigInt(-12),
+	(BigInt(1) << BigInt(255)) - BigInt(1),
+	-(BigInt(1) << BigInt(255)),
 ];
 
-// Using "null" value intentionally for validation
-// eslint-disable-next-line no-null/no-null
-export const invalidIntData: any[] = [true, undefined, null];
+export const invalidIntData: any[] = [
+	true,
+	undefined,
+	// Using "null" value intentionally for validation
+	// eslint-disable-next-line no-null/no-null
+	null,
+	BigInt(1) << BigInt(255),
+	-(BigInt(1) << BigInt(255)) - BigInt(1),
+];
 
 export const validIntDataWithSize: [any, number][] = [
 	['-0x48', 8],
@@ -422,27 +440,21 @@ export const invalidUserQRLAddressInBloomData: any[] = [
 	],
 ];
 
-export const validTopicData: any[] = [
-	'0x0ce781a18c10c8289803c7c4cfd532d797113c4b41c9701ffad7d0a632ac555b',
-];
+const validTopic =
+	'0xd5812f6cf4a0f645aa620cd57319a0ed649dd8f5519a9dde7770ae5b0e49e547985f35eb972a2a07041561aa39c65a3991478f9b1e6749e05277dcf58a9a8b72';
+const secondValidTopic =
+	'0xbe95a82d87a6cb9c7ff4c64e0c15bb1dff20b1d77e6b571b28ad4736f2a2a3e5857e8c225d6d61399b15beef3b196936e490ed6e234374c4887cbbe86c13b1ba';
+
+export const validTopicData: any[] = [validTopic];
 
 export const invalidTopicData: any[] = [
 	'0x0ce781a18c10c8289803c7c4cfd532d797113c4b41c9701ffad7d0a632ac55',
+	'0x0000000000000000000000000000000000000000000000000000000000000000',
 ];
 
-export const validTopicInBloomData: any[] = [
-	[
-		'0x00000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000001000000000000000000000000000000',
-		'0x0ce781a18c10c8289803c7c4cfd532d797113c4b41c9701ffad7d0a632ac555b',
-	],
-];
+export const validTopicInBloomData: any[] = [[validInBloomData[0][0], validTopic]];
 
-export const invalidTopicInBloomData: any[] = [
-	[
-		'0x00000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000001000000000000000000000000000000',
-		'0x9de781a18c10c8289803c7c4cfd532d797113c4b41c9701ffad7d0a632ac5567',
-	],
-];
+export const invalidTopicInBloomData: any[] = [[validInBloomData[0][0], secondValidTopic]];
 
 export const validBigIntData: any[] = [BigInt('90071992547409911'), BigInt(42), BigInt('1337')];
 
@@ -510,12 +522,12 @@ export const invalidBooleanData = invalidHexStrictData.filter(
 	data => data !== 1 && data !== 0 && data !== '0' && data !== '1' && typeof data !== 'boolean',
 );
 export const isTopicData: any[] = [
-	{ in: '0x0000000000000000000000000000000000000000000000000000000000000000', out: true },
-	{ in: '0x000000000000000000000000000000000000000000000000000000000000001a', out: true },
-	{ in: '0x000000000000000000000000000000000000000000000000000000000000001A', out: true },
-	{ in: '0x00000000000000000000000000000000000000000000000000000000000001aA', out: false },
-	{ in: '0x00000000000000000000000000000000000000000000000000000000000000000', out: false },
-	{ in: '0x000000000000000000000000000000000000000000000000000000000000000', out: false },
+	{ in: '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000', out: true },
+	{ in: '0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001a', out: true },
+	{ in: '0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001A', out: true },
+	{ in: '0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001aA', out: false },
+	{ in: '0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000', out: false },
+	{ in: '0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000', out: false },
 	{ in: 123, out: false },
 	// eslint-disable-next-line no-null/no-null
 	{ in: null, out: false },
@@ -577,14 +589,11 @@ export const validFilterObjectData: Filter[] = [
 	},
 	{
 		topics: [
-			'0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b',
+			validTopic,
 			// Using "null" value intentionally for validation
 			// eslint-disable-next-line no-null/no-null
 			null,
-			[
-				'0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b',
-				'0x0000000000000000000000000aff3454fce5edbc8cca8697c15331677e6ebccc',
-			],
+			[validTopic, secondValidTopic],
 		],
 	},
 	{
@@ -595,14 +604,11 @@ export const validFilterObjectData: Filter[] = [
 			'Qbe95a82d87a6cb9c7ff4c64e0c15bb1dff20b1d77e6b571b28ad4736f2a2a3e5857e8c225d6d61399b15beef3b196936e490ed6e234374c4887cbbe86c13b1ba',
 		],
 		topics: [
-			'0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b',
+			validTopic,
 			// Using "null" value intentionally for validation
 			// eslint-disable-next-line no-null/no-null
 			null,
-			[
-				'0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b',
-				'0x0000000000000000000000000aff3454fce5edbc8cca8697c15331677e6ebccc',
-			],
+			[validTopic, secondValidTopic],
 		],
 	},
 ];
@@ -632,10 +638,7 @@ export const invalidFilterObjectData: any[] = [
 			// Using "null" value intentionally for validation
 			// eslint-disable-next-line no-null/no-null
 			null,
-			[
-				'0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b',
-				'0x0000000000000000000000000aff3454fce5edbc8cca8697c15331677e6ebccc',
-			],
+			[validTopic, secondValidTopic],
 		],
 	},
 	{
@@ -647,14 +650,11 @@ export const invalidFilterObjectData: any[] = [
 			42,
 		],
 		topics: [
-			'0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b',
+			validTopic,
 			// Using "null" value intentionally for validation
 			// eslint-disable-next-line no-null/no-null
 			null,
-			[
-				'0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b',
-				'0x0000000000000000000000000aff3454fce5edbc8cca8697c15331677e6ebccc',
-			],
+			[validTopic, secondValidTopic],
 		],
 	},
 ];
@@ -708,6 +708,7 @@ export const validQRLTypeData: string[] = [
 	'int64',
 	'int128',
 	'int256',
+	'int512',
 	'string',
 	'int[]',
 	'int8[]',
@@ -721,6 +722,7 @@ export const validQRLTypeData: string[] = [
 	'bytes[]',
 	'bytes[2]',
 	'bytes10',
+	'bytes64',
 	'bytes1',
 	'bool',
 	'address',
@@ -731,7 +733,7 @@ export const validQRLTypeData: string[] = [
 export const invalidQRLTypeData: string[] = [
 	'i',
 	'int7',
-	'int512',
+	'int520',
 	'int1024',
 	'byte',
 	'my-addresss',

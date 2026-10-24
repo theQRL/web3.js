@@ -15,10 +15,10 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/* eslint-disable @typescript-eslint/no-magic-numbers */
-
 import { when } from 'jest-when';
 import { Web3AccountProvider, Web3BaseWalletAccount, KeyStore } from '@theqrl/web3-types';
+import { Web3ValidatorError } from '@theqrl/web3-validator';
+import { bytesToHex } from '@theqrl/web3-utils';
 import { Wallet } from '../../src/wallet';
 
 describe('Wallet', () => {
@@ -104,6 +104,35 @@ describe('Wallet', () => {
 			expect(wallet).toHaveLength(1);
 			expect(wallet.get('myaddress')).toEqual({ address: 'myAddress' });
 		});
+
+		it('creates the account from a 51-byte Uint8Array seed through the provider (I-6)', () => {
+			const seed = new Uint8Array(51).fill(1);
+			const result = wallet.add(seed);
+
+			expect(result).toBeTruthy();
+			expect(accountProvider.seedToAccount).toHaveBeenCalledTimes(1);
+			expect(accountProvider.seedToAccount).toHaveBeenCalledWith(bytesToHex(seed));
+			expect(wallet).toHaveLength(1);
+			expect(wallet.get(0)).toEqual(
+				expect.objectContaining({ address: expect.stringMatching(/^seed_create_/) }),
+			);
+		});
+
+		it.each([
+			// eslint-disable-next-line no-null/no-null
+			['null', null],
+			['a number', 42],
+			['an empty object', {}],
+			['an object without a string address', { address: 7 }],
+		])(
+			'rejects %s with a Web3ValidatorError and leaves the wallet unchanged (I-6)',
+			(_, input) => {
+				expect(() => wallet.add(input as never)).toThrow(Web3ValidatorError);
+				expect(accountProvider.seedToAccount).not.toHaveBeenCalled();
+				expect(wallet).toHaveLength(0);
+				expect(wallet.get(0)).toBeUndefined();
+			},
+		);
 
 		it('should override account object for existing address', () => {
 			const account1 = { address: 'address', seed: 'seed1' } as never;
@@ -412,6 +441,40 @@ describe('Wallet', () => {
 			expect(wallet.decrypt).toHaveBeenCalledWith(['encryptedWallet'], 'password');
 			expect(localStorageSpy.getItem).toHaveBeenCalledTimes(1);
 			expect(localStorageSpy.getItem).toHaveBeenCalledWith('web3js_wallet');
+		});
+	});
+	describe('stored wallet validation (L-17)', () => {
+		it('rejects a stored value that is not valid JSON with a Web3ValidatorError', async () => {
+			when(localStorageSpy.getItem).calledWith('web3js_wallet').mockReturnValue('{not json');
+
+			const error = await wallet.load('password').catch((e: unknown) => e);
+
+			expect(error).toBeInstanceOf(Web3ValidatorError);
+			expect((error as Web3ValidatorError).innerError).toBeInstanceOf(SyntaxError);
+			expect((error as Error).message).not.toContain('{not json');
+			expect(accountProvider.decrypt).not.toHaveBeenCalled();
+		});
+
+		it('rejects a stored object that is not an array of keystores', async () => {
+			when(localStorageSpy.getItem).calledWith('myKey').mockReturnValue('{"a":1}');
+
+			await expect(wallet.load('password', 'myKey')).rejects.toThrow(Web3ValidatorError);
+			expect(accountProvider.decrypt).not.toHaveBeenCalled();
+		});
+
+		it('loads an empty wallet from a stored null', async () => {
+			when(localStorageSpy.getItem).calledWith('web3js_wallet').mockReturnValue('null');
+
+			await expect(wallet.load('password')).resolves.toBe(wallet);
+			expect(wallet).toHaveLength(0);
+			expect(accountProvider.decrypt).not.toHaveBeenCalled();
+		});
+
+		it('decrypt() rejects a non-array argument with a Web3ValidatorError', async () => {
+			await expect(
+				wallet.decrypt({ address: 'x' } as unknown as KeyStore[], 'password'),
+			).rejects.toThrow(Web3ValidatorError);
+			expect(accountProvider.decrypt).not.toHaveBeenCalled();
 		});
 	});
 });

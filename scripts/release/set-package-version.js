@@ -20,35 +20,51 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 const { existsSync, readFileSync, writeFileSync } = require('fs');
 const { join } = require('path');
 
-const [version] = process.argv.slice(2);
+// Sets the manifest version of the package in `packageDirectory` and keeps
+// src/version.ts in sync with it. The release pipeline only updates
+// package.json by default (multi-semantic-release's prepareCmd runs this
+// script); any runtime accessor for the package version (e.g. Web3PkgInfo)
+// lives in src/version.ts and would otherwise drift on every release.
+// `mutateManifest` lets a caller apply further manifest changes in the same
+// write (scripts/release/restore-tag-manifests.js rewrites sibling ranges).
+const setPackageVersion = (packageDirectory, version, mutateManifest = () => {}) => {
+	const manifestPath = join(packageDirectory, 'package.json');
+	const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
 
-if (!version) {
-	console.error('Usage: set-package-version.js <version>');
-	process.exit(1);
-}
+	manifest.version = version;
+	mutateManifest(manifest);
+	writeFileSync(manifestPath, `${JSON.stringify(manifest, undefined, '\t')}\n`);
 
-const manifestPath = join(process.cwd(), 'package.json');
-const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+	const versionTsPath = join(packageDirectory, 'src', 'version.ts');
+	if (existsSync(versionTsPath)) {
+		const original = readFileSync(versionTsPath, 'utf8');
+		const versionLiteralPattern = /(version\s*:\s*)(['"])[^'"]*\2/;
+		if (!versionLiteralPattern.test(original)) {
+			throw new Error(
+				`set-package-version: ${versionTsPath} exists but contains no \`version: '...'\` literal to update`,
+			);
+		}
+		const updated = original.replace(versionLiteralPattern, `$1$2${version}$2`);
+		if (updated !== original) {
+			writeFileSync(versionTsPath, updated);
+		}
+	}
+};
 
-manifest.version = version;
-writeFileSync(manifestPath, `${JSON.stringify(manifest, undefined, '\t')}\n`);
+if (require.main === module) {
+	const [version] = process.argv.slice(2);
 
-// Keep src/version.ts in sync with package.json. The release pipeline only
-// updates package.json by default; any runtime accessor for the package
-// version (e.g. Web3PkgInfo) lives in src/version.ts and would otherwise
-// drift on every release.
-const versionTsPath = join(process.cwd(), 'src', 'version.ts');
-if (existsSync(versionTsPath)) {
-	const original = readFileSync(versionTsPath, 'utf8');
-	const versionLiteralPattern = /(version\s*:\s*)(['"])[^'"]*\2/;
-	if (!versionLiteralPattern.test(original)) {
-		console.error(
-			`set-package-version: ${versionTsPath} exists but contains no \`version: '...'\` literal to update`,
-		);
+	if (!version) {
+		console.error('Usage: set-package-version.js <version>');
 		process.exit(1);
 	}
-	const updated = original.replace(versionLiteralPattern, `$1$2${version}$2`);
-	if (updated !== original) {
-		writeFileSync(versionTsPath, updated);
+
+	try {
+		setPackageVersion(process.cwd(), version);
+	} catch (error) {
+		console.error(error.message);
+		process.exit(1);
 	}
 }
+
+module.exports = { setPackageVersion };

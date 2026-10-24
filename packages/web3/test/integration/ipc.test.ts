@@ -41,8 +41,6 @@ describe('Web3 instance', () => {
 		// https://ethereum.stackexchange.com/questions/52574/how-to-connect-to-ethereum-node-geth-via-ipc-from-outside-of-docker-container
 		// https://github.com/ethereum/go-ethereum/issues/17907
 		it('should create instance with string of IPC provider', async () => {
-			// eslint-disable-next-line @typescript-eslint/no-unused-vars
-
 			expect(web3).toBeInstanceOf(Web3);
 			await waitForSocketConnect(web3.provider as IpcProvider);
 			expect((web3.provider as IpcProvider).getStatus()).toBe('connected');
