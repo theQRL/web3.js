@@ -322,20 +322,20 @@ describe('Web3 instance', () => {
 		});
 
 		it('should update defaults on contract instance', () => {
-			const hardfork = 'berlin';
+			const defaultBlock = 'pending';
 
 			contract = new web3.qrl.Contract(GreeterAbi, undefined, {
 				provider: getSystemTestProvider(),
 				syncWithContext: true,
 			});
 
-			web3.defaultHardfork = hardfork;
+			web3.defaultBlock = defaultBlock;
 
-			expect(contract.defaultHardfork).toBe(hardfork);
+			expect(contract.defaultBlock).toBe(defaultBlock);
 		});
 
 		it('should update defaults on deployed contract instance', async () => {
-			const hardfork = 'berlin';
+			const defaultBlock = 'latest';
 
 			contract = new web3.qrl.Contract(GreeterAbi, undefined, {
 				provider: getSystemTestProvider(),
@@ -343,9 +343,9 @@ describe('Web3 instance', () => {
 			});
 			contract = await contract.deploy(deployOptions).send(sendOptions);
 
-			web3.defaultHardfork = hardfork;
+			web3.defaultBlock = defaultBlock;
 
-			expect(contract.defaultHardfork).toBe(hardfork);
+			expect(contract.defaultBlock).toBe(defaultBlock);
 		});
 	});
 });

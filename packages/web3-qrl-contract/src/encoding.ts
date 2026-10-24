@@ -15,14 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import {
-	bytesToHex,
-	format,
-	hexToBytes,
-	isNullish,
-	keccak256,
-	rightPad,
-} from '@theqrl/web3-utils';
+import { bytesToHex, format, hexToBytes, isNullish, keccak256, rightPad } from '@theqrl/web3-utils';
 import { isAddressString } from '@theqrl/web3-validator';
 
 import {
@@ -221,7 +214,7 @@ export const encodeIndexedTopic = (input: AbiParameter, value: unknown): HexStri
  * is itself an array type (the array is the value) or a tuple given in positional form.
  * Alternatives for a tuple input must be given in object form.
  */
-const isOrList = (input: AbiParameter, value: unknown): value is unknown[] => {
+export const isOrList = (input: AbiParameter, value: unknown): value is unknown[] => {
 	if (!Array.isArray(value)) {
 		return false;
 	}
@@ -346,7 +339,7 @@ export const decodeEventABI = (
 						j =>
 							isAbiEventFragment(j) &&
 							rightPad(j.signature, TOPIC_HEX_LENGTH).toLowerCase() === topic0,
-				  );
+					);
 		if (matchedEvent) {
 			modifiedEvent = matchedEvent as AbiEventFragment & { signature: string };
 		} else {

@@ -37,6 +37,7 @@ import {
 	ConnectionNotOpenError,
 	ProviderError,
 	RequestSerializationError,
+	ResponseTooLargeError,
 	Web3WSProviderError,
 } from '@theqrl/web3-errors';
 
@@ -78,11 +79,11 @@ const serializePayload = (payload: unknown): string => {
  * can be set; the shorter one wins.
  *
  * `providerOptions.maxResponseBytes` (10 MiB by default) bounds every message the node sends.
- * It is handed to `ws` as the default `maxPayload`, so a larger frame is refused on the wire
- * (`ws` closes the connection with code 1009 and the provider reconnects), and it bounds the
- * parser as well, which matters when `socketOptions.maxPayload` is set above it: such a
- * message is dropped unparsed and only the request it answers fails, with a
- * `ResponseTooLargeError` (P4-M-5).
+ * Messages exceeding this parser bound are dropped and identified requests fail with
+ * `ResponseTooLargeError`; notifications do not fail unrelated requests. The default
+ * `ws` wire limit (`maxPayload`) is twice this bound. Exceeding the wire limit closes the
+ * connection with code 1009 and fails all outstanding requests with `ResponseTooLargeError`,
+ * since the frame is unavailable for request correlation.
  *
  * `disconnect(code, reason)` accepts the close codes every WebSocket client lets an endpoint
  * send, 1000 or 3000-4999, and a reason of at most 123 UTF-8 bytes; anything else is refused
@@ -221,8 +222,12 @@ export default class WebSocketProvider<
 		// overwrite the reference and leave the previous socket open (M-8, L-44).
 		this._discardSocket(this._socketConnection);
 		const defaults: ClientOptions = {
-			// The same bound the parser enforces, applied on the wire (P4-M-5).
-			maxPayload: this._providerBounds.maxResponseBytes,
+			// Allow bounded oversize frames through to the parser so it can correlate
+			// the error without dropping every other request on this connection.
+			maxPayload: Math.min(
+				Number.MAX_SAFE_INTEGER,
+				2 * this._providerBounds.maxResponseBytes,
+			),
 			perMessageDeflate: false,
 			// `ws` has no handshake deadline of its own: without one a peer that accepts the
 			// TCP connection but never completes the upgrade keeps the socket CONNECTING
@@ -378,6 +383,11 @@ export default class WebSocketProvider<
 		if (!isNullish(event.target) && event.target !== this._socketConnection) {
 			return;
 		}
+		if (event.code === 1009) {
+			const error = new ResponseTooLargeError(this._providerBounds.maxResponseBytes);
+			this._rejectAllRequests(error);
+			this._emitError(error);
+		}
 		if (
 			this._reconnectOptions.autoReconnect &&
 			(![1000, 1001].includes(event.code) || !event.wasClean)
@@ -390,6 +400,19 @@ export default class WebSocketProvider<
 		this._onDisconnect(event.code, event.reason);
 		// disconnect was successful and can safely remove error listener
 		this._socketConnection?.removeEventListener('error', this._onErrorHandler);
+	}
+
+	protected _onError(event: WebSocket.ErrorEvent): void {
+		if (
+			(event.error as { code?: string } | undefined)?.code ===
+			'WS_ERR_UNSUPPORTED_MESSAGE_LENGTH'
+		) {
+			const error = new ResponseTooLargeError(this._providerBounds.maxResponseBytes);
+			this._rejectAllRequests(error);
+			this._emitError(error);
+			return;
+		}
+		super._onError(event);
 	}
 }
 

@@ -73,11 +73,20 @@ export async function waitForTransactionReceipt<ReturnFormat extends DataFormat>
 
 	let blockTimeoutResourceCleaner: ResourceCleaner | undefined;
 	let waiting = true;
+	const [blockTimeoutSetup, setupIntervalId] = pollTillDefinedAndReturnIntervalId(async () => {
+		try {
+			return await rejectIfBlockTimeout(web3Context, transactionHash);
+		} catch (error) {
+			if (waiting)
+				console.warn('Unable to start the block timeout after broadcast; retrying', error);
+			return undefined;
+		}
+	}, pollingInterval);
 
 	try {
 		// Setup performs an RPC call too. Race it against the receipt and polling timeout so
 		// a failed or stalled setup cannot bypass cleanup or leave the timeout unhandled.
-		const rejectOnBlockTimeout = rejectIfBlockTimeout(web3Context, transactionHash).then(
+		const rejectOnBlockTimeout = blockTimeoutSetup.then(
 			async ([blockTimeout, resourceCleaner]) => {
 				if (waiting) {
 					blockTimeoutResourceCleaner = resourceCleaner;
@@ -101,6 +110,7 @@ export async function waitForTransactionReceipt<ReturnFormat extends DataFormat>
 		// `qrl_getTransactionReceipt` after the timeout had rejected the race, forever for a
 		// transaction that never mines.
 		clearInterval(receiptPollingIntervalId);
+		clearInterval(setupIntervalId);
 		blockTimeoutResourceCleaner?.clean();
 	}
 }

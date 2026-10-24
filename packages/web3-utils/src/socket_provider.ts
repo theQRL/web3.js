@@ -100,8 +100,10 @@ export interface SocketProviderDiagnostics {
  * The bound names (`connectionTimeout`, `requestTimeout`, `maxResponseBytes`,
  * `maxInFlightRequests`) are the same ones the HTTP provider accepts, so every transport
  * presents one surface. `maxResponseBytes` bounds every message the peer sends: a larger one
- * is dropped unparsed and only the request(s) it answers fail with a `ResponseTooLargeError`
- * (P4-M-5); the WebSocket provider also hands it to `ws` as the default `maxPayload`.
+ * is dropped unparsed and identified requests fail with a `ResponseTooLargeError`.
+ * Oversized notifications are dropped without failing unrelated requests. WebSocket also
+ * has a separate wire limit (twice this bound by default); exceeding that limit closes the
+ * connection and fails all outstanding requests with `ResponseTooLargeError`.
  */
 export interface SocketProviderOptions extends ProviderBoundsOptions {
 	/**
@@ -290,6 +292,7 @@ export abstract class SocketProvider<
 	 * waiting for a connection stay queued and are written once the new socket opens.
 	 */
 	public connect(): void {
+		this._invalidateConnection();
 		try {
 			// Bytes left over from a previous connection must never prefix the first message of
 			// this one.
@@ -660,7 +663,7 @@ export abstract class SocketProvider<
 	 *
 	 * Ids are snapshotted first because settling a batch removes its sibling ids.
 	 */
-	private _rejectAllRequests(error: unknown): void {
+	protected _rejectAllRequests(error: unknown): void {
 		const ids = [...this._pendingRequestsQueue.keys(), ...this._sentRequestsQueue.keys()];
 
 		for (const id of ids) {
@@ -725,6 +728,7 @@ export abstract class SocketProvider<
 			return;
 		}
 		this.isReconnecting = true;
+		this._invalidateConnection();
 		// The attempt that just failed must not time out during the back-off (P4-L-16).
 		this._clearConnectionTimer();
 		this.chunkResponseParser.reset();
@@ -875,8 +879,8 @@ export abstract class SocketProvider<
 			// `timedOut` is what separates our own deadline from a caller cancelling: an
 			// abort reason alone cannot, since a caller may abort with any reason at all.
 			const reason = abort.timedOut
-				? abort.signal.reason ?? new RequestTimeoutError(requestTimeout, method)
-				: abort.signal.reason ?? new ProviderError('Request aborted');
+				? (abort.signal.reason ?? new RequestTimeoutError(requestTimeout, method))
+				: (abort.signal.reason ?? new ProviderError('Request aborted'));
 
 			this._settleRequest(primaryId, { reject: reason });
 		};

@@ -45,6 +45,10 @@ import {
 import { transactionReceiptSchema } from '../../../src/schemas';
 
 jest.mock('@theqrl/web3-rpc-methods');
+
+beforeEach(() => {
+	(qrlRpcMethods.call as jest.Mock).mockResolvedValue('0x');
+});
 jest.mock('../../../src/utils/wait_for_transaction_receipt');
 jest.mock('../../../src/utils/watch_transaction_for_confirmations');
 
@@ -353,11 +357,7 @@ describe('sendTransaction', () => {
 
 		it('rejects (rather than hanging) when the pre-flight formatting throws', async () => {
 			const outcome = await settleWithin(async () =>
-				sendSignedTransaction(
-					web3Context,
-					unformattableTransaction,
-					DEFAULT_RETURN_FORMAT,
-				),
+				sendSignedTransaction(web3Context, unformattableTransaction, DEFAULT_RETURN_FORMAT),
 			);
 
 			expect(outcome).not.toBe(NOT_SETTLED);
@@ -574,9 +574,9 @@ describe('sendTransaction', () => {
 			(qrlRpcMethods.sendRawTransaction as jest.Mock).mockResolvedValueOnce(
 				`0x${localHash.slice(2).toUpperCase()}`,
 			);
-			(WaitForTransactionReceipt.waitForTransactionReceipt as jest.Mock).mockResolvedValueOnce(
-				expectedTransactionReceipt,
-			);
+			(
+				WaitForTransactionReceipt.waitForTransactionReceipt as jest.Mock
+			).mockResolvedValueOnce(expectedTransactionReceipt);
 			const emittedHashes: unknown[] = [];
 
 			await sendSignedTransaction(
@@ -603,9 +603,9 @@ describe('sendTransaction', () => {
 
 		it('still resolves with the receipt when a receipt listener throws after the broadcast', async () => {
 			const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
-			(WaitForTransactionReceipt.waitForTransactionReceipt as jest.Mock).mockResolvedValueOnce(
-				expectedTransactionReceipt,
-			);
+			(
+				WaitForTransactionReceipt.waitForTransactionReceipt as jest.Mock
+			).mockResolvedValueOnce(expectedTransactionReceipt);
 			const promiEvent = sendSignedTransaction(
 				web3Context,
 				signedTransaction,

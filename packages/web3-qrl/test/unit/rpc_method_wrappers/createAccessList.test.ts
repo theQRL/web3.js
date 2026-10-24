@@ -23,6 +23,7 @@ import { qrlRpcMethods } from '@theqrl/web3-rpc-methods';
 import { createAccessList } from '../../../src/rpc_method_wrappers';
 import { mockRpcResponse, testData } from './fixtures/createAccessList';
 import { formatTransaction } from '../../../src';
+import { accessListResultSchema } from '../../../src/schemas';
 
 jest.mock('@theqrl/web3-rpc-methods');
 
@@ -31,6 +32,10 @@ describe('createAccessList', () => {
 
 	beforeAll(() => {
 		web3Context = new Web3Context('http://127.0.0.1:8545');
+	});
+
+	beforeEach(() => {
+		(qrlRpcMethods.createAccessList as jest.Mock).mockResolvedValue(mockRpcResponse);
 	});
 
 	it.each(testData)(
@@ -65,7 +70,7 @@ describe('createAccessList', () => {
 		async (_, inputParameters) => {
 			const expectedReturnFormat = { number: FMT_NUMBER.STR, bytes: FMT_BYTES.UINT8ARRAY };
 			const expectedFormattedResult = format(
-				{ format: 'bytes' },
+				accessListResultSchema,
 				mockRpcResponse,
 				expectedReturnFormat,
 			);

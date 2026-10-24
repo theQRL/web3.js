@@ -27,7 +27,7 @@ export const isValidUnsignedHexNumber = (value: unknown): value is string | numb
 		return value >= 0;
 	}
 	if (typeof value === 'number') {
-		return Number.isInteger(value) && value >= 0;
+		return Number.isSafeInteger(value) && value >= 0;
 	}
 	return typeof value === 'string' && /^0x[0-9a-fA-F]+$/.test(value);
 };

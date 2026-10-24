@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import { Web3Context } from '@theqrl/web3-core';
-import { TransactionMissingReceiptOrBlockHashError } from '@theqrl/web3-errors';
+import { TransactionMissingReceiptOrBlockHashError, TransactionError } from '@theqrl/web3-errors';
 import { qrlRpcMethods } from '@theqrl/web3-rpc-methods';
 import {
 	Bytes,
@@ -45,7 +45,9 @@ export type ReceiptRecheck =
 
 const blockHashHex = (receipt: TransactionReceipt): string | undefined => {
 	if (isNullish(receipt.blockHash)) return undefined;
-	return String(format({ format: 'bytes32' }, receipt.blockHash as Bytes, QRL_DATA_FORMAT)).toLowerCase();
+	return String(
+		format({ format: 'bytes32' }, receipt.blockHash as Bytes, QRL_DATA_FORMAT),
+	).toLowerCase();
 };
 
 /**
@@ -70,7 +72,10 @@ export const recheckReceipt = async (
 
 	let fresh: unknown;
 	try {
-		fresh = await qrlRpcMethods.getTransactionReceipt(web3Context.requestManager, transactionHash);
+		fresh = await qrlRpcMethods.getTransactionReceipt(
+			web3Context.requestManager,
+			transactionHash,
+		);
 	} catch {
 		return { kind: 'unknown' };
 	}
@@ -79,7 +84,8 @@ export const recheckReceipt = async (
 	if (
 		!isObject(fresh) ||
 		!isHash32(fresh.blockHash) ||
-		!isValidUnsignedHexNumber(fresh.blockNumber)
+		!isValidUnsignedHexNumber(fresh.blockNumber) ||
+		!isValidUnsignedHexNumber(fresh.status)
 	) {
 		return { kind: 'unknown' };
 	}
@@ -101,3 +107,17 @@ export const missingReceiptError = <ReturnFormat extends DataFormat>(
 			returnFormat,
 		),
 	});
+
+/** A reorg can change execution outcome; surface that change instead of confirming it silently. */
+export const changedReceiptStatusError = (
+	previous: TransactionReceipt,
+	fresh: TransactionReceipt,
+) =>
+	isValidUnsignedHexNumber(previous.status) &&
+	isValidUnsignedHexNumber(fresh.status) &&
+	BigInt(previous.status) !== BigInt(fresh.status)
+		? new TransactionError(
+				'Transaction execution status changed after a chain reorganization',
+				fresh,
+			)
+		: undefined;

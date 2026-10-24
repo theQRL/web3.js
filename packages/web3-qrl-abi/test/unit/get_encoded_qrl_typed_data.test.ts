@@ -95,7 +95,10 @@ describe('getEncodedQRLTypedData: malformed payloads are rejected, not hashed (I
 		['a primaryType that is not in types', { ...typedData('uint256', 1), primaryType: 'Nope' }],
 		[
 			'a missing QRLTypedDataDomain type',
-			{ ...typedData('uint256', 1), types: { EIP712Domain: domainTypes, T: [{ name: 'v', type: 'uint256' }] } },
+			{
+				...typedData('uint256', 1),
+				types: { EIP712Domain: domainTypes, T: [{ name: 'v', type: 'uint256' }] },
+			},
 		],
 		['a missing domain', { ...typedData('uint256', 1), domain: undefined }],
 		['a missing message', { ...typedData('uint256', 1), message: undefined }],
@@ -108,7 +111,10 @@ describe('getEncodedQRLTypedData: malformed payloads are rejected, not hashed (I
 	it('does not read a field named constructor from Object.prototype', () => {
 		expect(() =>
 			getEncodedQRLTypedData({
-				types: { QRLTypedDataDomain: domainTypes, T: [{ name: 'constructor', type: 'string' }] },
+				types: {
+					QRLTypedDataDomain: domainTypes,
+					T: [{ name: 'constructor', type: 'string' }],
+				},
 				primaryType: 'T',
 				domain,
 				message: JSON.parse('{}'),
@@ -117,7 +123,10 @@ describe('getEncodedQRLTypedData: malformed payloads are rejected, not hashed (I
 		// With the data present the field is an ordinary string field.
 		expect(
 			getEncodedQRLTypedData({
-				types: { QRLTypedDataDomain: domainTypes, T: [{ name: 'constructor', type: 'string' }] },
+				types: {
+					QRLTypedDataDomain: domainTypes,
+					T: [{ name: 'constructor', type: 'string' }],
+				},
 				primaryType: 'T',
 				domain,
 				message: { constructor: 'x' },
@@ -141,21 +150,27 @@ describe('getEncodedQRLTypedData: malformed payloads are rejected, not hashed (I
 				domain,
 				message: { a: { x: 1 } },
 			}),
-		).toThrow(/unknown type 'My Type'/);
+		).toThrow(/invalid struct type 'My Type'/);
 		expect(() =>
 			getEncodedQRLTypedData({
-				types: { QRLTypedDataDomain: domainTypes, 'My Type': [{ name: 'x', type: 'uint256' }] },
+				types: {
+					QRLTypedDataDomain: domainTypes,
+					'My Type': [{ name: 'x', type: 'uint256' }],
+				},
 				primaryType: 'My Type',
 				domain,
 				message: { x: 1 },
 			}),
-		).toThrow(/unknown type 'My Type'/);
+		).toThrow(/invalid struct type 'My Type'/);
 	});
 
 	it('rejects a struct field definition without a name or type', () => {
 		expect(() =>
 			getEncodedQRLTypedData({
-				types: { QRLTypedDataDomain: domainTypes, T: [{ name: 'v' } as { name: string; type: string }] },
+				types: {
+					QRLTypedDataDomain: domainTypes,
+					T: [{ name: 'v' } as { name: string; type: string }],
+				},
 				primaryType: 'T',
 				domain,
 				message: { v: 1 },

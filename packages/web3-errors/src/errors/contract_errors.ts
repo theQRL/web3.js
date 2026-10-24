@@ -30,7 +30,12 @@ import {
 	ERR_CONTRACT_RESOLVER_MISSING,
 	ERR_CONTRACT_TX_DATA_AND_INPUT,
 } from '../error_codes.js';
-import { BaseWeb3Error, InvalidValueError } from '../web3_error_base.js';
+import {
+	BaseWeb3Error,
+	InvalidValueError,
+	toJsonSafe,
+	truncateEchoedText,
+} from '../web3_error_base.js';
 
 export class Web3ContractError extends BaseWeb3Error {
 	public code = ERR_CONTRACT;
@@ -158,11 +163,15 @@ export class Eip838ExecutionError extends Web3ContractError {
 	public innerError: Eip838ExecutionError | undefined;
 
 	public constructor(error: JsonRpcError<ProviderErrorData> | Eip838ExecutionError) {
-		super(typeof error.message === 'string' && error.message ? error.message : 'Error');
+		super(
+			typeof error?.message === 'string' && error.message
+				? truncateEchoedText(error.message)
+				: 'Error',
+		);
 
-		this.code = error.code;
+		this.code = error?.code;
 
-		const { data } = error as { data?: unknown };
+		const { data } = (error ?? {}) as { data?: unknown };
 		if (typeof data === 'string') {
 			this.data = data;
 			return;
@@ -181,7 +190,7 @@ export class Eip838ExecutionError extends Web3ContractError {
 		this.innerError = new Eip838ExecutionError({
 			code: source.code,
 			message: source.message,
-			data: this.data,
+			data: toJsonSafe(this.data),
 		} as JsonRpcError<ProviderErrorData>);
 	}
 
@@ -198,16 +207,16 @@ export class Eip838ExecutionError extends Web3ContractError {
 	public toJSON() {
 		let json = {
 			...super.toJSON(),
-			data: this.data,
+			data: toJsonSafe(this.data),
 		} as {
 			name: string;
 			code: number;
 			message: string;
-			innerError: Error | Error[] | undefined;
+			innerError: unknown;
 			data: string;
 			errorName?: string;
 			errorSignature?: string;
-			errorArgs?: { [K in string]: unknown };
+			errorArgs?: unknown;
 		};
 
 		if (this.errorName) {
@@ -215,7 +224,7 @@ export class Eip838ExecutionError extends Web3ContractError {
 				...json,
 				errorName: this.errorName,
 				errorSignature: this.errorSignature,
-				errorArgs: this.errorArgs,
+				errorArgs: toJsonSafe(this.errorArgs),
 			};
 		}
 		return json;

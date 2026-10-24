@@ -56,6 +56,7 @@ import { qrlRpcMethods } from '@theqrl/web3-rpc-methods';
 
 import { decodeSignedTransaction } from './utils/decode_signed_transaction.js';
 import {
+	transactionInfoSchema,
 	accountSchema,
 	feeHistorySchema,
 	logSchema,
@@ -87,6 +88,7 @@ import {
 } from './utils/promi_event_errors.js';
 import {
 	expectBytesReply,
+	assertRpcResult,
 	expectQuantityReply,
 	expectTransactionHashReply,
 	invalidResponseError,
@@ -94,9 +96,7 @@ import {
 import { isBlockHash } from './utils/hex_guards.js';
 
 /** A block number given as a number, bigint or decimal string is sent as a hex quantity. */
-const toBlockNumberOrTag = (
-	block: BlockNumberOrTag | undefined,
-): BlockNumberOrTag | undefined =>
+const toBlockNumberOrTag = (block: BlockNumberOrTag | undefined): BlockNumberOrTag | undefined =>
 	isNullish(block) || isBlockTag(block as string)
 		? block
 		: format({ format: 'uint' }, block as Numbers, QRL_DATA_FORMAT);
@@ -200,7 +200,11 @@ export async function getStorageAt<ReturnFormat extends DataFormat>(
 		storageSlotFormatted,
 		blockNumberFormatted,
 	);
-	return format({ format: 'bytes' }, expectBytesReply('qrl_getStorageAt', response), returnFormat);
+	return format(
+		{ format: 'bytes' },
+		expectBytesReply('qrl_getStorageAt', response),
+		returnFormat,
+	);
 }
 
 /**
@@ -282,6 +286,7 @@ export async function getTransaction<ReturnFormat extends DataFormat>(
 		throw invalidResponseError('qrl_getTransactionByHash', 'a transaction object', response);
 	}
 
+	assertRpcResult('qrl_getTransaction', response, transactionInfoSchema);
 	return formatTransaction(response, returnFormat, { fillInputAndData: true });
 }
 
@@ -315,6 +320,7 @@ export async function getPendingTransactions<ReturnFormat extends DataFormat>(
 				transaction,
 			);
 		}
+		assertRpcResult('qrl_pendingTransactions', transaction, transactionInfoSchema);
 		return formatTransaction(transaction as unknown as Transaction, returnFormat, {
 			fillInputAndData: true,
 		});
@@ -331,11 +337,7 @@ export async function getTransactionFromBlock<ReturnFormat extends DataFormat>(
 	transactionIndex: Numbers,
 	returnFormat: ReturnFormat,
 ) {
-	const transactionIndexFormatted = format(
-		{ format: 'uint' },
-		transactionIndex,
-		QRL_DATA_FORMAT,
-	);
+	const transactionIndexFormatted = format({ format: 'uint' }, transactionIndex, QRL_DATA_FORMAT);
 
 	let response;
 	// Only a 32-byte value is a block hash; `'0x10'` is a block number (P4-L-11).
@@ -366,6 +368,7 @@ export async function getTransactionFromBlock<ReturnFormat extends DataFormat>(
 		);
 	}
 
+	assertRpcResult('qrl_getTransaction', response, transactionInfoSchema);
 	return formatTransaction(response, returnFormat, { fillInputAndData: true });
 }
 
@@ -504,8 +507,16 @@ export function sendTransaction<
 						}
 
 						if (wallet) {
-							const signedTransaction = await wallet.signTransaction(
+							// Built-in accounts accept the calling context; custom wallets can
+							// keep their one-argument signer and normal receiver binding.
+							const signWithContext = wallet.signTransaction as (
+								tx: Transaction,
+								context?: Web3Context<QRLExecutionAPI>,
+							) => ReturnType<NonNullable<typeof wallet>['signTransaction']>;
+							const signedTransaction = await signWithContext.call(
+								wallet,
 								transactionFormatted,
+								web3Context,
 							);
 
 							// The hash is known before the node answers: it is `keccak256` of the raw
@@ -611,7 +622,7 @@ export function sendTransaction<
 								web3Context,
 								transactionFormatted as TransactionCall,
 								undefined,
-								undefined,
+								error,
 								options?.contractAbi,
 							);
 						}
@@ -675,7 +686,9 @@ export function sendSignedTransaction<
 				};
 
 				// See `sendTransaction` (P4-L-10).
-				const emitAfterBroadcast = <K extends keyof SendSignedTransactionEvents<ReturnFormat>>(
+				const emitAfterBroadcast = <
+					K extends keyof SendSignedTransactionEvents<ReturnFormat>,
+				>(
 					event: K,
 					value: SendSignedTransactionEvents<ReturnFormat>[K],
 				) => {
@@ -710,11 +723,11 @@ export function sendSignedTransaction<
 								// contract, because the sender, address(0), has no balance
 								// to pay for the gas of the transaction execution
 								// The sender is derived from the public key embedded in the raw
-							// transaction, which is only meaningful once the signature over it
-							// verifies; an unverifiable transaction is simulated without one.
-							from: unSerializedTransaction.verifySignature()
-								? unSerializedTransaction.getSenderAddress().toString()
-								: undefined,
+								// transaction, which is only meaningful once the signature over it
+								// verifies; an unverifiable transaction is simulated without one.
+								from: unSerializedTransaction.verifySignature()
+									? unSerializedTransaction.getSenderAddress().toString()
+									: undefined,
 							},
 						};
 					};
@@ -726,7 +739,9 @@ export function sendSignedTransaction<
 					// Declared outside the `try` so the `catch` can still reference it for
 					// typed-error normalization, while the formatting and deserialization -
 					// both of which can throw - stay inside the catchable region.
-					let unSerializedTransactionWithFrom: UnSerializedTransactionWithFrom | undefined;
+					let unSerializedTransactionWithFrom:
+						| UnSerializedTransactionWithFrom
+						| undefined;
 
 					try {
 						const deserialized = deserializeTransaction();
@@ -843,7 +858,7 @@ export function sendSignedTransaction<
 								web3Context,
 								unSerializedTransactionWithFrom as TransactionCall,
 								undefined,
-								undefined,
+								error,
 								options?.contractAbi,
 							);
 						}
@@ -923,9 +938,17 @@ export async function signTransaction<ReturnFormat extends DataFormat>(
 				response,
 			);
 		}
-		return decodeSignedTransaction(response as HexStringBytes, returnFormat, {
-			fillInputAndData: true,
-		});
+		try {
+			return decodeSignedTransaction(response as HexStringBytes, returnFormat, {
+				fillInputAndData: true,
+			});
+		} catch {
+			throw invalidResponseError(
+				'qrl_signTransaction',
+				'a decodable signed transaction',
+				response,
+			);
+		}
 	}
 	// A `{ raw, tx }` reply used to be returned as it came, `null` included, so a missing or
 	// mis-typed member surfaced as a raw `TypeError` or as garbage in the result (L-26).
@@ -937,6 +960,16 @@ export async function signTransaction<ReturnFormat extends DataFormat>(
 		throw invalidResponseError('qrl_signTransaction', 'a { raw, tx } object', response);
 	}
 	const signed = response as unknown as SignedTransactionInfoAPI;
+	try {
+		decodeSignedTransaction(signed.raw, returnFormat);
+	} catch {
+		throw invalidResponseError(
+			'qrl_signTransaction',
+			'a decodable signed transaction',
+			signed.raw,
+		);
+	}
+	assertRpcResult('qrl_signTransaction', signed.tx, transactionInfoSchema);
 	return {
 		raw: format({ format: 'bytes' }, signed.raw, returnFormat),
 		tx: formatTransaction(signed.tx, returnFormat, { fillInputAndData: true }),
@@ -973,13 +1006,11 @@ export async function getLogs<ReturnFormat extends DataFormat>(
 	}
 
 	return response.map((entry: unknown) => {
-		if (typeof entry === 'string') {
-			return entry;
-		}
 		if (!isObject(entry)) {
 			throw invalidResponseError('qrl_getLogs', 'an array of log objects', entry);
 		}
 
+		assertRpcResult('qrl_getLogs', entry, logSchema);
 		return format(logSchema, entry as unknown as Log, returnFormat);
 	});
 }
@@ -1010,6 +1041,7 @@ export async function getProof<ReturnFormat extends DataFormat>(
 		blockNumberFormatted,
 	);
 
+	assertRpcResult('qrl_getProof', response, accountSchema);
 	return format(accountSchema, response as unknown as AccountObject, returnFormat);
 }
 
@@ -1050,7 +1082,12 @@ export async function getFeeHistory<ReturnFormat extends DataFormat>(
 		rewardPercentilesFormatted,
 	);
 
-	return format(feeHistorySchema, response as unknown as FeeHistory, returnFormat);
+	assertRpcResult('qrl_feeHistory', response, feeHistorySchema);
+	// Ratios are JSON floats, not quantities; number formatting does not change them.
+	return format(feeHistorySchema, response as unknown as FeeHistory, returnFormat) as Omit<
+		FormatType<FeeHistory, ReturnFormat>,
+		'gasUsedRatio'
+	> & { gasUsedRatio: number[] };
 }
 
 /**
@@ -1074,6 +1111,13 @@ export async function createAccessList<ReturnFormat extends DataFormat>(
 		blockNumberFormatted,
 	)) as unknown as AccessListResult;
 
+	assertRpcResult('qrl_createAccessList', response, accessListResultSchema);
+	expectQuantityReply('qrl_createAccessList', response.gasUsed);
+	assertRpcResult(
+		'qrl_createAccessList',
+		response.accessList,
+		accessListResultSchema.properties.accessList,
+	);
 	return format(accessListResultSchema, response, returnFormat);
 }
 
@@ -1093,5 +1137,9 @@ export async function signTypedData<ReturnFormat extends DataFormat>(
 		typedData,
 	);
 
-	return format({ format: 'bytes' }, expectBytesReply('qrl_signTypedData', response), returnFormat);
+	return format(
+		{ format: 'bytes' },
+		expectBytesReply('qrl_signTypedData', response),
+		returnFormat,
+	);
 }

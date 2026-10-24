@@ -48,8 +48,8 @@ export class Web3DeferredPromise<T> implements Promise<T>, Web3DeferredPromiseIn
 			timeout,
 			eagerStart,
 			timeoutMessage,
-		}: { timeout: number; eagerStart: boolean; timeoutMessage: string } = {
-			timeout: 0,
+		}: { timeout?: number; eagerStart: boolean; timeoutMessage: string } = {
+			timeout: undefined,
 			eagerStart: false,
 			timeoutMessage: 'DeferredPromise timed out',
 		},
@@ -60,7 +60,7 @@ export class Web3DeferredPromise<T> implements Promise<T>, Web3DeferredPromiseIn
 		});
 
 		// A delay a timer cannot hold would fire after 1 ms instead of "never" (P4-L-5).
-		if (timeout) {
+		if (timeout !== undefined) {
 			validateTimeout(timeout, 'timeout');
 		}
 
@@ -107,7 +107,7 @@ export class Web3DeferredPromise<T> implements Promise<T>, Web3DeferredPromiseIn
 	 * @param onfinally - (optional) The callback to execute when the promise is settled (fulfilled or rejected).
 	 * @returns
 	 */
-	public async finally(onfinally?: (() => void) | undefined): Promise<T> {
+	public async finally(onfinally?: () => void): Promise<T> {
 		return this._promise.finally(onfinally);
 	}
 

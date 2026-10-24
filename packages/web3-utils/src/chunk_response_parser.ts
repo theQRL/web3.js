@@ -43,36 +43,61 @@ const TAB = 0x09;
 const LINE_FEED = 0x0a;
 const CARRIAGE_RETURN = 0x0d;
 
-/**
- * Collects the request ids an oversized, and therefore never parsed, JSON-RPC message carries,
- * so that only the requests it answers are failed (P4-M-5). A batch reply yields several.
- *
- * One linear pass of a regular expression whose every part is bounded (`"id"`, optional
- * whitespace, a JSON number or a string of at most 128 characters without escapes, which
- * covers a UUID or a counter) over the first {@link ID_SCAN_LIMIT} characters. An `"id"` key
- * nested inside a result matches as well; that only matters if its value equals the id of
- * another in-flight request, one of the reasons request ids are UUIDs by default.
- */
-const extractResponseIds = (text: string): JsonRpcId[] => {
-	const scanned = text.length > ID_SCAN_LIMIT ? text.slice(0, ID_SCAN_LIMIT) : text;
-	const idMember = /"id"\s*:\s*(\d+|"[^"]{1,128}")/g;
+/** Inspect only envelope members in a bounded prefix, never ids nested in result data. */
+const inspectEnvelopePrefix = (text: string): { ids: JsonRpcId[]; notification: boolean } => {
+	const scanned = text.slice(0, ID_SCAN_LIMIT);
+	const stack: string[] = [];
 	const ids = new Set<JsonRpcId>();
-	for (;;) {
-		const match = idMember.exec(scanned);
-		if (!match) break;
-		const raw = match[1];
-		if (raw.charCodeAt(0) === QUOTE) {
-			try {
-				ids.add(JSON.parse(raw) as string);
-			} catch {
-				// A string literal the pattern cut short (an escape inside): not an id.
+	let rootArray = false;
+	let hasMethod = false;
+	let hasId = false;
+	for (let index = 0; index < scanned.length; index += 1) {
+		const char = scanned[index];
+		if (char === '{' || char === '[') {
+			if (stack.length === 0) rootArray = char === '[';
+			stack.push(char);
+		} else if (char === '}' || char === ']') {
+			stack.pop();
+		} else if (char === '"') {
+			const start = index;
+			index += 1;
+			for (; index < scanned.length; index += 1) {
+				if (scanned[index] === '\\') index += 1;
+				else if (scanned[index] === '"') break;
 			}
-		} else {
-			const id = Number(raw);
-			if (Number.isSafeInteger(id)) ids.add(id);
+			if (index >= scanned.length) break;
+			const isEnvelope =
+				stack.length === (rootArray ? 2 : 1) && stack[stack.length - 1] === '{';
+			if (!isEnvelope) continue;
+			let cursor = index + 1;
+			while (/\s/.test(scanned[cursor] ?? '') && cursor < scanned.length) cursor += 1;
+			if (scanned[cursor] !== ':') continue;
+			let key: string;
+			try {
+				key = JSON.parse(scanned.slice(start, index + 1)) as string;
+			} catch {
+				continue;
+			}
+			if (key === 'method' && !rootArray) hasMethod = true;
+			if (key !== 'id') continue;
+			hasId = true;
+			const match = /^:\s*("(?:[^"\\]|\\.){0,128}"|-?(?:0|[1-9][0-9]*))(?=\s*[,}])/.exec(
+				scanned.slice(cursor),
+			);
+			if (!match) continue;
+			try {
+				const value: unknown = JSON.parse(match[1]);
+				if (
+					typeof value === 'string' ||
+					(typeof value === 'number' && Number.isSafeInteger(value))
+				)
+					ids.add(value);
+			} catch {
+				/* An incomplete prefix cannot establish a response id. */
+			}
 		}
 	}
-	return [...ids];
+	return { ids: [...ids], notification: !rootArray && hasMethod && !hasId };
 };
 
 export interface ChunkResponseParserOptions {
@@ -139,17 +164,15 @@ export class ChunkResponseParser {
 	private lastChunkTimeout: NodeJS.Timeout | undefined;
 	private _onProtocolError: ChunkResponseParserErrorHandler | undefined;
 	private readonly eventEmitter: EventEmitterLike;
-	private readonly autoReconnect: boolean;
 	private readonly framed: boolean;
 	private readonly maxBytes: number;
 
 	public constructor(
 		eventEmitter: EventEmitterLike,
-		autoReconnect: boolean,
+		_autoReconnect: boolean,
 		options: ChunkResponseParserOptions = {},
 	) {
 		this.eventEmitter = eventEmitter;
-		this.autoReconnect = autoReconnect;
 		this.framed = options.framed ?? false;
 		// Validated here as well: an unusable bound must fail loudly, not disable the check.
 		this.maxBytes = validatePositiveInteger(
@@ -219,7 +242,8 @@ export class ChunkResponseParser {
 	 */
 	private reportOversized(text: string, length: number): void {
 		const error = new ResponseTooLargeError(this.maxBytes, length);
-		this._onProtocolError?.(error, extractResponseIds(text));
+		const { ids, notification } = inspectEnvelopePrefix(text);
+		if (!notification) this._onProtocolError?.(error, ids);
 		if (this.eventEmitter.listenerCount('error') > 0) {
 			this.eventEmitter.emit('error', error);
 		}
@@ -335,7 +359,7 @@ export class ChunkResponseParser {
 			if (this.lastChunkTimeout === undefined) {
 				this.lastChunkTimeout = setTimeout(() => {
 					this.reset();
-					this.emitError('Chunk timeout', !this.autoReconnect);
+					this.emitError('Chunk timeout', true);
 				}, CHUNK_TIMEOUT_MS);
 				// A half-received message must not, by itself, keep a Node process alive (I-11).
 				if (typeof this.lastChunkTimeout.unref === 'function') {

@@ -19,7 +19,7 @@ Release publishing is guarded by:
 - Every release tag of a publishable package must already be on the registry (pre-flight, see "Recovering From A Failed Release Run").
 - Release tarballs must pass CommonJS and ESM smoke tests on Node 20.19.0 (the advertised `engines.node` floor) before publish, installed with `npm ci` from a lockfile the `prepare` job resolved.
 - Every job that consumes the release-candidate artifact first verifies it against the SHA-256 digests the `prepare` job recorded as job outputs (`scripts/release/verify-artifact-digests.sh`); the artifact store of a running workflow is not trusted.
-- npm publishing must run from Node 22.15.0 (the version pinned in `.github/workflows/release.yml`) with npm 11.5.1 or newer so npm trusted publishing can use OIDC, in a job that does nothing but verify and publish.
+- npm publishing runs on Node 24 with its bundled npm (11.5.1 or newer) so npm trusted publishing can use OIDC, in a job that does nothing but verify and publish.
 - npm publishing must use provenance (`NPM_CONFIG_PROVENANCE=true`).
 - A version that already exists on the registry is skipped only when its `dist.integrity` equals the SHA-512 of the tarball this run built; any other bytes fail the run.
 
@@ -100,7 +100,7 @@ The release workflow (`.github/workflows/release.yml`), on a push to `main`:
 7. Packs released packages, generates SHA-256 and SHA-512 checksums, and resolves the smoke-test dependency tree into a lockfile (`npm install --package-lock-only`, metadata only).
 8. Records the SHA-256 digest of every artifact file, and of the tarballs alone, as job outputs, then uploads the tarballs, metadata, checksums and smoke lockfile as the `release-candidate-tarballs` artifact (kept for 30 days, the maximum wait for an environment approval).
 9. `smoke-node-floor`: downloads the artifact, verifies it against the `prepare` digests, and on Node 20.19.0 (the advertised floor) installs the tarballs with `npm ci` from the shipped lockfile and smoke-tests CommonJS `require()` and ESM `import`.
-10. `publish` (environment `npm-publish`, `id-token: write` only): downloads and verifies the artifact, then publishes with npm trusted publishing from Node 22.15.0/npm 11 (`scripts/release/publish-tarballs.js`: a version already on the registry is skipped only when its `dist.integrity` matches this run's tarball, a failure does not stop the loop). Nothing else runs in this job.
+10. `publish` (environment `npm-publish`, `id-token: write` only): downloads and verifies the artifact, then publishes with npm trusted publishing from Node 24 and its bundled npm 11 (`scripts/release/publish-tarballs.js`: a version already on the registry is skipped only when its `dist.integrity` matches this run's tarball, a failure does not stop the loop). No dependency installation or build runs in this job.
 11. `sbom` (no OIDC token, read-only): generates SPDX and CycloneDX SBOMs of the repository checkout — the whole locked dependency graph the tarballs were built from — records their digests as job outputs and uploads them.
 12. `attest` (`id-token`, `attestations: write`, `contents: write`, deliberately **outside** the `npm-publish` environment so its OIDC tokens cannot publish to npm): verifies the artifact and the SBOMs against the recorded digests, creates the build-provenance attestation for the tarballs and checksum files and the two SBOM attestations with the same tarballs and checksum files as subjects, uploads tarballs, checksums and SBOMs to each draft release and publishes the releases (`gh release edit --draft=false`).
 13. `slsa-provenance`: generates SLSA provenance from the tarball digests `prepare` recorded (not from a re-hash of a downloadable artifact).
@@ -177,3 +177,21 @@ After a run completes, verify every released package from a machine that did not
 6. The GitHub release is no longer a draft and lists the tarball, both checksum files, both SBOMs and the provenance file.
 
 Record the outputs with the release evidence described in `docs/audit-evidence.md`.
+
+### Build and attestation trust boundaries
+
+The `prepare` job is the trust root for artifact contents: dependency installation, compilers,
+bundlers and release plugins run there before digests are recorded. A compromise in that job
+can produce malicious tarballs with matching digests and later valid provenance, and its
+`contents: write` permission can modify tags and draft releases. It has no OIDC permission.
+The digest checks protect transfers between jobs; they do not prove the source or build tools
+were trustworthy. The `attest` job can mint attestations for arbitrary subjects and upload
+release assets, though it cannot publish to npm.
+
+Both push and recovery builds use `scripts/release/build-with-workspace-links.js`. It keeps
+release package versions, temporarily restores all local dependency edges to `workspace:*`,
+builds packages and bundles serially, and restores the exact release manifests in a `finally`
+block before inspection or packing. This works without a warm Turbo cache even when a sibling
+was not released at the same commit. Recovery still executes the tagged revision's build
+scripts; historical releases made with a different dependency-prefix policy may not reproduce
+byte for byte, and the publish integrity check must remain fail-closed.

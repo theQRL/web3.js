@@ -62,7 +62,12 @@ import {
 	ERR_TX_INVALID_PROPERTIES_FOR_TYPE,
 	ERR_TX_MISSING_GAS_INNER_ERROR,
 } from '../error_codes.js';
-import { InvalidValueError, BaseWeb3Error } from '../web3_error_base.js';
+import {
+	InvalidValueError,
+	BaseWeb3Error,
+	toJsonSafe,
+	truncateEchoedText,
+} from '../web3_error_base.js';
 
 export class TransactionError<ReceiptType = TransactionReceipt> extends BaseWeb3Error {
 	public code = ERR_TX;
@@ -75,7 +80,7 @@ export class TransactionError<ReceiptType = TransactionReceipt> extends BaseWeb3
 	}
 
 	public toJSON() {
-		return { ...super.toJSON(), receipt: this.receipt };
+		return { ...super.toJSON(), receipt: toJsonSafe(this.receipt) };
 	}
 }
 
@@ -86,7 +91,9 @@ export class RevertInstructionError extends BaseWeb3Error {
 		public reason: string,
 		public signature: string,
 	) {
-		super(`Your request got reverted with the following reason string: ${reason}`);
+		super(
+			`Your request got reverted with the following reason string: ${truncateEchoedText(reason)}`,
+		);
 	}
 
 	public toJSON() {
@@ -106,8 +113,10 @@ export class TransactionRevertInstructionError<
 		public data?: string,
 	) {
 		super(
-			`Transaction has been reverted by the QRVM${
-				receipt === undefined ? '' : `:\n ${BaseWeb3Error.convertToString(receipt)}`
+			`${receipt === undefined ? 'Transaction execution was rejected or failed during simulation' : 'Transaction has been reverted by the QRVM'}${
+				receipt === undefined
+					? ''
+					: `:\n ${truncateEchoedText(BaseWeb3Error.convertToString(receipt))}`
 			}`,
 		);
 	}
@@ -117,8 +126,8 @@ export class TransactionRevertInstructionError<
 			...super.toJSON(),
 			reason: this.reason,
 			signature: this.signature,
-			receipt: this.receipt,
-			data: this.data,
+			receipt: toJsonSafe(this.receipt),
+			data: toJsonSafe(this.data),
 		};
 	}
 }
@@ -142,7 +151,7 @@ export class TransactionRevertWithCustomError<
 		public receipt?: ReceiptType,
 		public data?: string,
 	) {
-		super(reason);
+		super(reason, signature, receipt, data);
 	}
 
 	public toJSON() {
@@ -151,10 +160,10 @@ export class TransactionRevertWithCustomError<
 			reason: this.reason,
 			customErrorName: this.customErrorName,
 			customErrorDecodedSignature: this.customErrorDecodedSignature,
-			customErrorArguments: this.customErrorArguments,
+			customErrorArguments: toJsonSafe(this.customErrorArguments),
 			signature: this.signature,
-			receipt: this.receipt,
-			data: this.data,
+			receipt: toJsonSafe(this.receipt),
+			data: toJsonSafe(this.data),
 		};
 	}
 }
@@ -166,7 +175,7 @@ export class NoContractAddressFoundError extends TransactionError {
 	}
 
 	public toJSON() {
-		return { ...super.toJSON(), receipt: this.receipt };
+		return { ...super.toJSON(), receipt: toJsonSafe(this.receipt) };
 	}
 }
 
@@ -182,8 +191,10 @@ export class TransactionRevertedWithoutReasonError<
 > extends TransactionError<ReceiptType> {
 	public constructor(receipt?: ReceiptType) {
 		super(
-			`Transaction has been reverted by the QRVM${
-				receipt === undefined ? '' : `:\n ${BaseWeb3Error.convertToString(receipt)}`
+			`${receipt === undefined ? 'Transaction execution was rejected or failed during simulation' : 'Transaction has been reverted by the QRVM'}${
+				receipt === undefined
+					? ''
+					: `:\n ${truncateEchoedText(BaseWeb3Error.convertToString(receipt))}`
 			}`,
 			receipt,
 		);
@@ -194,9 +205,7 @@ export class TransactionRevertedWithoutReasonError<
 export class TransactionOutOfGasError extends TransactionError {
 	public constructor(receipt: TransactionReceipt) {
 		super(
-			`Transaction ran out of gas. Please provide more gas:\n ${BaseWeb3Error.convertToString(
-				receipt,
-			)}`,
+			`Transaction ran out of gas. Please provide more gas:\n ${truncateEchoedText(BaseWeb3Error.convertToString(receipt))}`,
 			receipt,
 		);
 		this.code = ERR_TX_OUT_OF_GAS;
@@ -355,7 +364,7 @@ export class MissingGasError extends InvalidValueError {
 			`gas: ${value.gas ?? 'undefined'}, maxPriorityFeePerGas: ${
 				value.maxPriorityFeePerGas ?? 'undefined'
 			}, maxFeePerGas: ${value.maxFeePerGas ?? 'undefined'}`,
-			'"gas" is missing',
+			'Gas limit or fee fields are missing',
 		);
 		this.innerError = new MissingGasInnerError();
 	}
@@ -380,7 +389,7 @@ export class InvalidMaxPriorityFeePerGasOrMaxFeePerGas extends InvalidValueError
 			`maxPriorityFeePerGas: ${value.maxPriorityFeePerGas ?? 'undefined'}, maxFeePerGas: ${
 				value.maxFeePerGas ?? 'undefined'
 			}`,
-			'maxPriorityFeePerGas or maxFeePerGas is lower than 0',
+			'Fee fields must be unsigned 256-bit quantities and maxPriorityFeePerGas must not exceed maxFeePerGas',
 		);
 	}
 }
@@ -491,7 +500,7 @@ export class TransactionMissingReceiptOrBlockHashError extends InvalidValueError
 			`receipt: ${BaseWeb3Error.convertToString(
 				value.receipt,
 			)}, blockHash: ${value.blockHash?.toString()}, transactionHash: ${value.transactionHash?.toString()}`,
-			`Receipt missing or blockHash null`,
+			`Receipt missing or blockHash null; during confirmation this can indicate a chain reorganization`,
 		);
 	}
 }

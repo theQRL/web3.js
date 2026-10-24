@@ -31,9 +31,9 @@ export class ConfigHardforkMismatchError extends BaseWeb3Error {
 export class ConfigChainMismatchError extends BaseWeb3Error {
 	public code = ERR_CORE_CHAIN_MISMATCH;
 
-	public constructor(defaultHardfork: string, commonHardFork: string) {
+	public constructor(defaultChain: string, commonChain: string) {
 		super(
-			`Web3Config chain doesnt match in defaultHardfork ${defaultHardfork} and common.hardfork ${commonHardFork}`,
+			`Web3Config chain does not match: defaultChain ${defaultChain} and common.baseChain ${commonChain}`,
 		);
 	}
 }

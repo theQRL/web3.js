@@ -41,7 +41,7 @@ class ProviderReadingThis extends Web3BaseProvider {
 	}
 }
 
-describe('pass-4 regressions (web3-types)', () => {
+describe('asEIP1193Provider wrapper (pass-4 audit)', () => {
 	it('asEIP1193Provider calls the original request with the provider as this (P4-L-38)', async () => {
 		const provider = new ProviderReadingThis();
 		const eip1193 = provider.asEIP1193Provider();

@@ -56,6 +56,7 @@ export abstract class Web3Subscription<
 	private readonly _lastBlock?: BlockOutput;
 	private readonly _returnFormat: DataFormat;
 	protected _id?: HexString;
+	private _idVersion = 0;
 
 	public constructor(
 		args: ArgsType,
@@ -114,6 +115,7 @@ export abstract class Web3Subscription<
 	}
 
 	public async sendSubscriptionRequest(): Promise<string> {
+		const version = ++this._idVersion;
 		const result: unknown = await this._subscriptionManager.requestManager.send({
 			method: 'qrl_subscribe',
 			params: this._buildSubscriptionParams(),
@@ -130,9 +132,11 @@ export abstract class Web3Subscription<
 			);
 		}
 
-		this._id = result;
-		this.emit('connected', this._id);
-		return this._id;
+		if (version === this._idVersion) {
+			this._id = result;
+			this.emit('connected', result);
+		}
+		return result;
 	}
 
 	protected get returnFormat() {
@@ -158,7 +162,7 @@ export abstract class Web3Subscription<
 	}
 
 	public async unsubscribe() {
-		if (!this.id) {
+		if (!this.id && !this._subscriptionManager.hasSubscription(this)) {
 			return;
 		}
 
@@ -167,13 +171,14 @@ export abstract class Web3Subscription<
 
 	public async sendUnsubscribeRequest() {
 		const { id } = this;
+		const version = this._idVersion;
 		await this._subscriptionManager.requestManager.send({
 			method: 'qrl_unsubscribe',
 			params: [id] as Web3APIParams<API, 'qrl_unsubscribe'>,
 		});
 		// A late acknowledgement from a replaced provider must not wipe the id of a
 		// subscription that was re-subscribed meanwhile (P4-L-2).
-		if (this._id === id) {
+		if (this._idVersion === version && this._id === id) {
 			this._id = undefined;
 		}
 	}
@@ -186,6 +191,7 @@ export abstract class Web3Subscription<
 	 * to the subscription any more (M-7f).
 	 */
 	public _markUnsubscribed(): void {
+		this._idVersion += 1;
 		this._id = undefined;
 	}
 

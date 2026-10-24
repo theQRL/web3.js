@@ -7,7 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Configuration snapshots are immutable. Use setters or `setConfig()` to update nested values. Unsupported `defaultChain` and `defaultHardfork` values now fail at assignment; use `mainnet`/`zond` and `defaultCommon.customChain` for custom chain identifiers.
+
 ### Fixed
+
+- Reconnect recovery now serializes attempts, respects cancellation and lifecycle changes, and retries failed subscriptions. Configuration batches validate atomically with immutable snapshots; malformed RPC envelopes and provider rejection codes are handled consistently (P5-CORE-1 through P5-CORE-10).
 
 - Reject request promises when response processing throws inside asynchronous legacy provider callbacks.
 - Validate single-response IDs before processing results or errors, preserving ID types and accepting matching zero and empty-string IDs.

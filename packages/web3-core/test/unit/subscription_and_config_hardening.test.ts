@@ -116,7 +116,7 @@ const setup = (counterStart = 0) => {
 const subscribe = async (manager: Manager) =>
 	(await manager.subscribe('example')) as ExampleSubscription;
 
-describe('pass-4 regressions (web3-core)', () => {
+describe('subscription manager and configuration hardening (pass-4 audit)', () => {
 	describe('hostile qrl_subscribe replies (P4-M-1)', () => {
 		it.each([
 			['an object with a non-callable toString', { toString: 1 }],

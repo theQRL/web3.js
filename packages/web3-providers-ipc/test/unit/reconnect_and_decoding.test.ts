@@ -24,6 +24,7 @@ import {
 	ConnectionNotOpenError,
 	InvalidClientError,
 	MaxAttemptsReachedOnReconnectingError,
+	PendingRequestsOnReconnectingError,
 	RequestSerializationError,
 	ResponseTooLargeError,
 } from '@theqrl/web3-errors';
@@ -160,6 +161,49 @@ describe('IpcProvider over real sockets', () => {
 	});
 
 	describe('stream decoding and listener accounting (L-24)', () => {
+		it('replaces a connected socket once and settles work sent on the old socket (P5-TR-3)', async () => {
+			const socketPath = path.join(dir, 's.ipc');
+			const server = await startServer(socketPath);
+			const provider = new IpcProvider(socketPath, {}, { autoReconnect: false });
+			const errors = jest.fn();
+			provider.on('error', errors);
+			try {
+				await provider.request(payload(1, 'qrl_blockNumber') as never);
+				const previous = provider.SocketConnection as net.Socket;
+				const pending = provider
+					.request(payload(2, 'silent') as never)
+					.catch((error: unknown) => error);
+				const connected = new Promise<void>(resolve => {
+					provider.once('connect', () => resolve());
+				});
+				provider.connect();
+				await connected;
+				expect(await pending).toBeInstanceOf(PendingRequestsOnReconnectingError);
+				const current = provider.SocketConnection as net.Socket;
+				expect(current).not.toBe(previous);
+				expect(previous.destroyed).toBe(true);
+				expect(current.listenerCount('data')).toBe(1);
+				expect(current.listenerCount('connect')).toBe(1);
+				expect(previous.listenerCount('data')).toBe(0);
+				expect(previous.listenerCount('close')).toBe(0);
+				errors.mockClear();
+				// Destroying a socket can report a late error. It must neither escape as
+				// an unhandled EventEmitter error nor disturb the replacement connection.
+				expect(() => previous.emit('error', new Error('old socket closed'))).not.toThrow();
+				previous.emit('close', true);
+				expect(errors).not.toHaveBeenCalled();
+				expect(provider.getStatus()).toBe('connected');
+				expect(
+					(await provider.request(payload(3, 'qrl_blockNumber') as never)).result,
+				).toBe('0x5');
+				await until(() => server.clients[0].destroyed, 2000, 'previous socket to close');
+				expect(server.clients).toHaveLength(2);
+			} finally {
+				provider.disconnect();
+				await server.close();
+			}
+		});
+
 		it('reassembles a multi-byte character split across two data events', async () => {
 			const socketPath = path.join(dir, 's.ipc');
 			const server = await startServer(socketPath);
@@ -266,9 +310,9 @@ describe('IpcProvider over real sockets', () => {
 				// the connection stays usable.
 				expect((await slow).result).toBe('0x5');
 				expect(provider.getStatus()).toBe('connected');
-				expect((await provider.request(payload(3, 'qrl_blockNumber') as never)).result).toBe(
-					'0x5',
-				);
+				expect(
+					(await provider.request(payload(3, 'qrl_blockNumber') as never)).result,
+				).toBe('0x5');
 				// Reported by the parser and once more by the rejected request, which re-emits
 				// its rejection reason like every failed request does; nothing else.
 				expect(errors.length).toBeGreaterThanOrEqual(1);

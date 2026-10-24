@@ -23,7 +23,13 @@ import { isWeb3ContractContext } from '../../src/utils';
 import { ADDR, FROM, FakeProvider, boundMethod, uintWord } from '../fixtures/fake_provider';
 
 const abi: ContractAbi = [
-	{ type: 'function', name: 'f', inputs: [{ type: 'uint256', name: 'a' }], outputs: [{ type: 'uint256', name: '' }], stateMutability: 'nonpayable' },
+	{
+		type: 'function',
+		name: 'f',
+		inputs: [{ type: 'uint256', name: 'a' }],
+		outputs: [{ type: 'uint256', name: '' }],
+		stateMutability: 'nonpayable',
+	},
 	{
 		type: 'function',
 		name: 'transfer',
@@ -45,7 +51,7 @@ describe('contract context (M-6)', () => {
 	it('does not take an empty object for a context', () => {
 		expect(isWeb3ContractContext({})).toBe(false);
 		expect(isWeb3ContractContext({ gas: '1' })).toBe(false);
-		expect(isWeb3ContractContext({ provider: new FakeProvider().asProvider() })).toBe(true);
+		expect(isWeb3ContractContext({ provider: new FakeProvider().asProvider() })).toBe(false);
 		expect(isWeb3ContractContext(new Web3Context().getContextObject())).toBe(true);
 		expect(isWeb3ContractContext(new Web3Context())).toBe(true);
 		// eslint-disable-next-line no-null/no-null
@@ -165,7 +171,9 @@ describe('contract address checksum (L-57)', () => {
 	it('accepts the unchecksummed form and stores the checksummed address (L-57)', () => {
 		// The prefix is a capital `Q` (P4-L-44); the body may be all lowercase.
 		const unchecksummed = `Q${ADDR.slice(1).toLowerCase()}`;
-		const contract = new Contract(abi, unchecksummed, { provider: new FakeProvider().asProvider() });
+		const contract = new Contract(abi, unchecksummed, {
+			provider: new FakeProvider().asProvider(),
+		});
 		expect(contract.options.address).toBe(ADDR);
 
 		const empty = new Contract(abi, '', { provider: new FakeProvider().asProvider() });
@@ -210,9 +218,20 @@ describe('dataInputFill (L-58)', () => {
 			await boundMethod(contract, 'f')(1).createAccessList();
 			expect(where(provider, 'qrl_createAccessList')).toEqual(expected);
 
-			const sent = boundMethod(contract, 'f')(1).send({ gas: '0x5208', maxFeePerGas: '0x10', maxPriorityFeePerGas: '0x1' });
+			const sent = boundMethod(
+				contract,
+				'f',
+			)(1).send({ gas: '0x5208', maxFeePerGas: '0x10', maxPriorityFeePerGas: '0x1' });
 			sent.on('error', () => undefined);
-			await Promise.race([sent.then(() => undefined, () => undefined), new Promise(resolve => { setTimeout(resolve, 1500); })]);
+			await Promise.race([
+				sent.then(
+					() => undefined,
+					() => undefined,
+				),
+				new Promise(resolve => {
+					setTimeout(resolve, 1500);
+				}),
+			]);
 			expect(where(provider, 'qrl_sendTransaction')).toEqual(expected);
 		},
 	);
@@ -235,7 +254,12 @@ describe('dataInputFill (L-58)', () => {
 			provider: asProvider(provider),
 			config: { contractDataInputFill: 'both' },
 		});
-		const contract = new Contract(abi, ADDR, { dataInputFill: 'data' }, context.getContextObject());
+		const contract = new Contract(
+			abi,
+			ADDR,
+			{ dataInputFill: 'data' },
+			context.getContextObject(),
+		);
 
 		await boundMethod(contract, 'f')(1).estimateGas();
 		expect(where(provider, 'qrl_estimateGas')).toEqual({ data: SELECTOR, input: SELECTOR });
@@ -247,7 +271,11 @@ describe('method calls without a contract address (I-13)', () => {
 
 	it('refuses to send a method call as a contract creation when the contract has data but no address (I-13)', async () => {
 		const provider = new FakeProvider();
-		const contract = new Contract(abi, { provider: asProvider(provider), from: FROM, data: bytecode });
+		const contract = new Contract(abi, {
+			provider: asProvider(provider),
+			from: FROM,
+			data: bytecode,
+		});
 
 		await expect(async () => {
 			await boundMethod(contract, 'transfer')(ADDR, 5).send();

@@ -17,7 +17,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 import { ValidChains, Hardfork, TransactionReceipt } from '@theqrl/web3-types';
 import * as Web3QRL from '@theqrl/web3-qrl';
-import { TransactionBlockTimeoutError } from '@theqrl/web3-errors';
+import { InvalidMethodParamsError, TransactionBlockTimeoutError } from '@theqrl/web3-errors';
 import { Contract } from '../../src';
 import { GreeterBytecode, GreeterAbi } from '../shared_fixtures/build/Greeter';
 import {
@@ -64,13 +64,16 @@ describe('contract defaults (extra)', () => {
 	});
 
 	it('should use "defaultHardfork" on "instance" level', async () => {
-		const hardfork = 'berlin';
+		const hardfork = 'zond';
 
 		contract = new Contract(GreeterAbi, undefined, {
 			provider: getSystemTestProvider(),
 		});
 
 		contract = await contract.deploy(deployOptions).send(sendOptions);
+		expect(() => {
+			contract.defaultHardfork = 'berlin';
+		}).toThrow(InvalidMethodParamsError);
 		contract.defaultHardfork = hardfork;
 
 		await contract.methods.setGreeting('New Greeting').send(sendOptions);
@@ -101,7 +104,10 @@ describe('contract defaults (extra)', () => {
 
 			expect(contract.defaultChain).toBe('mainnet');
 
-			const defaultChain = 'ropsten';
+			expect(() => {
+				contract.defaultChain = 'ropsten';
+			}).toThrow(InvalidMethodParamsError);
+			const defaultChain = 'mainnet';
 			contract.defaultChain = defaultChain;
 
 			expect(contract.defaultChain).toBe(defaultChain);

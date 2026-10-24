@@ -51,14 +51,14 @@ const newValues: Record<string, unknown> = {
 	blockHeaderTimeout: 99,
 	defaultAccount: `Q${'ab'.repeat(64)}`,
 	defaultBlock: 'pending',
-	defaultChain: 'newValue',
+	defaultChain: 'mainnet',
 	defaultNetworkId: 99,
 	defaultCommon: {
 		customChain: { name: 'custom', networkId: 99, chainId: 99 },
 		baseChain: 'mainnet',
 		hardfork: 'zond',
 	},
-	defaultHardfork: 'newValue',
+	defaultHardfork: 'zond',
 	enableExperimentalFeatures: {
 		useSubscriptionWhenCheckingBlockTimeout: true,
 		useRpcCallSpecification: true,
@@ -97,7 +97,7 @@ describe('Web3Config', () => {
 	it.each(Object.keys(defaultConfig))('should expose a public setter for "%s"', key => {
 		const obj = new MyConfigObject();
 		const setterSpy = jest.spyOn(obj, key as keyof MyConfigObject, 'set');
-		obj[key as keyof MyConfigObject] = obj[key as never];
+		obj[key as never] = obj[key as never];
 		expect(setterSpy).toHaveBeenCalledTimes(1);
 	});
 
@@ -108,7 +108,7 @@ describe('Web3Config', () => {
 		obj[key as never] = newValue as never;
 		const result = obj[key as never];
 
-		expect(result).toBe(newValue);
+		expect(result).toEqual(newValue);
 	});
 
 	it.each(Object.keys(defaultConfig))(

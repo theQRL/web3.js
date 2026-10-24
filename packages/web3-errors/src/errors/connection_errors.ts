@@ -27,7 +27,7 @@ import {
 	ERR_REQ_ALREADY_SENT,
 	ERR_CONN_HTTP_STATUS,
 } from '../error_codes.js';
-import { BaseWeb3Error, truncateEchoedText } from '../web3_error_base.js';
+import { BaseWeb3Error, truncateEchoedText, toJsonSafe } from '../web3_error_base.js';
 
 export class ConnectionError extends BaseWeb3Error {
 	public code = ERR_CONN;
@@ -151,7 +151,7 @@ export class HttpStatusError extends ConnectionError {
 	) {
 		super(
 			`HTTP STATUS ERROR: the JSON-RPC endpoint answered with HTTP ${status}${
-				statusText ? ` (${statusText})` : ''
+				statusText ? ` (${truncateEchoedText(statusText)})` : ''
 			}${retryAfter === undefined ? '' : `, retry after ${retryAfter}s`}${
 				// The inner error usually wraps the node's reply. One of this library's errors
 				// has bounded the node's text itself; any other error's message is bounded here
@@ -179,7 +179,7 @@ export class HttpStatusError extends ConnectionError {
 			statusText: this.statusText,
 			retryAfter: this.retryAfter,
 			retryable: this.retryable,
-			data: this.data,
+			data: toJsonSafe(this.data),
 		};
 	}
 }

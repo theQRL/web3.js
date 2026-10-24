@@ -26,7 +26,7 @@ import {
 
 const word = (hex: string) => hex.padStart(128, '0');
 
-describe('pass-4 regressions (web3-qrl-abi)', () => {
+describe('decoding hardening (pass-4 audit)', () => {
 	describe('nested decode errors surface eagerly (P4-L-32)', () => {
 		it('throws for a non-canonical uint8 inside an array instead of returning a throwing getter', () => {
 			const data = `0x${word('40')}${word('2')}${word('5')}${word('100')}`;

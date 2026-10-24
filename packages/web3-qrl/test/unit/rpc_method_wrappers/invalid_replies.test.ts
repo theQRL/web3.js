@@ -43,6 +43,7 @@ import {
 } from '../../../src/rpc_method_wrappers';
 import { getTransactionGasPricing } from '../../../src/utils/get_transaction_gas_pricing';
 import { mockRpcResponse as mockLogs } from './fixtures/get_logs';
+import { testData as signedTransactions } from './fixtures/send_signed_transaction';
 import { testData as signTypedDataTestData } from './fixtures/sign_typed_data';
 
 jest.mock('@theqrl/web3-rpc-methods');
@@ -64,15 +65,20 @@ describe('malformed node replies are reported as InvalidResponseError (L-26)', (
 	afterEach(() => jest.resetAllMocks());
 
 	describe('qrl_chainId', () => {
-		it.each([['0x'], ['abc'], ['-0x1'], [`0x1${'0'.repeat(64)}`], [NULL_REPLY], [undefined], [{}]])(
-			'rejects %p',
-			async reply => {
-				(qrlRpcMethods.getChainId as jest.Mock).mockResolvedValueOnce(reply);
-				await expect(getChainId(web3Context, DEFAULT_RETURN_FORMAT)).rejects.toThrow(
-					InvalidResponseError,
-				);
-			},
-		);
+		it.each([
+			['0x'],
+			['abc'],
+			['-0x1'],
+			[`0x1${'0'.repeat(64)}`],
+			[NULL_REPLY],
+			[undefined],
+			[{}],
+		])('rejects %p', async reply => {
+			(qrlRpcMethods.getChainId as jest.Mock).mockResolvedValueOnce(reply);
+			await expect(getChainId(web3Context, DEFAULT_RETURN_FORMAT)).rejects.toThrow(
+				InvalidResponseError,
+			);
+		});
 
 		it('accepts a hex quantity', async () => {
 			(qrlRpcMethods.getChainId as jest.Mock).mockResolvedValueOnce('0x1');
@@ -107,7 +113,11 @@ describe('malformed node replies are reported as InvalidResponseError (L-26)', (
 
 		it('sends a decimal-string fromBlock as a hex quantity (I-12)', async () => {
 			(qrlRpcMethods.getLogs as jest.Mock).mockResolvedValueOnce([]);
-			await getLogs(web3Context, { fromBlock: '5', toBlock: 'latest' }, DEFAULT_RETURN_FORMAT);
+			await getLogs(
+				web3Context,
+				{ fromBlock: '5', toBlock: 'latest' },
+				DEFAULT_RETURN_FORMAT,
+			);
 			expect(qrlRpcMethods.getLogs).toHaveBeenCalledWith(web3Context.requestManager, {
 				fromBlock: '0x5',
 				toBlock: 'latest',
@@ -118,17 +128,17 @@ describe('malformed node replies are reported as InvalidResponseError (L-26)', (
 	describe('qrl_pendingTransactions', () => {
 		it.each([[NULL_REPLY], ['abc'], [{}]])('rejects %p', async reply => {
 			(qrlRpcMethods.getPendingTransactions as jest.Mock).mockResolvedValueOnce(reply);
-			await expect(getPendingTransactions(web3Context, DEFAULT_RETURN_FORMAT)).rejects.toThrow(
-				InvalidResponseError,
-			);
+			await expect(
+				getPendingTransactions(web3Context, DEFAULT_RETURN_FORMAT),
+			).rejects.toThrow(InvalidResponseError);
 		});
 
 		it('rejects a null entry', async () => {
 			// eslint-disable-next-line no-null/no-null
 			(qrlRpcMethods.getPendingTransactions as jest.Mock).mockResolvedValueOnce([null]);
-			await expect(getPendingTransactions(web3Context, DEFAULT_RETURN_FORMAT)).rejects.toThrow(
-				InvalidResponseError,
-			);
+			await expect(
+				getPendingTransactions(web3Context, DEFAULT_RETURN_FORMAT),
+			).rejects.toThrow(InvalidResponseError);
 		});
 	});
 
@@ -142,25 +152,28 @@ describe('malformed node replies are reported as InvalidResponseError (L-26)', (
 			maxPriorityFeePerGas: '0x1',
 		};
 
-		it.each([[NULL_REPLY], ['zz'], [{ raw: '0x01', tx: NULL_REPLY }], [{ raw: 5, tx: 'x' }], [{}]])(
-			'rejects %p',
-			async reply => {
-				(qrlRpcMethods.signTransaction as jest.Mock).mockResolvedValueOnce(reply);
-				await expect(
-					signTransaction(web3Context, transaction, DEFAULT_RETURN_FORMAT),
-				).rejects.toThrow(InvalidResponseError);
-			},
-		);
+		it.each([
+			[NULL_REPLY],
+			['zz'],
+			[{ raw: '0x01', tx: NULL_REPLY }],
+			[{ raw: 5, tx: 'x' }],
+			[{}],
+		])('rejects %p', async reply => {
+			(qrlRpcMethods.signTransaction as jest.Mock).mockResolvedValueOnce(reply);
+			await expect(
+				signTransaction(web3Context, transaction, DEFAULT_RETURN_FORMAT),
+			).rejects.toThrow(InvalidResponseError);
+		});
 
 		it('accepts a { raw, tx } reply', async () => {
 			(qrlRpcMethods.signTransaction as jest.Mock).mockResolvedValueOnce({
-				raw: '0x02c0',
+				raw: signedTransactions[0][1],
 				tx: { nonce: '0x1', value: '0x1' },
 			});
 			await expect(
 				signTransaction(web3Context, transaction, DEFAULT_RETURN_FORMAT),
 			).resolves.toStrictEqual({
-				raw: '0x02c0',
+				raw: signedTransactions[0][1],
 				tx: { nonce: BigInt(1), value: BigInt(1) },
 			});
 		});
@@ -174,7 +187,9 @@ describe('malformed node replies are reported as InvalidResponseError (L-26)', (
 			);
 			// eslint-disable-next-line no-null/no-null
 			(qrlRpcMethods.getTransactionByHash as jest.Mock).mockResolvedValueOnce(null);
-			await expect(getTransaction(web3Context, HASH, DEFAULT_RETURN_FORMAT)).resolves.toBeNull();
+			await expect(
+				getTransaction(web3Context, HASH, DEFAULT_RETURN_FORMAT),
+			).resolves.toBeNull();
 		});
 
 		it('rejects a receipt reply that is not an object', async () => {
@@ -226,9 +241,9 @@ describe('malformed node replies are reported as InvalidResponseError (L-26)', (
 		it.each(malformed)(
 			'getBlockTransactionCount rejects %s for a block number and for a block hash',
 			async (_, reply) => {
-				(
-					qrlRpcMethods.getBlockTransactionCountByNumber as jest.Mock
-				).mockResolvedValueOnce(reply);
+				(qrlRpcMethods.getBlockTransactionCountByNumber as jest.Mock).mockResolvedValueOnce(
+					reply,
+				);
 				await expect(
 					getBlockTransactionCount(web3Context, '0x10', DEFAULT_RETURN_FORMAT),
 				).rejects.toThrow(InvalidResponseError);
@@ -258,7 +273,9 @@ describe('malformed node replies are reported as InvalidResponseError (L-26)', (
 			await expect(
 				estimateGas(web3Context, transaction, 'latest', DEFAULT_RETURN_FORMAT),
 			).resolves.toBe(BigInt(21000));
-			(qrlRpcMethods.getBlockTransactionCountByHash as jest.Mock).mockResolvedValueOnce('0x3');
+			(qrlRpcMethods.getBlockTransactionCountByHash as jest.Mock).mockResolvedValueOnce(
+				'0x3',
+			);
 			await expect(
 				getBlockTransactionCount(web3Context, HASH, DEFAULT_RETURN_FORMAT),
 			).resolves.toBe(BigInt(3));
@@ -374,15 +391,12 @@ describe('malformed node replies are reported as InvalidResponseError (L-26)', (
 			['str'],
 			[{ ...BLOCK, baseFeePerGas: '0x' }],
 			[{ ...BLOCK, baseFeePerGas: NULL_REPLY }],
-		])(
-			'rejects the block reply %p',
-			async reply => {
-				(qrlRpcMethods.getBlockByNumber as jest.Mock).mockResolvedValueOnce(reply);
-				await expect(
-					getTransactionGasPricing(transaction, web3Context, QRL_DATA_FORMAT),
-				).rejects.toThrow(InvalidResponseError);
-			},
-		);
+		])('rejects the block reply %p', async reply => {
+			(qrlRpcMethods.getBlockByNumber as jest.Mock).mockResolvedValueOnce(reply);
+			await expect(
+				getTransactionGasPricing(transaction, web3Context, QRL_DATA_FORMAT),
+			).rejects.toThrow(InvalidResponseError);
+		});
 
 		it('reports an unusable maxPriorityFeePerGas with the typed fee error', async () => {
 			(qrlRpcMethods.getBlockByNumber as jest.Mock).mockResolvedValueOnce(BLOCK);

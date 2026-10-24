@@ -72,33 +72,20 @@ describe('recursive QRL typed-data schemas', () => {
 		);
 	});
 
-	it('recognizes a recursive dependency through nested fixed and dynamic arrays', () => {
-		const type = 'Person(string name,Person[2][] children)';
-		const bobHash = hashStruct(type, keccak256('Bob'), emptyArrayHash);
-		const carolHash = hashStruct(type, keccak256('Carol'), emptyArrayHash);
-
-		expectMessage(
-			{
-				...personData,
-				types: {
-					QRLTypedDataDomain: [],
-					Person: [
-						{ name: 'name', type: 'string' },
-						{ name: 'children', type: 'Person[2][]' },
-					],
+	it('rejects fixed and multidimensional struct arrays, like the go-qrl signer', () => {
+		expect(() =>
+			getEncodedQRLTypedData(
+				{
+					...personData,
+					types: {
+						QRLTypedDataDomain: [],
+						Person: [{ name: 'children', type: 'Person[2][]' }],
+					},
+					message: { children: [] },
 				},
-				message: {
-					name: 'Alice',
-					children: [
-						[
-							{ name: 'Bob', children: [] },
-							{ name: 'Carol', children: [] },
-						],
-					],
-				},
-			},
-			hashStruct(type, keccak256('Alice'), hashWords(hashWords(bobHash, carolHash))),
-		);
+				true,
+			),
+		).toThrow('invalid field');
 	});
 
 	it('includes a recursive dependency only once when multiple fields reference it', () => {

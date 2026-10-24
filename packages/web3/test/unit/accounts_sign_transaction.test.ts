@@ -166,3 +166,41 @@ describe.each([
 		expect(seedBytes).toEqual(createSeed(otherSeed));
 	});
 });
+
+describe('pass 5 module signing configuration', () => {
+	it('checks defaultCommon set on web3.qrl before signing', async () => {
+		const request = jest.fn().mockResolvedValue('0x1');
+		const web3 = new Web3({ provider: { request } });
+		web3.qrl.defaultCommon = { customChain: { chainId: 2, networkId: 2 } };
+		await expect(
+			web3.qrl.accounts.signTransaction(
+				{ ...transaction, chainId: undefined, networkId: undefined, nonce: 0 },
+				seed,
+			),
+		).rejects.toThrow('chain');
+	});
+	it('uses the module nonce block and transaction builder for wallet accounts', async () => {
+		const request = jest
+			.fn()
+			.mockImplementation(async ({ method }: { method: string }) =>
+				Promise.resolve(method === 'qrl_chainId' ? '0x1' : '0x7'),
+			);
+		const web3 = new Web3({ provider: { request } });
+		web3.qrl.defaultBlock = 'pending';
+		const account = web3.qrl.accounts.seedToAccount(seed);
+		await account.signTransaction({ ...transaction });
+		expect(request).toHaveBeenCalledWith(
+			expect.objectContaining({
+				method: 'qrl_getTransactionCount',
+				params: [signerAddress, 'pending'],
+			}),
+			expect.any(Function),
+		);
+		const builder = jest.fn().mockRejectedValue(new Error('module builder called'));
+		web3.qrl.transactionBuilder = builder;
+		await expect(account.signTransaction({ ...transaction })).rejects.toThrow(
+			'module builder called',
+		);
+		expect(builder).toHaveBeenCalledTimes(1);
+	});
+});

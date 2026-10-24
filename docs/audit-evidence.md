@@ -39,7 +39,7 @@ Expected result:
 | Workspace lint | `pnpm run lint` | Exit `0`; warnings are acceptable only if already present in the current baseline and not from changed code. |
 | Package build | `pnpm run build` | Exit `0`; Turbo reports all package/tool build tasks successful. |
 | Browser build | `pnpm run build:web` | Exit `0`; browser bundles build for `@theqrl/web3` and `@theqrl/web3-validator`. |
-| Unit tests | `pnpm run test:unit` | Exit `0`; all workspace unit suites and script tests pass. |
+| Unit tests | `pnpm run test:unit` | Exit `0`; all workspace unit suites, script tests, and package-local coverage thresholds pass. Do not disable coverage when verifying this gate. |
 | Docs | `pnpm run build:docs` | Exit `0`; Docusaurus build completes with broken links treated as errors. |
 | Package list | `pnpm run release:packages` | Exit `0`; lists the publishable public packages and versions expected for release. |
 | Package inspection | `pnpm run release:inspect-packages` | Exit `0`; dry-run pack output has all declared entrypoints and no forbidden package contents. |
@@ -67,7 +67,7 @@ Required GitHub status checks should match the commands above:
 - `Unit Coverage` runs unit coverage and uploads configured JSON artefacts to
   Codecov.
 - `Docs Build` runs the Docusaurus/TypeDoc docs build.
-- `Lint workflow files` runs actionlint and zizmor.
+- `Lint workflow files` runs actionlint; zizmor runs in its separate security-analysis job.
 - `Dependency Review` blocks high/critical vulnerable dependency changes in pull
   requests.
 
@@ -175,6 +175,72 @@ changed-file lint (existing warnings only), and `git diff --check`.
 The local proxy dependency was missing its `dist` directory; restoring it from
 the exact npm tarball after verifying the lockfile SHA-512 fixed a misleading
 fallback to hoisted v2 types. No dependency version or lockfile change was needed.
+
+### Pass-5 remediation verification (2026-10-24 UTC)
+
+The [remediation record](audit-remediation-2026-10-24.md) maps all 39 severity-rated
+findings to fixes and records compatibility limits and remaining informational work.
+Local verification used Node 22.22.1, pnpm 10.27.0, CPU affinity `0,1`, serial Jest
+workers and Turbo concurrency 1. The standalone go-qrl version, digest, ports and
+chain ID were the same as the 2026-10-23 run above. The container shared the two-CPU
+affinity, with a two-CPU quota and `GOMAXPROCS=2`.
+
+The initial package/tool/script unit run reported 6,408 passed, six skipped and one todo
+with coverage disabled. It verified assertions but missed the three coverage failures
+identified as P5R-3; see the follow-up verification in the remediation record.
+After correcting P5R-1 and P5R-3, a full rerun with the unchanged package coverage settings
+passed **6,425 tests in 272 suites**, with six skipped tests and one todo. All 19 package/tool
+coverage gates passed. Logs and consolidated results are under `/tmp/web3-pass5r-*`.
+All 19 package builds, both browser bundles, doctor, hygiene, dependency cross-check,
+19 package inspections and CJS/ESM tarball smoke checks passed. The documentation
+build passed with existing TypeDoc warnings. The lint gate passed with zero errors
+and 1,257 warnings within the unchanged 1,267 budget; subsequent integration and
+pending-block edits passed targeted lint. Trivy 0.70.0 with the 2026-10-24 database
+reported no HIGH/CRITICAL findings under the committed exceptions. Actionlint
+passed; offline Zizmor retained the documented low `self-repository` finding (exit 12).
+
+| Package | HTTP passed / skipped | WS passed / skipped | IPC passed / skipped |
+| --- | ---: | ---: | ---: |
+| web3-qrl-contract | 111 / 15 | 124 / 2 | — |
+| web3-qrl | 171 / 18 | 187 / 2 | — |
+| web3-qrl-qrns | 14 / 2 | 16 / 0 | — |
+| web3-qrl-accounts | 52 / 2 | 52 / 2 | — |
+| web3 | 35 / 6 | 35 / 6 | 31 / 10 |
+| web3-net | 4 / 0 | 4 / 0 | — |
+| web3-providers-http | 7 / 0 | 6 / 1 | — |
+| web3-providers-ws | 0 / 21 | 21 / 0 | — |
+| web3-providers-ipc | 0 / 9 | 0 / 9 | 9 / 0 |
+| **Total** | **394 / 73** | **445 / 22** | **40 / 10** |
+
+These HTTP totals combine the final full runs with successful targeted reruns of
+the configuration-copy and pending-block cases. Skips are summed from the individual
+Jest reports: the audit's HTTP total of 61 was an arithmetic error; its own package
+rows also sum to 73. The new live deployment checks
+create two independent contracts from one addressed instance through both node
+and wallet signing, including gas estimation and independent state reads.
+go-qrl explicitly clears `hash` and `miner` for pending blocks in
+`internal/qrlapi/api.go`; the RPC validator now accepts that pair and rejects a
+null miner on a mined block. Both unit tests and the final browser bundle check it.
+
+All WebSocket suites passed, including the audit's intermittent `subscribe` case.
+The run also exposed a stale `confirmationNumber` assertion swallowed by the
+library's listener-error isolation. That test now awaits the first confirmation
+and asserts the current `confirmations` field outside the callback; explicit HTTP
+and WebSocket reruns passed. The three previously failing IPC `handleRevert` cases
+now use a provider object and pass. There are 879 passing transport-specific cases
+in total; skipped cases are not counted as passes, and IPC packages marked `—`
+were not run.
+
+Initial integration attempts were interrupted by a build regenerating `lib/`
+and by the disposable miner's RPC timeout during a concurrent documentation build.
+The node was restarted from a fresh state directory after all builds completed.
+Those failed attempts are preserved separately and are not counted as passes.
+The script ESLint test exceeded its 30-second subprocess deadline during concurrent
+checks and passed when rerun alone; no timeout or lint budget was increased.
+
+Logs/Jest JSON are under `/tmp/web3-pass5-*`; final package artifacts are under
+ignored `dist/pass5-final/`. The disposable container was stopped and its removal
+verified after IPC testing. No package was published during this verification.
 
 ### VM64 storage-key width
 

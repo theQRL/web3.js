@@ -35,6 +35,8 @@ import {
 	watchTransactionByPolling,
 	Web3PromiEventEventTypeBase,
 } from './watch_transaction_by_pooling.js';
+import { isBlockHash, isValidUnsignedHexNumber } from './hex_guards.js';
+import { invalidResponseError } from './invalid_response_error.js';
 import { watchTransactionBySubscription } from './watch_transaction_by_subscription.js';
 
 /**
@@ -63,9 +65,19 @@ export function watchTransactionForConfirmations<
 			transactionHash: format({ format: 'bytes32' }, transactionHash, returnFormat),
 		});
 
-	if (!transactionReceipt.blockNumber)
+	if (isNullish(transactionReceipt.blockNumber))
 		throw new TransactionReceiptMissingBlockNumberError({ receipt: transactionReceipt });
 
+	if (
+		!isBlockHash(transactionReceipt.blockHash) ||
+		!isValidUnsignedHexNumber(transactionReceipt.blockNumber)
+	) {
+		throw invalidResponseError(
+			'qrl_getTransactionReceipt',
+			'a receipt with a 32-byte block hash and an unsigned block number',
+			transactionReceipt,
+		);
+	}
 	const firstConfirmation: Numbers = 1;
 
 	// As we have the receipt, it's the first confirmation that tx is accepted.

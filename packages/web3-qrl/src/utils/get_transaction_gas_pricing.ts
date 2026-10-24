@@ -57,7 +57,12 @@ async function getEip1559GasPricing<ReturnFormat extends DataFormat>(
 	web3Context: Web3Context<QRLExecutionAPI>,
 	returnFormat: ReturnFormat,
 ): Promise<FormatType<{ maxPriorityFeePerGas?: Numbers; maxFeePerGas?: Numbers }, ReturnFormat>> {
-	const block: unknown = await getBlock(web3Context, web3Context.defaultBlock, false, returnFormat);
+	const block: unknown = await getBlock(
+		web3Context,
+		web3Context.defaultBlock,
+		false,
+		returnFormat,
+	);
 
 	// The block is node supplied: a missing block or a `baseFeePerGas` that is not a quantity
 	// used to surface as a raw `TypeError`/`SyntaxError` or a plain `Error` (L-26).
@@ -75,12 +80,28 @@ async function getEip1559GasPricing<ReturnFormat extends DataFormat>(
 
 	const requestedMaxPriorityFeePerGas =
 		transaction.maxPriorityFeePerGas ?? web3Context.defaultMaxPriorityFeePerGas;
-	const maxPriorityFeePerGas = toUint256(requestedMaxPriorityFeePerGas);
+	let maxPriorityFeePerGas = toUint256(requestedMaxPriorityFeePerGas);
 	if (maxPriorityFeePerGas === undefined) {
 		throw new InvalidMaxPriorityFeePerGasOrMaxFeePerGas({
 			maxPriorityFeePerGas: requestedMaxPriorityFeePerGas as Numbers | undefined,
 			maxFeePerGas: transaction.maxFeePerGas,
 		});
+	}
+	const maxFeePerGas = toUint256(
+		transaction.maxFeePerGas ?? baseFeePerGas * BigInt(2) + maxPriorityFeePerGas,
+	);
+	if (maxFeePerGas === undefined) {
+		throw new InvalidMaxPriorityFeePerGasOrMaxFeePerGas({
+			maxPriorityFeePerGas,
+			maxFeePerGas:
+				transaction.maxFeePerGas ?? baseFeePerGas * BigInt(2) + maxPriorityFeePerGas,
+		});
+	}
+	// An omitted tip is a default, not permission to exceed the caller's fee cap.
+	if (isNullish(transaction.maxPriorityFeePerGas) && maxPriorityFeePerGas > maxFeePerGas)
+		maxPriorityFeePerGas = maxFeePerGas;
+	if (maxPriorityFeePerGas > maxFeePerGas) {
+		throw new InvalidMaxPriorityFeePerGasOrMaxFeePerGas({ maxPriorityFeePerGas, maxFeePerGas });
 	}
 
 	return {
@@ -89,11 +110,7 @@ async function getEip1559GasPricing<ReturnFormat extends DataFormat>(
 			maxPriorityFeePerGas as Numbers,
 			returnFormat,
 		),
-		maxFeePerGas: format(
-			{ format: 'uint' },
-			(transaction.maxFeePerGas ?? baseFeePerGas * BigInt(2) + maxPriorityFeePerGas) as Numbers,
-			returnFormat,
-		),
+		maxFeePerGas: format({ format: 'uint' }, maxFeePerGas as Numbers, returnFormat),
 	};
 }
 

@@ -79,12 +79,18 @@ exports[`Web3Context getContextObject should return correct context object 1`] =
   },
   "subscriptionManager": Web3SubscriptionManager {
     "_beforeProviderChangeListener": [Function],
+    "_connectionGeneration": 0,
+    "_disposed": false,
     "_emitter": EventEmitter {
       "_events": Map {},
       "_warned": Set {},
     },
+    "_generation": 0,
+    "_intendedSubscriptions": Set {},
+    "_pendingResubscriptions": Map {},
     "_providerChangedListener": [Function],
     "_providerConnected": false,
+    "_resubscribeAgain": false,
     "_resubscribeOnConnect": false,
     "_subscribesInFlight": 0,
     "_subscriptions": Map {},

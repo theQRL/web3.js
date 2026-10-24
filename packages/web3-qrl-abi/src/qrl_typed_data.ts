@@ -30,7 +30,17 @@ const hasOwn = (object: object, key: string): boolean =>
 	Object.prototype.hasOwnProperty.call(object, key);
 
 const isObject = (value: unknown): value is Record<string, unknown> =>
-	typeof value === 'object' && !isNullish(value);
+	typeof value === 'object' && !isNullish(value) && !Array.isArray(value);
+
+// go-qrl's typed-data signer accepts primitive/struct values and one-dimensional
+// dynamic arrays. ABI parameter declarations and fixed array lengths are not types here.
+const isPrimitiveType = (type: string): boolean => {
+	if (/^(address|bool|string|bytes|int|uint)$/.test(type)) return true;
+	const bytes = /^bytes([1-9][0-9]*)$/.exec(type);
+	if (bytes) return Number(bytes[1]) <= 64;
+	const integer = /^(?:uint|int)([1-9][0-9]*)$/.exec(type);
+	return !!integer && Number(integer[1]) <= 512 && Number(integer[1]) % 8 === 0;
+};
 
 /**
  * The field list of a struct type, or `undefined` when `type` is not a struct of this typed data.
@@ -46,11 +56,7 @@ const getStructFields = (
 		return undefined;
 	}
 	for (const field of fields as unknown[]) {
-		if (
-			!isObject(field) ||
-			typeof field.name !== 'string' ||
-			typeof field.type !== 'string'
-		) {
+		if (!isObject(field) || typeof field.name !== 'string' || typeof field.type !== 'string') {
 			throw new AbiError(
 				`Cannot encode data: invalid field definition in type '${type}' (expected {name, type})`,
 			);
@@ -155,6 +161,25 @@ const validateTypedData = (typedData: QRLTypedData): void => {
 	}
 	if (!isObject(message)) {
 		throw new AbiError('Invalid typed data: "message" must be an object');
+	}
+	for (const type of Object.keys(types)) {
+		const fields = getStructFields(typedData, type);
+		if (!/^[A-Za-z]\w*$/.test(type) || !fields) {
+			throw new AbiError(`Invalid typed data: invalid struct type '${type}'`);
+		}
+		const names = new Set<string>();
+		for (const field of fields) {
+			const match = /^([A-Za-z]\w*)(?:\[\])?$/.exec(field.type);
+			if (!field.name || names.has(field.name) || !match || field.type === type) {
+				throw new AbiError(
+					`Invalid typed data: invalid field '${field.name}' in '${type}'`,
+				);
+			}
+			names.add(field.name);
+			if (!isPrimitiveType(match[1]) && !getStructFields(typedData, match[1])) {
+				throw new AbiError(`Invalid typed data: unknown type '${field.type}'`);
+			}
+		}
 	}
 };
 
@@ -272,6 +297,10 @@ const encodeData = (
 	}
 	if (!isObject(data)) {
 		throw new AbiError(`Cannot encode data: expected an object for type '${type}'`);
+	}
+	const fieldNames = new Set(fields.map(field => field.name));
+	if (Object.keys(data).some(key => !fieldNames.has(key))) {
+		throw new AbiError(`Cannot encode data: extra data provided in '${type}'`);
 	}
 
 	const [types, values] = fields.reduce<[string[], unknown[]]>(

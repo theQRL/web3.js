@@ -18,11 +18,57 @@ import { Web3ValidationErrorObject } from '@theqrl/web3-types';
 
 import { z, ZodType, ZodIssue, ZodIssueCode, ZodTypeAny } from 'zod';
 
-import { RawCreateParams } from 'zod/lib/types';
-import { BaseWeb3Error } from '@theqrl/web3-errors';
+import { BaseWeb3Error, truncateEchoedText } from '@theqrl/web3-errors';
 import { Web3ValidatorError } from './errors.js';
-import { Json, JsonSchema } from './types.js';
+import { Json, JsonSchema, Web3ValidationOptions } from './types.js';
 import formats from './formats.js';
+
+// Depth is always bounded. An aggregate value budget is opt-in for untrusted
+// data: a small global limit also rejects legitimate caller-supplied calldata.
+const checkValidationBudget = (data: unknown, maxEntries?: number) => {
+	if (maxEntries !== undefined && (!Number.isSafeInteger(maxEntries) || maxEntries <= 0)) {
+		throw new Web3ValidatorError([
+			{
+				keyword: 'validationBudget',
+				instancePath: '',
+				schemaPath: '',
+				params: { maxEntries },
+				message: 'maxEntries must be a positive safe integer',
+			},
+		]);
+	}
+	let remaining = maxEntries ?? Infinity;
+	const visit = (value: unknown, depth: number) => {
+		remaining -= 1;
+		if (remaining < 0 || depth > 64) {
+			throw new Web3ValidatorError([
+				{
+					keyword: 'validationBudget',
+					instancePath: '',
+					schemaPath: '',
+					params: { maxEntries, maxDepth: 64 },
+					message:
+						depth > 64
+							? 'Validation input exceeds 64 nesting levels'
+							: `Validation input exceeds ${maxEntries} entries`,
+				},
+			]);
+		}
+		if (value && typeof value === 'object' && !(value instanceof Uint8Array)) {
+			// Check array size before iterating or copying its contents.
+			if (Array.isArray(value) && value.length > remaining) {
+				remaining = -1;
+				visit(undefined, depth);
+			}
+			// eslint-disable-next-line no-restricted-syntax -- stop at the budget without allocating Object.keys for an unbounded object
+			for (const key in value) {
+				if (Object.prototype.hasOwnProperty.call(value, key))
+					visit((value as Record<string, unknown>)[key], depth + 1);
+			}
+		}
+	};
+	visit(data, 0);
+};
 
 const convertToZod = (schema: JsonSchema): ZodType => {
 	if ((!schema?.type || schema?.type === 'object') && schema?.properties) {
@@ -73,9 +119,13 @@ const convertToZod = (schema: JsonSchema): ZodType => {
 		// Dynamic arrays (`T[]`) carry no `minItems`/`maxItems` and stay unconstrained.
 		let zodArraySchema = z.array(convertToZod(schema.items as JsonSchema));
 		zodArraySchema =
-			typeof schema?.minItems === 'number' ? zodArraySchema.min(schema.minItems) : zodArraySchema;
+			typeof schema?.minItems === 'number'
+				? zodArraySchema.min(schema.minItems)
+				: zodArraySchema;
 		zodArraySchema =
-			typeof schema?.maxItems === 'number' ? zodArraySchema.max(schema.maxItems) : zodArraySchema;
+			typeof schema?.maxItems === 'number'
+				? zodArraySchema.max(schema.maxItems)
+				: zodArraySchema;
 
 		return zodArraySchema;
 	}
@@ -110,21 +160,45 @@ const convertToZod = (schema: JsonSchema): ZodType => {
 			]);
 		}
 
-		return z.any().refine(check, (value: unknown) => ({
-			params: { value, format: schema.format },
-		}));
+		return z.any().superRefine((value: unknown, context) => {
+			if (!check(value))
+				context.addIssue({ code: 'custom', params: { value, format: schema.format } });
+		});
 	}
 
 	if (
 		schema?.type &&
-		schema?.type !== 'object' &&
-		typeof (z as unknown as { [key: string]: (params?: RawCreateParams) => ZodType })[
-			String(schema.type)
-		] === 'function'
+		![
+			'object',
+			'array',
+			'string',
+			'number',
+			'boolean',
+			'bigint',
+			'null',
+			'undefined',
+			'any',
+			'unknown',
+			'date',
+		].includes(String(schema.type))
 	) {
-		return (z as unknown as { [key: string]: (params?: RawCreateParams) => ZodType })[
-			String(schema.type)
-		]();
+		throw new Web3ValidatorError([
+			{
+				keyword: 'type',
+				instancePath: '',
+				schemaPath: '',
+				params: { type: schema.type },
+				message: `Unsupported schema type ${String(schema.type)}`,
+			},
+		]);
+	}
+	if (
+		schema?.type &&
+		schema?.type !== 'object' &&
+		typeof (z as unknown as { [key: string]: () => ZodType })[String(schema.type)] ===
+			'function'
+	) {
+		return (z as unknown as { [key: string]: () => ZodType })[String(schema.type)]();
 	}
 	return z.object({ data: z.any() }).partial();
 };
@@ -133,13 +207,17 @@ export class Validator {
 	private static validatorInstance?: Validator;
 
 	public static factory(): Validator {
-		if (!Validator.validatorInstance) {
-			Validator.validatorInstance = new Validator();
-		}
+		Validator.validatorInstance ??= new Validator();
 		return Validator.validatorInstance;
 	}
 
-	public validate(schema: JsonSchema, data: Json, options?: { silent?: boolean }) {
+	public validate(schema: JsonSchema, data: Json, options?: Web3ValidationOptions) {
+		try {
+			checkValidationBudget(data, options?.maxEntries);
+		} catch (error) {
+			if (options?.silent && error instanceof Web3ValidatorError) return error.errors;
+			throw error;
+		}
 		const zod = convertToZod(schema);
 		const result = zod.safeParse(data);
 		// Zod's SafeParseReturnType narrows to SafeParseError only on the explicit false check.
@@ -158,7 +236,7 @@ export class Validator {
 	// eslint-disable-next-line class-methods-use-this
 	private convertErrors(errors: ZodIssue[] | undefined): Web3ValidationErrorObject[] | undefined {
 		if (errors && Array.isArray(errors) && errors.length > 0) {
-			return errors.map((error: ZodIssue) => {
+			return errors.slice(0, 100).map((error: ZodIssue) => {
 				let message;
 				let keyword;
 				let params;
@@ -194,8 +272,8 @@ export class Validator {
 							value === null
 								? 'null'
 								: typeof value === 'string'
-								? value
-								: BaseWeb3Error.convertToString(value, true)
+									? truncateEchoedText(value)
+									: truncateEchoedText(BaseWeb3Error.convertToString(value, true))
 						}" at "/${schemaPath}" must pass "${format}" validation`;
 					}
 

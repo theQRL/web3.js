@@ -23,15 +23,19 @@ minimumReleaseAgeExclude:
 - 'svgo@3.3.5'
 - 'handlebars@4.7.10'
 - 'markdown-it@14.3.3'
-- 'undici@6.28.1||7.29.1'
+- 'undici@6.29.1||7.30.1'
+- 'body-parser@2.4.0'
+- 'zod@4.6.6'
 blockExoticSubdeps: true
 overrides:
   "braces@<3.0.3": "3.0.3"
   # CVE-2026-13697 / CVE-2026-19534 / CVE-2026-84961 — undici TLS validation
   # bypass (BalancedPool) and request handling (high); dev tooling via
   # @semantic-release/github and @actions/http-client.
-  "undici@<6.28.1": "6.28.1"
-  "undici@>=7.0.0 <7.29.1": "7.29.1"
+  "undici@>=6.0.0 <6.29.1": "6.29.1"
+  "undici@>=7.0.0 <7.30.1": "7.30.1"
+  # CVE-2026-111181 — compressed request body trailing-byte DoS (dev tooling).
+  "body-parser@>=2.0.0 <2.4.0": "2.4.0"
   "fast-uri@<3.1.7": "3.1.7"
   # CVE-2026-102276 / CVE-2026-102278 — recursive brace-expansion DoS
   "brace-expansion@<1.1.20": "1.1.20"

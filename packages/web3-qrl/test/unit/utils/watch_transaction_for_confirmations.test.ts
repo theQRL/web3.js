@@ -16,11 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import { Web3Context, Web3PromiEvent } from '@theqrl/web3-core';
 import { format, sha3Raw } from '@theqrl/web3-utils';
-import {
-	DEFAULT_RETURN_FORMAT,
-	TransactionReceipt,
-	Web3QRLExecutionAPI,
-} from '@theqrl/web3-types';
+import { DEFAULT_RETURN_FORMAT, TransactionReceipt, Web3QRLExecutionAPI } from '@theqrl/web3-types';
 import { qrlRpcMethods } from '@theqrl/web3-rpc-methods';
 import {
 	TransactionMissingReceiptOrBlockHashError,
@@ -41,6 +37,10 @@ import { transactionReceiptSchema } from '../../../src/schemas';
 import { SendSignedTransactionEvents } from '../../../src/types';
 
 jest.mock('@theqrl/web3-rpc-methods');
+
+beforeEach(() => {
+	(qrlRpcMethods.call as jest.Mock).mockResolvedValue('0x');
+});
 jest.mock('../../../src/utils/wait_for_transaction_receipt');
 jest.mock('../../../src/utils/watch_transaction_by_pooling');
 jest.mock('../../../src/utils/watch_transaction_by_subscription');

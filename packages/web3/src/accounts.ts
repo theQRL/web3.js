@@ -51,13 +51,18 @@ import {
  * `Web3ContextInitOptions`); it becomes `accounts.wallet` instead of a fresh empty one (L-41).
  */
 export const initAccountsForContext = (
-	context: Web3Context<QRLExecutionAPI>,
+	context: Web3Context<QRLExecutionAPI> | (() => Web3Context<QRLExecutionAPI>),
 	existingWallet?: Web3BaseWallet<Web3BaseWalletAccount>,
 ) => {
-	const signTransactionWithContext = async (transaction: Transaction, seed: Bytes) => {
+	const resolveContext = () => (typeof context === 'function' ? context() : context);
+	const signTransactionWithContext = async (
+		transaction: Transaction,
+		seed: Bytes,
+		signingContext = resolveContext(),
+	) => {
 		// Snapshot mutable seeds so sender validation, nonce lookup, and signing use the same key.
 		const signingSeed = seed instanceof Uint8Array ? bytesToHex(seed) : seed;
-		const tx = await prepareTransactionForSigning(transaction, context, signingSeed);
+		const tx = await prepareTransactionForSigning(transaction, signingContext, signingSeed);
 
 		const seedBytes = format({ format: 'bytes' }, signingSeed, QRL_DATA_FORMAT);
 
@@ -84,8 +89,10 @@ export const initAccountsForContext = (
 
 	const seedToAccountWithContext = (seed: Uint8Array | string) => {
 		const account = seedToAccount(seed);
-		return wrapAccount(account, async (transaction: Transaction) =>
-			signTransactionWithContext(transaction, account.seed),
+		return wrapAccount(
+			account,
+			async (transaction: Transaction, signingContext?: Web3Context<QRLExecutionAPI>) =>
+				signTransactionWithContext(transaction, account.seed, signingContext),
 		);
 	};
 
@@ -95,15 +102,19 @@ export const initAccountsForContext = (
 		options?: Record<string, unknown>,
 	) => {
 		const account = await decrypt(keystore, password, (options?.nonStrict as boolean) ?? true);
-		return wrapAccount(account, async (transaction: Transaction) =>
-			signTransactionWithContext(transaction, account.seed),
+		return wrapAccount(
+			account,
+			async (transaction: Transaction, signingContext?: Web3Context<QRLExecutionAPI>) =>
+				signTransactionWithContext(transaction, account.seed, signingContext),
 		);
 	};
 
 	const createWithContext = () => {
 		const account = create();
-		return wrapAccount(account, async (transaction: Transaction) =>
-			signTransactionWithContext(transaction, account.seed),
+		return wrapAccount(
+			account,
+			async (transaction: Transaction, signingContext?: Web3Context<QRLExecutionAPI>) =>
+				signTransactionWithContext(transaction, account.seed, signingContext),
 		);
 	};
 

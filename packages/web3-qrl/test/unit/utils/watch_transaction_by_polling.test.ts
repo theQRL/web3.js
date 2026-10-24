@@ -37,6 +37,10 @@ import { SendSignedTransactionEvents } from '../../../src/types';
 import { sleep } from '../../shared_fixtures/utils';
 
 jest.mock('@theqrl/web3-rpc-methods');
+
+beforeEach(() => {
+	(qrlRpcMethods.call as jest.Mock).mockResolvedValue('0x');
+});
 jest.mock('../../../src/utils/wait_for_transaction_receipt');
 
 const mockBlockData = {
@@ -205,7 +209,9 @@ describe('watchTransactionByPolling', () => {
 			await jest.advanceTimersByTimeAsync(1_000);
 
 			expect(confirmations).toStrictEqual([]);
-			expect(qrlRpcMethods.getBlockByNumber).toHaveBeenCalledTimes(1);
+			expect(qrlRpcMethods.getBlockByNumber).toHaveBeenCalledTimes(
+				MAX_CONSECUTIVE_POLLING_ERRORS,
+			);
 			expect(errorListener).toHaveBeenCalledTimes(1);
 			const reported = errorListener.mock.calls[0][0];
 			expect(
@@ -219,7 +225,9 @@ describe('watchTransactionByPolling', () => {
 			const movedReceipt = {
 				...expectedTransactionReceipt,
 				blockHash: movedBlockHash,
-				blockNumber: numberToHex(BigInt(formattedTransactionReceipt.blockNumber) + BigInt(1)),
+				blockNumber: numberToHex(
+					BigInt(formattedTransactionReceipt.blockNumber) + BigInt(1),
+				),
 			};
 			(qrlRpcMethods.getBlockByNumber as jest.Mock).mockResolvedValue(mockBlockData);
 			(qrlRpcMethods.getTransactionReceipt as jest.Mock).mockResolvedValue(movedReceipt);

@@ -27,7 +27,7 @@ import {
 
 const body = 'ab'.repeat(64);
 
-describe('pass-4 regressions (web3-validator)', () => {
+describe('validation hardening (pass-4 audit)', () => {
 	describe('address prefix (P4-L-44)', () => {
 		it('accepts the capital Q go-qrl requires, in lower, upper and checksum case bodies', () => {
 			expect(isAddressString(`Q${body}`)).toBe(true);

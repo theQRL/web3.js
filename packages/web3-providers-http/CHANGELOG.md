@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Prefer native fetch when available and map truncated bodies and refused redirects to typed transport errors (P5-TR-4).
 - Cancel unread response streams and abort the HTTP transport when rejecting oversized responses, including those rejected by `Content-Length`.
 - Abort the HTTP transport on request timeouts and caller cancellations after headers arrive, preserving caller cancellation reasons and cleaning up abort listeners.
 

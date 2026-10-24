@@ -41,11 +41,11 @@ import {
 } from '../fixtures/validation';
 
 describe('validation', () => {
-	it('keeps transaction fee validation independent of 256-bit ABI aliases', () => {
+	it('rejects transaction fees wider than the 256-bit transaction field', () => {
 		const wide = `0x${(BigInt(1) << BigInt(400)).toString(16)}`;
 		expect(() =>
 			validateFeeMarketGas({ gas: '0x5208', maxFeePerGas: wide, maxPriorityFeePerGas: wide }),
-		).not.toThrow();
+		).toThrow();
 		expect(() =>
 			validateFeeMarketGas({
 				gas: '0x5208',

@@ -34,7 +34,7 @@ import {
 } from '@theqrl/web3-types';
 import { Web3Context } from '@theqrl/web3-core';
 import { getId } from '@theqrl/web3-net';
-import { isNullish, isAddressString } from '@theqrl/web3-validator';
+import { isNullish, isAddressString, isUInt } from '@theqrl/web3-validator';
 import {
 	InvalidTransactionWithSender,
 	InvalidTransactionWithReceiver,
@@ -42,14 +42,11 @@ import {
 	TransactionDataAndInputError,
 	UnableToPopulateNonceError,
 	NodeChainIdMismatchError,
+	InvalidNonceOrChainIdError,
 } from '@theqrl/web3-errors';
 import { seedToAccount } from '@theqrl/web3-qrl-accounts';
 import { bytesToHex, format, toChecksumAddress } from '@theqrl/web3-utils';
-import {
-	getChainId,
-	getTransactionCount,
-	estimateGas,
-} from './rpc_method_wrappers_readers.js';
+import { getChainId, getTransactionCount, estimateGas } from './rpc_method_wrappers_readers.js';
 import { transactionSchema } from '../schemas.js';
 import { InternalTransaction } from '../types.js';
 import { getTransactionGasPricing } from './get_transaction_gas_pricing.js';
@@ -142,6 +139,9 @@ const assertNodeChainId = async (
 	web3Context: Web3Context<QRLExecutionAPI>,
 	txChainId: Numbers,
 ): Promise<void> => {
+	if (!isUInt(txChainId, { bitSize: 256 })) {
+		throw new InvalidNonceOrChainIdError({ nonce: undefined, chainId: txChainId });
+	}
 	if (isNullish(web3Context.currentProvider)) {
 		return;
 	}

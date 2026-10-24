@@ -37,7 +37,7 @@ import {
 	Web3DeferredPromise,
 } from '../../src';
 
-describe('pass-4 regressions (web3-utils)', () => {
+describe('formatting, polling and converter hardening (pass-4 audit)', () => {
 	describe('format (P4-M-6, null preservation, prototype keys)', () => {
 		const blockLikeSchema = {
 			type: 'object',

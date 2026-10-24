@@ -38,12 +38,15 @@ export function checkResultErrors(
 		if (!Array.isArray(object)) {
 			return;
 		}
-		for (const key in object) {
+		// Named properties alias positional entries. Visiting both is exponential for
+		// nested named tuples and reports every deferred error more than once.
+		for (let index = 0; index < object.length; index += 1) {
+			const key = String(index);
 			const childPath = path.slice();
 			childPath.push(key);
 
 			try {
-				checkErrors(childPath, object[key]);
+				checkErrors(childPath, object[index]);
 			} catch (error: any) {
 				errors.push({ path: childPath, error });
 			}
@@ -197,11 +200,7 @@ export class Reader {
 		parent?: Reader,
 	) {
 		// A sub-reader is handed a view on its parent's buffer; `arrayify` would copy it.
-		defineReadOnly(
-			this,
-			'_data',
-			parent && data instanceof Uint8Array ? data : arrayify(data),
-		);
+		defineReadOnly(this, '_data', parent && data instanceof Uint8Array ? data : arrayify(data));
 		defineReadOnly(this, 'wordSize', wordSize || 64);
 		defineReadOnly(this, '_coerceFunc', coerceFunc);
 		defineReadOnly(this, 'allowLoose', allowLoose);

@@ -231,6 +231,11 @@ export class Web3Context<
 		return new this(...(args.reverse() as [...T3, Web3ContextObject]));
 	}
 
+	public setConfig(options: Parameters<Web3Config['setConfig']>[0]) {
+		super.setConfig(options);
+		this._followRpcCallSpecificationFlag();
+	}
+
 	public getContextObject(): Web3ContextObject<API, RegisteredSubs> {
 		return {
 			config: this.config,

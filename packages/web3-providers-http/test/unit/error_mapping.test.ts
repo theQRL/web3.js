@@ -19,6 +19,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 const mockFetch = jest.fn();
 
 jest.setMock('cross-fetch', mockFetch);
+globalThis.fetch = mockFetch;
 
 import { Web3APIPayload, QRLExecutionAPI } from '@theqrl/web3-types';
 import {
@@ -304,7 +305,9 @@ describe('HttpProvider - error mapping and request hygiene', () => {
 		it('still treats a TypeError with a cause as a transport failure (P4-L-23)', async () => {
 			mockFetch.mockRejectedValueOnce(
 				Object.assign(new TypeError('something else'), {
-					cause: Object.assign(new Error('connect ECONNREFUSED'), { code: 'ECONNREFUSED' }),
+					cause: Object.assign(new Error('connect ECONNREFUSED'), {
+						code: 'ECONNREFUSED',
+					}),
 				}),
 			);
 			const provider = new HttpProvider('http://localhost:8545');

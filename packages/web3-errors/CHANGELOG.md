@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Bound remote text in error messages and make diagnostic `toJSON()` values safe for bigint and cyclic nested data while retaining the original fields (P5-TR-5, P5-TR-6).
+
 <!-- EXAMPLE
 
 ## [1.0.0]

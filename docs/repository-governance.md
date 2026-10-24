@@ -26,6 +26,7 @@ The required status checks for `main` must include:
 - `Docs Build`
 - `Dependency Review`
 - `Lint workflow files`
+- `zizmor (Actions security analysis)`
 
 `Package Inspection` is release-relevant: it builds packages, builds browser
 bundles, inspects package metadata, packs tarballs, and smoke-tests the packed

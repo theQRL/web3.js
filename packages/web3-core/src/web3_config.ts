@@ -137,9 +137,6 @@ const isBlockNumberOrTag = (value: unknown): boolean =>
 const isAddressLike = (value: unknown): boolean =>
 	typeof value === 'string' && /^Q[0-9a-fA-F]{128}$/.test(value);
 
-const isNonEmptyString = (value: unknown): boolean =>
-	typeof value === 'string' && value.trim() !== '';
-
 const describeValue = (value: unknown): string => {
 	const text = BaseWeb3Error.convertToString(value);
 	return text.length > 64 ? `${text.slice(0, 64)}...` : text;
@@ -161,7 +158,10 @@ const CONFIG_RULES: {
 		expected: 'a block tag (earliest, latest, pending, safe, finalized) or a block number',
 		test: isBlockNumberOrTag,
 	},
-	transactionSendTimeout: { expected: 'a positive number of milliseconds', test: isPositiveNumber },
+	transactionSendTimeout: {
+		expected: 'a positive number of milliseconds',
+		test: isPositiveNumber,
+	},
 	transactionBlockTimeout: {
 		expected: 'a positive integer number of blocks',
 		test: value => isNonNegativeInteger(value) && (value as number) > 0,
@@ -202,8 +202,11 @@ const CONFIG_RULES: {
 		expected: 'undefined or a non-negative integer (number, bigint, decimal or hex string)',
 		test: value => value === undefined || isUnsignedNumberLike(value),
 	},
-	defaultChain: { expected: 'a non-empty string', test: isNonEmptyString },
-	defaultHardfork: { expected: 'a non-empty string', test: isNonEmptyString },
+	defaultChain: {
+		expected: '"mainnet" (use defaultCommon.customChain for a custom chain)',
+		test: value => value === 'mainnet',
+	},
+	defaultHardfork: { expected: '"zond"', test: value => value === 'zond' },
 	defaultCommon: {
 		expected: 'undefined or a Common object with a customChain',
 		test: value =>
@@ -239,7 +242,26 @@ export abstract class Web3Config
 	extends Web3EventEmitter<{ [Web3ConfigEvent.CONFIG_CHANGE]: Web3ConfigChangeEvent }>
 	implements Web3ConfigOptions
 {
-	public config: Web3ConfigOptions = createDefaultConfig();
+	private _config: Web3ConfigOptions = Web3Config._copyConfig(createDefaultConfig());
+
+	/** A read-only snapshot. Use setters or setConfig so validation and listeners run. */
+	public get config(): Web3ConfigOptions {
+		return this._config;
+	}
+
+	private static _copyConfig(config: Web3ConfigOptions): Web3ConfigOptions {
+		return Object.freeze({
+			...config,
+			enableExperimentalFeatures: Object.freeze({ ...config.enableExperimentalFeatures }),
+			defaultCommon:
+				config.defaultCommon === undefined
+					? undefined
+					: Object.freeze({
+							...config.defaultCommon,
+							customChain: Object.freeze({ ...config.defaultCommon.customChain }),
+						}),
+		});
+	}
 
 	public constructor(options?: Partial<Web3ConfigOptions>) {
 		super();
@@ -253,8 +275,8 @@ export abstract class Web3Config
 	/**
 	 * Applies several options at once.
 	 *
-	 * Every option goes through its setter: the value is validated exactly as a direct
-	 * assignment is, and a `CONFIG_CHANGE` event is emitted per option, so the contexts created
+	 * Every option is validated exactly as a direct assignment is. The whole update is
+	 * committed atomically, and a `CONFIG_CHANGE` event is emitted per option, so the contexts created
 	 * from this one with `use()` or attached to it with `link()` follow (L-39). An unknown option
 	 * and a value of the wrong type or out of range throw an {@link InvalidMethodParamsError}
 	 * naming the option. A `__proto__` key (a parsed JSON document, for example) is ignored
@@ -267,28 +289,53 @@ export abstract class Web3Config
 			);
 		}
 
-		const keys = Object.keys(options);
+		const keys = Object.keys(options).filter(key => key !== '__proto__');
 		for (const key of keys) {
-			if (key === '__proto__') {
-				continue;
-			}
 			if (!CONFIG_KEYS.has(key)) {
 				throw new InvalidMethodParamsError(`Unknown configuration option "${key}"`);
 			}
+			Web3Config._assertValidConfigValue(
+				key as keyof Web3ConfigOptions,
+				options[key as keyof Web3ConfigOptions],
+			);
 		}
-
-		// `transactionPollingInterval` also resets the receipt and confirmation intervals, so it
-		// is applied first: an explicit `transactionReceiptPollingInterval` given in the same
-		// object must win whatever the key order (P4-L-6).
-		const ordered = [
-			...keys.filter(key => key === 'transactionPollingInterval'),
-			...keys.filter(key => key !== 'transactionPollingInterval' && key !== '__proto__'),
-		];
-		for (const key of ordered) {
-			// Assigning through `this` runs the option's setter (validation and CONFIG_CHANGE).
-			(this as unknown as Record<string, unknown>)[key] =
-				options[key as keyof Web3ConfigOptions];
+		const updates = Object.fromEntries(
+			keys.map(key => [key, options[key as keyof Web3ConfigOptions]]),
+		);
+		if (keys.includes('transactionPollingInterval')) {
+			for (const key of [
+				'transactionReceiptPollingInterval',
+				'transactionConfirmationPollingInterval',
+			]) {
+				if (!keys.includes(key)) updates[key] = options.transactionPollingInterval;
+			}
 		}
+		const next = { ...this.config, ...updates } as Web3ConfigOptions;
+		if (
+			next.defaultCommon?.hardfork !== undefined &&
+			next.defaultCommon.hardfork !== next.defaultHardfork
+		) {
+			throw new ConfigHardforkMismatchError(
+				next.defaultHardfork,
+				next.defaultCommon.hardfork,
+			);
+		}
+		if (
+			next.defaultCommon?.baseChain !== undefined &&
+			next.defaultCommon.baseChain !== next.defaultChain
+		) {
+			throw new ConfigChainMismatchError(next.defaultChain, next.defaultCommon.baseChain);
+		}
+		// Commit only after every value and cross-option constraint has passed. Observers
+		// see the entire new configuration while handling any of its change events.
+		const previous = this.config;
+		this._config = Web3Config._copyConfig(next);
+		if ('maxListenersWarningThreshold' in updates)
+			this.setMaxListenerWarningThreshold(next.maxListenersWarningThreshold);
+		const ordered = [...CONFIG_KEYS].filter(key =>
+			Object.prototype.hasOwnProperty.call(updates, key),
+		) as (keyof Web3ConfigOptions)[];
+		for (const key of ordered) this._triggerConfigChange(key, this.config[key], previous[key]);
 	}
 
 	/**
@@ -439,9 +486,6 @@ export abstract class Web3Config
 	 */
 	public set transactionPollingInterval(val) {
 		this._setConfigValue('transactionPollingInterval', val);
-
-		this.transactionReceiptPollingInterval = val;
-		this.transactionConfirmationPollingInterval = val;
 	}
 	/**
 	 * Used over HTTP connections. This option defines the number of seconds Web3 will wait for a receipt which confirms that a transaction was mined by the network. Note: If this method times out, the transaction may still be pending.
@@ -551,17 +595,10 @@ export abstract class Web3Config
 
 	/**
 	 * Will set the defaultChain. Throws an {@link InvalidMethodParamsError} for a value that is
-	 * not a non-empty string, and a {@link ConfigChainMismatchError} when it differs from
+	 * not a supported chain, and a {@link ConfigChainMismatchError} when it differs from
 	 * `defaultCommon.baseChain`.
 	 */
 	public set defaultChain(val) {
-		if (
-			!isNullish(this.config.defaultCommon) &&
-			!isNullish(this.config.defaultCommon.baseChain) &&
-			val !== this.config.defaultCommon.baseChain
-		)
-			throw new ConfigChainMismatchError(this.config.defaultChain, val);
-
 		this._setConfigValue('defaultChain', val);
 	}
 
@@ -577,18 +614,11 @@ export abstract class Web3Config
 
 	/**
 	 * Will set the default hardfork. Throws an {@link InvalidMethodParamsError} for a value that
-	 * is not a non-empty string, and a {@link ConfigHardforkMismatchError} when it differs from
+	 * is not the supported hardfork (zond), and a {@link ConfigHardforkMismatchError} when it differs from
 	 * `defaultCommon.hardfork`.
 	 *
 	 */
 	public set defaultHardfork(val) {
-		if (
-			!isNullish(this.config.defaultCommon) &&
-			!isNullish(this.config.defaultCommon.hardfork) &&
-			val !== this.config.defaultCommon.hardfork
-		)
-			throw new ConfigHardforkMismatchError(this.config.defaultCommon.hardfork, val);
-
 		this._setConfigValue('defaultHardfork', val);
 	}
 
@@ -617,22 +647,6 @@ export abstract class Web3Config
 	 *
 	 */
 	public set defaultCommon(val: Common | undefined) {
-		// validation check if default hardfork is set and matches defaultCommon hardfork
-		if (
-			!isNullish(this.config.defaultHardfork) &&
-			!isNullish(val) &&
-			!isNullish(val.hardfork) &&
-			this.config.defaultHardfork !== val.hardfork
-		)
-			throw new ConfigHardforkMismatchError(this.config.defaultHardfork, val.hardfork);
-		if (
-			!isNullish(this.config.defaultChain) &&
-			!isNullish(val) &&
-			!isNullish(val.baseChain) &&
-			this.config.defaultChain !== val.baseChain
-		)
-			throw new ConfigChainMismatchError(this.config.defaultChain, val.baseChain);
-
 		this._setConfigValue('defaultCommon', val);
 	}
 
@@ -692,9 +706,7 @@ export abstract class Web3Config
 		key: K,
 		value: Web3ConfigOptions[K],
 	) {
-		Web3Config._assertValidConfigValue(key, value);
-		this._triggerConfigChange(key, value);
-		this.config[key] = value;
+		this.setConfig({ [key]: value });
 	}
 
 	private static _assertValidConfigValue(key: keyof Web3ConfigOptions, value: unknown): void {
@@ -711,10 +723,11 @@ export abstract class Web3Config
 	private _triggerConfigChange<K extends keyof Web3ConfigOptions>(
 		config: K,
 		newValue: Web3ConfigOptions[K],
+		oldValue: Web3ConfigOptions[K],
 	) {
 		this.emit(Web3ConfigEvent.CONFIG_CHANGE, {
 			name: config,
-			oldValue: this.config[config],
+			oldValue,
 			newValue,
 		} as ConfigEvent<Web3ConfigOptions>);
 	}

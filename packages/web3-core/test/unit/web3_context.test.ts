@@ -81,12 +81,12 @@ describe('Web3Context', () => {
 		it('should init context with correct configuration', () => {
 			const parent = new Context1({
 				provider: 'http://test/abc',
-				config: { defaultNetworkId: 31337, defaultHardfork: 'my-fork' },
+				config: { defaultNetworkId: 31337, defaultHardfork: 'zond' },
 			});
 			const child = parent.use(Context2);
 
 			expect(child.defaultNetworkId).toBe(31337);
-			expect(child.defaultHardfork).toBe('my-fork');
+			expect(child.defaultHardfork).toBe('zond');
 		});
 
 		it('should change config of child context', () => {
@@ -148,14 +148,14 @@ describe('Web3Context', () => {
 		it('should link context with correct configuration', () => {
 			const parent = new Context1({
 				provider: 'http://test/abc',
-				config: { defaultNetworkId: 31337, defaultHardfork: 'my-fork' },
+				config: { defaultNetworkId: 31337, defaultHardfork: 'zond' },
 			});
 			const child = new Context2('http://test/abc');
 
 			child.link(parent);
 
 			expect(child.defaultNetworkId).toBe(31337);
-			expect(child.defaultHardfork).toBe('my-fork');
+			expect(child.defaultHardfork).toBe('zond');
 		});
 
 		it('should change config of child context', () => {

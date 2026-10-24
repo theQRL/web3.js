@@ -31,7 +31,13 @@ import { ADDR, ADDR2, FakeProvider, addrWord, topicOf, uintWord } from '../fixtu
 
 const abi: ContractAbi = [
 	// A function listed before the event of the same name (L-60).
-	{ type: 'function', name: 'Transfer', inputs: [{ type: 'uint256', name: 'amount' }], outputs: [], stateMutability: 'nonpayable' },
+	{
+		type: 'function',
+		name: 'Transfer',
+		inputs: [{ type: 'uint256', name: 'amount' }],
+		outputs: [],
+		stateMutability: 'nonpayable',
+	},
 	{
 		type: 'event',
 		name: 'Transfer',
@@ -73,7 +79,7 @@ const abi: ContractAbi = [
 ];
 
 const base = {
-	address: ADDR.toLowerCase(),
+	address: `Q${ADDR.slice(1).toLowerCase()}`,
 	blockNumber: '0x1',
 	transactionHash: `0x${'11'.repeat(32)}`,
 	transactionIndex: '0x0',
@@ -107,7 +113,9 @@ const namedLog = {
 };
 
 const eventOf = (name: string) =>
-	abi.find(item => item.type === 'event' && (item as AbiEventFragment).name === name) as AbiEventFragment;
+	abi.find(
+		item => item.type === 'event' && (item as AbiEventFragment).name === name,
+	) as AbiEventFragment;
 
 describe('getPastEvents', () => {
 	let logs: unknown;
@@ -122,7 +130,9 @@ describe('getPastEvents', () => {
 
 	it('resolves the event, not a same-named function, when building the filter (L-60)', async () => {
 		logs = [transferLog];
-		const events = (await contract.getPastEvents('Transfer' as never, { fromBlock: 0 })) as EventLog[];
+		const events = (await contract.getPastEvents('Transfer' as never, {
+			fromBlock: 0,
+		})) as EventLog[];
 
 		const sent = provider.lastCall('qrl_getLogs')?.params[0] as { topics: unknown[] };
 		expect(sent.topics[0]).toBe(transferTopic);
@@ -142,8 +152,14 @@ describe('getPastEvents', () => {
 	});
 
 	it('drops logs of another address or another event signature (I-13)', async () => {
-		logs = [transferLog, { ...transferLog, address: ADDR2.toLowerCase() }, approvalLog];
-		const events = (await contract.getPastEvents('Approval' as never, { fromBlock: 0 })) as EventLog[];
+		logs = [
+			transferLog,
+			{ ...transferLog, address: `Q${ADDR2.slice(1).toLowerCase()}` },
+			approvalLog,
+		];
+		const events = (await contract.getPastEvents('Approval' as never, {
+			fromBlock: 0,
+		})) as EventLog[];
 
 		expect(events).toHaveLength(1);
 		expect(events[0].event).toBe('Approval');
@@ -177,7 +193,10 @@ describe('getPastEvents', () => {
 			contract.getPastEvents('Transfer' as never, { fromBlock: 0, filter: { value: 21 } }),
 		).resolves.toHaveLength(0);
 		await expect(
-			contract.getPastEvents('Transfer' as never, { fromBlock: 0, filter: { value: [21, '0x14'] } }),
+			contract.getPastEvents('Transfer' as never, {
+				fromBlock: 0,
+				filter: { value: [21, '0x14'] },
+			}),
 		).resolves.toHaveLength(1);
 		await expect(
 			contract.getPastEvents('Transfer' as never, {
@@ -189,7 +208,10 @@ describe('getPastEvents', () => {
 			contract.getPastEvents('Transfer' as never, { fromBlock: 0, filter: { to: ADDR } }),
 		).resolves.toHaveLength(0);
 		await expect(
-			contract.getPastEvents('Transfer' as never, { fromBlock: 0, filter: { unknownKey: 1 } }),
+			contract.getPastEvents('Transfer' as never, {
+				fromBlock: 0,
+				filter: { unknownKey: 1 },
+			}),
 		).resolves.toHaveLength(0);
 	});
 
@@ -199,7 +221,10 @@ describe('getPastEvents', () => {
 			contract.getPastEvents('Named' as never, { fromBlock: 0, filter: { tag: 'hello' } }),
 		).resolves.toHaveLength(1);
 		await expect(
-			contract.getPastEvents('allEvents', { fromBlock: 0, filter: { tag: ['world', 'hello'] } }),
+			contract.getPastEvents('allEvents', {
+				fromBlock: 0,
+				filter: { tag: ['world', 'hello'] },
+			}),
 		).resolves.toHaveLength(1);
 		await expect(
 			contract.getPastEvents('Named' as never, { fromBlock: 0, filter: { tag: 'world' } }),
@@ -209,7 +234,10 @@ describe('getPastEvents', () => {
 	it('skips a nullish client-side filter value, the wildcard it was sent as (F-9)', async () => {
 		logs = [transferLog];
 		await expect(
-			contract.getPastEvents('Transfer' as never, { fromBlock: 0, filter: { from: undefined } }),
+			contract.getPastEvents('Transfer' as never, {
+				fromBlock: 0,
+				filter: { from: undefined },
+			}),
 		).resolves.toHaveLength(1);
 
 		const sent = provider.lastCall('qrl_getLogs')?.params[0] as { topics: unknown[] };
@@ -278,13 +306,13 @@ describe('decodeEventABI on malformed logs (L-26)', () => {
 	const transfer = { ...eventOf('Transfer'), signature: transferTopic.slice(0, 66) };
 
 	it('rejects a log that is not an object', () => {
-		// eslint-disable-next-line no-null/no-null
-		expect(() => decodeEventABI(transfer, null as unknown as LogsInput, [transfer] as never)).toThrow(
-			ResponseError,
-		);
-		expect(() => decodeEventABI(transfer, 'abc' as unknown as LogsInput, [transfer] as never)).toThrow(
-			ResponseError,
-		);
+		expect(() =>
+			// eslint-disable-next-line no-null/no-null -- exercise a malformed JSON-RPC log
+			decodeEventABI(transfer, null as unknown as LogsInput, [transfer] as never),
+		).toThrow(ResponseError);
+		expect(() =>
+			decodeEventABI(transfer, 'abc' as unknown as LogsInput, [transfer] as never),
+		).toThrow(ResponseError);
 	});
 
 	it('rejects topics that are not an array', () => {

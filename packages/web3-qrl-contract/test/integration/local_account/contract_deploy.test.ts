@@ -44,6 +44,21 @@ describe('contract', () => {
 			};
 		});
 
+		it('wallet-signs a creation when deploying from an addressed instance', async () => {
+			const first = await contract.deploy(deployOptions).send(sendOptions);
+			const firstAddress = first.options.address;
+			const deployment = first.deploy({
+				data: GreeterBytecode,
+				arguments: ['Second greeting'],
+			});
+			expect(await deployment.estimateGas(sendOptions)).toBeGreaterThan(BigInt(0));
+			const second = await deployment.send(sendOptions);
+			expect(second.options.address).not.toBe(firstAddress);
+			expect(first.options.address).toBe(firstAddress);
+			await expect(first.methods.greet().call()).resolves.toBe('My Greeting');
+			await expect(second.methods.greet().call()).resolves.toBe('Second greeting');
+		});
+
 		it.each(['0x2'])('should emit the "sending" event', async txType => {
 			const handler = jest.fn();
 			const acc = await createLocalAccount(web3);

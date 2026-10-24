@@ -43,8 +43,12 @@ const abi: ContractAbi = [
 ];
 
 const log = {
-	address: ADDR.toLowerCase(),
-	topics: [topicOf('Transfer(address,address,uint256)'), `0x${addrWord(ADDR)}`, `0x${addrWord(ADDR)}`],
+	address: `Q${ADDR.slice(1).toLowerCase()}`,
+	topics: [
+		topicOf('Transfer(address,address,uint256)'),
+		`0x${addrWord(ADDR)}`,
+		`0x${addrWord(ADDR)}`,
+	],
 	data: `0x${uintWord(5)}`,
 	blockNumber: '0x1',
 	transactionHash: `0x${'11'.repeat(32)}`,
@@ -71,7 +75,8 @@ describe('contract event subscriptions (M-7e)', () => {
 
 	it('does not emit error without a listener and reports the failure on subscribed (M-7e)', async () => {
 		const provider = new FakeProvider(method => {
-			if (method === 'qrl_subscribe') return new RpcErrorReply(-32000, 'subscription limit reached');
+			if (method === 'qrl_subscribe')
+				return new RpcErrorReply(-32000, 'subscription limit reached');
 			return undefined;
 		}, true);
 		const contract = new Contract(abi, ADDR, { provider: provider.asProvider() });
@@ -88,7 +93,8 @@ describe('contract event subscriptions (M-7e)', () => {
 
 	it('emits the failure on error when a listener is attached (M-7e)', async () => {
 		const provider = new FakeProvider(method => {
-			if (method === 'qrl_subscribe') return new RpcErrorReply(-32000, 'subscription limit reached');
+			if (method === 'qrl_subscribe')
+				return new RpcErrorReply(-32000, 'subscription limit reached');
 			return undefined;
 		}, true);
 		const contract = new Contract(abi, ADDR, { provider: provider.asProvider() });
@@ -107,7 +113,10 @@ describe('contract event subscriptions (M-7e)', () => {
 	});
 
 	it('resolves subscribed with the subscription id and delivers notifications', async () => {
-		const provider = new FakeProvider(method => (method === 'qrl_subscribe' ? '0x1' : undefined), true);
+		const provider = new FakeProvider(
+			method => (method === 'qrl_subscribe' ? '0x1' : undefined),
+			true,
+		);
 		const contract = new Contract(abi, ADDR, { provider: provider.asProvider() });
 
 		const sub = contract.events.Transfer();
@@ -125,7 +134,10 @@ describe('contract event subscriptions (M-7e)', () => {
 	});
 
 	it('starts the subscription on the next microtask so listeners can be attached first (M-7e)', async () => {
-		const provider = new FakeProvider(method => (method === 'qrl_subscribe' ? '0x1' : undefined), true);
+		const provider = new FakeProvider(
+			method => (method === 'qrl_subscribe' ? '0x1' : undefined),
+			true,
+		);
 		const contract = new Contract(abi, ADDR, { provider: provider.asProvider() });
 
 		const sub = contract.events.Transfer();
@@ -193,7 +205,7 @@ describe('contract event subscriptions (M-7e)', () => {
 });
 
 describe('live subscription log ownership and removed logs (P4-L-25)', () => {
-	const foreignAddressLog = { ...log, address: ADDR2.toLowerCase() };
+	const foreignAddressLog = { ...log, address: `Q${ADDR2.slice(1).toLowerCase()}` };
 	const foreignTopicLog = {
 		...log,
 		topics: [topicOf('Foo(address,address,uint256)'), log.topics[1], log.topics[2]],

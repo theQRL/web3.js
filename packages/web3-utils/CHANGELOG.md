@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Serialize asynchronous interval checks; reject explicit zero/NaN deferred timeouts; correlate oversized socket messages by envelope IDs and emit connect only after a successful current-connection handshake (P5-CORE-11/12, P5-TR-1/2).
 - Pad boolean and fixed-size byte array elements to 64-byte words in packed encoding, matching Hyperion. This corrects the output of `encodePacked`, `hyperionSha3`, and `hyperionSha3Raw` for affected arrays.
 
 <!-- EXAMPLE

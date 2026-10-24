@@ -15,16 +15,22 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/* eslint-disable no-null/no-null -- validate JSON-RPC null fields */
 import { BaseWeb3Error, ERR_INVALID_RESPONSE, InvalidResponseError } from '@theqrl/web3-errors';
 import { Bytes, HexString, Numbers } from '@theqrl/web3-types';
-import { isBytes, isNullish, isUInt, ValidInputTypes } from '@theqrl/web3-validator';
+import {
+	isBytes,
+	isNullish,
+	isUInt,
+	isAddressString,
+	ValidInputTypes,
+} from '@theqrl/web3-validator';
 import { isHash32 } from './hex_guards.js';
 
 /** Longest excerpt of a malformed reply that is quoted in the error message. */
 const MAX_REPLY_EXCERPT_LENGTH = 128;
 
 const describeReply = (reply: unknown): string => {
-	// eslint-disable-next-line no-null/no-null
 	const rendered = reply === null ? 'null' : BaseWeb3Error.convertToString(reply);
 	return rendered.length > MAX_REPLY_EXCERPT_LENGTH
 		? `${rendered.slice(0, MAX_REPLY_EXCERPT_LENGTH)}... [truncated]`
@@ -115,4 +121,88 @@ export const expectTransactionHashReply = (
 		);
 	}
 	return localHash;
+};
+
+/** Formatting does not validate RPC results. Check known fields before conversion. */
+export interface RpcResultSchema {
+	type?: string;
+	format?: string;
+	properties?: Record<string, RpcResultSchema>;
+	items?: RpcResultSchema;
+	oneOf?: RpcResultSchema[];
+}
+export const assertRpcResult = (
+	method: string,
+	value: unknown,
+	schema: RpcResultSchema,
+	path = 'result',
+): void => {
+	const fail = () => {
+		throw invalidResponseError(
+			method,
+			`a valid ${path} (${schema.format ?? schema.type ?? 'schema'})`,
+			value,
+		);
+	};
+	if (schema.oneOf) {
+		for (const option of schema.oneOf) {
+			try {
+				assertRpcResult(method, value, option, path);
+				return;
+			} catch {
+				/* Try the next permitted shape. */
+			}
+		}
+		fail();
+	}
+	if (schema.type === 'null') {
+		if (value !== null) fail();
+		return;
+	}
+	if (schema.type === 'object') {
+		if (value === null || typeof value !== 'object' || Array.isArray(value)) fail();
+		for (const [key, child] of Object.entries(schema.properties ?? {})) {
+			const field = (value as Record<string, unknown>)[key];
+			if (field === undefined) continue;
+			// Pending transactions/blocks and contract creation carry these null fields.
+			if (
+				field === null &&
+				([
+					'to',
+					'contractAddress',
+					'blockNumber',
+					'blockHash',
+					'hash',
+					'number',
+					'transactionIndex',
+				].includes(key) ||
+					(key === 'miner' && (value as Record<string, unknown>).hash === null))
+			)
+				continue;
+			assertRpcResult(method, field, child, `${path}.${key}`);
+		}
+	} else if (schema.type === 'array') {
+		if (!Array.isArray(value)) fail();
+		for (const item of value as unknown[])
+			assertRpcResult(method, item, schema.items ?? {}, `${path}[]`);
+	} else if (schema.type === 'number') {
+		if (typeof value !== 'number' || !Number.isFinite(value)) fail();
+	} else if (schema.type === 'string' && typeof value !== 'string') fail();
+	if (schema.format === 'uint') expectQuantityReply(method, value);
+	else if (schema.format?.startsWith('bytes')) {
+		expectBytesReply(method, value);
+		const width = Number(schema.format.slice(5));
+		if (
+			width &&
+			(typeof value === 'string' ? (value.length - 2) / 2 : (value as Uint8Array).length) !==
+				width
+		)
+			fail();
+	} else if (
+		schema.format === 'address' &&
+		(typeof value !== 'string' || !isAddressString(value))
+	)
+		fail();
+	else if (schema.format === 'bool' && typeof value !== 'boolean') fail();
+	else if (schema.format === 'string' && typeof value !== 'string') fail();
 };

@@ -96,6 +96,9 @@ const assertMethodCallHasAddress = (
 	options: { to?: Address } | undefined,
 	contractOptions: ContractOptions,
 ): void => {
+	if (isDeployment(abi) && !isNullish(options?.to)) {
+		throw new Web3ContractError('A contract deployment cannot specify a "to" address');
+	}
 	if (!isDeployment(abi) && !options?.to && !contractOptions.address) {
 		throw new Web3ContractError(
 			'Contract address not specified: a method call needs a "to" address, otherwise it would be sent as a contract creation',
@@ -131,7 +134,7 @@ export const getSendTxParams = ({
 	}
 	let txParams = mergeDeep(
 		{
-			to: contractOptions.address,
+			to: isDeployment(abi) ? undefined : contractOptions.address,
 			gas: contractOptions.gas,
 			from: contractOptions.from,
 			input: contractOptions.input,
@@ -200,7 +203,7 @@ export const getEstimateGasParams = ({
 	assertMethodCallHasAddress(abi, options, contractOptions);
 	let txParams = mergeDeep(
 		{
-			to: contractOptions.address,
+			to: isDeployment(abi) ? undefined : contractOptions.address,
 			gas: contractOptions.gas,
 			maxFeePerGas: contractOptions.maxFeePerGas,
 			maxPriorityFeePerGas: contractOptions.maxPriorityFeePerGas,
@@ -218,11 +221,26 @@ export const getEstimateGasParams = ({
 };
 
 /**
+ * The keys that identify a {@link Web3ContractContext} (a `Web3Context` instance or its
+ * `getContextObject()`).
+ */
+const CONTRACT_CONTEXT_KEYS = [
+	'config',
+	'provider',
+	'requestManager',
+	'subscriptionManager',
+	'registeredSubscriptions',
+	'accountProvider',
+	'wallet',
+	'providers',
+];
+
+/**
  * Whether `options` is a {@link ContractInitOptions} object: one carrying at least one of the
  * init-option keys. `address` is accepted there as an alternative to the positional address
  * argument (P4-L-28). The JSON interface is always the first constructor argument, so a
- * `jsonInterface` member alone does not make an object init options (it used to be a recognised
- * key that was then ignored).
+ * `jsonInterface` member alone does not make an object init options. A provider-only object
+ * is an init option; additional context keys identify an inherited contract context.
  */
 export const isContractInitOptions = (options: unknown): options is ContractInitOptions =>
 	typeof options === 'object' &&
@@ -238,7 +256,15 @@ export const isContractInitOptions = (options: unknown): options is ContractInit
 		'address',
 		'syncWithContext',
 		'dataInputFill',
-	].some(key => key in options);
+		'provider',
+	].some(
+		key =>
+			key in options &&
+			(key !== 'provider' ||
+				!CONTRACT_CONTEXT_KEYS.some(
+					contextKey => contextKey !== 'provider' && contextKey in options,
+				)),
+	);
 
 /**
  * Whether a log the node returned belongs to the expected address and event (I-13): a log
@@ -273,21 +299,6 @@ export const isLogOf = (
 	}
 	return true;
 };
-
-/**
- * The keys that identify a {@link Web3ContractContext} (a `Web3Context` instance or its
- * `getContextObject()`).
- */
-const CONTRACT_CONTEXT_KEYS = [
-	'config',
-	'provider',
-	'requestManager',
-	'subscriptionManager',
-	'registeredSubscriptions',
-	'accountProvider',
-	'wallet',
-	'providers',
-];
 
 /**
  * Whether `options` is a context the contract should attach to.

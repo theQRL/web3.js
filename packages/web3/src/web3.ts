@@ -34,11 +34,7 @@ import {
 	QRLExecutionAPI,
 	SupportedProviders,
 } from '@theqrl/web3-types';
-import {
-	InvalidMethodParamsError,
-	InvalidProviderError,
-	ProviderError,
-} from '@theqrl/web3-errors';
+import { InvalidMethodParamsError, InvalidProviderError, ProviderError } from '@theqrl/web3-errors';
 import abi from './abi.js';
 import { initAccountsForContext } from './accounts.js';
 import { Web3QRLInterface } from './types.js';
@@ -121,7 +117,7 @@ export class Web3<
 		// A wallet handed in through the init options is kept and shared with the accounts
 		// helper, so `web3.wallet` and `web3.qrl.accounts.wallet` are one object; a fresh empty
 		// wallet is created only when none was supplied (L-41).
-		const accounts = initAccountsForContext(this, this._wallet);
+		const accounts = initAccountsForContext(() => this.qrl ?? this, this._wallet);
 
 		// Init protected properties
 		this._wallet = accounts.wallet;
@@ -188,7 +184,7 @@ export class Web3<
 		// QRL Module
 		this.qrl = Object.assign(qrl, {
 			// QRNS module
-			qrns: self.use(QRNS, registryAddresses.main), // registry address defaults to main network
+			qrns: self.use(QRNS, registryAddresses.main), // no implicit mainnet registry; configure a verified deployment
 			net: self.use(Net),
 
 			// Contract helper and module

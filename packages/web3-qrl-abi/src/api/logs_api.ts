@@ -27,7 +27,7 @@ const HEX_DATA = /^0x[0-9a-f]*$/i;
 // `Object.prototype` (`__proto__` would re-parent the object, `toString` would shadow the
 // method); such a parameter stays reachable through its position only (L-34).
 const isReservedName = (name: string): boolean =>
-	name === '__length__' || name in Object.prototype;
+	name === '__length__' || /^(0|[1-9][0-9]*)$/.test(name) || name in Object.prototype;
 
 const isIndexedHash = (inputType: string) =>
 	inputType === 'string' ||
@@ -131,9 +131,7 @@ export const decodeLog = <ReturnType extends DecodedParams>(
 		);
 	}
 	const decodedNonIndexedInputs: DecodedParams =
-		nonIndexed.length > 0
-			? decodeParametersWith(nonIndexed, dataHex, true)
-			: { __length__: 0 };
+		nonIndexed.length > 0 ? decodeParametersWith(nonIndexed, dataHex, true) : { __length__: 0 };
 
 	// If topics are more than indexed inputs, that means first topic is the event signature
 	const indexedCount = Object.keys(indexedInputs).length;

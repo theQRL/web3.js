@@ -56,6 +56,10 @@ import {
 import { transactionReceiptSchema } from '../../../src/schemas';
 
 jest.mock('@theqrl/web3-rpc-methods');
+
+beforeEach(() => {
+	(qrlRpcMethods.call as jest.Mock).mockResolvedValue('0x');
+});
 jest.mock('../../../src/utils/wait_for_transaction_receipt');
 jest.mock('../../../src/utils/watch_transaction_for_confirmations');
 
@@ -659,9 +663,9 @@ describe('sendTransaction', () => {
 
 		it('reports any failure to an attached error listener as a typed error and marks the rejection handled (M-7b)', async () => {
 			const failure = new TypeError('malformed reply');
-			(WaitForTransactionReceipt.waitForTransactionReceipt as jest.Mock).mockRejectedValueOnce(
-				failure,
-			);
+			(
+				WaitForTransactionReceipt.waitForTransactionReceipt as jest.Mock
+			).mockRejectedValueOnce(failure);
 
 			// Event-only consumer, as documented: nothing awaits or catches the PromiEvent.
 			const promiEvent = sendTransaction(
@@ -799,7 +803,9 @@ describe('sendTransaction', () => {
 				(
 					WatchTransactionForConfirmations.watchTransactionForConfirmations as jest.Mock
 				).mockImplementationOnce(() => {
-					throw new TransactionReceiptMissingBlockNumberError({ receipt: receipt as never });
+					throw new TransactionReceiptMissingBlockNumberError({
+						receipt: receipt as never,
+					});
 				});
 
 				const promiEvent = sendTransaction(
@@ -940,9 +946,9 @@ describe('sendTransaction', () => {
 				expectedTransactionReceipt,
 				DEFAULT_RETURN_FORMAT,
 			);
-			(WaitForTransactionReceipt.waitForTransactionReceipt as jest.Mock).mockResolvedValueOnce(
-				expectedTransactionReceipt,
-			);
+			(
+				WaitForTransactionReceipt.waitForTransactionReceipt as jest.Mock
+			).mockResolvedValueOnce(expectedTransactionReceipt);
 			const promiEvent = sendTransaction(
 				web3Context,
 				inputTransaction,
@@ -960,9 +966,9 @@ describe('sendTransaction', () => {
 
 		it('reports a throwing transactionHash listener to the error listener and still resolves', async () => {
 			const boom = new Error('transactionHash listener boom');
-			(WaitForTransactionReceipt.waitForTransactionReceipt as jest.Mock).mockResolvedValueOnce(
-				expectedTransactionReceipt,
-			);
+			(
+				WaitForTransactionReceipt.waitForTransactionReceipt as jest.Mock
+			).mockResolvedValueOnce(expectedTransactionReceipt);
 			const promiEvent = sendTransaction(
 				web3Context,
 				inputTransaction,
@@ -1003,9 +1009,9 @@ describe('sendTransaction', () => {
 		const options = { ignoreGasPricing: true, checkRevertBeforeSending: false };
 
 		it('accepts `to: null` as "no receiver" and sends the transaction without a `to`', async () => {
-			(WaitForTransactionReceipt.waitForTransactionReceipt as jest.Mock).mockResolvedValueOnce(
-				expectedTransactionReceipt,
-			);
+			(
+				WaitForTransactionReceipt.waitForTransactionReceipt as jest.Mock
+			).mockResolvedValueOnce(expectedTransactionReceipt);
 
 			await expect(
 				sendTransaction(

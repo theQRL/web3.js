@@ -127,14 +127,18 @@ export async function getRevertReason<
 	if (isNullish(blockNumber)) {
 		return simulate(web3Context.defaultBlock);
 	}
-	// The reason of a mined-and-reverted transaction is looked up at the block that included it,
-	// not at `defaultBlock`: the state the transaction ran against is the one that explains the
-	// revert, and at `latest` the call may succeed or fail for an unrelated reason. A node that
-	// has pruned that block's state answers with an error instead of a revert; the lookup then
-	// falls back to `defaultBlock`, as before the block was pinned.
+	// The caller may supply N-1 as a pre-state approximation for a mined receipt.
+	// Only missing/pruned historical state warrants a fallback to defaultBlock.
 	try {
 		return await simulate(blockNumber);
-	} catch {
+	} catch (error) {
+		const message = error instanceof Error ? error.message : '';
+		if (
+			!/missing trie node|(?:historical|pruned|missing|unavailable).*state|state.*(?:unavailable|not available|pruned|not found)/i.test(
+				message,
+			)
+		)
+			throw error;
 		return simulate(web3Context.defaultBlock);
 	}
 }

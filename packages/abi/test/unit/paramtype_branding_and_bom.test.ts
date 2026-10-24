@@ -18,7 +18,7 @@ import { defaultAbiCoder, Fragment, ParamType } from '../../src/index.js';
 
 const word = (hex: string) => hex.padStart(128, '0');
 
-describe('pass-4 regressions (@theqrl/abi)', () => {
+describe('ParamType branding and BOM decoding (pass-4 audit)', () => {
 	describe('ParamType / Fragment branding (P4-M-2)', () => {
 		it('does not accept a JSON object that merely carries the old duck-typing flags', () => {
 			expect(ParamType.isParamType({ type: 'uint256', _isParamType: true })).toBe(false);

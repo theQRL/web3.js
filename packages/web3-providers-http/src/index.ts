@@ -284,12 +284,15 @@ export default class HttpProvider<
 			errno?: unknown;
 			cause?: { code?: unknown; message?: unknown };
 		};
-		if (typeof type === 'string' && REDIRECT_ERROR_TYPES.has(type)) {
+		if (
+			(typeof type === 'string' && REDIRECT_ERROR_TYPES.has(type)) ||
+			cause?.message === 'unexpected redirect'
+		) {
 			return new ConnectionError(
 				`CONNECTION ERROR: the JSON-RPC endpoint ${this.endpoint} answered with a redirect${
-					type === 'no-redirect'
+					type === 'no-redirect' || cause?.message === 'unexpected redirect'
 						? ', which is refused unless providerOptions.redirect is set to "follow"'
-						: ` that could not be followed (${type})`
+						: ` that could not be followed (${String(type)})`
 				}.`,
 			);
 		}
@@ -611,8 +614,12 @@ export default class HttpProvider<
 			requestComposition.signal.addEventListener('abort', abortRequest, { once: true });
 		}
 
+		let headersReceived = false;
 		try {
-			const response = await fetch(this.clientUrl, {
+			// Modern Node's native fetch reports truncated bodies reliably. Keep the
+			// ponyfill for runtimes without a native implementation.
+			const fetchRequest = globalThis.fetch ?? fetch;
+			const response = await fetchRequest(this.clientUrl, {
 				...fetchInit,
 				// A JSON-RPC endpoint has no legitimate reason to redirect. Following one would
 				// re-send the request body and every custom header (API keys included) to
@@ -627,6 +634,7 @@ export default class HttpProvider<
 
 			// Headers are in: the connect deadline has been met, so retire it. From here the
 			// body read is bounded by the request deadline alone.
+			headersReceived = true;
 			headerComposition.dispose();
 
 			if (!response.ok) {
@@ -652,6 +660,7 @@ export default class HttpProvider<
 			if (requestComposition.signal.aborted) throw requestComposition.signal.reason;
 			// Our own typed errors (HTTP status, unparseable body) are already precise.
 			if (error instanceof BaseWeb3Error) throw error;
+			if (headersReceived) throw this.wrapTransportError(error);
 			// Anything the transport threw embeds the full URL in its message (L-48).
 			const errorName = (error as { name?: unknown } | undefined)?.name;
 			if (errorName === 'TypeError') {

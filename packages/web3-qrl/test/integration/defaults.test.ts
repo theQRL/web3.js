@@ -16,6 +16,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import { Contract } from '@theqrl/web3-qrl-contract';
 import { hexToNumber, numberToHex } from '@theqrl/web3-utils';
+import { InvalidMethodParamsError } from '@theqrl/web3-errors';
 import {
 	TransactionBuilder,
 	TransactionTypeParser,
@@ -32,7 +33,6 @@ import {
 } from '@theqrl/web3-types';
 import {
 	detectTransactionType,
-	prepareTransactionForSigning,
 	SendTransactionEvents,
 	transactionBuilder,
 	Web3QRL,
@@ -674,19 +674,19 @@ describe('defaults', () => {
 			expect(web3QRL.defaultChain).toBe('mainnet');
 
 			// after set
-			web3QRL.setConfig({
-				defaultChain: 'ropsten',
-			});
-			expect(web3QRL.defaultChain).toBe('ropsten');
+			expect(() => web3QRL.setConfig({ defaultChain: 'ropsten' })).toThrow(
+				InvalidMethodParamsError,
+			);
+			expect(web3QRL.defaultChain).toBe('mainnet');
 
 			// set by create new instance
 			qrl2 = new Web3QRL({
 				provider: web3QRL.provider,
 				config: {
-					defaultChain: 'rinkeby',
+					defaultChain: 'mainnet',
 				},
 			});
-			expect(qrl2.defaultChain).toBe('rinkeby');
+			expect(qrl2.defaultChain).toBe('mainnet');
 			const res = await defaultTransactionBuilder({
 				transaction: {
 					from: 'QdBb14ea952DfAedB0788Beae4fD92393f215CAa2c115ac22bc68805E171cfadE76CFF540c1ADC7B13017E4c66b6109135f25ff73412650da569E458E4A43800b',
@@ -696,44 +696,26 @@ describe('defaults', () => {
 				},
 				web3Context: qrl2 as Web3Context,
 			});
-			expect(res.chain).toBe('rinkeby');
+			expect(res.chain).toBe('mainnet');
 		});
-		it('defaultHardfork', async () => {
+		it('defaultHardfork rejects unsupported forks at configuration time', () => {
 			// default
 			expect(web3QRL.defaultHardfork).toBe('zond');
 
 			// after set
-			web3QRL.setConfig({
-				defaultHardfork: 'dao',
-			});
-			expect(web3QRL.defaultHardfork).toBe('dao');
+			expect(() => web3QRL.setConfig({ defaultHardfork: 'dao' })).toThrow(
+				InvalidMethodParamsError,
+			);
+			expect(web3QRL.defaultHardfork).toBe('zond');
 
 			// set by create new instance
-			qrl2 = new Web3QRL({
-				provider: web3QRL.provider,
-				config: {
-					defaultHardfork: 'istanbul',
-				},
-			});
-			expect(qrl2.defaultHardfork).toBe('istanbul');
-
-			await expect(
-				prepareTransactionForSigning(
-					{
-						from: 'QdBb14ea952DfAedB0788Beae4fD92393f215CAa2c115ac22bc68805E171cfadE76CFF540c1ADC7B13017E4c66b6109135f25ff73412650da569E458E4A43800b',
-						to: 'QFcAc5a47dc5363999c60BC3b4288720E870a423A1383F00cFaa9E1135a60E43eA809688917A789EE0BDd6828dB2dcd848Bc632c28023794f8187af3Bac5DB018',
-						value: '0x174876e800',
-						gas: '0x5208',
-						maxFeePerGas: '0x4a817c800',
-						maxPriorityFeePerGas: '0x1c9c380',
-						data: '0x00',
-						nonce: '0x4',
-						chainId: await web3QRL.getChainId(),
-						gasLimit: '0x5208',
-					},
-					qrl2,
-				),
-			).rejects.toMatchObject({ name: 'Web3ValidatorError' });
+			expect(
+				() =>
+					new Web3QRL({
+						provider: web3QRL.provider,
+						config: { defaultHardfork: 'istanbul' },
+					}),
+			).toThrow(InvalidMethodParamsError);
 		});
 		it('defaultCommon', () => {
 			// default
@@ -753,7 +735,9 @@ describe('defaults', () => {
 			web3QRL.setConfig({
 				defaultCommon: common,
 			});
-			expect(web3QRL.defaultCommon).toBe(common);
+			expect(web3QRL.defaultCommon).toEqual(common);
+			expect(web3QRL.defaultCommon).not.toBe(common);
+			expect(Object.isFrozen(web3QRL.defaultCommon?.customChain)).toBe(true);
 
 			// set by create new instance
 			qrl2 = new Web3QRL({
@@ -761,7 +745,8 @@ describe('defaults', () => {
 					defaultCommon: common,
 				},
 			});
-			expect(qrl2.defaultCommon).toBe(common);
+			expect(qrl2.defaultCommon).toEqual(common);
+			expect(qrl2.defaultCommon).not.toBe(common);
 		});
 		it('defaultTransactionType', () => {
 			// default

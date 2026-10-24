@@ -311,7 +311,7 @@ export const fromPlanckInvalidData: [[any, any], string][] = [
 	[['123.34', 'kplanck'], 'Invalid value given "123.34". Error: can not parse as number data.'],
 	// Using "null" value intentionally for validation
 	// eslint-disable-next-line no-null/no-null
-	[[null, 'kplanck'], 'Invalid value given "undefined". Error: can not parse as number data.'],
+	[[null, 'kplanck'], 'Invalid value given "null". Error: can not parse as number data.'],
 	[
 		[undefined, 'kplanck'],
 		'Invalid value given "undefined". Error: can not parse as number data.',

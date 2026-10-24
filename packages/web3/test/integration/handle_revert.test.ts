@@ -32,43 +32,25 @@ Error.stackTraceLimit = Infinity;
 describe('qrl', () => {
 	let web3: Web3;
 	let accounts: string[] = [];
-	let clientUrl: string;
 
 	let contract: Contract<typeof BasicAbi>;
 	let deployOptions: Record<string, unknown>;
 	let sendOptions: Record<string, unknown>;
 
 	beforeEach(async () => {
-		clientUrl = getSystemTestProviderUrl();
+		const clientUrl = getSystemTestProviderUrl();
 		const acc1 = await createTempAccount();
 		const acc2 = await createTempAccount();
 		accounts = [acc1.address, acc2.address];
-		web3 = new Web3(getSystemTestProvider());
-		if (isWs) {
-			web3 = new Web3(
-				new WebSocketProvider(
+		const provider = isWs
+			? new WebSocketProvider(
 					clientUrl,
 					{},
 					{ delay: 1, autoReconnect: false, maxAttempts: 1 },
-				),
-			);
-		} else {
-			web3 = new Web3(clientUrl);
-		}
-
-		if (isWs) {
-			contract = new web3.qrl.Contract(BasicAbi, undefined, {
-				provider: new WebSocketProvider(
-					clientUrl,
-					{},
-					{ delay: 1, autoReconnect: false, maxAttempts: 1 },
-				),
-			});
-		} else {
-			contract = new web3.qrl.Contract(BasicAbi, undefined, {
-				provider: clientUrl,
-			});
-		}
+				)
+			: getSystemTestProvider();
+		web3 = new Web3(provider);
+		contract = new web3.qrl.Contract(BasicAbi);
 
 		deployOptions = {
 			data: BasicBytecode,
@@ -79,7 +61,7 @@ describe('qrl', () => {
 
 		contract = await contract.deploy(deployOptions).send(sendOptions);
 	});
-	afterAll(async () => {
+	afterEach(async () => {
 		await closeOpenConnection(web3);
 		await closeOpenConnection(contract);
 	});

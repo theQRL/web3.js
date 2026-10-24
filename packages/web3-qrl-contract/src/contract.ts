@@ -102,6 +102,7 @@ import {
 	encodeIndexedTopic,
 	encodeMethodABI,
 	isIndexedHashType,
+	isOrList,
 } from './encoding.js';
 import { LogsSubscription } from './log_subscription.js';
 import {
@@ -141,20 +142,20 @@ export type ContractOverloadedMethodInputs<AbiArr extends ReadonlyArray<unknown>
 	AbiArr extends readonly []
 		? undefined
 		: AbiArr extends readonly [infer A, ...infer R]
-		? A extends AbiFunctionFragment
-			? ContractMethodInputParameters<A['inputs']> | ContractOverloadedMethodInputs<R>
+			? A extends AbiFunctionFragment
+				? ContractMethodInputParameters<A['inputs']> | ContractOverloadedMethodInputs<R>
+				: undefined
 			: undefined
-		: undefined
 >;
 
 export type ContractOverloadedMethodOutputs<AbiArr extends ReadonlyArray<unknown>> = NonNullable<
 	AbiArr extends readonly []
 		? undefined
 		: AbiArr extends readonly [infer A, ...infer R]
-		? A extends AbiFunctionFragment
-			? ContractMethodOutputParameters<A['outputs']> | ContractOverloadedMethodOutputs<R>
+			? A extends AbiFunctionFragment
+				? ContractMethodOutputParameters<A['outputs']> | ContractOverloadedMethodOutputs<R>
+				: undefined
 			: undefined
-		: undefined
 >;
 
 /**
@@ -163,8 +164,10 @@ export type ContractOverloadedMethodOutputs<AbiArr extends ReadonlyArray<unknown
  * know, so they accept any argument list (`ContractBoundMethod<any>` used to accept none, which
  * made the documented overload keys unusable from TypeScript, H-4).
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- the arguments depend on the named overload
-export type ContractBoundMethodBySignature = (...args: any[]) => PayableMethodObject<any, any> | NonPayableMethodObject<any, any>;
+
+export type ContractBoundMethodBySignature = (
+	...args: any[]
+) => PayableMethodObject<any, any> | NonPayableMethodObject<any, any>;
 
 // To avoid circular dependency between types and encoding, declared these types here.
 export type ContractMethodsInterface<Abi extends ContractAbi> = {
@@ -400,8 +403,8 @@ export class Contract<Abi extends ContractAbi>
 		const options = isContractInitOptions(addressOrOptionsOrContext)
 			? addressOrOptionsOrContext
 			: isContractInitOptions(optionsOrContextOrReturnFormat)
-			? optionsOrContextOrReturnFormat
-			: undefined;
+				? optionsOrContextOrReturnFormat
+				: undefined;
 
 		// Only an object that carries a context key is a context: an empty object (what
 		// `new web3.qrl.Contract(abi, address)` used to pass as the options) must not hide the
@@ -431,6 +434,15 @@ export class Contract<Abi extends ContractAbi>
 		super({
 			...contextObject,
 			provider,
+			// An explicit override gets its own managers; changing it must not repoint the
+			// parent's provider. Keep the inherited wallet and configuration.
+			...(options?.provider === undefined
+				? {}
+				: {
+						provider: options.provider,
+						requestManager: undefined,
+						subscriptionManager: undefined,
+					}),
 			registeredSubscriptions: contractSubscriptions,
 		});
 		if (
@@ -448,8 +460,8 @@ export class Contract<Abi extends ContractAbi>
 		const returnDataFormat = isDataFormat(contextOrReturnFormat)
 			? contextOrReturnFormat
 			: isDataFormat(optionsOrContextOrReturnFormat)
-			? optionsOrContextOrReturnFormat
-			: returnFormat ?? DEFAULT_RETURN_FORMAT;
+				? optionsOrContextOrReturnFormat
+				: (returnFormat ?? DEFAULT_RETURN_FORMAT);
 
 		// `address` is also accepted as an init option (`new Contract(abi, {address, from})`); a
 		// positional address wins. The option used to be a recognised key that was then
@@ -882,14 +894,14 @@ export class Contract<Abi extends ContractAbi>
 			typeof param1 !== 'string' && !isDataFormat(param1)
 				? param1
 				: !isDataFormat(param2)
-				? param2
-				: {};
+					? param2
+					: {};
 
 		const returnFormat = isDataFormat(param1)
 			? param1
 			: isDataFormat(param2)
-			? param2
-			: param3 ?? DEFAULT_RETURN_FORMAT;
+				? param2
+				: (param3 ?? DEFAULT_RETURN_FORMAT);
 
 		const abi =
 			eventName === 'allEvents' || eventName === ALL_EVENTS
@@ -950,10 +962,14 @@ export class Contract<Abi extends ContractAbi>
 		// The node already filtered by address and signature; a log that does not match is
 		// not this contract's event and must not be labelled as one (I-13).
 		const expectedAddress = typeof address === 'string' ? address.toLowerCase() : undefined;
+		const signatureTopic = rightPad(abi.signature, TOPIC_HEX_LENGTH).toLowerCase();
 		const expectedTopic =
-			Array.isArray(eventOptions.topics) || abi.name === ALL_EVENTS || abi.anonymous
+			abi.name === ALL_EVENTS ||
+			abi.anonymous ||
+			(Array.isArray(eventOptions.topics) &&
+				topics?.[0]?.toString().toLowerCase() !== signatureTopic)
 				? undefined
-				: rightPad(abi.signature, TOPIC_HEX_LENGTH).toLowerCase();
+				: signatureTopic;
 		const decodedLogs = logs
 			.filter(log => isLogOf(log, expectedAddress, expectedTopic))
 			.map(log =>
@@ -981,7 +997,7 @@ export class Contract<Abi extends ContractAbi>
 									typeof log.signature === 'string' &&
 									rightPad(item.signature, TOPIC_HEX_LENGTH).toLowerCase() ===
 										rightPad(log.signature, TOPIC_HEX_LENGTH).toLowerCase(),
-						  )
+							)
 						: abi;
 
 				return filterKeys.every((key: string) => {
@@ -1013,7 +1029,7 @@ export class Contract<Abi extends ContractAbi>
 						}
 					};
 
-					if (Array.isArray(filter[key])) {
+					if (isOrList(inputAbi, filter[key])) {
 						return (filter[key] as unknown[]).some(matches);
 					}
 					return matches(filter[key]);
@@ -1072,9 +1088,15 @@ export class Contract<Abi extends ContractAbi>
 		let result: ContractAbi = [];
 
 		const functionsAbi = abis.filter(abi => abi.type !== 'error');
-		const errorsAbi = abis.filter(abi =>
-			isAbiErrorFragment(abi),
-		) as unknown as AbiErrorFragment[];
+		const seenErrors = new Set<string>();
+		const errorsAbi = (abis.filter(isAbiErrorFragment) as AbiErrorFragment[])
+			.filter(abi => {
+				const signature = jsonInterfaceMethodToString(abi);
+				if (seenErrors.has(signature)) return false;
+				seenErrors.add(signature);
+				return true;
+			})
+			.map(abi => ({ ...abi, inputs: cloneAbiParameters(abi.inputs) ?? [] }));
 
 		for (const a of functionsAbi) {
 			const abi: Mutable<AbiFragment & { signature: HexString }> = {
@@ -1269,7 +1291,7 @@ export class Contract<Abi extends ContractAbi>
 		return (...params: unknown[]) => {
 			// A signature or selector key is bound to exactly its fragment; the name key sees
 			// every overload known at call time.
-			const candidates = exact ? [abi] : this._overloadedMethodAbis.get(abi.name) ?? [abi];
+			const candidates = exact ? [abi] : (this._overloadedMethodAbis.get(abi.name) ?? [abi]);
 			const { methodAbi, abiParams } = this._resolveOverload(candidates, params);
 			const internalErrorsAbis = errorsAbis;
 
@@ -1540,7 +1562,7 @@ export class Contract<Abi extends ContractAbi>
 										new SubscriptionError('Failed to get past events.', error),
 									);
 								},
-						  );
+							);
 					const subscribe = this.subscriptionManager.addSubscription(sub).then(
 						id => id,
 						(error: Error) => {

@@ -19,6 +19,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import fetchMock from 'jest-fetch-mock';
 
 jest.setMock('cross-fetch', fetchMock);
+globalThis.fetch = fetchMock as unknown as typeof fetch;
 
 import { Web3APIPayload, QRLExecutionAPI } from '@theqrl/web3-types';
 import { HttpStatusError, ResponseError } from '@theqrl/web3-errors';

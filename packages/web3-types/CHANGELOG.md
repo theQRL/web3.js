@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `FeeHistory.gasUsedRatio` is a JSON floating-point `number[]`, independent of quantity formatting, matching go-qrl (P5-QRL-6).
+
 ### Changed
 
 - **Breaking:** Renamed `Eip712TypedData` and `Eip712TypeDetails` to `QRLTypedData` and `QRLTypedDataTypeDetails`. The domain type is `QRLTypedDataDomain`; hashes produced with the old `EIP712Domain` schema are incompatible.

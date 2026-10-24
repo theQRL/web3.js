@@ -45,7 +45,12 @@ import { qrlRpcMethods } from '@theqrl/web3-rpc-methods';
 import { blockSchema, transactionReceiptSchema } from '../schemas.js';
 import { formatTransaction } from './format_transaction.js';
 import { isBlockHash } from './hex_guards.js';
-import { expectQuantityReply, invalidResponseError } from './invalid_response_error.js';
+import {
+	expectQuantityReply,
+	expectBytesReply,
+	assertRpcResult,
+	invalidResponseError,
+} from './invalid_response_error.js';
 import { validateTransactionInput } from './transaction_input.js';
 
 /**
@@ -96,6 +101,7 @@ export async function getBlock<ReturnFormat extends DataFormat>(
 			hydrated,
 		);
 	}
+	if (!isNullish(response)) assertRpcResult('qrl_getBlock', response, blockSchema);
 	return format(blockSchema, response as unknown as Block, returnFormat);
 }
 
@@ -124,6 +130,7 @@ export async function getTransactionReceipt<ReturnFormat extends DataFormat>(
 		throw invalidResponseError('qrl_getTransactionReceipt', 'a receipt object', response);
 	}
 
+	assertRpcResult('qrl_getTransactionReceipt', response, transactionReceiptSchema);
 	return format(
 		transactionReceiptSchema,
 		response as unknown as TransactionReceipt,
@@ -225,5 +232,5 @@ export async function call<ReturnFormat extends DataFormat>(
 		blockNumberFormatted,
 	);
 
-	return format({ format: 'bytes' }, response as Bytes, returnFormat);
+	return format({ format: 'bytes' }, expectBytesReply('qrl_call', response), returnFormat);
 }

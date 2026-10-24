@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Memoize named tuple results, reserve positional event keys, and align typed-data field/schema validation with go-qrl, including rejection of fixed and multidimensional array declarations (P5-ABI-1/2/4).
 - Encode finite messages with self-referencing or mutually recursive typed-data schemas without overflowing the stack.
 - Accept `Uint8Array` and Node.js `Buffer` values for `bytes` and fixed-byte ABI arguments without losing their binary contents.
 - Decode compiler-generated `Error(string)` and `Panic(uint256)` even when absent from the supplied ABI. Explicit error definitions take precedence. Panic payloads use selector `0x4e487b71` followed by one 64-byte code word.

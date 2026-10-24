@@ -351,3 +351,12 @@ Update this document when:
   dependency, or release-publishing behavior changes.
 - A new audit finding changes the asset model, trust boundaries, controls, or
   residual risks.
+
+### Release trust root
+
+Artifact digests bind later jobs to the bytes produced by `prepare`; they do not validate the
+behavior of dependencies, build tools or release plugins running before that job records the
+digests. `prepare` has `contents: write` but no OIDC permission. Compromised code there can
+produce malicious artifacts that later receive valid provenance and can alter tags or drafts.
+`attest` has OIDC and release-asset permissions and can attest arbitrary subjects, but lacks
+npm publishing authority. See [the release procedure](../RELEASE.md#build-and-attestation-trust-boundaries).

@@ -29,7 +29,11 @@ import { SendSignedTransactionEvents, SendTransactionEvents } from '../types.js'
 import { transactionReceiptSchema } from '../schemas.js';
 import { MAX_CONSECUTIVE_POLLING_ERRORS } from '../constants.js';
 import { reportWatcherError } from './promi_event_errors.js';
-import { missingReceiptError, recheckReceipt } from './receipt_recheck.js';
+import {
+	missingReceiptError,
+	recheckReceipt,
+	changedReceiptStatusError,
+} from './receipt_recheck.js';
 
 export type Web3PromiEventEventTypeBase<ReturnFormat extends DataFormat> =
 	| SendTransactionEvents<ReturnFormat>
@@ -74,6 +78,8 @@ export const watchTransactionByPolling = <
 	// The receipt confirmations are counted from; replaced when a reorg moved the transaction.
 	let receipt: TransactionReceipt = transactionReceipt;
 	let consecutiveErrors = 0;
+	let missingReceipts = 0;
+	let checking = false;
 	let stopped = false;
 	let intervalId: ReturnType<typeof setInterval> | undefined;
 
@@ -86,7 +92,8 @@ export const watchTransactionByPolling = <
 	};
 
 	const poll = async () => {
-		if (stopped) return;
+		if (stopped || checking) return;
+		checking = true;
 		try {
 			const nextNumber = BigInt(receipt.blockNumber) + BigInt(confirmations);
 			const nextBlock = await qrlRpcMethods.getBlockByNumber(
@@ -104,11 +111,23 @@ export const watchTransactionByPolling = <
 			const recheck = await recheckReceipt(web3Context, receipt);
 			if (stopped) return;
 			if (recheck.kind === 'missing') {
+				missingReceipts += 1;
+				if (missingReceipts < MAX_CONSECUTIVE_POLLING_ERRORS) return;
 				stop();
-				reportWatcherError(transactionPromiEvent, missingReceiptError(receipt, returnFormat));
+				reportWatcherError(
+					transactionPromiEvent,
+					missingReceiptError(receipt, returnFormat),
+				);
 				return;
 			}
+			if (recheck.kind !== 'unknown') missingReceipts = 0;
 			if (recheck.kind === 'moved') {
+				const changed = changedReceiptStatusError(receipt, recheck.receipt);
+				if (changed) {
+					stop();
+					reportWatcherError(transactionPromiEvent, changed);
+					return;
+				}
 				receipt = recheck.receipt;
 			}
 
@@ -143,6 +162,8 @@ export const watchTransactionByPolling = <
 			// of failed requests, and is reported without ever throwing out of the timer.
 			stop();
 			reportWatcherError(transactionPromiEvent, error);
+		} finally {
+			checking = false;
 		}
 	};
 

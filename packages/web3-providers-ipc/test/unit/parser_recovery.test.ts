@@ -73,9 +73,7 @@ describe('IPC parser recovery', () => {
 				const firstResponse = { jsonrpc: '2.0', id: 1, result: '0x1' };
 				const protocolError = expect.any(InvalidResponseError);
 				socket.emit('data', JSON.stringify(firstResponse));
-				await expect(firstRequest).resolves.toEqual(
-					autoReconnect ? firstResponse : protocolError,
-				);
+				await expect(firstRequest).resolves.toEqual(protocolError);
 			} finally {
 				provider.disconnect();
 				socket.destroy();

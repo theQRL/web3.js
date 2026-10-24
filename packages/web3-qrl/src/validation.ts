@@ -221,9 +221,10 @@ export const validateFeeMarketGas = (transaction: InternalTransaction) => {
 
 	if (
 		isNullish(transaction.maxFeePerGas) ||
-		!isUInt(transaction.maxFeePerGas, { bitSize: 512 }) ||
+		!isUInt(transaction.maxFeePerGas, { bitSize: 256 }) ||
 		isNullish(transaction.maxPriorityFeePerGas) ||
-		!isUInt(transaction.maxPriorityFeePerGas, { bitSize: 512 })
+		!isUInt(transaction.maxPriorityFeePerGas, { bitSize: 256 }) ||
+		BigInt(transaction.maxPriorityFeePerGas) > BigInt(transaction.maxFeePerGas)
 	)
 		throw new InvalidMaxPriorityFeePerGasOrMaxFeePerGas({
 			maxPriorityFeePerGas: transaction.maxPriorityFeePerGas,

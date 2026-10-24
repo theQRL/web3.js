@@ -586,7 +586,7 @@ export const storageProofSchema = {
 	type: 'object',
 	properties: {
 		key: {
-			format: 'bytes32',
+			oneOf: [{ format: 'uint' }, { format: 'bytes32' }],
 		},
 		value: {
 			format: 'uint',
@@ -594,7 +594,7 @@ export const storageProofSchema = {
 		proof: {
 			type: 'array',
 			items: {
-				format: 'bytes32',
+				format: 'bytes',
 			},
 		},
 	},
@@ -621,7 +621,7 @@ export const accountSchema = {
 		accountProof: {
 			type: 'array',
 			items: {
-				format: 'bytes32',
+				format: 'bytes',
 			},
 		},
 		storageProof: {

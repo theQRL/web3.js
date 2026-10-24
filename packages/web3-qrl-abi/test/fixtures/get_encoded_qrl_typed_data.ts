@@ -350,122 +350,6 @@ export const testData: [string, QRLTypedData, boolean | undefined, string][] = [
 		'0x910c79f4dc6ed873523316d07c5f502b39412fd07eb1aa627a8f2c07d6faff2d',
 	],
 	[
-		'should get encoded message with fixed array',
-		{
-			types: {
-				QRLTypedDataDomain: [
-					{
-						name: 'name',
-						type: 'string',
-					},
-					{
-						name: 'version',
-						type: 'string',
-					},
-					{
-						name: 'chainId',
-						type: 'uint256',
-					},
-					{
-						name: 'verifyingContract',
-						type: 'address',
-					},
-				],
-				ArrayData: [
-					{
-						name: 'array1',
-						type: 'string[]',
-					},
-					{
-						name: 'array2',
-						type: 'address[3]',
-					},
-					{
-						name: 'array3',
-						type: 'uint256[]',
-					},
-				],
-			},
-			primaryType: 'ArrayData',
-			domain: {
-				name: 'Array Data',
-				version: '1',
-				chainId: 1,
-				verifyingContract:
-					'Qf66D63eB29f937925bAB98a28d5AC0effBC421Ca2fd96dE918352648ca79f678faebaCB5209D52949AAf01F849AA087A42995c1c6996C3a5504960Eb88943556',
-			},
-			message: {
-				array1: ['string', 'string2', 'string3'],
-				array2: [
-					'Qf66D63eB29f937925bAB98a28d5AC0effBC421Ca2fd96dE918352648ca79f678faebaCB5209D52949AAf01F849AA087A42995c1c6996C3a5504960Eb88943556',
-					'Q5bBAb228de3fAfa50Fd6cCefAA75d5da361a8a2A82F75CC29B257669F6EeCc4ec9303597D0b9b6C2B4eF70EFdCeE40209Ac5e440969cD005CB40F7739a96C1cD',
-					'Q2d09d65e6aC14659798fA27AC2aee81eC03a4Bde0aF4FdeeAee42ABc1fF2BDBDc32EaD5509D9E8426Cb1C6C48942557717d85EFf4AE7aB148f56FcAB0164B324',
-				],
-				array3: [123456, 654321, 42],
-			},
-		},
-		false,
-		'0x190117fa7042b8aa94b9ef86e1eb0846d9dbe945d7a2901618f7137c2849ce8370602267fb8b769f7129d648a9fb181be878bdd68d5754525cda887c81984317ae2a',
-	],
-	[
-		'should get encoded message with fixed array',
-		{
-			types: {
-				QRLTypedDataDomain: [
-					{
-						name: 'name',
-						type: 'string',
-					},
-					{
-						name: 'version',
-						type: 'string',
-					},
-					{
-						name: 'chainId',
-						type: 'uint256',
-					},
-					{
-						name: 'verifyingContract',
-						type: 'address',
-					},
-				],
-				ArrayData: [
-					{
-						name: 'array1',
-						type: 'string[]',
-					},
-					{
-						name: 'array2',
-						type: 'address[3]',
-					},
-					{
-						name: 'array3',
-						type: 'uint256[]',
-					},
-				],
-			},
-			primaryType: 'ArrayData',
-			domain: {
-				name: 'Array Data',
-				version: '1',
-				chainId: 1,
-				verifyingContract:
-					'Qf66D63eB29f937925bAB98a28d5AC0effBC421Ca2fd96dE918352648ca79f678faebaCB5209D52949AAf01F849AA087A42995c1c6996C3a5504960Eb88943556',
-			},
-			message: {
-				array1: ['string', 'string2', 'string3'],
-				array2: [
-					'Qf66D63eB29f937925bAB98a28d5AC0effBC421Ca2fd96dE918352648ca79f678faebaCB5209D52949AAf01F849AA087A42995c1c6996C3a5504960Eb88943556',
-					'Q5bBAb228de3fAfa50Fd6cCefAA75d5da361a8a2A82F75CC29B257669F6EeCc4ec9303597D0b9b6C2B4eF70EFdCeE40209Ac5e440969cD005CB40F7739a96C1cD',
-					'Q2d09d65e6aC14659798fA27AC2aee81eC03a4Bde0aF4FdeeAee42ABc1fF2BDBDc32EaD5509D9E8426Cb1C6C48942557717d85EFf4AE7aB148f56FcAB0164B324',
-				],
-				array3: [123456, 654321, 42],
-			},
-		},
-		true,
-		'0x1948a10f87c45c76677fe4a9724a8a2e6432c9804d8ec67381807c3d8d11c8b4',
-	],
-	[
 		'should get encoded message with bytes32',
 		{
 			types: {
@@ -675,7 +559,7 @@ export const erroneousTestData: [string, QRLTypedData, boolean | undefined, Erro
 		new Error('Cannot encode data: value is not of array type'),
 	],
 	[
-		'should throw error: Cannot encode data: expected length of 3, but got 1',
+		'rejects fixed arrays unsupported by the go-qrl typed-data signer',
 		{
 			types: {
 				QRLTypedDataDomain: [
@@ -728,7 +612,7 @@ export const erroneousTestData: [string, QRLTypedData, boolean | undefined, Erro
 			},
 		},
 		false,
-		new Error('Cannot encode data: expected length of 3, but got 1'),
+		new Error("Invalid typed data: invalid field 'array2' in 'ArrayData'"),
 	],
 	[
 		"should throw error: Cannot encode data: missing data for 'array3'",

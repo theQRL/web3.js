@@ -60,7 +60,7 @@ describe('getTransactionError', () => {
 			},
 		);
 		await getTransactionError(web3Context, undefined, undefined, receivedError);
-		expect(parseTransactionErrorSpy).toHaveBeenCalledWith(receivedError);
+		expect(parseTransactionErrorSpy).toHaveBeenCalledWith(receivedError, undefined);
 	});
 
 	describe('non-revert errors (L-52)', () => {
@@ -128,7 +128,7 @@ describe('getTransactionError', () => {
 		);
 	});
 
-	it('simulates the revert at the block that included the transaction when a receipt is given (round 2)', async () => {
+	it('simulates the revert at the preceding block when a receipt is given', async () => {
 		const getRevertReasonSpy = jest
 			.spyOn(GetRevertReasonUtils, 'getRevertReason')
 			.mockImplementation();
@@ -147,7 +147,7 @@ describe('getTransactionError', () => {
 			transaction,
 			undefined,
 			undefined,
-			BigInt(16738176),
+			BigInt(16738175),
 		);
 	});
 

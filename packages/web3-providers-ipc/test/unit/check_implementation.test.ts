@@ -82,12 +82,12 @@ describe('IPCProvider', () => {
 			ipc._socketConnection.connecting = true;
 			expect(ipc.getStatus()).toBe('connecting');
 		});
-		it('socketConnection.end', () => {
+		it('socketConnection.destroy', () => {
 			const ipc = new IpcProvider(socketPath);
-			const end = jest.fn();
+			const destroy = jest.fn();
 			const _onDisconnect = jest.fn();
 			// @ts-expect-error mock method
-			ipc._socketConnection.end = end;
+			ipc._socketConnection.destroy = destroy;
 			// @ts-expect-error mock method
 			ipc._onDisconnect = _onDisconnect;
 			const code = 1002;
@@ -103,8 +103,8 @@ describe('IPCProvider', () => {
 			// (I-F13).
 			expect(_onDisconnect).toHaveBeenCalledTimes(1);
 			expect(_onDisconnect).toHaveBeenCalledWith(code, data);
-			expect(end).toHaveBeenCalledTimes(1);
-			expect(end).toHaveBeenCalledWith();
+			expect(destroy).toHaveBeenCalledTimes(1);
+			expect(destroy).toHaveBeenCalledWith();
 		});
 
 		it('connection error', async () => {
@@ -198,7 +198,7 @@ describe('IPCProvider', () => {
 			expect(on).toHaveBeenCalledWith('end', ipc._onCloseHandler);
 			// A socket that carries no error listener yet gets one.
 			// @ts-expect-error mock field
-			ipc._socketConnection = { on, removeAllListeners: jest.fn(), end: jest.fn() };
+			ipc._socketConnection = { on, removeAllListeners: jest.fn(), destroy: jest.fn() };
 			// @ts-expect-error mock method
 			ipc._addSocketListeners();
 			// @ts-expect-error mock method

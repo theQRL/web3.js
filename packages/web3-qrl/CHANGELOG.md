@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Retry receipt-wait timeout setup after broadcast; honor the signing caller context; validate RPC result fields and fee bounds; diagnose mined reverts at N-1 and preserve broadcast error data. Confirmation watchers tolerate transient missing receipts and report changed status after reorgs (P5-QRL-1 through P5-QRL-8).
+
 ### Changed
 
 - **Breaking:** Receipt schemas no longer include `TransactionReceipt.root`; `FeeHistory.baseFeePerGas` is an array; log topics use `bytes64` to match VM64.

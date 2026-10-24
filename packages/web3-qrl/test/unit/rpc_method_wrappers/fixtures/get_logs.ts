@@ -14,16 +14,17 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { FilterResultsAPI, Filter } from '@theqrl/web3-types';
+import { LogsInput, Filter } from '@theqrl/web3-types';
 
-export const mockRpcResponse: FilterResultsAPI = [
+export const mockRpcResponse: LogsInput[] = [
 	{
 		logIndex: '0x1',
 		blockNumber: '0x1b4',
-		blockHash: '0x8216c5785ac562ff41e2dcfdf5785ac562ff41e2dcfdf829c5a142f1fccd7d',
-		transactionHash: '0xdf829c5a142f1fccd7d8216c5785ac562ff41e2dcfdf5785ac562ff41e2dcf',
+		blockHash: `0x${'82'.repeat(32)}`,
+		transactionHash: `0x${'df'.repeat(32)}`,
 		transactionIndex: '0x0',
-		address: 'Q3B9FF206657e09c889a09bf241c614a938fe23920590125220cB2c2768c4B2Fea6CcA5B76E3FDD52b955c491AFFA84Ee9DA6499d2dc286633801f3C6Ee9C69C5',
+		address:
+			'Q3B9FF206657e09c889a09bf241c614a938fe23920590125220cB2c2768c4B2Fea6CcA5B76E3FDD52b955c491AFFA84Ee9DA6499d2dc286633801f3C6Ee9C69C5',
 		data: '0x0000000000000000000000000000000000000000000000000000000000000000',
 		topics: [
 			'0x59ebeb90bc63057b6515673c3ecf9438e5058bca0f92585014eced636878c9a50000000000000000000000000000000000000000000000000000000000000000',
@@ -32,7 +33,8 @@ export const mockRpcResponse: FilterResultsAPI = [
 ];
 
 const filter: Filter = {
-	address: 'Q83cd1122848dd1b2E3AF9ca60a1340e595B2C6d5b3B340AfD625e38EEf9067bc9C28db215702Aa8B3C0243Bb13785a9365A35ee1Fe8e57983b1D47d9fff835a3',
+	address:
+		'Q83cd1122848dd1b2E3AF9ca60a1340e595B2C6d5b3B340AfD625e38EEf9067bc9C28db215702Aa8B3C0243Bb13785a9365A35ee1Fe8e57983b1D47d9fff835a3',
 	topics: [
 		'0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b',
 		// Using "null" value intentionally for validation

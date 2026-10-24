@@ -15,3 +15,9 @@
 /package.json @theQRL/devops
 /pnpm-workspace.yaml @theQRL/devops
 /pnpm-lock.yaml @theQRL/devops
+
+# Inputs that control acceptance by repository security gates.
+/.trivyignore @theQRL/devops
+/.lint-budget.json @theQRL/devops
+/scripts/doctor*.js @theQRL/devops
+/scripts/check-repo-hygiene.js @theQRL/devops

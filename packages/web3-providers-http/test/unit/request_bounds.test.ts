@@ -19,6 +19,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 const mockFetch = jest.fn();
 
 jest.setMock('cross-fetch', mockFetch);
+globalThis.fetch = mockFetch;
 
 import { Readable } from 'stream';
 import { Web3APIPayload, QRLExecutionAPI } from '@theqrl/web3-types';
@@ -303,11 +304,16 @@ describe('HttpProvider - request lifecycle bounds', () => {
 					cancel,
 				});
 				mockFetch.mockResolvedValueOnce(fakeResponse({ body }));
-				const provider = new HttpProvider('http://localhost:8545', { maxResponseBytes: 2048 });
+				const provider = new HttpProvider('http://localhost:8545', {
+					maxResponseBytes: 2048,
+				});
 
 				const request = provider.request(payload);
 				await expect(request).rejects.toThrow(ResponseTooLargeError);
-				await expect(request).rejects.toMatchObject({ maxResponseBytes: 2048, receivedBytes: 3072 });
+				await expect(request).rejects.toMatchObject({
+					maxResponseBytes: 2048,
+					receivedBytes: 3072,
+				});
 				expect(cancel).toHaveBeenCalledTimes(1);
 				const { signal } = mockFetch.mock.calls[0][1] as RequestInit;
 				expect(signal?.aborted).toBe(true);
@@ -328,7 +334,10 @@ describe('HttpProvider - request lifecycle bounds', () => {
 
 			const request = provider.request(payload);
 			await expect(request).rejects.toThrow(ResponseTooLargeError);
-			await expect(request).rejects.toMatchObject({ maxResponseBytes: 2048, receivedBytes: 3072 });
+			await expect(request).rejects.toMatchObject({
+				maxResponseBytes: 2048,
+				receivedBytes: 3072,
+			});
 			expect(destroy).toHaveBeenCalled();
 			const { signal } = mockFetch.mock.calls[0][1] as RequestInit;
 			expect(signal?.aborted).toBe(true);
@@ -376,7 +385,9 @@ describe('HttpProvider - request lifecycle bounds', () => {
 		});
 
 		it('reassembles a multi-chunk body split mid multi-byte character', async () => {
-			const bytes = encoder.encode(JSON.stringify({ jsonrpc: '2.0', id: 42, result: '日本' }));
+			const bytes = encoder.encode(
+				JSON.stringify({ jsonrpc: '2.0', id: 42, result: '日本' }),
+			);
 			const body = new ReadableStream<Uint8Array>({
 				start(controller) {
 					// Split at an arbitrary byte, likely mid-character.
@@ -443,9 +454,9 @@ describe('HttpProvider - request lifecycle bounds', () => {
 			const provider = new HttpProvider('http://localhost:8545');
 
 			// There is deliberately no infinite opt-out, per-request included.
-			await expect(
-				provider.request(payload, { requestTimeout: Infinity }),
-			).rejects.toThrow(ProviderError);
+			await expect(provider.request(payload, { requestTimeout: Infinity })).rejects.toThrow(
+				ProviderError,
+			);
 			expect(mockFetch).not.toHaveBeenCalled();
 		});
 	});
@@ -604,9 +615,9 @@ describe('HttpProvider - request lifecycle bounds', () => {
 
 			const provider = new HttpProvider('http://localhost:8545');
 
-			await expect(
-				provider.request(payload, { signal: controller.signal }),
-			).rejects.toThrow('too late');
+			await expect(provider.request(payload, { signal: controller.signal })).rejects.toThrow(
+				'too late',
+			);
 		});
 
 		it('lets the request deadline win when the caller never cancels', async () => {

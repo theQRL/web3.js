@@ -168,9 +168,14 @@ export default class IpcProvider<API extends Web3APISpec = QRLExecutionAPI> exte
 
 	protected _openSocketConnection() {
 		IpcProvider._assertSocketPath(this._socketPath);
-		if (!this._socketConnection || this.getStatus() === 'disconnected') {
-			this._socketConnection = new Socket(this._socketOptions);
+		const previous = this._socketConnection;
+		if (previous) {
+			this._removeSocketListeners();
+			previous.removeListener('error', this._onErrorHandler);
+			previous.on('error', () => undefined);
+			previous.destroy();
 		}
+		this._socketConnection = new Socket(this._socketOptions);
 		// The socket decodes its own byte stream, so a character split across two `data`
 		// events survives; a fresh decoder for the (rare) binary chunk as well (L-24).
 		this._decoder = new TextDecoder('utf-8');
@@ -184,7 +189,7 @@ export default class IpcProvider<API extends Web3APISpec = QRLExecutionAPI> exte
 	 * (I-F13).
 	 */
 	protected _closeSocketConnection() {
-		this._socketConnection?.end();
+		this._socketConnection?.destroy();
 	}
 
 	protected _sendToSocket<Method extends Web3APIMethod<API>>(

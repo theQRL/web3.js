@@ -207,8 +207,9 @@ one once every dependent has released a compatible fixed version.
 | `brace-expansion@<1.1.20` | `1.1.20` | CVE-2026-102276 / CVE-2026-102278 recursion DoS (high), brace-expansion 1 line. |
 | `brace-expansion@>=2.0.0 <2.1.6` | `2.1.6` | CVE-2026-102276 / CVE-2026-102278 recursion DoS (high), brace-expansion 2 line. |
 | `brace-expansion@>=5.0.0 <5.0.11` | `5.0.11` | CVE-2026-102276 / CVE-2026-102278 recursion DoS (high), brace-expansion 5 line. |
-| `undici@<6.28.1` | `6.28.1` | CVE-2026-19534 request handling (high) and the earlier Undici 6 advisories (reached through `@actions/http-client` in the semantic-release npm plugin). |
-| `undici@>=7.0.0 <7.29.1` | `7.29.1` | CVE-2026-13697 / CVE-2026-19534 / CVE-2026-84961 incl. TLS certificate validation bypass in `BalancedPool` (high), Undici 7 line via `@semantic-release/github`; also the version required for Node 20 compatibility in CI. |
+| `undici@>=6.0.0 <6.29.1` | `6.29.1` | CVE-2026-19534 request handling (high) and the earlier Undici 6 advisories (reached through `@actions/http-client` in the semantic-release npm plugin). |
+| `undici@>=7.0.0 <7.30.1` | `7.30.1` | CVE-2026-13697 / CVE-2026-19534 / CVE-2026-84961 incl. TLS certificate validation bypass in `BalancedPool` (high), Undici 7 line via `@semantic-release/github`; also the version required for Node 20 compatibility in CI. |
+| `body-parser@>=2.0.0 <2.4.0` | `2.4.0` | GHSA-27r3-jxmh-p828 denial of service in request parsing, reached through development tooling. |
 | `fast-uri@<3.1.7` | `3.1.7` | CVE-2026-84292 / CVE-2026-84394 authority injection and host confusion (high), plus the earlier URI parsing fixes; also quarantine-excluded so a fix can land inside the seven-day window. |
 | `postcss@<8.5.18` | `8.5.18` | Patched release for GHSA-r28c-9q8g-f849; quarantine-excluded for the security update. |
 | `svgo@>=3.0.0 <3.3.5` | `3.3.5` | Patched 3.x release for GHSA-2p49-hgcm-8545 and GHSA-w27v-7q3p-w38r (removeScripts executable links, high); quarantine-excluded for the security update. |
@@ -292,3 +293,12 @@ seven-day `minimumReleaseAge` quarantine.
 | `webpack-sources` | `3.3.3` | Holds webpack on a reviewed source-map dependency. |
 
 <!-- overrides:end -->
+
+### Pass 5 security updates (2026-10-24)
+
+Undici 6.29.1/7.30.1 also close CVE-2026-109869. The body-parser 2.x floor is
+2.4.0 for CVE-2026-111181. Production validation uses Zod 4.6.6, replacing 3.22.3,
+for CVE-2023-54404. Exact security versions are listed in `minimumReleaseAgeExclude`;
+flow and block YAML sequences receive the same doctor checks. The validator also
+limits total input traversal to 10,000 values and depth 64 before parsing, then
+keeps at most 100 bounded issue messages. See [pass 5 evidence](audit-remediation-2026-10-24.md).

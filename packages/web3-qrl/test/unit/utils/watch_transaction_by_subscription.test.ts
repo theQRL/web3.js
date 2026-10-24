@@ -68,7 +68,9 @@ describe('watchTransactionBySubscription (L-54)', () => {
 		removeSubscription = jest
 			.spyOn(web3Context.subscriptionManager, 'removeSubscription')
 			.mockResolvedValue('0x1' as never);
-		(qrlRpcMethods.getBlockByNumber as jest.Mock).mockResolvedValue({ hash: `0x${'cd'.repeat(32)}` });
+		(qrlRpcMethods.getBlockByNumber as jest.Mock).mockResolvedValue({
+			hash: `0x${'cd'.repeat(32)}`,
+		});
 
 		promiEvent = new Web3PromiEvent(() => undefined);
 		confirmations = [];
@@ -171,5 +173,43 @@ describe('watchTransactionBySubscription (L-54)', () => {
 
 		expect(removeSubscription).toHaveBeenCalledWith(subscription);
 		expect(confirmations).toStrictEqual([BigInt(2), BigInt(3)]);
+	});
+	it('waits through a missing receipt, follows reinclusion and never repeats confirmation one', async () => {
+		const moved = { ...receipt, blockNumber: '0x11', blockHash: `0x${'cd'.repeat(32)}` };
+
+		(qrlRpcMethods.getTransactionReceipt as jest.Mock)
+			// eslint-disable-next-line no-null/no-null -- transient receipt disappearance
+			.mockResolvedValueOnce(null)
+			.mockResolvedValue(moved);
+		const errors = jest.fn();
+		promiEvent.on('error', errors);
+		start();
+		await jest.advanceTimersByTimeAsync(1);
+		subscription.emit('data', header(0x11));
+		await jest.advanceTimersByTimeAsync(1);
+		expect(removeSubscription).not.toHaveBeenCalled();
+		subscription.emit('data', header(0x12));
+		await jest.advanceTimersByTimeAsync(1);
+		expect(confirmations).toEqual([BigInt(2)]);
+		expect(errors).not.toHaveBeenCalled();
+	});
+	it('reports a changed execution status after a reorg and releases the subscription', async () => {
+		(qrlRpcMethods.getTransactionReceipt as jest.Mock).mockResolvedValue({
+			...receipt,
+			blockNumber: '0x11',
+			blockHash: `0x${'cd'.repeat(32)}`,
+			status: '0x0',
+		});
+		const errors = jest.fn();
+		promiEvent.on('error', errors);
+		start();
+		await jest.advanceTimersByTimeAsync(1);
+		subscription.emit('data', header(0x12));
+		await jest.advanceTimersByTimeAsync(1);
+		expect(confirmations).toEqual([]);
+		expect(errors).toHaveBeenCalledWith(
+			expect.objectContaining({ message: expect.stringContaining('status changed') }),
+		);
+		expect(removeSubscription).toHaveBeenCalledTimes(1);
 	});
 });

@@ -44,17 +44,21 @@ export async function getTransactionError<ReturnFormat extends DataFormat>(
 
 	if (_reason === undefined) {
 		if (receivedError !== undefined) {
-			_reason = parseTransactionError(receivedError);
+			_reason = parseTransactionError(receivedError, contractAbi);
 		} else if (web3Context.handleRevert && transactionFormatted !== undefined) {
 			try {
-				// With a receipt the reason is simulated at the block that included the
-				// transaction (the state it ran against), otherwise at `defaultBlock`.
+				// N-1 approximates the pre-transaction state. Transactions earlier in
+				// block N are not replayed by qrl_call, so this is diagnostic only.
 				_reason = await getRevertReason(
 					web3Context,
 					transactionFormatted,
 					contractAbi,
 					undefined,
-					transactionReceiptFormatted?.blockNumber as BlockNumberOrTag | undefined,
+					transactionReceiptFormatted === undefined
+						? undefined
+						: ((BigInt(transactionReceiptFormatted.blockNumber) > BigInt(0)
+								? BigInt(transactionReceiptFormatted.blockNumber) - BigInt(1)
+								: BigInt(0)) as BlockNumberOrTag),
 				);
 			} catch (error) {
 				// Without a receipt nothing proves a revert, so the error of the failed call is

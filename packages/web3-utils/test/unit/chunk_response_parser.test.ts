@@ -179,7 +179,10 @@ describe('ChunkResponseParser', () => {
 			const strict = framedParser(emitter);
 			strict.onError(handler);
 			// 10 MiB + 1 KiB of payload.
-			const message = JSON.stringify({ ...response(1), result: 'x'.repeat(DEFAULT_MAX + 1024) });
+			const message = JSON.stringify({
+				...response(1),
+				result: 'x'.repeat(DEFAULT_MAX + 1024),
+			});
 
 			expect(strict.parseResponse(message)).toEqual([]);
 			expect(handler).toHaveBeenCalledTimes(1);
@@ -222,24 +225,26 @@ describe('ChunkResponseParser', () => {
 			);
 
 			expect(reportedIds(handler)).toEqual([[3], [uuid], [12], [5, 6]]);
-			expect(handler.mock.calls.every(([error]) => error instanceof ResponseTooLargeError)).toBe(
-				true,
-			);
+			expect(
+				handler.mock.calls.every(([error]) => error instanceof ResponseTooLargeError),
+			).toBe(true);
 		});
 
-		it('skips ids it cannot read and reports none when a message carries no id', () => {
+		it('decodes escaped ids and ignores unsafe integers or missing ids', () => {
 			const handler = jest.fn();
 			const parser = framedParser(new EventEmitter(), 256);
 			parser.onError(handler);
 			const padding = 'x'.repeat(300);
 
-			// A string id with an escape the bounded pattern cuts short, an unsafe integer and
+			// An escaped string id, an unsafe integer and
 			// a message without an id at all.
 			parser.parseResponse(`{"jsonrpc":"2.0","id":"a\\"b","result":"${padding}"}`);
-			parser.parseResponse(`{"jsonrpc":"2.0","id":99999999999999999999,"result":"${padding}"}`);
+			parser.parseResponse(
+				`{"jsonrpc":"2.0","id":99999999999999999999,"result":"${padding}"}`,
+			);
 			parser.parseResponse(`{"a":"${padding}"}`);
 
-			expect(reportedIds(handler)).toEqual([[], [], []]);
+			expect(reportedIds(handler)).toEqual([['a"b'], [], []]);
 		});
 
 		it('scans a bounded prefix only, so an id after a large result is not found', () => {

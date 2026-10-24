@@ -93,18 +93,22 @@ describe('waitForTransactionReceipt', () => {
 		expect(receiptCalls.mock.calls.length).toBe(callsAtResolution);
 	});
 
-	it('cleans up when the initial block-number request fails', async () => {
-		const error = new Error('block-number request failed');
-		(rpcMethodWrappersReaders.getBlockNumber as jest.Mock).mockRejectedValueOnce(error);
-
-		await expect(
-			waitForTransactionReceipt(web3Context, transactionHash, DEFAULT_RETURN_FORMAT),
-		).rejects.toBe(error);
-
-		const receiptCalls = rpcMethodWrappersReaders.getTransactionReceipt as jest.Mock;
-		const callsAtRejection = receiptCalls.mock.calls.length;
-		await jest.advanceTimersByTimeAsync(5_000);
-		expect(receiptCalls.mock.calls.length).toBe(callsAtRejection);
+	it('retries failed block-timeout setup while continuing to wait for a mined receipt', async () => {
+		jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+		(rpcMethodWrappersReaders.getBlockNumber as jest.Mock).mockRejectedValueOnce(
+			new Error('temporary failure'),
+		);
+		const receipt = { transactionHash, blockNumber: BigInt(1), status: BigInt(1) };
+		(rpcMethodWrappersReaders.getTransactionReceipt as jest.Mock)
+			.mockResolvedValueOnce(undefined)
+			.mockResolvedValue(receipt);
+		const outcome = waitForTransactionReceipt(
+			web3Context,
+			transactionHash,
+			DEFAULT_RETURN_FORMAT,
+		);
+		await jest.advanceTimersByTimeAsync(300);
+		await expect(outcome).resolves.toEqual(receipt);
 		expect(jest.getTimerCount()).toBe(0);
 	});
 

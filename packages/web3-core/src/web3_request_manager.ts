@@ -466,6 +466,13 @@ export class Web3RequestManager<
 	 * or `reject` with it without risking a second, unrelated failure.
 	 */
 	private static _buildNonJsonRpcError(value: unknown): Error {
+		if (
+			typeof value === 'object' &&
+			!isNullish(value) &&
+			isEip1193ProviderErrorCode((value as { code?: unknown }).code)
+		) {
+			return toEip1193ProviderError({ error: value } as JsonRpcResponseWithError);
+		}
 		if (value instanceof BaseWeb3Error) {
 			// An error the library typed already describes the failure. The one thing still
 			// extracted is a JSON-RPC revert reply a transport wrapped (an `HttpStatusError`
@@ -481,16 +488,23 @@ export class Web3RequestManager<
 		}
 
 		if (value instanceof Error) {
-			// A real `Error` already is the real failure, so surface it unchanged. The
-			// revert check is kept because `_processJsonRpcResponse` used to apply it to
-			// `Error` instances, and an EIP-838 revert must still decode as one.
-			try {
-				Web3RequestManager._isReverted(value as unknown as JsonRpcResponse<never, never>);
-			} catch (revertError) {
-				return revertError as Error;
+			// A structured RPC error can be an Error instance; a transport error's
+			// message alone is never evidence of contract execution.
+			if (
+				typeof (value as unknown as JsonRpcError).code === 'number' &&
+				isRevertError(value as unknown as JsonRpcError)
+			) {
+				return new ContractExecutionError(value as unknown as JsonRpcError);
 			}
-
 			return value;
+		}
+		if (
+			typeof value === 'object' &&
+			!isNullish(value) &&
+			typeof (value as JsonRpcError).code === 'number' &&
+			isRevertError(value as JsonRpcError)
+		) {
+			return new ContractExecutionError(value as JsonRpcError);
 		}
 
 		if (isNullish(value)) {
@@ -567,6 +581,21 @@ export class Web3RequestManager<
 				error,
 			);
 		}
+		// Bare result arrays are valid for EIP-1193 (accounts, logs, ...). An array
+		// containing RPC envelopes is a batch reply and cannot answer this request.
+		if (
+			Array.isArray(response) &&
+			(!legacy || response.some(item => Web3RequestManager._isJsonRpcEnvelope(item)))
+		) {
+			throw new ResponseError(response, 'Got batch response for a normal request.');
+		}
+		if (
+			Web3RequestManager._isJsonRpcEnvelope(response) &&
+			!jsonRpc.isResponseWithResult(response) &&
+			!jsonRpc.isResponseWithError(response)
+		) {
+			throw new InvalidResponseError<ErrorType, RequestType>(response, payload);
+		}
 
 		// Check correlation before returning a result or interpreting a remote error.
 		// IDs retain their type, and zero and the empty string are valid IDs.
@@ -609,8 +638,7 @@ export class Web3RequestManager<
 		}
 
 		if ((response as unknown) instanceof Error) {
-			Web3RequestManager._isReverted(response);
-			throw response;
+			throw Web3RequestManager._buildNonJsonRpcError(response);
 		}
 
 		if (
@@ -680,8 +708,8 @@ export class Web3RequestManager<
 			typeof response === 'object' &&
 			!isNullish(response) &&
 			!Array.isArray(response) &&
-			(response as { jsonrpc?: unknown }).jsonrpc === '2.0' &&
-			'id' in response
+			('jsonrpc' in response ||
+				('id' in response && ('result' in response || 'error' in response)))
 		);
 	}
 

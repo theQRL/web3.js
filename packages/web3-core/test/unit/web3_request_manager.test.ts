@@ -900,11 +900,14 @@ describe('Web3RequestManager', () => {
 
 				const manager = new Web3RequestManager();
 				const myProvider = {
-					request: jest
-						.fn()
-						.mockImplementation(async () =>
-							Promise.reject(new Error('execution reverted')),
+					request: jest.fn().mockImplementation(async () =>
+						Promise.reject(
+							Object.assign(new Error('execution reverted'), {
+								code: 3,
+								data: '0x',
+							}),
 						),
+					),
 				} as any;
 
 				jest.spyOn(manager, 'provider', 'get').mockReturnValue(myProvider);

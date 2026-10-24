@@ -70,20 +70,13 @@ function listWorkspaceBlockKeys(workspaceYaml, blockName) {
 // Reads the entries of a top-level block sequence (`minimumReleaseAgeExclude:`)
 // in pnpm-workspace.yaml, quoted or not, at any indentation.
 function listWorkspaceBlockItems(workspaceYaml, blockName) {
-	const lines = workspaceYaml.split('\n');
-	const headerPattern = new RegExp(`^${escapeRegExp(blockName)}:(\\s|$)`);
-	const start = lines.findIndex(line => headerPattern.test(line));
-	if (start === -1) return undefined;
-
-	const items = [];
-	for (let index = start + 1; index < lines.length; index += 1) {
-		const line = lines[index];
-		if (isBlankOrComment(line)) continue;
-		const match = /^ *- +(.*)$/.exec(line);
-		if (!match) break;
-		items.push(unquote(match[1].replace(/\s#.*$/, '')));
+	const { parse } = require('yaml');
+	const document = parse(workspaceYaml, { maxAliasCount: 100 });
+	if (!document || !Object.prototype.hasOwnProperty.call(document, blockName)) return undefined;
+	const items = document[blockName];
+	if (!Array.isArray(items) || items.some(item => typeof item !== 'string')) {
+		throw new Error(`${blockName} must be a YAML sequence of strings`);
 	}
-
 	return items;
 }
 
@@ -135,7 +128,9 @@ function parseCalendarDate(value) {
 	if (!match) return undefined;
 	const [year, month, day] = match.slice(1).map(Number);
 	const date = new Date(Date.UTC(year, month - 1, day));
-	return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day
+	return date.getUTCFullYear() === year &&
+		date.getUTCMonth() === month - 1 &&
+		date.getUTCDate() === day
 		? date
 		: undefined;
 }
@@ -148,7 +143,13 @@ function trivyIgnoreFailures(trivyIgnoreText, today = isoDate(new Date())) {
 	const failures = [];
 	const todayDate = parseCalendarDate(today);
 	const limit = isoDate(
-		new Date(Date.UTC(todayDate.getUTCFullYear() + 2, todayDate.getUTCMonth(), todayDate.getUTCDate())),
+		new Date(
+			Date.UTC(
+				todayDate.getUTCFullYear() + 2,
+				todayDate.getUTCMonth(),
+				todayDate.getUTCDate(),
+			),
+		),
 	);
 	trivyIgnoreText.split('\n').forEach((rawLine, index) => {
 		const line = rawLine.trim();
@@ -200,7 +201,9 @@ function trivyActionSettings(workflowYaml) {
 	const lines = workflowYaml
 		.split('\n')
 		.map(line => (line.trim().startsWith('#') ? '' : line.replace(/\s#.*$/, '')));
-	const usesIndex = lines.findIndex(line => /^\s*(- )?uses:\s*aquasecurity\/trivy-action@/.test(line));
+	const usesIndex = lines.findIndex(line =>
+		/^\s*(- )?uses:\s*aquasecurity\/trivy-action@/.test(line),
+	);
 	if (usesIndex === -1) return undefined;
 
 	let start = usesIndex;
@@ -216,7 +219,9 @@ function trivyActionSettings(workflowYaml) {
 	}
 
 	const section = name => {
-		const headerIndex = block.findIndex(line => new RegExp(`^ {${stepIndent + 2}}${name}:\\s*$`).test(line));
+		const headerIndex = block.findIndex(line =>
+			new RegExp(`^ {${stepIndent + 2}}${name}:\\s*$`).test(line),
+		);
 		if (headerIndex === -1) return [];
 		const entries = [];
 		for (let index = headerIndex + 1; index < block.length; index += 1) {

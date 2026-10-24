@@ -22,7 +22,12 @@ import { NewHeadsSubscription } from '../web3_subscriptions.js';
 import { transactionReceiptSchema } from '../schemas.js';
 import { isHash32, isValidUnsignedHexNumber } from './hex_guards.js';
 import { reportWatcherError } from './promi_event_errors.js';
-import { missingReceiptError, recheckReceipt } from './receipt_recheck.js';
+import {
+	missingReceiptError,
+	recheckReceipt,
+	changedReceiptStatusError,
+} from './receipt_recheck.js';
+import { MAX_CONSECUTIVE_POLLING_ERRORS } from '../constants.js';
 import { WaitProps, watchTransactionByPolling } from './watch_transaction_by_pooling.js';
 
 /**
@@ -44,6 +49,8 @@ export const watchTransactionBySubscription = <
 	returnFormat,
 }: WaitProps<ReturnFormat, ResolveType>) => {
 	let polling = false;
+	let rechecks = Promise.resolve();
+	let missingReceipts = 0;
 	let headerReceived = false;
 	let subscription: NewHeadsSubscription | undefined;
 	let lastCaughtBlockHash: string | undefined;
@@ -73,7 +80,7 @@ export const watchTransactionBySubscription = <
 		dropSubscription(subscription);
 		watchTransactionByPolling({
 			web3Context,
-			transactionReceipt,
+			transactionReceipt: receipt,
 			transactionPromiEvent,
 			returnFormat,
 		});
@@ -91,8 +98,6 @@ export const watchTransactionBySubscription = <
 				subscription = sub;
 				sub.on('data', (newBlockHeader: BlockHeaderOutput) => {
 					if (polling || subscription !== sub) return;
-					headerReceived = true;
-					cancelFallback();
 					if (
 						!newBlockHeader?.number ||
 						!isValidUnsignedHexNumber(newBlockHeader.number) ||
@@ -103,15 +108,24 @@ export const watchTransactionBySubscription = <
 					) {
 						return;
 					}
+					headerReceived = true;
+					cancelFallback();
 					lastCaughtBlockHash = newBlockHeader?.parentHash;
 					const headerNumber = BigInt(newBlockHeader.number);
 
 					// A new head arrived; make sure the transaction is still in the chain it
 					// extends before counting it as a confirmation (reorg awareness).
-					recheckReceipt(web3Context, receipt)
+					rechecks = rechecks
+						.then(async () =>
+							polling || subscription !== sub
+								? undefined
+								: recheckReceipt(web3Context, receipt),
+						)
 						.then(recheck => {
-							if (polling || subscription !== sub) return;
+							if (!recheck || polling || subscription !== sub) return;
 							if (recheck.kind === 'missing') {
+								missingReceipts += 1;
+								if (missingReceipts < MAX_CONSECUTIVE_POLLING_ERRORS) return;
 								dropSubscription(sub);
 								reportWatcherError(
 									transactionPromiEvent,
@@ -119,14 +133,21 @@ export const watchTransactionBySubscription = <
 								);
 								return;
 							}
+							if (recheck.kind !== 'unknown') missingReceipts = 0;
 							if (recheck.kind === 'moved') {
+								const changed = changedReceiptStatusError(receipt, recheck.receipt);
+								if (changed) {
+									dropSubscription(sub);
+									reportWatcherError(transactionPromiEvent, changed);
+									return;
+								}
 								receipt = recheck.receipt;
 							}
 
 							const confirmations =
 								headerNumber - BigInt(receipt.blockNumber) + BigInt(1);
 							// A header below the (new) receipt block confirms nothing.
-							if (confirmations < BigInt(1)) return;
+							if (confirmations < BigInt(2)) return;
 
 							transactionPromiEvent.emit('confirmation', {
 								confirmations: format(
@@ -145,8 +166,9 @@ export const watchTransactionBySubscription = <
 								dropSubscription(sub);
 							}
 						})
-						.catch(() => {
-							// `recheckReceipt` never rejects; nothing to do.
+						.catch(error => {
+							dropSubscription(sub);
+							reportWatcherError(transactionPromiEvent, error);
 						});
 				});
 				sub.on('error', () => {

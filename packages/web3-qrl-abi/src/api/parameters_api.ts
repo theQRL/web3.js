@@ -143,10 +143,16 @@ const isParamRequiredToConvert = (data: Result): boolean =>
 
 // Ethers-Encoder return the decoded result as an array with additional string indexes for named params
 // We want these to be converted to an object with named keys
-const formatArrayResToObject = (data: Result): DecodedParams => {
+const formatArrayResToObject = (
+	data: Result,
+	converted = new WeakMap<Result, DecodedParams>(),
+): DecodedParams => {
+	const existing = converted.get(data);
+	if (existing) return existing;
 	const returnValue: DecodedParams = {
 		__length__: 0,
 	};
+	converted.set(data, returnValue);
 
 	for (const key of Object.keys(data)) {
 		// `__length__` is the result's own counter: a parameter named like it (the ABI is
@@ -156,7 +162,7 @@ const formatArrayResToObject = (data: Result): DecodedParams => {
 		}
 		returnValue[key] =
 			Array.isArray(data[key]) && isParamRequiredToConvert(data[key] as Result)
-				? formatArrayResToObject(data[key] as Result)
+				? formatArrayResToObject(data[key] as Result, converted)
 				: data[key];
 
 		// Only the positional entries count: a name such as `'0x0'` is a named alias, not a
@@ -209,6 +215,13 @@ export const decodeParametersWith = (
  */
 /**
  * Decodes ABI encoded parameters to its JavaScript types.
+ *
+ * Named tuple components are available under both their numeric position and their name.
+ * Both enumerable keys reference the same child. Serializing the whole result with
+ * `JSON.stringify` duplicates that child at every level and can produce exponentially large
+ * output for deeply nested named tuples. Project one key per component before serialization
+ * and bound log depth/output size when handling untrusted ABIs.
+ *
  * @param abi -  An array of {@link AbiInput}. See the [Hyperion documentation](https://docs.soliditylang.org/en/develop/types.html) for a list of types.
  * @param bytes - The ABI byte code to decode
  * @returns - The result object containing the decoded parameters.

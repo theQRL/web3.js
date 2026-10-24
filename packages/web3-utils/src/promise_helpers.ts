@@ -180,8 +180,11 @@ export function rejectIfConditionAtInterval<T>(
 	interval: number,
 ): [Timer, Promise<never>] {
 	let intervalId: Timer | undefined;
+	let checking = false;
 	const rejectIfCondition = new Promise<never>((_, reject) => {
 		intervalId = setInterval(() => {
+			if (checking) return;
+			checking = true;
 			(async () => {
 				try {
 					const error = await cond();
@@ -195,6 +198,8 @@ export function rejectIfConditionAtInterval<T>(
 					clearInterval(intervalId);
 					// eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors -- whatever `cond` threw is propagated as is
 					reject(error);
+				} finally {
+					checking = false;
 				}
 			})() as unknown;
 		}, interval);

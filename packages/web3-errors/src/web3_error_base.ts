@@ -29,10 +29,50 @@ export const MAX_ECHOED_VALUE_LENGTH = 256;
  * full text stays wherever the caller keeps it (an `innerError`, a `data` member), so a
  * multi-megabyte `error.message` from a node cannot dictate the size of the error (P4-L-24).
  */
-export const truncateEchoedText = (text: string): string =>
-	text.length <= MAX_ECHOED_VALUE_LENGTH
-		? text
-		: `${text.slice(0, MAX_ECHOED_VALUE_LENGTH)}... [truncated, ${text.length} characters]`;
+export const truncateEchoedText = (text: string): string => {
+	const value = typeof text === 'string' ? text : String(text);
+	return value.length <= MAX_ECHOED_VALUE_LENGTH
+		? value
+		: `${value.slice(0, MAX_ECHOED_VALUE_LENGTH)}... [truncated, ${value.length} characters]`;
+};
+
+/** JSON-safe diagnostic copy with bigint, cycle and depth handling. */
+export const toJsonSafe = (value: unknown, ancestors = new Set<object>(), depth = 0): unknown => {
+	if (typeof value === 'bigint') return value.toString();
+	if (typeof value === 'function' || typeof value === 'symbol') return undefined;
+	// eslint-disable-next-line no-null/no-null -- JSON null is a diagnostic value.
+	if (typeof value !== 'object' || value === null) return value;
+	if (ancestors.has(value)) return '[Circular]';
+	if (depth >= 64) return '[Maximum depth]';
+	ancestors.add(value);
+	try {
+		if (Array.isArray(value)) {
+			return Array.from({ length: value.length }, (_, index) => {
+				const descriptor = Object.getOwnPropertyDescriptor(value, index);
+				return descriptor && 'value' in descriptor
+					? toJsonSafe(descriptor.value, ancestors, depth + 1)
+					: undefined;
+			});
+		}
+		const entries: [string, unknown][] =
+			value instanceof Error
+				? [
+						['name', value.name],
+						['message', value.message],
+					]
+				: [];
+		for (const [key, descriptor] of Object.entries(Object.getOwnPropertyDescriptors(value))) {
+			if (descriptor.enumerable && 'value' in descriptor && key !== 'toJSON') {
+				entries.push([key, toJsonSafe(descriptor.value, ancestors, depth + 1)]);
+			}
+		}
+		return Object.fromEntries(entries);
+	} catch {
+		return '[Unserialisable object]';
+	} finally {
+		ancestors.delete(value);
+	}
+};
 
 /**
  * Strips the user-info (`user:password@`) and everything after the authority (path, query,
@@ -86,7 +126,8 @@ export abstract class BaseWeb3Error extends Error implements Web3Error {
 	public static convertToString(value: unknown, unquotValue = false) {
 		// Using "null" value intentionally for validation
 		// eslint-disable-next-line no-null/no-null
-		if (value === null || value === undefined) return 'undefined';
+		if (value === null) return 'null';
+		if (value === undefined) return 'undefined';
 
 		let result: string | undefined;
 		try {
@@ -110,7 +151,7 @@ export abstract class BaseWeb3Error extends Error implements Web3Error {
 			name: this.name,
 			code: this.code,
 			message: this.message,
-			innerError: this.innerError,
+			innerError: toJsonSafe(this.innerError),
 		};
 	}
 }

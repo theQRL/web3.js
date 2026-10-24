@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Nested named tuple results are inspected once per positional child, avoiding exponential traversal of aliases (P5-ABI-1).
+
 ### Changed
 
 - **Breaking:** ABI values occupy 64-byte VM words. Explicit integer widths extend through `uint512` / `int512`; bare `uint` / `int` retain Hyperion 0.2.0's 256-bit bounds.

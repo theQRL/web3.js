@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Deploying from an addressed instance creates a new contract; explicit deployment destinations are rejected. Preserve backfill signature checks, indexed-array filter semantics, provider overrides and immutable error ABI fragments (P5-CT-1 through P5-CT-4, P5-ABI-3).
 - Encode indexed function filters as 64-byte hash topics, including OR filters, and match returned function hashes in `getPastEvents`.
 
 ### Changed

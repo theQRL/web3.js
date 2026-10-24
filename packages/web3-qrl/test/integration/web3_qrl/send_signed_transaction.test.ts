@@ -198,8 +198,8 @@ describe('Web3QRL.sendSignedTransaction', () => {
 
 		it('should listen to the confirmation event', async () => {
 			const expectedTransactionConfirmation = {
-				confirmationNumber: expect.any(BigInt),
-				receipt: {
+				confirmations: BigInt(1),
+				receipt: expect.objectContaining({
 					blockHash: expect.any(String),
 					blockNumber: expect.any(BigInt),
 					cumulativeGasUsed: expect.any(BigInt),
@@ -214,27 +214,19 @@ describe('Web3QRL.sendSignedTransaction', () => {
 					transactionHash: expect.any(String),
 					transactionIndex: BigInt(0),
 					type: BigInt(2),
-				},
+				}),
 				latestBlockHash: expect.any(String),
 			};
 
-			await web3QRL.sendSignedTransaction(signedTransaction.raw).on('confirmation', data => {
-				expect(data).toEqual(expect.objectContaining(expectedTransactionConfirmation));
+			const sent = web3QRL.sendSignedTransaction(signedTransaction.raw);
+			const confirmation = new Promise<unknown>((resolve, reject) => {
+				sent.once('confirmation', resolve);
+				sent.once('error', reject);
 			});
-
-			// TODO Confirmations are dependent on the next block being mined,
-			// this is manually triggering the next block to be created since both
-			// Some test clients wait for a transaction before mining a block.
-			// This should be revisited to implement a better solution
-			await web3QRL.sendTransaction({
-				from: tempAcc.address,
-				to: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
-				value: '0x1',
-				type: '0x2',
-				gas: '0x5208',
-			});
-
-			expect.assertions(1);
+			const [, confirmationData] = await Promise.all([sent, confirmation]);
+			expect(confirmationData).toEqual(
+				expect.objectContaining(expectedTransactionConfirmation),
+			);
 		});
 	});
 

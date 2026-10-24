@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Upgrade Zod to 4.6.6 and bound validation to 64 nesting levels, with at most 100 reported issues and bounded excerpts (P5-SC-1).
+- Remove the implicit 10,000-value cap on caller arguments, restoring large contract batch encoding (P5R-1). Both validation methods accept an optional `maxEntries` positive safe integer for untrusted data; the limit counts values across all nested containers and rejects oversized arrays before element traversal. No value-count limit applies by default.
+
 ### Changed
 
 - **Breaking:** Renamed the validator format `eip712TypedData` to `qrlTypedData`; typed-data schemas must contain `QRLTypedDataDomain` instead of `EIP712Domain`.

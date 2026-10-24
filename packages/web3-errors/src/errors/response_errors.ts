@@ -21,7 +21,7 @@ import {
 	JsonRpcResponse,
 	JsonRpcResponseWithError,
 } from '@theqrl/web3-types';
-import { BaseWeb3Error, truncateEchoedText } from '../web3_error_base.js';
+import { BaseWeb3Error, truncateEchoedText, toJsonSafe } from '../web3_error_base.js';
 import { ERR_INVALID_RESPONSE, ERR_RESPONSE, ERR_RESPONSE_TOO_LARGE } from '../error_codes.js';
 
 // To avoid circular package dependency, copied to code here. If you update this please update same function in `json_rpc.ts`
@@ -116,7 +116,11 @@ export class ResponseError<ErrorType = unknown, RequestType = unknown> extends B
 	}
 
 	public toJSON() {
-		return { ...super.toJSON(), data: this.data, request: this.request };
+		return {
+			...super.toJSON(),
+			data: toJsonSafe(this.data),
+			request: toJsonSafe(this.request),
+		};
 	}
 }
 

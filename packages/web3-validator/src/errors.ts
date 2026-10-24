@@ -15,12 +15,12 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { BaseWeb3Error, ERR_VALIDATION } from '@theqrl/web3-errors';
+import { BaseWeb3Error, ERR_VALIDATION, truncateEchoedText } from '@theqrl/web3-errors';
 import { Web3ValidationErrorObject } from '@theqrl/web3-types';
 
 const errorFormatter = (error: Web3ValidationErrorObject): string => {
 	if (error.message) {
-		return error.message;
+		return truncateEchoedText(error.message);
 	}
 
 	return 'unspecified error';
@@ -33,11 +33,11 @@ export class Web3ValidatorError extends BaseWeb3Error {
 	public constructor(errors: Web3ValidationErrorObject[]) {
 		super();
 
-		this.errors = errors;
+		this.errors = errors.slice(0, 100);
 
 		super.message = `Web3 validator found ${
 			errors.length
-		} error[s]:\n${this._compileErrors().join('\n')}`;
+		} error[s]:\n${this._compileErrors().join('\n')}${errors.length > 100 ? `\n... ${errors.length - 100} more errors omitted` : ''}`;
 	}
 
 	private _compileErrors(): string[] {
