@@ -16,7 +16,11 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { Web3Context, Web3ContextObject, Web3PromiEvent } from '@theqrl/web3-core';
-import { QRNSNetworkNotSyncedError, QRNSUnsupportedNetworkError } from '@theqrl/web3-errors';
+import {
+	QRNSNetworkNotSyncedError,
+	QRNSUnsupportedNetworkError,
+	Web3ContractError,
+} from '@theqrl/web3-errors';
 import { Contract } from '@theqrl/web3-qrl-contract';
 import { PublicResolverAbi } from '../../src/abi/qrns/PublicResolver';
 import { registryAddresses } from '../../src/config';
@@ -32,20 +36,21 @@ jest.mock('@theqrl/web3-qrl', () => ({
 	isSyncing: jest.fn(),
 }));
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { isSyncing } = require('@theqrl/web3-qrl');
 
 const expectedNetworkId = '0x1';
 jest.mock('@theqrl/web3-net', () => ({
 	getId: jest.fn(),
 }));
-// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { getId } = require('@theqrl/web3-net');
 
 describe('qrns', () => {
 	let object: Web3ContextObject;
 	let resolverContract: Contract<typeof PublicResolverAbi>;
-	const mockAddress = 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000';
+	const mockAddress =
+		'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000';
 	const QRNS_NAME = 'web3js.qrl';
 	let qrns: QRNS;
 
@@ -54,7 +59,7 @@ describe('qrns', () => {
 		object = context.getContextObject();
 
 		resolverContract = new Contract(PublicResolverAbi, mockAddress);
-		qrns = new QRNS(registryAddresses.main, object);
+		qrns = new QRNS(mockAddress, object);
 	});
 
 	describe('Resolver', () => {
@@ -112,6 +117,18 @@ describe('qrns', () => {
 	});
 
 	describe('addr', () => {
+		it('setAddr valid', async () => {
+			// eslint-disable-next-line @typescript-eslint/no-empty-function
+			const send = jest.spyOn({ send: () => {} }, 'send');
+
+			const setAddressMock = jest.spyOn(qrns['_resolver'], 'setAddress').mockReturnValue({
+				send,
+			} as unknown as Web3PromiEvent<any, any>);
+
+			const sendOptions = { from: mockAddress };
+			await qrns.setAddress(QRNS_NAME, mockAddress, sendOptions);
+			expect(setAddressMock).toHaveBeenCalledWith(QRNS_NAME, mockAddress, sendOptions);
+		});
 		it('getAddress', async () => {
 			// eslint-disable-next-line @typescript-eslint/no-empty-function
 			const call = jest.spyOn({ call: () => {} }, 'call');
@@ -140,13 +157,13 @@ describe('qrns', () => {
 		it('default params', async () => {
 			const localQrns = new QRNS();
 			expect(localQrns.provider).toBeUndefined();
-			expect(localQrns.registryAddress).toBe(registryAddresses.main);
+			expect(() => localQrns.registryAddress).toThrow(Web3ContractError);
 		});
 		it('set params', async () => {
-			const localQrns = new QRNS(registryAddresses.main, 'http://127.0.0.1:8545');
+			const localQrns = new QRNS(mockAddress, 'http://127.0.0.1:8545');
 			// @ts-expect-error check clientUrl field
 			expect(localQrns.provider?.clientUrl).toBe('http://127.0.0.1:8545');
-			expect(localQrns.registryAddress).toBe(registryAddresses.main);
+			expect(localQrns.registryAddress).toBe(mockAddress);
 		});
 	});
 
@@ -175,6 +192,45 @@ describe('qrns', () => {
 		});
 	});
 
+	describe('text', () => {
+		it('getText', async () => {
+			const getTextMock = jest.spyOn(qrns['_resolver'], 'getText').mockResolvedValue('value');
+
+			await qrns.getText(QRNS_NAME, 'url');
+			expect(getTextMock).toHaveBeenCalledWith(QRNS_NAME, 'url');
+		});
+
+		it('getText from address', async () => {
+			const getNameMock = jest
+				.spyOn(qrns['_resolver'], 'getName')
+				.mockResolvedValue(QRNS_NAME);
+			const getTextMock = jest.spyOn(qrns['_resolver'], 'getText').mockResolvedValue('value');
+
+			await qrns.getText(mockAddress, 'url');
+			expect(getNameMock).toHaveBeenCalledWith(mockAddress, false);
+			expect(getTextMock).toHaveBeenCalledWith(QRNS_NAME, 'url');
+		});
+
+		it('getText from an address without a verified name is an empty string (P4-L-31)', async () => {
+			jest.spyOn(qrns['_resolver'], 'getName').mockResolvedValue('');
+			const getTextMock = jest.spyOn(qrns['_resolver'], 'getText').mockResolvedValue('value');
+
+			await expect(qrns.getText(mockAddress, 'url')).resolves.toBe('');
+			expect(getTextMock).not.toHaveBeenCalled();
+		});
+	});
+
+	describe('name', () => {
+		it('getName', async () => {
+			const getNameMock = jest
+				.spyOn(qrns['_resolver'], 'getName')
+				.mockResolvedValue(QRNS_NAME);
+
+			await qrns.getName(mockAddress);
+			expect(getNameMock).toHaveBeenCalledWith(mockAddress, true);
+		});
+	});
+
 	it('supportsInterface', async () => {
 		const interfaceId = 'setAddr';
 		const supportsInterfaceMock = jest
@@ -190,10 +246,16 @@ describe('qrns', () => {
 
 	describe('CheckNetwork', () => {
 		beforeEach(() => {
+			qrns = new QRNS(undefined, object);
+			registryAddresses.main = mockAddress;
 			// eslint-disable-next-line @typescript-eslint/no-unsafe-call
 			getId.mockReset();
 			// eslint-disable-next-line @typescript-eslint/no-unsafe-call
 			isSyncing.mockReset();
+		});
+		afterEach(() => {
+			delete registryAddresses.main;
+			jest.useRealTimers();
 		});
 		it('Not last sync/QRNSNetworkNotSyncedError', async () => {
 			// eslint-disable-next-line @typescript-eslint/no-unsafe-call
@@ -232,23 +294,13 @@ describe('qrns', () => {
 		});
 
 		it('QRNSUnsupportedNetworkError', async () => {
-			// reset from previous check
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-call
-			qrns['_detectedAddress'] = undefined;
-
 			const network = 'AnUnsupportedNetwork';
 
 			// eslint-disable-next-line @typescript-eslint/no-unsafe-call
 			getId.mockImplementation(() => network);
 
 			// eslint-disable-next-line @typescript-eslint/no-unsafe-call
-			isSyncing.mockImplementation(() => {
-				return {
-					startingBlock: 100,
-					currentBlock: 312,
-					highestBlock: 51266,
-				} as unknown;
-			});
+			isSyncing.mockImplementation(() => false);
 
 			await expect(qrns.checkNetwork()).rejects.toThrow(
 				new QRNSUnsupportedNetworkError(network),

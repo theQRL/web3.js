@@ -29,13 +29,13 @@ export const isValidQRLBaseType = (type: string): boolean => {
 	}
 
 	if ((baseType === 'int' || baseType === 'uint') && baseTypeSize) {
-		if (!(baseTypeSize <= 256 && baseTypeSize % 8 === 0)) {
+		if (!(baseTypeSize <= 512 && baseTypeSize % 8 === 0)) {
 			return false;
 		}
 	}
 
 	if (baseType === 'bytes' && baseTypeSize) {
-		if (!(baseTypeSize >= 1 && baseTypeSize <= 32)) {
+		if (!(baseTypeSize >= 1 && baseTypeSize <= 64)) {
 			return false;
 		}
 	}

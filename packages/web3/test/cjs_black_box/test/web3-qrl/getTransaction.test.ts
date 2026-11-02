@@ -18,10 +18,9 @@ import {
 	closeOpenConnection,
 	getSystemTestProvider,
 	isWs,
-	// eslint-disable-next-line import/no-relative-packages
 } from '../../../shared_fixtures/system_tests_utils';
 /* eslint-disable @typescript-eslint/no-unsafe-call */
-// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const Web3 = require('@theqrl/web3').default;
 
 describe('CJS - Black Box Unit Tests - web3.qrl.getTransaction', () => {

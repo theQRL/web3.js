@@ -27,6 +27,7 @@ import {
 	hexToUint8Array,
 	uint8ArrayToHexString,
 	addressToHex,
+	parseBaseType,
 } from '../../src/utils';
 import { abiToJsonSchemaCases } from '../fixtures/abi_to_json_schema';
 import {
@@ -109,22 +110,59 @@ describe('utils', () => {
 		it.each(invalidHexData)('invalidHexData', (input: string) => {
 			expect(() => {
 				hexToNumber(input);
-			}).toThrow(new Error('Invalid hex string'));
+			}).toThrow(InvalidNumberError);
 		});
-	});
-	describe('numberToHex', () => {
-		it.each(validHexStrictDataWithNumber.map((tuple): [number | bigint, string] => [tuple[1], tuple[0]]))(
-			'valid numbers and bigints',
-			(input, res) => {
-				expect(numberToHex(input)).toEqual(res.toLowerCase());
+
+		it.each(['0x', '-0x', '0X'])(
+			'rejects the digitless quantity %s with a typed error (L-26)',
+			(input: string) => {
+				expect(() => hexToNumber(input)).toThrow(InvalidNumberError);
 			},
 		);
 
-		it.each(validHexStrictData as string[])('valid hex strings', input => {
-			expect(numberToHex(input)).toEqual(
-				// if input is '' then numberToHex would return "0x0"
-				(input === '' ? '0x0' : input).toLowerCase(),
-			);
+		it('does not return negative zero for -0x0 (L-26)', () => {
+			expect(Object.is(hexToNumber('-0x0'), 0)).toBe(true);
+		});
+	});
+	describe('numberToHex', () => {
+		it.each(
+			validHexStrictDataWithNumber.map((tuple): [number | bigint, string] => [
+				tuple[1],
+				tuple[0],
+			]),
+		)('valid numbers and bigints', (input, res) => {
+			expect(numberToHex(input)).toEqual(res.toLowerCase());
+		});
+
+		it.each((validHexStrictData as string[]).filter(input => !['0x', '0X'].includes(input)))(
+			'valid hex strings',
+			input => {
+				expect(numberToHex(input)).toEqual(input.toLowerCase());
+			},
+		);
+
+		it.each(['0x', '0X', '-0x', '', ' 1 ', '+1', '0b11', '1e3', '1.5'])(
+			'rejects %j, which is not an integer (L-27, L-28)',
+			input => {
+				expect(() => numberToHex(input)).toThrow(InvalidNumberError);
+			},
+		);
+
+		it.each([NaN, Infinity, -Infinity, 1.5])(
+			'rejects the non-integer number %s instead of printing it (L-26)',
+			input => {
+				expect(() => numberToHex(input)).toThrow(InvalidNumberError);
+			},
+		);
+
+		it.each([
+			['0x0', '0x0'],
+			['0x00', '0x0'],
+			['-0x0', '-0x0'],
+			['0x0001', '0x1'],
+			['0X0A', '0xa'],
+		])('keeps one zero digit when stripping leading zeros: %s -> %s (L-27)', (input, res) => {
+			expect(numberToHex(input)).toBe(res);
 		});
 
 		it.each(validStringNumbersWithHex)('valid string numbers', (input, res) => {
@@ -149,6 +187,38 @@ describe('utils', () => {
 		});
 	});
 
+	describe('parseBaseType', () => {
+		it.each([
+			['uint256', 'uint', 256, false, []],
+			['uint', 'uint', undefined, false, []],
+			['bytes32', 'bytes', 32, false, []],
+			['tuple[2][]', 'tuple', undefined, true, [2, -1]],
+			['address[]', 'address', undefined, true, [-1]],
+			['string', 'string', undefined, false, []],
+		])('parses %s', (type, baseType, baseTypeSize, isArray, arraySizes) => {
+			expect(parseBaseType(type)).toEqual({ baseType, baseTypeSize, isArray, arraySizes });
+		});
+
+		it.each([
+			'uint8x',
+			'bytes 3 2',
+			'uint[ 2]',
+			'int-8',
+			'string8',
+			'uintt',
+			'bytesabc',
+			' uint8',
+			'Uint8',
+		])('rejects the malformed type %j instead of guessing a size (I-11)', type => {
+			expect(parseBaseType(type).baseType).toBeUndefined();
+		});
+
+		it('rejects a non-string type without throwing (L-26)', () => {
+			expect(parseBaseType(5 as unknown as string).baseType).toBeUndefined();
+			expect(parseBaseType(undefined as unknown as string).baseType).toBeUndefined();
+		});
+	});
+
 	describe('padLeft', () => {
 		// eslint-disable-next-line @typescript-eslint/no-unsafe-call
 		it.each(padLeftData.data)('valid numbers and bigints', (input, res) => {
@@ -156,4 +226,23 @@ describe('utils', () => {
 			expect(padLeft(input, padLeftData.padDigits)).toBe(res);
 		});
 	});
+});
+
+test('hex conversion preserves every byte across chunk boundaries', () => {
+	const bytes = Uint8Array.from({ length: 20000 }, (_, index) => index % 256);
+	expect(uint8ArrayToHexString(bytes)).toBe('0x' + Buffer.from(bytes).toString('hex'));
+	expect(uint8ArrayToHexString(new Uint8Array())).toBe('0x');
+});
+test('rejects excessive ABI dimensions and combined tuple depth with a typed error', () => {
+	expect(() => parseBaseType('uint8' + '[]'.repeat(2000))).toThrow(/maximum depth 64/);
+	expect(() =>
+		qrlAbiToJsonSchema([
+			{
+				name: '',
+				type: 'tuple' + '[]'.repeat(32),
+				components: [{ name: '', type: 'uint8' + '[]'.repeat(32) }],
+			},
+		]),
+	).toThrow(/maximum depth 64/);
+	expect(() => qrlAbiToJsonSchema(['uint8' + '[]'.repeat(64)])).not.toThrow();
 });

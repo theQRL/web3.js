@@ -50,16 +50,14 @@ describe('[Common/Chains]: Initialization / Chain params', () => {
 
 	it('Should handle initialization errors', () => {
 		let f = function () {
-			// eslint-disable-next-line no-new
 			new Common({ chain: 'chainnotexisting' });
 		};
-		expect(f).toThrow('not supported'); // eslint-disable-line no-new
+		expect(f).toThrow('not supported');
 
 		f = function () {
-			// eslint-disable-next-line no-new
 			new Common({ chain: 'mainnet', hardfork: 'hardforknotexisting' });
 		};
-		expect(f).toThrow('not supported'); // eslint-disable-line no-new
+		expect(f).toThrow('not supported');
 	});
 
 	it('Should provide correct access to chain parameters', () => {

@@ -21,7 +21,7 @@ import {
 	JsonRpcOptionalRequest,
 } from '@theqrl/web3-types';
 import { jsonRpc, Web3DeferredPromise } from '@theqrl/web3-utils';
-import { OperationAbortError, OperationTimeoutError } from '@theqrl/web3-errors';
+import { OperationAbortError, OperationTimeoutError, ResponseError } from '@theqrl/web3-errors';
 import { Web3BatchRequest } from '../../src/web3_batch_request';
 
 describe('Web3BatchRequest', () => {
@@ -37,7 +37,6 @@ describe('Web3BatchRequest', () => {
 		batchRequest = new Web3BatchRequest(requestManager);
 
 		jest.spyOn(jsonRpc, 'toPayload').mockImplementation(request => {
-			// eslint-disable-next-line no-plusplus
 			return { ...request, id: request.id ?? ++requestId, jsonrpc: '2.0' };
 		});
 	});
@@ -174,7 +173,12 @@ describe('Web3BatchRequest', () => {
 
 			await expect(batchRequest.execute()).resolves.toEqual([response1, responseWithError]);
 			await expect(res1).resolves.toEqual(response1.result);
-			await expect(res2).rejects.toEqual(responseWithError.error);
+			// The entry is rejected with a typed error carrying the reply's error object (M-7a).
+			await expect(res2).rejects.toBeInstanceOf(ResponseError);
+			await expect(res2).rejects.toMatchObject({
+				innerError: responseWithError.error,
+				message: 'Returned error: RPC responded with error response',
+			});
 		});
 
 		it('should timeout if request not executed in a particular time', async () => {

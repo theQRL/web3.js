@@ -24,7 +24,6 @@ export default class WebSocket extends EventEmitter {
 	public OPEN = 1;
 
 	public constructor(...args: any[]) {
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-call
 		super(...args);
 
 		// Connected state
@@ -44,12 +43,10 @@ export default class WebSocket extends EventEmitter {
 	}
 
 	public addEventListener(event: any, cb: () => void) {
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-call
 		this.prependListener(event, cb);
 	}
 
 	public removeEventListener(event: any, cb: () => void) {
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-call
 		this.removeListener(event, cb);
 	}
 }

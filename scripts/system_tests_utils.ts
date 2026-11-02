@@ -15,9 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { format, SocketProvider } from '@theqrl/web3-utils';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import {
 	create as _createAccount,
 	decrypt,
@@ -25,12 +23,9 @@ import {
 	signTransaction,
 } from '@theqrl/web3-qrl-accounts';
 
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { prepareTransactionForSigning, Web3QRL } from '@theqrl/web3-qrl';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { Web3Context } from '@theqrl/web3-core';
 
-// eslint-disable-next-line import/no-extraneous-dependencies
 import {
 	QRLExecutionAPI,
 	Bytes,
@@ -44,12 +39,11 @@ import {
 	JsonRpcNotification,
 	QRL_DATA_FORMAT,
 	SupportedProviders,
+	TransactionReceipt,
 	Web3APISpec,
 	Web3QRLExecutionAPI,
 } from '@theqrl/web3-types';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import HttpProvider from '@theqrl/web3-providers-http';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { IpcProvider } from '@theqrl/web3-providers-ipc';
 import accountsString from './accounts.json';
 
@@ -57,7 +51,6 @@ import accountsString from './accounts.json';
 // '@theqrl/web3-qrl', so it can't be a dependency of web3-qrl, and turbo therefore doesn't
 // guarantee its lib outputs exist when unit tests pull this file in via fixture symlinks.
 // The runtime require below is lazy and only reached from integration-style helpers.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Web3 = any;
 
 type NonPayableMethodObject = {
@@ -70,7 +63,7 @@ type NonPayableMethodObject = {
 export const getEnvVar = (name: string): string | undefined =>
 	// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 	// @ts-expect-error
-	// eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+	// eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
 	global.Cypress ? Cypress.env(name) : process.env[name];
 
 export const DEFAULT_SYSTEM_PROVIDER = 'http://127.0.0.1:8545';
@@ -139,7 +132,6 @@ export const waitForOpenConnection = async (
 				clearInterval(interval);
 				resolve();
 			}
-			// eslint-disable-next-line no-plusplus, no-param-reassign
 			currentAttempt++;
 		}, intervalTime);
 	});
@@ -229,13 +221,17 @@ export const createAccountProvider = (context: Web3Context<QRLExecutionAPI>) => 
 };
 
 export const refillAccount = async (from: string, to: string, value: string | number) => {
-	const web3QRL = new Web3QRL(getSystemTestProviderUrl());
+	const web3QRL = new Web3QRL(getSystemTestProvider());
 
-	await web3QRL.sendTransaction({
-		from,
-		to,
-		value,
-	});
+	try {
+		await web3QRL.sendTransaction({
+			from,
+			to,
+			value,
+		});
+	} finally {
+		await closeOpenConnection(web3QRL);
+	}
 };
 
 let mainAcc: string;
@@ -245,12 +241,14 @@ export const createNewAccount = async (config?: {
 }): Promise<{ address: string; seed: string }> => {
 	const acc = config?.seed ? seedToAccount(config?.seed) : _createAccount();
 
-	const clientUrl = getSystemTestProviderUrl();
-
 	if (config?.refill) {
-		const web3QRL = new Web3QRL(clientUrl);
 		if (!mainAcc) {
-			[mainAcc] = await web3QRL.getAccounts();
+			const web3QRL = new Web3QRL(getSystemTestProvider());
+			try {
+				[mainAcc] = await web3QRL.getAccounts();
+			} finally {
+				await closeOpenConnection(web3QRL);
+			}
 		}
 		await refillAccount(mainAcc, acc.address, '10000000000000000000');
 	}
@@ -312,7 +310,7 @@ type Web3Constructor = new (provider: SupportedProviders) => Web3;
 const createWeb3 = (provider: unknown): Web3 => {
 	// Load the umbrella package only in helpers that need it. Some unit tests import this
 	// fixture for account helpers, and eager loading races Turbo's package build outputs.
-	// eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports, import/no-extraneous-dependencies, global-require
+	// eslint-disable-next-line @typescript-eslint/no-require-imports
 	const Web3Ctor = (require('@theqrl/web3') as { default: Web3Constructor }).default;
 	return new Web3Ctor(provider as SupportedProviders);
 };
@@ -350,9 +348,7 @@ export const signAndSendContractMethodEIP1559 = async (
 export const createLocalAccount = async (web3: ReturnType<typeof createWeb3>) => {
 	const account = web3.qrl.accounts.create();
 	await refillAccount(
-		(
-			await createTempAccount()
-		).address,
+		(await createTempAccount()).address,
 		account.address,
 		'100000000000000000000',
 	);
@@ -360,7 +356,6 @@ export const createLocalAccount = async (web3: ReturnType<typeof createWeb3>) =>
 	return account;
 };
 /* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 const socketWaitTimeoutMs = 5_000;
 const socketPollIntervalMs = 50;
 
@@ -410,20 +405,13 @@ const waitForSocketStatus = async <ResultType>(
 };
 
 export const waitForSocketConnect = async (provider: SocketProvider<any, any, any>) =>
-	waitForSocketStatus(
-		provider,
-		'connected',
-		'connect',
-		{} as ProviderConnectInfo,
-	);
+	waitForSocketStatus(provider, 'connected', 'connect', {} as ProviderConnectInfo);
 
 export const waitForSocketDisconnect = async (provider: SocketProvider<any, any, any>) =>
-	waitForSocketStatus(
-		provider,
-		'disconnected',
-		'disconnect',
-		{ code: 1000, message: '' } as ProviderRpcError,
-	);
+	waitForSocketStatus(provider, 'disconnected', 'disconnect', {
+		code: 1000,
+		message: '',
+	} as ProviderRpcError);
 
 export const waitForOpenSocketConnection = async (provider: SocketProvider<any, any, any>) =>
 	waitForSocketConnect(provider);
@@ -442,20 +430,22 @@ export const waitForEvent = async (
 	});
 
 export const sendFewSampleTxs = async (cnt = 1) => {
-	const web3 = createWeb3(getSystemTestProviderUrl());
+	const web3 = createWeb3(getSystemTestProvider());
 	const fromAcc = await createLocalAccount(web3);
 	const toAcc = createAccount();
-	const res: unknown[] = [];
+	const res: TransactionReceipt[] = [];
 	for (let i = 0; i < cnt; i += 1) {
-		res.push(
-			// eslint-disable-next-line no-await-in-loop
-			await web3.qrl.sendTransaction({
-				to: toAcc.address,
-				value: '0x1',
-				from: fromAcc.address,
-				gas: '300000',
-			}),
-		);
+		// eslint-disable-next-line no-await-in-loop
+		const receipt = await web3.qrl.sendTransaction({
+			to: toAcc.address,
+			value: '0x1',
+			from: fromAcc.address,
+			gas: '300000',
+		});
+
+		if (receipt.status !== BigInt(1)) throw new Error('sendFewSampleTxs failed ');
+
+		res.push(receipt);
 	}
 	await closeOpenConnection(web3 as unknown as Web3Context);
 	return res;

@@ -1,0 +1,71 @@
+// SPDX-License-Identifier: LGPL-3.0
+pragma hyperion 0.2.0;
+
+interface CallbackTarget {
+    function ping() external;
+}
+
+contract AbiCompatibility {
+    struct Bundle {
+        function() external callback;
+        bytes payload;
+    }
+
+    function pointer() private pure returns (function() external) {
+        return CallbackTarget(address(uint512(
+            0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+        ))).ping;
+    }
+
+    function aliases() external pure returns (bytes memory) {
+        return abi.encode(type(uint).max, int(-1));
+    }
+
+    function wideIntegers() external pure returns (bytes memory) {
+        return abi.encode(uint512(1) << 400, -(int512(1) << 400));
+    }
+
+    function functionAndString() external pure returns (bytes memory) {
+        return abi.encode(pointer(), uint(7), "hello");
+    }
+
+    function fixedFunctions() external pure returns (bytes memory) {
+        function() external[2] memory callbacks = [pointer(), pointer()];
+        return abi.encode(callbacks, uint(9));
+    }
+
+    function dynamicFunctions() external pure returns (bytes memory) {
+        function() external[] memory callbacks = new function() external[](2);
+        callbacks[0] = pointer();
+        callbacks[1] = pointer();
+        return abi.encode(callbacks, uint(9));
+    }
+
+    function nestedFunction() external pure returns (bytes memory) {
+        return abi.encode(Bundle(pointer(), hex"010203"), uint(9));
+    }
+
+    function packed() external pure returns (bytes memory) {
+        return abi.encodePacked(uint(1), int(-2), pointer());
+    }
+
+    function packedFunctions() external pure returns (bytes memory) {
+        function() external[2] memory callbacks = [pointer(), pointer()];
+        return abi.encodePacked(callbacks);
+    }
+
+    function packedIntegers() external pure returns (bytes memory) {
+        uint[2] memory unsigned = [uint(1), type(uint).max];
+        int[2] memory signed = [int(-2), type(int).min];
+        return abi.encodePacked(unsigned, signed);
+    }
+
+    function panicAssert() external pure {
+        assert(false);
+    }
+
+    function panicDivision() external pure returns (uint) {
+        uint zero;
+        return 1 / zero;
+    }
+}

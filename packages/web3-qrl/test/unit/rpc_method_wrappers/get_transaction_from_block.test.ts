@@ -24,7 +24,7 @@ import {
 	Bytes,
 	Web3QRLExecutionAPI,
 } from '@theqrl/web3-types';
-import { isBytes, isNullish } from '@theqrl/web3-validator';
+import { isBlockTag, isBytes, isNullish } from '@theqrl/web3-validator';
 import { qrlRpcMethods } from '@theqrl/web3-rpc-methods';
 
 import { getTransactionFromBlock } from '../../../src/rpc_method_wrappers';
@@ -44,7 +44,8 @@ describe('getTransactionFromBlock', () => {
 		`should call rpcMethods.getTransactionFromBlock with expected parameters\nTitle: %s\nInput parameters: %s\n`,
 		async (_, inputParameters) => {
 			const [inputBlock, inputTransactionIndex] = inputParameters;
-			const inputBlockIsBytes = isBytes(inputBlock as Bytes);
+			// Only a 32-byte value is a block hash (P4-L-11).
+			const inputBlockIsBytes = isBytes(inputBlock as Bytes, { size: 32 });
 			const inputTransactionIndexFormatted = format(
 				{ format: 'uint' },
 				inputTransactionIndex,
@@ -77,19 +78,28 @@ describe('getTransactionFromBlock', () => {
 	it.each(testData)(
 		`should format mockRpcResponse using provided return format\nTitle: %s\nInput parameters: %s\n`,
 		async (_, inputParameters) => {
-			const [inputBlock] = inputParameters;
+			const [inputBlock, inputIndex] = inputParameters;
+			const requested = inputBlock ?? web3Context.defaultBlock;
+			const response = {
+				...mockRpcResponse,
+				transactionIndex: format({ format: 'uint' }, inputIndex, QRL_DATA_FORMAT),
+				...(isBytes(requested as Bytes, { size: 32 })
+					? { blockHash: format({ format: 'bytes32' }, requested, QRL_DATA_FORMAT) }
+					: isBlockTag(requested as string)
+						? {}
+						: { blockNumber: format({ format: 'uint' }, requested, QRL_DATA_FORMAT) }),
+			};
 			const expectedReturnFormat = { number: FMT_NUMBER.STR, bytes: FMT_BYTES.UINT8ARRAY };
-			const expectedFormattedResult = formatTransaction(
-				mockRpcResponse,
-				expectedReturnFormat,
-				{ transactionSchema: transactionInfoSchema },
-			);
-			const inputBlockIsBytes = isBytes(inputBlock as Bytes);
+			const expectedFormattedResult = formatTransaction(response, expectedReturnFormat, {
+				transactionSchema: transactionInfoSchema,
+			});
+			// Only a 32-byte value is a block hash (P4-L-11).
+			const inputBlockIsBytes = isBytes(inputBlock as Bytes, { size: 32 });
 			(
 				(inputBlockIsBytes
 					? qrlRpcMethods.getTransactionByBlockHashAndIndex
 					: qrlRpcMethods.getTransactionByBlockNumberAndIndex) as jest.Mock
-			).mockResolvedValueOnce(mockRpcResponse);
+			).mockResolvedValueOnce(response);
 
 			const result = await getTransactionFromBlock(
 				web3Context,

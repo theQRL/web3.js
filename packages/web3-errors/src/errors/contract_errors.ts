@@ -15,8 +15,6 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/* eslint-disable max-classes-per-file */
-
 import { JsonRpcError, TransactionReceipt, HexString } from '@theqrl/web3-types';
 import {
 	ERR_CONTRACT,
@@ -32,7 +30,12 @@ import {
 	ERR_CONTRACT_RESOLVER_MISSING,
 	ERR_CONTRACT_TX_DATA_AND_INPUT,
 } from '../error_codes.js';
-import { BaseWeb3Error, InvalidValueError } from '../web3_error_base.js';
+import {
+	BaseWeb3Error,
+	InvalidValueError,
+	toJsonSafe,
+	truncateEchoedText,
+} from '../web3_error_base.js';
 
 export class Web3ContractError extends BaseWeb3Error {
 	public code = ERR_CONTRACT;
@@ -47,7 +50,10 @@ export class Web3ContractError extends BaseWeb3Error {
 export class ResolverMethodMissingError extends BaseWeb3Error {
 	public code = ERR_CONTRACT_RESOLVER_MISSING;
 
-	public constructor(public address: string, public name: string) {
+	public constructor(
+		public address: string,
+		public name: string,
+	) {
 		super(`The resolver at ${address} does not implement requested method: "${name}".`);
 	}
 
@@ -131,47 +137,61 @@ export type ProviderErrorData =
 	| { data: HexString }
 	| { originalError: { data: HexString } };
 
+/** A provider-supplied object, read member by member without trusting its shape. */
+const isObject = (value: unknown): value is Record<string, unknown> =>
+	// eslint-disable-next-line no-null/no-null
+	typeof value === 'object' && value !== null;
+
 /**
  * This class is expected to be set as an `innerError` inside ContractExecutionError
  * The properties would be typically decoded from the `data` if it was encoded according to EIP-838
+ *
+ * The revert data is read from the documented places only: `error.data`, `error.data.data`
+ * or `error.data.originalError.data` (the last two are what wallet providers such as
+ * MetaMask wrap a node error into). Exactly one level is unwrapped and `data` is accepted only
+ * when it is a string: the structure is provider supplied, so it is neither recursed into
+ * (a deeply nested `data` used to overflow the stack) nor are its `name` or `stack` members
+ * copied onto this error (L-45).
  */
 export class Eip838ExecutionError extends Web3ContractError {
-	public readonly name: string;
 	public code: number;
 	public data?: HexString;
 	public errorName?: string;
 	public errorSignature?: string;
 	public errorArgs?: { [K in string]: unknown };
 
-	// eslint-disable-next-line no-use-before-define
 	public innerError: Eip838ExecutionError | undefined;
 
 	public constructor(error: JsonRpcError<ProviderErrorData> | Eip838ExecutionError) {
-		super(error.message || 'Error');
+		super(
+			typeof error?.message === 'string' && error.message
+				? truncateEchoedText(error.message)
+				: 'Error',
+		);
 
-		this.name = ('name' in error && error.name) || this.constructor.name;
-		this.stack = ('stack' in error && error.stack) || undefined;
-		this.code = error.code;
+		this.code = error?.code;
 
-		// get embedded error details got from some providers like MetaMask
-		// and set this.data from the inner error data for easier read.
-		// note: the data is a hex string inside either:
-		//	 error.data, error.data.data or error.data.originalError.data (https://github.com/web3/web3.js/issues/4454#issuecomment-1485953455)
-		if (typeof error.data === 'object') {
-			let originalError: { data: string };
-			if ('originalError' in error.data) {
-				originalError = error.data.originalError;
-			} else {
-				// Some provider implementations have no `originalError` sub-object.
-				originalError = error.data;
-			}
-			this.data = originalError.data;
-			this.innerError = new Eip838ExecutionError(
-				originalError as JsonRpcError<ProviderErrorData>,
-			);
-		} else {
-			this.data = error.data;
+		const { data } = (error ?? {}) as { data?: unknown };
+		if (typeof data === 'string') {
+			this.data = data;
+			return;
 		}
+		if (!isObject(data)) {
+			// `null`, a number, a boolean: nothing to decode.
+			this.data = undefined;
+			return;
+		}
+
+		// Some provider implementations have no `originalError` sub-object.
+		const source = isObject(data.originalError) ? data.originalError : data;
+		this.data = typeof source.data === 'string' ? source.data : undefined;
+		// The unwrapped level stays reachable as `innerError`, built from a flat copy of the
+		// three members this class reads, so that construction cannot recurse further.
+		this.innerError = new Eip838ExecutionError({
+			code: source.code,
+			message: source.message,
+			data: toJsonSafe(this.data),
+		} as JsonRpcError<ProviderErrorData>);
 	}
 
 	public setDecodedProperties(
@@ -187,16 +207,16 @@ export class Eip838ExecutionError extends Web3ContractError {
 	public toJSON() {
 		let json = {
 			...super.toJSON(),
-			data: this.data,
+			data: toJsonSafe(this.data),
 		} as {
 			name: string;
 			code: number;
 			message: string;
-			innerError: Error | Error[] | undefined;
+			innerError: unknown;
 			data: string;
 			errorName?: string;
 			errorSignature?: string;
-			errorArgs?: { [K in string]: unknown };
+			errorArgs?: unknown;
 		};
 
 		if (this.errorName) {
@@ -204,7 +224,7 @@ export class Eip838ExecutionError extends Web3ContractError {
 				...json,
 				errorName: this.errorName,
 				errorSignature: this.errorSignature,
-				errorArgs: this.errorArgs,
+				errorArgs: toJsonSafe(this.errorArgs),
 			};
 		}
 		return json;

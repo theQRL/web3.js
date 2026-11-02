@@ -20,6 +20,8 @@ import WebSocketProvider from '../../src/index';
 jest.mock('isomorphic-ws');
 describe('WebSocketProvider', () => {
 	let send: () => void;
+	const testAddress =
+		'Q83cd1122848dd1b2E3AF9ca60a1340e595B2C6d5b3B340AfD625e38EEf9067bc9C28db215702Aa8B3C0243Bb13785a9365A35ee1Fe8e57983b1D47d9fff835a3';
 	beforeAll(() => {
 		send = jest.fn();
 		jest.spyOn(WebSocket.prototype, 'send').mockImplementation(send);
@@ -41,7 +43,8 @@ describe('WebSocketProvider', () => {
 			const _closeSocketConnection = jest.fn();
 			const _removeSocketListeners = jest.fn();
 			const _onDisconnect = jest.fn();
-			const code = 1002;
+			// 1002 (protocol error) is not a code a client may send: refused since P4-L-17.
+			const code = 4000;
 			const data = 'data';
 			// @ts-expect-error mock method
 			jest.spyOn(WebSocketProvider.prototype, '_closeSocketConnection').mockImplementation(
@@ -80,7 +83,7 @@ describe('WebSocketProvider', () => {
 			const close = jest.fn();
 			// @ts-expect-error mock method
 			ws._socketConnection.close = close;
-			const code = 1002;
+			const code = 4000;
 			const data = 'data';
 			ws.disconnect(code, data);
 			expect(close).toHaveBeenCalledWith(code, data);
@@ -96,7 +99,7 @@ describe('WebSocketProvider', () => {
 					jsonrpc: '2.0',
 					id: 42,
 					method: 'qrl_getBalance',
-					params: ['Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000407d73d8a49eeb85d32cf465507dd71d507100c1', 'latest'],
+					params: [testAddress, 'latest'],
 				}),
 			).rejects.toThrow('Connection not open');
 		});

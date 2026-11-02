@@ -15,7 +15,9 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import express from 'express';
+import { once } from 'events';
 import { Server } from 'http';
+import { AddressInfo } from 'net';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import WebSocketProvider from '../../src/index';
 import {
@@ -29,27 +31,28 @@ import {
 describeIf(isWs)('Support of Basic Auth', () => {
 	let server: Server;
 	let clientWsUrl: string;
+	let proxyUrl: string;
 	let webSocketProvider: WebSocketProvider;
 
-	beforeAll(() => {
+	beforeAll(async () => {
 		clientWsUrl = getSystemTestProviderUrl();
 		const app = express();
-		const port = 3000;
-		const host = 'localhost';
 
 		const wsProxy = createProxyMiddleware({
 			target: clientWsUrl,
 			changeOrigin: true,
 			ws: true,
-			onError: () => {
-				console.warn('************** proxy error');
+			on: {
+				error: () => {
+					console.warn('************** proxy error');
+				},
 			},
-			logLevel: 'silent',
 		});
 
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-call
 		app.use(wsProxy);
-		server = app.listen(port, host);
+		server = app.listen(0, '127.0.0.1');
+		await once(server, 'listening');
+		proxyUrl = `ws://127.0.0.1:${(server.address() as AddressInfo).port}`;
 
 		server.on('upgrade', (req, socket, head) => {
 			if (!req.headers.authorization?.includes('Basic ')) {
@@ -73,20 +76,23 @@ describeIf(isWs)('Support of Basic Auth', () => {
 	});
 	beforeEach(() => {
 		webSocketProvider = new WebSocketProvider(
-			'ws://gqrl:authpass@localhost:3000',
-			{},
+			proxyUrl,
+			{
+				headers: {
+					authorization: `Basic ${Buffer.from('gqrl:authpass').toString('base64')}`,
+				},
+			},
 			{ delay: 1, autoReconnect: false, maxAttempts: 1 },
 		);
 	});
 	afterEach(async () => {
-		if (webSocketProvider.getStatus() !== 'disconnected') {
+		if (webSocketProvider && webSocketProvider.getStatus() !== 'disconnected') {
 			const closePromise = waitForCloseSocketConnection(webSocketProvider);
 			webSocketProvider.disconnect();
 			await closePromise;
 		}
 	});
-	// eslint-disable-next-line jest/expect-expect
-	test('should connect with basic auth', async () => {
+	test('should connect with basic auth in an explicit header', async () => {
 		await waitForSocketConnect(webSocketProvider);
 		expect(webSocketProvider.getStatus()).toBe('connected');
 	});

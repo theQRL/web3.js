@@ -47,13 +47,11 @@ describe('HttpProvider', () => {
 	}
 
 	for (const invalidClient of invalidClients) {
-		/* eslint-disable @typescript-eslint/restrict-template-expressions */
 		it(`Instantiation with invalid client - ${invalidClient}`, () => {
 			expect(
 				() =>
 					// @ts-expect-error - Purposefully passing invalid types to check validation
 					new HttpProvider(invalidClient),
-				/* eslint-disable @typescript-eslint/restrict-template-expressions */
 			).toThrow(`Client URL "${invalidClient}" is invalid.`);
 		});
 	}

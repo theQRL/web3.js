@@ -25,11 +25,11 @@ export const isTopic = (topic: string): boolean => {
 		return false;
 	}
 
-	if (!/^(0x)?[0-9a-f]{64}$/i.test(topic)) {
+	if (!/^(0x)?[0-9a-f]{128}$/i.test(topic)) {
 		return false;
 	}
 
-	if (/^(0x)?[0-9a-f]{64}$/.test(topic) || /^(0x)?[0-9A-F]{64}$/.test(topic)) {
+	if (/^(0x)?[0-9a-f]{128}$/.test(topic) || /^(0x)?[0-9A-F]{128}$/.test(topic)) {
 		return true;
 	}
 
@@ -49,5 +49,6 @@ export const isTopicInBloom = (bloom: string, topic: string): boolean => {
 		return false;
 	}
 
-	return isInBloom(bloom, topic);
+	// `isTopic` accepts an unprefixed topic but `isInBloom` needs strict hex (P4-L-41).
+	return isInBloom(bloom, topic.startsWith('0x') ? topic : `0x${topic}`);
 };

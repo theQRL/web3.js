@@ -24,3 +24,6 @@ export const ALL_EVENTS_ABI = {
 	type: 'event',
 	inputs: [],
 } as AbiEventFragment & { signature: string };
+
+/** A QRVM log topic is a 64-byte word: 128 hex characters. */
+export const TOPIC_HEX_LENGTH = 128;

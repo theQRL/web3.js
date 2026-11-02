@@ -18,7 +18,11 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import { AbiError } from '@theqrl/web3-errors';
 import { sha3Raw } from '@theqrl/web3-utils';
 import { AbiFunctionFragment } from '@theqrl/web3-types';
-import { isAbiFunctionFragment, jsonInterfaceMethodToString } from '../utils.js';
+import {
+	canonicalizeSignature,
+	isAbiFunctionFragment,
+	jsonInterfaceMethodToString,
+} from '../utils.js';
 import { encodeParameters } from './parameters_api.js';
 
 // todo Add link to JSON interface documentation
@@ -63,7 +67,7 @@ export const encodeFunctionSignature = (functionName: string | AbiFunctionFragme
 	let name: string;
 
 	if (typeof functionName === 'string') {
-		name = functionName;
+		name = canonicalizeSignature(functionName);
 	} else {
 		name = jsonInterfaceMethodToString(functionName);
 	}
@@ -119,11 +123,11 @@ export const encodeFunctionSignature = (functionName: string | AbiFunctionFragme
  *     stateMutability: "view",
  *     type: "function",
  *   },
- *   ["Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000001234567890123456789012345678901234567890"]
+ *   ["Qd5812F6Cf4a0f645aa620cd57319a0Ed649dd8f5519A9dde7770ae5b0E49e547985f35eB972A2a07041561aa39c65A3991478f9B1e6749e05277dcf58A9A8B72"]
  * );
  *
  * console.log(sig);
- * > 0x70a0823100000000000000000000000000000000000000000000000000000000000000000000000000000000000000001234567890123456789012345678901234567890
+ * > 0x70a08231d5812f6cf4a0f645aa620cd57319a0ed649dd8f5519a9dde7770ae5b0e49e547985f35eb972a2a07041561aa39c65a3991478f9b1e6749e05277dcf58a9a8b72
  * ```
  */
 export const encodeFunctionCall = (

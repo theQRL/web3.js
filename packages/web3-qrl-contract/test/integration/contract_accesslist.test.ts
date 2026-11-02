@@ -15,7 +15,6 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { isNullish } from '@theqrl/web3-utils';
 import { Contract } from '../../src';
 import { GreeterBytecode, GreeterAbi } from '../shared_fixtures/build/Greeter';
 import {
@@ -62,15 +61,13 @@ describe('contract', () => {
 			const accessListResult = {
 				accessList: [
 					{
-						address: isNullish(deployedContract.options.address)
-							? deployedContract.options.address
-							: `Q${deployedContract.options.address.slice(1).toLowerCase()}`,
+						address: deployedContract.options.address,
 						storageKeys: [
 							'0x0000000000000000000000000000000000000000000000000000000000000001',
 						],
 					},
 				],
-				gasUsed: '0x863a',
+				gasUsed: '0xa5bf',
 			};
 
 			expect(accessList).toStrictEqual(accessListResult);
@@ -90,15 +87,13 @@ describe('contract', () => {
 			const accessListResult = {
 				accessList: [
 					{
-						address: isNullish(deployedContract.options.address)
-							? deployedContract.options.address
-							: `Q${deployedContract.options.address.slice(1).toLowerCase()}`,
+						address: deployedContract.options.address,
 						storageKeys: [
 							'0x0000000000000000000000000000000000000000000000000000000000000001',
 						],
 					},
 				],
-				gasUsed: '0x68a0',
+				gasUsed: '0x74b3',
 			};
 
 			expect(accessList).toStrictEqual(accessListResult);

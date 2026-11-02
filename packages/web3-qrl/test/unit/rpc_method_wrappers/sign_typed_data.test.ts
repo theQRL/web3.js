@@ -39,6 +39,7 @@ describe('signTypedData', () => {
 	it.each(testData)(
 		`should call rpcMethods.signTypedData with expected parameters\nTitle: %s\nInput parameters: %s\n`,
 		async (_, inputParameters) => {
+			(qrlRpcMethods.signTypedData as jest.Mock).mockResolvedValueOnce(mockRpcResponse);
 			await signTypedData(web3Context, ...inputParameters, DEFAULT_RETURN_FORMAT);
 			expect(qrlRpcMethods.signTypedData).toHaveBeenCalledWith(
 				web3Context.requestManager,

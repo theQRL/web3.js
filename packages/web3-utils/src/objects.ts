@@ -1,4 +1,4 @@
-﻿/*
+/*
 This file is part of web3.js.
 
 web3.js is free software: you can redistribute it and/or modify
@@ -15,8 +15,18 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+import { FormatterError } from '@theqrl/web3-errors';
 import { TypedArray } from '@theqrl/web3-types';
 import { isNullish } from '@theqrl/web3-validator';
+
+/**
+ * The deepest nesting {@link mergeDeep} (and so the formatter) accepts.
+ *
+ * Blocks, receipts, transactions and fee histories are a handful of levels deep. A reply
+ * nested thousands of levels deep parses fine (V8's `JSON.parse` is iterative) but used to
+ * exhaust the call stack of the recursive copy with a raw `RangeError` (L-31).
+ */
+export const MAX_NESTING_DEPTH = 64;
 
 const isIterable = (item: unknown): item is Record<string, unknown> =>
 	typeof item === 'object' &&
@@ -24,23 +34,45 @@ const isIterable = (item: unknown): item is Record<string, unknown> =>
 	!Array.isArray(item) &&
 	!(item instanceof TypedArray);
 
-// The following code is a derivative work of the code from the "LiskHQ/lisk-sdk" project,
-// which is licensed under Apache version 2.
-/**
- * Deep merge two objects.
- * @param destination - The destination object.
- * @param sources - An array of source objects.
- * @returns - The merged object.
- */
 const FORBIDDEN_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 
-export const mergeDeep = (
+const assertDepth = (depth: number): void => {
+	if (depth > MAX_NESTING_DEPTH) {
+		throw new FormatterError(
+			`Object nesting exceeds the maximum depth of ${MAX_NESTING_DEPTH}`,
+		);
+	}
+};
+
+const cloneValue = (value: unknown, depth: number): unknown => {
+	if (Array.isArray(value)) {
+		assertDepth(depth);
+		// Elements are copied too: a shallow `slice(0)` shared every element object with the
+		// caller, so the formatter rewrote the dApp's own `accessList` entries (L-20).
+		return value.map(element => cloneValue(element, depth + 1));
+	}
+
+	if (value instanceof TypedArray) {
+		return (value as Uint8Array).slice(0);
+	}
+
+	if (isIterable(value)) {
+		// eslint-disable-next-line no-use-before-define
+		return mergeDeepAt({}, depth, value);
+	}
+
+	return value;
+};
+
+const mergeDeepAt = (
 	destination: Record<string, unknown>,
+	depth: number,
 	...sources: Record<string, unknown>[]
 ): Record<string, unknown> => {
 	if (!isIterable(destination)) {
 		return destination;
 	}
+	assertDepth(depth);
 	const result = { ...destination };
 	for (const src of sources) {
 		// eslint-disable-next-line no-restricted-syntax
@@ -52,19 +84,71 @@ export const mergeDeep = (
 				if (!result[key]) {
 					result[key] = {};
 				}
-				result[key] = mergeDeep(
+				result[key] = mergeDeepAt(
 					result[key] as Record<string, unknown>,
+					depth + 1,
 					src[key] as Record<string, unknown>,
 				);
-			} else if (!isNullish(src[key])) {
-				if (Array.isArray(src[key]) || src[key] instanceof TypedArray) {
-					// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
-					result[key] = (src[key] as unknown[]).slice(0);
-				} else {
-					result[key] = src[key];
-				}
+			} else if (src[key] !== undefined) {
+				// `null` is a value (a node reply's `to: null` means "no receiver") and is kept;
+				// only `undefined` means "not given" and leaves the destination's member alone.
+				result[key] = cloneValue(src[key], depth + 1);
 			}
 		}
 	}
 	return result;
 };
+
+// The following code is a derivative work of the code from the "LiskHQ/lisk-sdk" project,
+// which is licensed under Apache version 2.
+/**
+ * Deep merge two objects.
+ *
+ * The result shares nothing with the sources: nested objects, arrays and the objects inside
+ * arrays are copied, typed arrays are duplicated. Prototype-polluting keys are skipped. A
+ * `null` member of a source is merged as `null` (it is a value: a reply's `to: null` means "no
+ * receiver"); an `undefined` member is skipped and leaves the destination's member in place.
+ *
+ * @param destination - The destination object.
+ * @param sources - An array of source objects.
+ * @returns - The merged object.
+ * @throws FormatterError when the input is nested deeper than {@link MAX_NESTING_DEPTH}.
+ */
+export const mergeDeep = (
+	destination: Record<string, unknown>,
+	...sources: Record<string, unknown>[]
+): Record<string, unknown> => mergeDeepAt(destination, 0, ...sources);
+
+const deepCopyAt = (value: unknown, depth: number): unknown => {
+	assertDepth(depth);
+	if (Array.isArray(value)) {
+		return value.map(element => deepCopyAt(element, depth + 1));
+	}
+	if (value instanceof TypedArray) {
+		return (value as Uint8Array).slice(0);
+	}
+	if (isIterable(value)) {
+		const copy: Record<string, unknown> = {};
+		for (const [key, item] of Object.entries(value)) {
+			if (FORBIDDEN_KEYS.has(key)) {
+				continue;
+			}
+			copy[key] = deepCopyAt(item, depth + 1);
+		}
+		return copy;
+	}
+	return value;
+};
+
+/**
+ * Deep-copies a value (plain objects, arrays, typed arrays and primitives) without changing
+ * its shape: like {@link mergeDeep}, `null` members are kept as `null`, and `undefined`
+ * members stay `undefined`, so a node reply such as `{ to: null, blockNumber: null }` keeps the
+ * fields the node sent. Prototype-polluting keys are skipped and the nesting depth is bounded
+ * by {@link MAX_NESTING_DEPTH}.
+ *
+ * @param value - The value to copy.
+ * @returns A copy that shares nothing with `value`.
+ * @throws FormatterError when the input is nested deeper than {@link MAX_NESTING_DEPTH}.
+ */
+export const deepCopy = <T>(value: T): T => deepCopyAt(value, 0) as T;

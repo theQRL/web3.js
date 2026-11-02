@@ -25,6 +25,7 @@ import {
 	Numbers,
 } from '@theqrl/web3-types';
 import { expectTypeOf, typecheck } from '@humeris/espresso-shot';
+import { FormatterError } from '@theqrl/web3-errors';
 import { isDataFormatValid, convertScalarValueValid } from '../fixtures/formatter';
 import { format, isDataFormat, convertScalarValue } from '../../src/formatter';
 import { hexToBytes } from '../../src/converters';
@@ -714,6 +715,129 @@ describe('formatter', () => {
 						}),
 					).toBe(BigInt(100));
 				});
+			});
+		});
+	});
+
+	describe('third audit pass regressions', () => {
+		const bigintFormat = { number: FMT_NUMBER.BIGINT, bytes: FMT_BYTES.HEX };
+		const numberFormat = { number: FMT_NUMBER.NUMBER, bytes: FMT_BYTES.HEX };
+		const arrayOfObjects = {
+			type: 'array',
+			items: { type: 'object', properties: { a: { format: 'uint' } } },
+		};
+
+		it('does not mutate caller-owned objects nested in arrays (L-20)', () => {
+			const element = { a: '0x1', extra: 'keep me' };
+
+			const result = format(arrayOfObjects, [element], bigintFormat) as unknown[];
+			expect(result).toEqual([{ a: BigInt(1) }]);
+			expect(result[0]).not.toBe(element);
+			expect(element).toEqual({ a: '0x1', extra: 'keep me' });
+
+			const nested = { list: [element] };
+			expect(
+				format({ type: 'object', properties: { list: arrayOfObjects } }, nested, bigintFormat),
+			).toEqual({ list: [{ a: BigInt(1) }] });
+			expect(nested.list[0]).toBe(element);
+			expect(element).toEqual({ a: '0x1', extra: 'keep me' });
+		});
+
+		it('formats a top-level array of objects instead of wiping it (L-21)', () => {
+			expect(format(arrayOfObjects, [{ a: '0x1' }, { a: '0x2' }], bigintFormat)).toEqual([
+				{ a: BigInt(1) },
+				{ a: BigInt(2) },
+			]);
+		});
+
+		it('formats nested arrays such as feeHistory.reward (L-21)', () => {
+			const schema = {
+				type: 'object',
+				properties: {
+					reward: { type: 'array', items: { type: 'array', items: { format: 'uint' } } },
+				},
+			};
+
+			expect(format(schema, { reward: [['0x1', '0x2'], ['0x3']] }, numberFormat)).toEqual({
+				reward: [[1, 2], [3]],
+			});
+			expect(format(['uint[][]'], [[['0x1'], ['0x2']]], bigintFormat)).toEqual([
+				[[BigInt(1)], [BigInt(2)]],
+			]);
+			expect(
+				format(
+					{ type: 'array', items: { type: 'array', items: arrayOfObjects.items } },
+					[[{ a: '0x1' }]],
+					bigintFormat,
+				),
+			).toEqual([[{ a: BigInt(1) }]]);
+		});
+
+		it('leaves tuple positions without a schema untouched instead of throwing (L-21)', () => {
+			const schema = {
+				type: 'object',
+				properties: { t: { type: 'array', items: [{ format: 'uint' }, { format: 'bytes' }] } },
+			};
+			expect(format(schema, { t: ['0x1', '0x02', '0x03'] }, bigintFormat)).toEqual({
+				t: [BigInt(1), '0x02', '0x03'],
+			});
+		});
+
+		it('throws a FormatterError for data nested beyond the depth limit (L-31)', () => {
+			let schema: Record<string, unknown> = {
+				type: 'object',
+				properties: { a: { format: 'uint' } },
+			};
+			let data: Record<string, unknown> = { a: '0x1' };
+			for (let i = 0; i < 5000; i += 1) {
+				schema = { type: 'object', properties: { n: schema } };
+				data = { n: data };
+			}
+			expect(() => format(schema, data, bigintFormat)).toThrow(FormatterError);
+		});
+
+		describe('FMT_NUMBER.NUMBER (L-55)', () => {
+			it('converts safe integers', () => {
+				expect(format({ format: 'uint' }, BigInt(Number.MAX_SAFE_INTEGER), numberFormat)).toBe(
+					Number.MAX_SAFE_INTEGER,
+				);
+				expect(format({ format: 'int' }, BigInt(Number.MIN_SAFE_INTEGER), numberFormat)).toBe(
+					Number.MIN_SAFE_INTEGER,
+				);
+			});
+
+			it.each([
+				BigInt(2) ** BigInt(53),
+				-(BigInt(2) ** BigInt(53)),
+				BigInt(2) ** BigInt(64) - BigInt(1),
+				BigInt(10) ** BigInt(18),
+			])('throws instead of silently rounding %s', value => {
+				expect(() => format({ format: 'uint' }, value, numberFormat)).toThrow(FormatterError);
+				expect(() =>
+					format(
+						{ type: 'object', properties: { balance: { format: 'uint' } } },
+						{ balance: value },
+						numberFormat,
+					),
+				).toThrow(FormatterError);
+			});
+
+			it('still returns the other formats exactly', () => {
+				const max64 = BigInt(2) ** BigInt(64) - BigInt(1);
+				expect(
+					format({ format: 'uint' }, '0xffffffffffffffff', {
+						number: FMT_NUMBER.STR,
+						bytes: FMT_BYTES.HEX,
+					}),
+				).toBe('18446744073709551615');
+				expect(format({ format: 'uint' }, '0xffffffffffffffff', bigintFormat)).toBe(max64);
+				expect(
+					format({ format: 'uint' }, max64, { number: FMT_NUMBER.HEX, bytes: FMT_BYTES.HEX }),
+				).toBe('0xffffffffffffffff');
+			});
+
+			it('still passes an unparseable value through unchanged', () => {
+				expect(format({ format: 'uint' }, 'abc', numberFormat)).toBe('abc');
 			});
 		});
 	});

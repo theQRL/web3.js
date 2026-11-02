@@ -21,7 +21,7 @@ export * from './bloom.js';
 export * from './boolean.js';
 export * from './bytes.js';
 export * from './qrl.js';
-export * from './eip712.js';
+export * from './qrl_typed_data.js';
 export * from './filter.js';
 export * from './numbers.js';
 export * from './string.js';

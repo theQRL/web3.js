@@ -17,7 +17,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 import { Address } from '@theqrl/web3-types';
 import { Web3ValidatorError, isAddressString } from '@theqrl/web3-validator';
-import { bytesToHex } from '@theqrl/web3-utils';
+import { bytesToHex, hexToBytes } from '@theqrl/web3-utils';
 import {
 	create,
 	decrypt,
@@ -29,6 +29,7 @@ import {
 	signTransaction,
 } from '../../src';
 import { TransactionFactory } from '../../src/tx/transactionFactory';
+import { newMLDSA87WalletFromExtendedSeed, verifyMLDSA87Signature } from '../../src/qrl_wallet';
 import {
 	invalidDecryptData,
 	invalidEncryptData,
@@ -81,7 +82,6 @@ describe('accounts', () => {
 			const account = create();
 
 			const signedResult = await signTransaction(
-				// eslint-disable-next-line @typescript-eslint/no-unsafe-call
 				TransactionFactory.fromTxData(txData),
 				account.seed,
 			);
@@ -96,7 +96,6 @@ describe('accounts', () => {
 			const account = create();
 			const txObj = { ...txData, from: account.address };
 			const signedResult = await signTransaction(
-				// eslint-disable-next-line @typescript-eslint/no-unsafe-call
 				TransactionFactory.fromTxData(txObj),
 				account.seed,
 			);
@@ -116,8 +115,21 @@ describe('accounts', () => {
 	describe('Sign Message', () => {
 		describe('sign', () => {
 			it.each(signatureRecoverData)('%s', (data, testObj) => {
+				const wallet = newMLDSA87WalletFromExtendedSeed(testObj.seed);
 				const result = sign(data, testObj.seed);
-				expect(result.signature).toEqual(testObj.signature);
+				const signature = hexToBytes(result.signature);
+
+				expect(result.message).toBe(data);
+				expect(result.messageHash).toBe(hashMessage(data));
+				expect(signature).toHaveLength(4627);
+				expect(
+					verifyMLDSA87Signature(
+						signature,
+						hexToBytes(result.messageHash),
+						wallet.getPK(),
+						wallet.getDescriptor(),
+					),
+				).toBe(true);
 			});
 		});
 	});

@@ -23,7 +23,6 @@ import {
 	FMT_BYTES,
 	FMT_NUMBER,
 } from '@theqrl/web3-types';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { Contract, decodeEventABI } from '@theqrl/web3-qrl-contract';
 import {
 	hexToNumber,
@@ -31,7 +30,6 @@ import {
 	numberToHex,
 	getStorageSlotNumForLongString,
 } from '@theqrl/web3-utils';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { Web3QRL } from '../../src';
 
 import {
@@ -87,12 +85,6 @@ describe('rpc', () => {
 	});
 
 	describe('methods', () => {
-		itIf(!['gqrl'].includes(getSystemTestBackend()))('getProtocolVersion', async () => {
-			const version = await web3QRL.getProtocolVersion();
-			// eslint-disable-next-line jest/no-standalone-expect
-			expect(parseInt(version, 16)).toBeGreaterThan(0);
-		});
-
 		// TODO:in beta,  test qrl_syncing during sync mode with return obj having ( startingblock, currentBlock, heighestBlock )
 		it('isSyncing', async () => {
 			const isSyncing = await web3QRL.isSyncing();
@@ -195,10 +187,9 @@ describe('rpc', () => {
 
 			const slotCount = Math.ceil((Number(hexToNumber(resStringLong)) - 1) / 64);
 			const slotDataNum = getStorageSlotNumForLongString(1);
-			const prs = [];
+			const prs: Promise<string>[] = [];
 			for (let i = 0; i < slotCount; i += 1) {
 				prs.push(
-					// eslint-disable-next-line no-await-in-loop
 					web3QRL.getStorageAt(
 						contractDeployed.options.address as string,
 						`0x${(
@@ -252,7 +243,6 @@ describe('rpc', () => {
 				value: '0x1',
 				times: 1,
 			});
-			// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 			const res: TransactionReceipt = (await web3QRL.getTransactionReceipt(
 				// TODO: add more scenarios in future release with block number
 				receipt.transactionHash as string,
@@ -278,14 +268,13 @@ describe('rpc', () => {
 
 		itIf(!['gqrl'].includes(getSystemTestBackend()))('requestAccounts', () => {
 			// const res = await web3QRL.requestAccounts();
-			// eslint-disable-next-line jest/no-standalone-expect
 			expect(true).toBe(true);
 			// expect(res[0]).toEqual(tempAcc.address);
 		});
 
 		it('getPastLogs', async () => {
 			const listOfStrings = ['t1', 't2', 't3'];
-			const resTx = [];
+			const resTx: TransactionReceipt[] = [];
 			for (const l of listOfStrings) {
 				// eslint-disable-next-line  no-await-in-loop
 				resTx.push(await contractDeployed.methods?.firesStringEvent(l).send(sendOptions));

@@ -7,6 +7,7 @@ module.exports = {
 	},
 	moduleNameMapper: {
 		'^(\\.{1,2}/.*)\\.js$': '$1',
+		'^@theqrl/(web3(?:-[^/]+)*|abi)$': '<rootDir>/../$1/lib/commonjs/index.js',
 	},
 	verbose: false,
 	collectCoverage: false,

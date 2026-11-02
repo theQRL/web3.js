@@ -47,6 +47,7 @@ describe('sign', () => {
 				inputMessage,
 				DEFAULT_RETURN_FORMAT,
 			);
+			(qrlRpcMethods.sign as jest.Mock).mockResolvedValueOnce(mockRpcResponse);
 			await sign(web3Context, ...inputParameters, DEFAULT_RETURN_FORMAT);
 			expect(qrlRpcMethods.sign).toHaveBeenCalledWith(
 				web3Context.requestManager,

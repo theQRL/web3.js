@@ -28,7 +28,8 @@ export type Timeout = ReturnType<typeof setTimeout>;
 export function isPromise(object: unknown): boolean {
 	return (
 		(typeof object === 'object' || typeof object === 'function') &&
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+		// `typeof null` is `'object'` (L-25).
+		!isNullish(object) &&
 		typeof (object as { then: unknown }).then === 'function'
 	);
 }
@@ -58,14 +59,21 @@ export async function waitWithTimeout<T>(
 	error?: Error,
 ): Promise<T | undefined> {
 	let timeoutId: Timeout | undefined;
-	const result = await Promise.race([
-		awaitable instanceof Promise ? awaitable : awaitable(),
-		new Promise<undefined | Error>((resolve, reject) => {
-			timeoutId = setTimeout(() => (error ? reject(error) : resolve(undefined)), timeout);
-		}),
-	]);
-	if (timeoutId) {
-		clearTimeout(timeoutId);
+	let result: T | undefined | Error;
+	try {
+		result = await Promise.race([
+			awaitable instanceof Promise ? awaitable : awaitable(),
+			new Promise<undefined | Error>((resolve, reject) => {
+				timeoutId = setTimeout(() => (error ? reject(error) : resolve(undefined)), timeout);
+				if (typeof timeoutId === 'object') timeoutId.unref?.();
+			}),
+		]);
+	} finally {
+		// The timer is dropped however the race ends: a rejected awaitable used to leave it
+		// armed and keep the process alive for the full timeout (L-25).
+		if (timeoutId) {
+			clearTimeout(timeoutId);
+		}
 	}
 	if (result instanceof Error) {
 		throw result;
@@ -75,6 +83,12 @@ export async function waitWithTimeout<T>(
 /**
  * Repeatedly calls an async function with a given interval until the result of the function is defined (not undefined or null),
  * or until a timeout is reached. It returns promise and intervalId.
+ *
+ * Each call is awaited in full: a call that takes longer than `interval` is neither abandoned
+ * nor overlapped by the next tick (ticks that fall while a call is in flight are skipped), so a
+ * slow node cannot make the poll discard every reply it receives (P4-M-3). Terminating the poll
+ * is the caller's business (a polling or block timeout, or `clearInterval` on the returned id).
+ *
  * @param func - The function to call.
  * @param interval - The interval in milliseconds.
  */
@@ -83,26 +97,38 @@ export function pollTillDefinedAndReturnIntervalId<T>(
 	interval: number,
 ): [Promise<Exclude<T, undefined>>, Timer] {
 	let intervalId: Timer | undefined;
+	let inFlight = false;
+	let settled = false;
 	const polledRes = new Promise<Exclude<T, undefined>>((resolve, reject) => {
-		intervalId = setInterval(
-			(function intervalCallbackFunc() {
-				(async () => {
-					try {
-						const res = await waitWithTimeout(func, interval);
+		const poll = () => {
+			if (inFlight || settled) {
+				return;
+			}
+			inFlight = true;
+			(async () => {
+				try {
+					const res = await func();
 
-						if (!isNullish(res)) {
-							clearInterval(intervalId);
-							resolve(res as unknown as Exclude<T, undefined>);
-						}
-					} catch (error) {
+					if (!settled && !isNullish(res)) {
+						settled = true;
+						clearInterval(intervalId);
+						resolve(res as unknown as Exclude<T, undefined>);
+					}
+				} catch (error) {
+					if (!settled) {
+						settled = true;
 						clearInterval(intervalId);
 						reject(error);
 					}
-				})() as unknown;
-				return intervalCallbackFunc;
-			})(), // this will immediate invoke first call
-			interval,
-		);
+				} finally {
+					inFlight = false;
+				}
+			})() as unknown;
+		};
+
+		intervalId = setInterval(poll, interval);
+		// The first attempt is made immediately.
+		poll();
 	});
 
 	return [polledRes as unknown as Promise<Exclude<T, undefined>>, intervalId!];
@@ -155,13 +181,26 @@ export function rejectIfConditionAtInterval<T>(
 	interval: number,
 ): [Timer, Promise<never>] {
 	let intervalId: Timer | undefined;
+	let checking = false;
 	const rejectIfCondition = new Promise<never>((_, reject) => {
 		intervalId = setInterval(() => {
+			if (checking) return;
+			checking = true;
 			(async () => {
-				const error = await cond();
-				if (error) {
+				try {
+					const error = await cond();
+					if (error) {
+						clearInterval(intervalId);
+						reject(error);
+					}
+				} catch (error) {
+					// A throwing condition settles the promise instead of producing one unhandled
+					// rejection per tick while the promise stays pending forever (L-25).
 					clearInterval(intervalId);
+					// eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors -- whatever `cond` threw is propagated as is
 					reject(error);
+				} finally {
+					checking = false;
 				}
 			})() as unknown;
 		}, interval);

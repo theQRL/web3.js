@@ -21,4 +21,3 @@ export * as abi from '@theqrl/web3-qrl-abi';
 export * as accounts from '@theqrl/web3-qrl-accounts';
 export * as contract from '@theqrl/web3-qrl-contract';
 export * as qrns from '@theqrl/web3-qrl-qrns';
-export * as iban from '@theqrl/web3-qrl-iban';

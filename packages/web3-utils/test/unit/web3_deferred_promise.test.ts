@@ -53,4 +53,42 @@ describe('Web3DeferredPromise', () => {
 			expect(promise.state).toBe('rejected');
 		});
 	});
+
+	describe('settles once (I-11)', () => {
+		it('keeps the fulfilled state when reject() follows resolve()', async () => {
+			const promise = new Web3DeferredPromise<number>();
+			promise.resolve(1);
+			promise.reject(new Error('late'));
+			expect(promise.state).toBe('fulfilled');
+			await expect(promise).resolves.toBe(1);
+		});
+
+		it('keeps the rejected state when resolve() follows reject()', async () => {
+			const promise = new Web3DeferredPromise<number>();
+			promise.reject(new Error('first'));
+			promise.resolve(1);
+			expect(promise.state).toBe('rejected');
+			await expect(promise).rejects.toThrow('first');
+		});
+
+		it('arms a single timer across repeated startTimer() calls and clears it on settle', () => {
+			jest.useFakeTimers();
+			try {
+				const promise = new Web3DeferredPromise<number>({
+					timeout: 1_000,
+					eagerStart: false,
+					timeoutMessage: 'x',
+				});
+				promise.startTimer();
+				promise.startTimer();
+				expect(jest.getTimerCount()).toBe(1);
+				promise.resolve(1);
+				expect(jest.getTimerCount()).toBe(0);
+				promise.startTimer();
+				expect(jest.getTimerCount()).toBe(0);
+			} finally {
+				jest.useRealTimers();
+			}
+		});
+	});
 });

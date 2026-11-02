@@ -19,22 +19,21 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import fetchMock from 'jest-fetch-mock';
 
 jest.setMock('cross-fetch', fetchMock);
+globalThis.fetch = fetchMock as unknown as typeof fetch;
 
-/* eslint-disable-next-line import/first */
 import { Web3APIPayload, QRLExecutionAPI } from '@theqrl/web3-types';
-/* eslint-disable-next-line import/first */
-import { ResponseError } from '@theqrl/web3-errors';
-/* eslint-disable-next-line import/first */
+import { HttpStatusError, ResponseError } from '@theqrl/web3-errors';
 import HttpProvider from '../../src/index';
-/* eslint-disable-next-line import/first */
 import { mockGetBalanceResponse } from '../fixtures/test_data';
 
 describe('HttpProvider - implemented methods', () => {
+	const testAddress =
+		'Q83cd1122848dd1b2E3AF9ca60a1340e595B2C6d5b3B340AfD625e38EEf9067bc9C28db215702Aa8B3C0243Bb13785a9365A35ee1Fe8e57983b1D47d9fff835a3';
 	const jsonRpcPayload = {
 		jsonrpc: '2.0',
 		id: 42,
 		method: 'qrl_getBalance',
-		params: ['Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000407d73d8a49eeb85d32cf465507dd71d507100c1', 'latest'],
+		params: [testAddress, 'latest'],
 	} as Web3APIPayload<QRLExecutionAPI, 'qrl_getBalance'>;
 
 	let httpProvider: HttpProvider;
@@ -58,10 +57,50 @@ describe('HttpProvider - implemented methods', () => {
 			);
 		});
 
-		it('should return ResponseError', async () => {
-			fetchMock.mockResponseOnce(JSON.stringify(mockGetBalanceResponse), { status: 400 });
+		it('rejects a non-2xx reply with HttpStatusError carrying the status (L-47)', async () => {
+			fetchMock.mockResponseOnce(JSON.stringify(mockGetBalanceResponse), {
+				status: 400,
+				statusText: 'Bad Request',
+			});
+
+			const request = httpProvider.request(jsonRpcPayload);
+			await expect(request).rejects.toThrow(HttpStatusError);
+			await expect(request).rejects.toMatchObject({ status: 400, statusText: 'Bad Request' });
+			// The body was a JSON-RPC result, not an error reply: nothing to attach.
+			await expect(request).rejects.toMatchObject({ innerError: undefined });
+		});
+
+		it('rejects an unparseable 2xx body with ResponseError', async () => {
+			fetchMock.mockResponseOnce('<html>hi</html>');
 
 			await expect(httpProvider.request(jsonRpcPayload)).rejects.toThrow(ResponseError);
+		});
+
+		it('refuses redirects by default', async () => {
+			fetchMock.mockResponseOnce(JSON.stringify(mockGetBalanceResponse));
+
+			await httpProvider.request(jsonRpcPayload);
+
+			const [, init] = fetchMock.mock.calls[fetchMock.mock.calls.length - 1] as [
+				string,
+				RequestInit,
+			];
+			expect(init.redirect).toBe('error');
+		});
+
+		it('lets the caller opt in to following redirects', async () => {
+			const provider = new HttpProvider('http://localhost:8545', {
+				providerOptions: { redirect: 'follow' },
+			});
+			fetchMock.mockResponseOnce(JSON.stringify(mockGetBalanceResponse));
+
+			await provider.request(jsonRpcPayload);
+
+			const [, init] = fetchMock.mock.calls[fetchMock.mock.calls.length - 1] as [
+				string,
+				RequestInit,
+			];
+			expect(init.redirect).toBe('follow');
 		});
 	});
 });

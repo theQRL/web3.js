@@ -73,7 +73,6 @@ describe('Web3 Custom Subscriptions', () => {
 			try {
 				web3.provider = provider;
 
-				// eslint-disable-next-line no-void
 				void web3.subscriptionManager.subscribe('custom', args);
 			} catch (error) {
 				reject(error);
@@ -86,7 +85,6 @@ describe('Web3 Custom Subscriptions', () => {
 		const sub = new CustomSubscription(
 			{ customArgs: undefined },
 			{
-				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				subscriptionManager: web3.subscriptionManager as Web3SubscriptionManager<
 					unknown,
 					any

@@ -3,8 +3,10 @@
 *.swp
 *.orig
 
-# Secrets
+# Secrets (developer-owned local state; never tracked, kept by `pnpm run clean`)
 .secrets.json
+.env
+.env.*
 
 # Ephemeral TLS fixtures generated for Firefox system tests
 templates/cypress/.cert/
@@ -49,6 +51,3 @@ packages/web3/test/*_black_box/pnpm-lock.yaml
 packages/web3/test/*_black_box/yarn.lock
 
 tmp/
-
-# Incubed (in3) nodelist
-packages/web3/.in3/

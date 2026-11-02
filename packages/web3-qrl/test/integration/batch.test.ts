@@ -14,7 +14,6 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { SupportedProviders } from '@theqrl/web3-types';
 import { hexToNumber } from '@theqrl/web3-utils';
 import { Web3QRL } from '../../src';
@@ -53,10 +52,8 @@ describe('qrl', () => {
 			const r1 = batch.add(request1).catch(console.error);
 			const [response1] = await batch.execute();
 
-			// eslint-disable-next-line jest/no-standalone-expect
 			expect(response1.result).toBeDefined();
 			// TODO: in future release add test for validation of returned results , ( match balance )
-			// eslint-disable-next-line jest/no-standalone-expect
 			expect(Number(hexToNumber(String(response1.result)))).toBeGreaterThan(0);
 			const [res1] = await Promise.all([r1]);
 			expect(res1).toBe(response1.result);
@@ -80,14 +77,10 @@ describe('qrl', () => {
 			const r2 = batch.add(request2).catch(console.error);
 			const [response1, response2] = await batch.execute();
 
-			// eslint-disable-next-line jest/no-standalone-expect
 			expect(response1.result).toBeDefined();
-			// eslint-disable-next-line jest/no-standalone-expect
 			expect(response2.result).toBeDefined();
 			// TODO: in future release add test for validation of returned results , ( match balance )
-			// eslint-disable-next-line jest/no-standalone-expect
 			expect(Number(hexToNumber(String(response1.result)))).toBeGreaterThan(0);
-			// eslint-disable-next-line jest/no-standalone-expect
 			expect(Number(hexToNumber(String(response2.result)))).toBeGreaterThan(0);
 			const [res1, res2] = await Promise.all([r1, r2]);
 			expect(res1).toBe(response1.result);

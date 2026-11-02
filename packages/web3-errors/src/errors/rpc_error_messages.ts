@@ -42,7 +42,6 @@ import {
  */
 export const genericRpcErrorMessageTemplate = 'An Rpc error has occured with a code of *code*';
 
-/* eslint-disable @typescript-eslint/naming-convention */
 export const RpcErrorMessages: {
 	[key: number | string]: { name?: string; message: string; description?: string };
 } = {

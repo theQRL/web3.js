@@ -18,7 +18,6 @@ import { DEFAULT_RETURN_FORMAT } from '@theqrl/web3-types';
 import { Web3PromiEvent } from '@theqrl/web3-core';
 import { SupportedProviders, TransactionReceipt } from '@theqrl/web3-types';
 import { TransactionBlockTimeoutError } from '@theqrl/web3-errors';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { Web3 } from '@theqrl/web3';
 import { Web3Account } from '@theqrl/web3-qrl-accounts';
 import { SendTransactionEvents } from '../../src';
@@ -36,7 +35,6 @@ import {
 const MAX_32_SIGNED_INTEGER = 2147483647;
 // const gas = 21000;
 const type = BigInt(2);
-/* eslint-disable jest/no-standalone-expect */
 describe('defaults', () => {
 	let web3: Web3;
 	let clientUrl: string | SupportedProviders;
@@ -81,7 +79,6 @@ describe('defaults', () => {
 
 			// Some providers (mostly used for development) will make blocks only when there are new transactions
 			// So, send 2 transactions, one after another, because in this test `transactionBlockTimeout = 2`.
-			// eslint-disable-next-line no-void
 			// await sendFewSampleTxs(2);
 
 			try {

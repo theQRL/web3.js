@@ -3,12 +3,12 @@
 
 ![ES Version](https://img.shields.io/badge/ES-2020-yellow)
 ![Node Version](https://img.shields.io/badge/node-%3E%3D20-green)
-[![NPM Package](https://img.shields.io/npm/v/@theqrl/web3-providers-methods)](https://www.npmjs.com/package/@theqrl/web3-providers-methods)
-[![Downloads](https://img.shields.io/npm/dm/@theqrl/web3-providers-methods)](https://www.npmjs.com/package/@theqrl/web3-providers-methods)
+[![NPM Package](https://img.shields.io/npm/v/@theqrl/web3-rpc-methods)](https://www.npmjs.com/package/@theqrl/web3-rpc-methods)
+[![Downloads](https://img.shields.io/npm/dm/@theqrl/web3-rpc-methods)](https://www.npmjs.com/package/@theqrl/web3-rpc-methods)
 
 This is a sub-package of [@theqrl/web3.js](https://github.com/theqrl/web3.js).
 
-`@theqrl/web3-rpc-methods` contains RPC methods for various ETH related protocols.
+`@theqrl/web3-rpc-methods` contains the raw `qrl_*` and `net_*` JSON-RPC method wrappers used by the higher-level packages.
 
 ## Installation
 

@@ -68,7 +68,6 @@ describe(`${getSystemTestBackend()} tests - getTransactionFromBlock`, () => {
 		const result = await web3.qrl.getTransactionFromBlock(blockData[block], transactionIndex);
 
 		if (blockData[block] === 'earliest') {
-			// eslint-disable-next-line no-null/no-null
 			expect(result).toBeNull();
 		} else if (block === 'blockHash' || block === 'blockNumber') {
 			// const expectedTransaction =

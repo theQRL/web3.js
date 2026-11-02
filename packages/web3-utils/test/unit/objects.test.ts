@@ -15,7 +15,8 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { mergeDeep } from '../../src/objects';
+import { FormatterError } from '@theqrl/web3-errors';
+import { MAX_NESTING_DEPTH, mergeDeep } from '../../src/objects';
 import { mergeDeepData } from '../fixtures/objects';
 
 describe('objects', () => {
@@ -93,6 +94,52 @@ describe('objects', () => {
 			data.a[0] = 3;
 
 			expect(result.a).toStrictEqual(new Uint8Array([1, 2]));
+		});
+	});
+
+	describe('deep copies and depth bound', () => {
+		it('copies the objects inside arrays instead of sharing them with the source (L-20)', () => {
+			const element = { k: 1, nested: { deep: true }, bytes: new Uint8Array([1]) };
+			const result = mergeDeep({}, { arr: [element, [element], 'x'] }) as {
+				arr: [typeof element, [typeof element], string];
+			};
+
+			expect(result.arr[0]).toEqual(element);
+			expect(result.arr[0]).not.toBe(element);
+			expect(result.arr[0].nested).not.toBe(element.nested);
+			expect(result.arr[0].bytes).not.toBe(element.bytes);
+			expect(result.arr[1][0]).not.toBe(element);
+
+			result.arr[0].k = 2;
+			result.arr[0].nested.deep = false;
+			expect(element).toEqual({ k: 1, nested: { deep: true }, bytes: new Uint8Array([1]) });
+		});
+
+		it('skips prototype-polluting keys inside array elements too', () => {
+			const untrusted = JSON.parse('{"arr":[{"__proto__":{"polluted":"yes"},"a":1}]}');
+			const result = mergeDeep({}, untrusted) as { arr: Record<string, unknown>[] };
+			expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+			expect(Object.keys(result.arr[0])).toEqual(['a']);
+		});
+
+		it('accepts input nested exactly MAX_NESTING_DEPTH deep', () => {
+			let data: Record<string, unknown> = { a: 1 };
+			for (let i = 0; i < MAX_NESTING_DEPTH; i += 1) data = { n: data };
+			expect(() => mergeDeep({}, data)).not.toThrow();
+		});
+
+		it('rejects input nested deeper than MAX_NESTING_DEPTH with a FormatterError instead of a RangeError (L-31)', () => {
+			let data: Record<string, unknown> = { a: 1 };
+			for (let i = 0; i < MAX_NESTING_DEPTH + 1; i += 1) data = { n: data };
+			expect(() => mergeDeep({}, data)).toThrow(FormatterError);
+
+			let hostile: Record<string, unknown> = { a: 1 };
+			for (let i = 0; i < 100_000; i += 1) hostile = { n: hostile };
+			expect(() => mergeDeep({}, hostile)).toThrow(FormatterError);
+
+			let arrays: unknown = 1;
+			for (let i = 0; i < 100_000; i += 1) arrays = [arrays];
+			expect(() => mergeDeep({}, { arrays })).toThrow(FormatterError);
 		});
 	});
 });

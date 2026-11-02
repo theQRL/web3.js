@@ -19,3 +19,4 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 export { FeeMarketEIP1559Transaction } from './eip1559Transaction.js';
 export { TransactionFactory } from './transactionFactory.js';
 export * from './types.js';
+export { assertSerializedTransactionSize } from './rlp_bounds.js';

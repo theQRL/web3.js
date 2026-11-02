@@ -1,9 +1,7 @@
 {
 	"name": "@theqrl/eslint-config-base-web3",
 	"version": "0.5.0",
-	"publishConfig": {
-		"access": "public"
-	},
+	"private": true,
 	"description": "Base eslint config for Web3 project.",
 	"author": "The QRL Contributors",
 	"license": "LGPL-3.0",
@@ -33,15 +31,15 @@
 		"format": "prettier --write '**/*'"
 	},
 	"dependencies": {
-		"@typescript-eslint/eslint-plugin": "8.59.4",
-		"@typescript-eslint/parser": "8.59.4",
-		"eslint": "10.4.0",
+		"@typescript-eslint/eslint-plugin": "8.72.0",
+		"@typescript-eslint/parser": "8.72.0",
+		"eslint": "10.13.0",
 		"eslint-config-prettier": "10.1.8",
-		"eslint-plugin-jest": "29.15.2",
+		"eslint-plugin-jest": "29.17.0",
 		"eslint-plugin-no-null": "1.0.2",
-		"eslint-plugin-tsdoc": "0.5.2",
+		"eslint-plugin-tsdoc": "0.5.4",
 		"@eslint/js": "10.0.1",
-		"eslint-plugin-import-x": "4.16.2",
-		"globals": "17.6.0"
+		"eslint-plugin-import-x": "4.17.1",
+		"globals": "17.13.0"
 	}
 }

@@ -30,7 +30,51 @@ describe('isSyncing', () => {
 	});
 
 	it('should call rpcMethods.getSyncing with expected parameters', async () => {
+		(qrlRpcMethods.getSyncing as jest.Mock).mockResolvedValue(false);
 		await isSyncing(web3Context);
 		expect(qrlRpcMethods.getSyncing).toHaveBeenCalledWith(web3Context.requestManager);
+	});
+});
+
+/* eslint-disable no-null/no-null -- malformed RPC values */
+test.each([
+	{},
+	{ startingBlock: '0x1' },
+	{ currentBlock: '0x1', highestBlock: '0x2' },
+	'abc',
+	null,
+	42,
+	true,
+	[1, 2],
+	{ startingBlock: null },
+	{ currentBlock: '-1' },
+])('rejects invalid syncing RPC reply %p', async reply => {
+	(qrlRpcMethods.getSyncing as jest.Mock).mockResolvedValue(reply);
+	await expect(isSyncing(new Web3Context())).rejects.toThrow('Invalid JSON-RPC response');
+});
+
+test('validates and formats RPC sync quantities', async () => {
+	(qrlRpcMethods.getSyncing as jest.Mock).mockResolvedValue({
+		startingBlock: '0x0',
+		currentBlock: '0x1a0',
+		highestBlock: '0x3e8',
+	});
+	await expect(isSyncing(new Web3Context())).resolves.toEqual({
+		startingBlock: BigInt(0),
+		currentBlock: BigInt(416),
+		highestBlock: BigInt(1000),
+	});
+});
+
+test('normalizes a null return format before formatting syncing quantities', async () => {
+	(qrlRpcMethods.getSyncing as jest.Mock).mockResolvedValue({
+		startingBlock: '0x0',
+		currentBlock: '0x1',
+		highestBlock: '0x2',
+	});
+	await expect(isSyncing(new Web3Context(), null as never)).resolves.toEqual({
+		startingBlock: BigInt(0),
+		currentBlock: BigInt(1),
+		highestBlock: BigInt(2),
 	});
 });

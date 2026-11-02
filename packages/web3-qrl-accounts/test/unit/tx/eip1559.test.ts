@@ -14,10 +14,17 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { hexToBytes } from '@theqrl/web3-utils';
+import { runInNewContext } from 'vm';
+import { RLP } from '@ethereumjs/rlp';
+import { TransactionError, TransactionSigningError } from '@theqrl/web3-errors';
+import { hexToBytes, uint8ArrayConcat } from '@theqrl/web3-utils';
 import { Chain, Common, Hardfork } from '../../../src/common';
 
-import { FeeMarketEIP1559Transaction } from '../../../src';
+import {
+	FeeMarketEIP1559Transaction,
+	recoverTransaction,
+	assertSerializedTransactionSize,
+} from '../../../src';
 import { newMLDSA87Descriptor } from '../../../src/qrl_wallet';
 
 import testdata from '../../fixtures/json/eip1559.json';
@@ -106,7 +113,6 @@ describe('[FeeMarketEIP1559Transaction]', () => {
 		// eslint-disable-next-line @typescript-eslint/prefer-for-of
 		for (let index = 0; index < testdata.length; index += 1) {
 			const data = testdata[index];
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-call
 			const seed = hexToBytes(data.seed.slice(2));
 			const txn = FeeMarketEIP1559Transaction.fromTxData(data, { common });
 			const signed = txn.sign(seed);
@@ -120,7 +126,6 @@ describe('[FeeMarketEIP1559Transaction]', () => {
 
 	it('hash()', () => {
 		const data = testdata[0];
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-call
 		const seed = hexToBytes(data.seed.slice(2));
 		let txn = FeeMarketEIP1559Transaction.fromTxData(data, { common });
 		let signed = txn.sign(seed);
@@ -133,7 +138,6 @@ describe('[FeeMarketEIP1559Transaction]', () => {
 
 	it('freeze property propagates from unsigned tx to signed tx', () => {
 		const data = testdata[0];
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-call
 		const seed = hexToBytes(data.seed.slice(2));
 		const txn = FeeMarketEIP1559Transaction.fromTxData(data, { common, freeze: false });
 		expect(Object.isFrozen(txn)).toBe(false);
@@ -144,7 +148,6 @@ describe('[FeeMarketEIP1559Transaction]', () => {
 	// NOTE(rgeraldes24): test not valid atm: no qips available
 	it.skip('common propagates from the common of tx, not the common in TxOptions', () => {
 		const data = testdata[0];
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-call
 		const seed = hexToBytes(data.seed.slice(2));
 		const txn = FeeMarketEIP1559Transaction.fromTxData(data, { common, freeze: false });
 		const newCommon = new Common({
@@ -176,9 +179,7 @@ describe('[FeeMarketEIP1559Transaction]', () => {
 		const extraParams = Uint8Array.from([]);
 		const messageHash = unsignedTx.getMessageToSign(desc.toBytes(), extraParams, true);
 		expect(messageHash).toHaveLength(32);
-		expect(messageHash).toEqual(
-			unsignedTx.getMessageToSign(desc.toBytes(), extraParams, true),
-		);
+		expect(messageHash).toEqual(unsignedTx.getMessageToSign(desc.toBytes(), extraParams, true));
 		const message = unsignedTx.getMessageToSign(desc.toBytes(), extraParams, false);
 		expect(message[0]).toBe(2);
 		expect(message.length).toBeGreaterThan(64);
@@ -186,7 +187,6 @@ describe('[FeeMarketEIP1559Transaction]', () => {
 
 	it('toJSON()', () => {
 		const data = testdata[0];
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-call
 		const seed = hexToBytes(data.seed.slice(2));
 		const txn = FeeMarketEIP1559Transaction.fromTxData(data, { common });
 		const signed = txn.sign(seed);
@@ -277,4 +277,233 @@ describe('[FeeMarketEIP1559Transaction]', () => {
 			);
 		}).toThrow();
 	});
+});
+
+describe('[FeeMarketEIP1559Transaction] strict RLP decoding (L-13)', () => {
+	const seed = hexToBytes(testdata[0].seed.slice(2));
+	const signedValues = (): unknown[] =>
+		FeeMarketEIP1559Transaction.fromTxData(testdata[0], { common })
+			.sign(seed)
+			.raw() as unknown[];
+	const serialize = (values: unknown[]) =>
+		uint8ArrayConcat(
+			Uint8Array.from([2]),
+			RLP.encode(values as Parameters<typeof RLP.encode>[0]),
+		);
+	// Each byte as its own one-byte RLP string: the generic byte conversion would flatten this
+	// back into the original bytes.
+	const perByteList = (bytes: Uint8Array) => Array.from(bytes, b => Uint8Array.from([b]));
+	const fieldNames = [
+		'chainId',
+		'nonce',
+		'maxPriorityFeePerGas',
+		'maxFeePerGas',
+		'gasLimit',
+		'to',
+		'value',
+		'data',
+		'accessList',
+		'descriptor',
+		'extraParams',
+		'signature',
+		'publicKey',
+	];
+	const scalarFields = fieldNames
+		.map((name, index) => [name, index] as [string, number])
+		.filter(([name]) => name !== 'accessList');
+
+	it('decodes the canonical encoding and re-encodes it byte for byte', () => {
+		const values = signedValues();
+		const serialized = serialize(values);
+		const decoded = FeeMarketEIP1559Transaction.fromSerializedTx(serialized, { common });
+		expect(decoded.verifySignature()).toBe(true);
+		expect(decoded.serialize()).toEqual(serialized);
+	});
+
+	it.each(scalarFields)(
+		'rejects %s encoded as an RLP list of one-byte strings',
+		(name, index) => {
+			const values = signedValues();
+			values[index] = perByteList(values[index] as Uint8Array);
+			expect(() =>
+				FeeMarketEIP1559Transaction.fromSerializedTx(serialize(values), { common }),
+			).toThrow(`${name} must be a byte string`);
+			expect(() =>
+				FeeMarketEIP1559Transaction.fromValuesArray(
+					values as unknown as Parameters<
+						typeof FeeMarketEIP1559Transaction.fromValuesArray
+					>[0],
+					{ common },
+				),
+			).toThrow(`${name} must be a byte string`);
+		},
+	);
+
+	it('rejects an unsigned (11-value) transaction with a list in place of a byte string', () => {
+		const values = signedValues().slice(0, 11);
+		values[10] = []; // extraParams as an empty RLP list instead of an empty string
+		expect(() =>
+			FeeMarketEIP1559Transaction.fromSerializedTx(serialize(values), { common }),
+		).toThrow('extraParams must be a byte string');
+	});
+
+	it('rejects an access list that is not a list of [address, [storageKeys]] byte strings', () => {
+		const cases: [string, unknown][] = [
+			['a byte string instead of a list', Uint8Array.from([1])],
+			['an address encoded as a list', [[perByteList(validAddress), [validSlot]]]],
+			['storage keys that are not a list', [[validAddress, validSlot]]],
+			['a storage key encoded as a list', [[validAddress, [perByteList(validSlot)]]]],
+			['an item that is a byte string', [validAddress]],
+		];
+		for (const [, accessList] of cases) {
+			const values = signedValues();
+			values[8] = accessList;
+			expect(() =>
+				FeeMarketEIP1559Transaction.fromSerializedTx(serialize(values), { common }),
+			).toThrow('Invalid EIP-1559 transaction');
+		}
+	});
+
+	it('rejects maxPriorityFeePerGas and the authentication fields given as arrays in fromTxData', () => {
+		for (const field of [
+			'maxPriorityFeePerGas',
+			'descriptor',
+			'extraParams',
+			'signature',
+			'publicKey',
+		]) {
+			// A non-empty extraParams value is refused earlier (L-15); the empty array still
+			// reaches the array rule.
+			const value = field === 'extraParams' ? [] : [1];
+			expect(() =>
+				FeeMarketEIP1559Transaction.fromTxData({ [field]: value } as never, { common }),
+			).toThrow(`${field} cannot be an array`);
+		}
+	});
+});
+
+describe('[FeeMarketEIP1559Transaction] extraParams must be empty (L-15)', () => {
+	const seed = hexToBytes(testdata[0].seed.slice(2));
+
+	it('fromTxData rejects a non-empty extraParams', () => {
+		expect(() =>
+			FeeMarketEIP1559Transaction.fromTxData(
+				{ ...testdata[0], extraParams: '0xdeadbeef' },
+				{ common },
+			),
+		).toThrow('non-empty extraParams not supported');
+		expect(() =>
+			FeeMarketEIP1559Transaction.fromTxData(
+				{ ...testdata[0], extraParams: Uint8Array.from([0]) },
+				{ common },
+			),
+		).toThrow('non-empty extraParams not supported');
+	});
+
+	it('accepts every spelling of empty extraParams', () => {
+		for (const extraParams of ['0x', '', undefined, new Uint8Array(0)]) {
+			const tx = FeeMarketEIP1559Transaction.fromTxData(
+				{ ...testdata[0], extraParams },
+				{ common },
+			);
+			expect(tx.extraParams).toBeUndefined();
+			expect(tx.sign(seed).verifySignature()).toBe(true);
+		}
+	});
+
+	it('rejects a raw transaction that carries extraParams', () => {
+		const values = FeeMarketEIP1559Transaction.fromTxData(testdata[0], { common })
+			.sign(seed)
+			.raw() as unknown[];
+		values[10] = hexToBytes('1234');
+		const serialized = uint8ArrayConcat(
+			Uint8Array.from([2]),
+			RLP.encode(values as Parameters<typeof RLP.encode>[0]),
+		);
+		expect(() => FeeMarketEIP1559Transaction.fromSerializedTx(serialized, { common })).toThrow(
+			'non-empty extraParams not supported',
+		);
+	});
+
+	it('sign() refuses a transaction holding extraParams instead of dropping them, and validate()/verifySignature() reject it', () => {
+		const tx = FeeMarketEIP1559Transaction.fromTxData(testdata[0], { common, freeze: false });
+		(tx as unknown as { extraParams?: Uint8Array }).extraParams = hexToBytes('1234');
+
+		expect(() => tx.sign(seed)).toThrow(TransactionSigningError);
+		expect(tx.validate(true)).toContain('non-empty extraParams not supported');
+		expect(tx.validate()).toBe(false);
+		expect(tx.verifySignature()).toBe(false);
+	});
+});
+
+describe('serialized RLP bounds (P10-QRL-1)', () => {
+	it('counts hex bytes with or without a prefix at the serialized size boundary', () => {
+		const atLimit = '00'.repeat(16 * 1024 * 1024);
+		for (const prefix of ['', '0x', '0X']) {
+			expect(() => assertSerializedTransactionSize(prefix + atLimit)).not.toThrow();
+			expect(() => assertSerializedTransactionSize(prefix + atLimit + '00')).toThrow(
+				TransactionError,
+			);
+		}
+	});
+	it('rejects a deeply wrapped 5 MiB payload before the recursive decoder', () => {
+		const payload = RLP.encode(new Uint8Array(5 * 1024 * 1024));
+		const headers: Uint8Array[] = [];
+		let size = payload.length;
+		for (let i = 0; i < 2048; i += 1) {
+			let hex = size.toString(16);
+			if (hex.length % 2) hex = '0' + hex;
+			const length = hexToBytes('0x' + hex);
+			const header = uint8ArrayConcat(new Uint8Array([0xf7 + length.length]), length);
+			headers.unshift(header);
+			size += header.length;
+		}
+		const serialized = uint8ArrayConcat(new Uint8Array([2]), ...headers, payload);
+		const decode = jest.spyOn(RLP, 'decode');
+		try {
+			expect(() => FeeMarketEIP1559Transaction.fromSerializedTx(serialized)).toThrow(
+				/maximum nesting depth 4/,
+			);
+			expect(decode).not.toHaveBeenCalled();
+		} finally {
+			decode.mockRestore();
+		}
+	});
+	it('bounds the number of decoded items', () => {
+		const serialized = uint8ArrayConcat(
+			new Uint8Array([2]),
+			RLP.encode(Array.from({ length: 65536 }, () => new Uint8Array())),
+		);
+		expect(() => FeeMarketEIP1559Transaction.fromSerializedTx(serialized)).toThrow(
+			/maximum item count/,
+		);
+	});
+	it('bounds serialized bytes before hex conversion or RLP decoding', () => {
+		const huge = new Uint8Array(16 * 1024 * 1024 + 1);
+		huge[0] = 2;
+		expect(() => FeeMarketEIP1559Transaction.fromSerializedTx(huge)).toThrow(TransactionError);
+		expect(() => recoverTransaction('0x02' + '00'.repeat(16 * 1024 * 1024))).toThrow(
+			/maximum size/,
+		);
+	});
+	it('accepts all four access-list levels', () => {
+		const original = FeeMarketEIP1559Transaction.fromTxData(
+			{ ...testdata[0], accessList: [[validAddress, [validSlot]]] },
+			{ common },
+		);
+		const decoded = FeeMarketEIP1559Transaction.fromSerializedTx(original.serialize(), {
+			common,
+		});
+		expect(decoded.accessList).toEqual(original.accessList);
+	});
+});
+
+test('bounds cross-realm byte views before RLP conversion (P12-QRL-1)', () => {
+	const size = 16 * 1024 * 1024;
+	const bytes = runInNewContext('new Uint8Array(size + 1)', { size }) as Uint8Array;
+	expect(bytes instanceof Uint8Array).toBe(false);
+	expect(ArrayBuffer.isView(bytes)).toBe(true);
+	expect(() => assertSerializedTransactionSize(bytes.subarray(0, size))).not.toThrow();
+	expect(() => assertSerializedTransactionSize(bytes)).toThrow(TransactionError);
+	expect(() => FeeMarketEIP1559Transaction.fromSerializedTx(bytes)).toThrow(/maximum size/);
 });

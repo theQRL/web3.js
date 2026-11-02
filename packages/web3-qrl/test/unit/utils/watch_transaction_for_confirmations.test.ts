@@ -15,12 +15,8 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import { Web3Context, Web3PromiEvent } from '@theqrl/web3-core';
-import { format } from '@theqrl/web3-utils';
-import {
-	DEFAULT_RETURN_FORMAT,
-	TransactionReceipt,
-	Web3QRLExecutionAPI,
-} from '@theqrl/web3-types';
+import { format, sha3Raw } from '@theqrl/web3-utils';
+import { DEFAULT_RETURN_FORMAT, TransactionReceipt, Web3QRLExecutionAPI } from '@theqrl/web3-types';
 import { qrlRpcMethods } from '@theqrl/web3-rpc-methods';
 import {
 	TransactionMissingReceiptOrBlockHashError,
@@ -41,6 +37,10 @@ import { transactionReceiptSchema } from '../../../src/schemas';
 import { SendSignedTransactionEvents } from '../../../src/types';
 
 jest.mock('@theqrl/web3-rpc-methods');
+
+beforeEach(() => {
+	(qrlRpcMethods.call as jest.Mock).mockResolvedValue('0x');
+});
 jest.mock('../../../src/utils/wait_for_transaction_receipt');
 jest.mock('../../../src/utils/watch_transaction_by_pooling');
 jest.mock('../../../src/utils/watch_transaction_by_subscription');
@@ -131,8 +131,11 @@ describe('watchTransactionForConfirmations', () => {
 					WaitForTransactionReceipt.waitForTransactionReceipt as jest.Mock
 				).mockResolvedValueOnce(expectedTransactionReceipt);
 
-				(qrlRpcMethods.sendRawTransaction as jest.Mock).mockResolvedValueOnce(
-					expectedTransactionHash,
+				// The send pipeline checks the node's replies: the block number must be a quantity
+				// (P4-L-13) and `qrl_sendRawTransaction` must answer the local hash (P4-L-9).
+				(qrlRpcMethods.getBlockNumber as jest.Mock).mockResolvedValue('0x1');
+				(qrlRpcMethods.sendRawTransaction as jest.Mock).mockImplementation(
+					(_requestManager: unknown, raw: string) => sha3Raw(raw),
 				);
 
 				const promiEvent = rpcMethodWrappers.sendSignedTransaction(
@@ -196,8 +199,11 @@ describe('watchTransactionForConfirmations', () => {
 					WaitForTransactionReceipt.waitForTransactionReceipt as jest.Mock
 				).mockResolvedValueOnce(expectedTransactionReceipt);
 
-				(qrlRpcMethods.sendRawTransaction as jest.Mock).mockResolvedValueOnce(
-					expectedTransactionHash,
+				// The send pipeline checks the node's replies: the block number must be a quantity
+				// (P4-L-13) and `qrl_sendRawTransaction` must answer the local hash (P4-L-9).
+				(qrlRpcMethods.getBlockNumber as jest.Mock).mockResolvedValue('0x1');
+				(qrlRpcMethods.sendRawTransaction as jest.Mock).mockImplementation(
+					(_requestManager: unknown, raw: string) => sha3Raw(raw),
 				);
 
 				const promiEvent = rpcMethodWrappers.sendSignedTransaction(
@@ -227,6 +233,51 @@ describe('watchTransactionForConfirmations', () => {
 					transactionPromiEvent: promiEvent,
 					returnFormat: DEFAULT_RETURN_FORMAT,
 				});
+			},
+		);
+	});
+
+	describe('threshold already satisfied by the receipt (L-54)', () => {
+		let web3Context: Web3Context<Web3QRLExecutionAPI>;
+
+		beforeAll(() => {
+			web3Context = new Web3Context({
+				request: jest.fn(),
+				supportsSubscriptions: () => false,
+			});
+		});
+
+		afterEach(() => jest.resetAllMocks());
+
+		it.each([[0], [1]])(
+			'emits the first confirmation and starts no watcher when transactionConfirmationBlocks is %i',
+			blocks => {
+				web3Context.transactionConfirmationBlocks = blocks;
+				const formattedTransactionReceipt = format(
+					transactionReceiptSchema,
+					expectedTransactionReceipt,
+					DEFAULT_RETURN_FORMAT,
+				);
+				const promiEvent = new Web3PromiEvent<
+					TransactionReceipt,
+					SendSignedTransactionEvents<typeof DEFAULT_RETURN_FORMAT>
+				>(() => undefined);
+				const confirmation = jest.fn();
+				promiEvent.on('confirmation', confirmation);
+
+				WatchTransactionForConfirmations.watchTransactionForConfirmations(
+					web3Context,
+					promiEvent,
+					formattedTransactionReceipt,
+					expectedTransactionHash,
+					DEFAULT_RETURN_FORMAT,
+				);
+
+				expect(confirmation).toHaveBeenCalledTimes(1);
+				expect(WatchTransactionByPolling.watchTransactionByPolling).not.toHaveBeenCalled();
+				expect(
+					WatchTransactionBySubscription.watchTransactionBySubscription,
+				).not.toHaveBeenCalled();
 			},
 		);
 	});

@@ -19,24 +19,23 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 const mockFetch = jest.fn();
 
 jest.setMock('cross-fetch', mockFetch);
+globalThis.fetch = mockFetch;
 
-/* eslint-disable-next-line import/first */
+import { Readable } from 'stream';
 import { Web3APIPayload, QRLExecutionAPI } from '@theqrl/web3-types';
-/* eslint-disable-next-line import/first */
 import {
 	ConnectionTimeoutError,
 	ProviderCapabilityError,
 	ProviderError,
+	InvalidResponseError,
 	RequestTimeoutError,
 	ResponseTooLargeError,
 } from '@theqrl/web3-errors';
-/* eslint-disable-next-line import/first */
 import {
 	DEFAULT_CONNECTION_TIMEOUT,
 	DEFAULT_MAX_RESPONSE_BYTES,
 	DEFAULT_REQUEST_TIMEOUT,
 } from '@theqrl/web3-utils';
-/* eslint-disable-next-line import/first */
 import HttpProvider from '../../src/index';
 
 const payload = {
@@ -169,19 +168,197 @@ describe('HttpProvider - request lifecycle bounds', () => {
 			expect(state.cancelled).toBe(true);
 		});
 
-		it('rejects early on an oversized content-length without reading the body at all', async () => {
-			const { stream, state } = countingStream([new Uint8Array(8).fill(0x61)]);
-			mockFetch.mockResolvedValueOnce(
-				fakeResponse({ headers: { 'content-length': '99999' }, body: stream }),
-			);
+		it.each([200, 413])(
+			'cancels an HTTP %i body rejected by content-length without reading it',
+			async status => {
+				jest.useFakeTimers();
+				const { stream, state } = countingStream([new Uint8Array(8).fill(0x61)]);
+				mockFetch.mockResolvedValueOnce(
+					fakeResponse({ status, headers: { 'content-length': '99999' }, body: stream }),
+				);
 
-			const provider = new HttpProvider('http://localhost:8545', {
-				maxResponseBytes: 2048,
+				const provider = new HttpProvider('http://localhost:8545', {
+					maxResponseBytes: 2048,
+				});
+				const controller = new AbortController();
+				const request = provider.request(payload, { signal: controller.signal });
+
+				await expect(request).rejects.toThrow(ResponseTooLargeError);
+				await expect(request).rejects.toMatchObject({
+					maxResponseBytes: 2048,
+					receivedBytes: 99999,
+				});
+				// Rejected on the header alone: the body was never even opened for reading.
+				expect(state.readerRequested).toBe(false);
+				expect(state.cancelled).toBe(true);
+				const { signal } = mockFetch.mock.calls[0][1] as RequestInit;
+				expect(signal?.aborted).toBe(true);
+				expect(controller.signal.aborted).toBe(false);
+				expect(jest.getTimerCount()).toBe(0);
+			},
+		);
+
+		it.each([200, 413])(
+			'destroys an HTTP %i Node body rejected by content-length',
+			async status => {
+				const read = jest.fn();
+				const body = new Readable({ read });
+				mockFetch.mockResolvedValueOnce(
+					fakeResponse({ status, headers: { 'content-length': '99999' }, body }),
+				);
+				const provider = new HttpProvider('http://localhost:8545', {
+					maxResponseBytes: 2048,
+				});
+
+				await expect(provider.request(payload)).rejects.toThrow(ResponseTooLargeError);
+				expect(body.destroyed).toBe(true);
+				expect(read).not.toHaveBeenCalled();
+				const { signal } = mockFetch.mock.calls[0][1] as RequestInit;
+				expect(signal?.aborted).toBe(true);
+			},
+		);
+
+		it.each(['throw', 'reject'])(
+			'preserves the size error when body cancellation fails: %s',
+			async failure => {
+				const body = new ReadableStream<Uint8Array>();
+				const cancel = jest.spyOn(body, 'cancel');
+				if (failure === 'throw') {
+					cancel.mockImplementation(() => {
+						throw new Error('cancel failed');
+					});
+				} else {
+					cancel.mockRejectedValue(new Error('cancel failed'));
+				}
+				mockFetch.mockResolvedValueOnce(
+					fakeResponse({ headers: { 'content-length': '99999' }, body }),
+				);
+				const provider = new HttpProvider('http://localhost:8545', {
+					maxResponseBytes: 2048,
+				});
+
+				await expect(provider.request(payload)).rejects.toThrow(ResponseTooLargeError);
+				expect(cancel).toHaveBeenCalledTimes(1);
+				const { signal } = mockFetch.mock.calls[0][1] as RequestInit;
+				expect(signal?.aborted).toBe(true);
+			},
+		);
+
+		it('rejects promptly when body cancellation never settles', async () => {
+			jest.useFakeTimers();
+			const cancel = jest.fn(async () => new Promise<void>(() => undefined));
+			const body = new ReadableStream<Uint8Array>({ cancel });
+			mockFetch.mockResolvedValueOnce(
+				fakeResponse({ headers: { 'content-length': '99999' }, body }),
+			);
+			const provider = new HttpProvider('http://localhost:8545', { maxResponseBytes: 2048 });
+			const rejected = jest.fn();
+			const request = provider.request(payload).catch(rejected);
+
+			await jest.advanceTimersByTimeAsync(0);
+			expect(cancel).toHaveBeenCalledTimes(1);
+			expect(rejected).toHaveBeenCalledWith(expect.any(ResponseTooLargeError));
+			await request;
+			expect(jest.getTimerCount()).toBe(0);
+		});
+
+		it('preserves the size error and aborts transport when Node destruction throws', async () => {
+			const body = new Readable({ read: jest.fn() });
+			const destroy = jest.spyOn(body, 'destroy').mockImplementation(() => {
+				throw new Error('destroy failed');
 			});
+			mockFetch.mockResolvedValueOnce(
+				fakeResponse({ headers: { 'content-length': '99999' }, body }),
+			);
+			const provider = new HttpProvider('http://localhost:8545', { maxResponseBytes: 2048 });
 
 			await expect(provider.request(payload)).rejects.toThrow(ResponseTooLargeError);
-			// Rejected on the header alone: the body was never even opened for reading.
-			expect(state.readerRequested).toBe(false);
+			expect(destroy).toHaveBeenCalledTimes(1);
+			const { signal } = mockFetch.mock.calls[0][1] as RequestInit;
+			expect(signal?.aborted).toBe(true);
+		});
+
+		it.each(['throw', 'reject'])(
+			'preserves the size error when cancelling a stream mid-read fails: %s (P4-L-19)',
+			async failure => {
+				// 8 x 1 KiB against a 2 KiB cap: the cap is crossed on the third chunk while the
+				// stream is still open, so the in-loop cancellation reaches the source.
+				const chunks = Array.from({ length: 8 }, () => new Uint8Array(1024).fill(0x61));
+				let index = 0;
+				const cancel =
+					failure === 'throw'
+						? jest.fn(() => {
+								throw new Error('underlying source cancel failed');
+							})
+						: jest.fn(async () =>
+								Promise.reject(new Error('underlying source cancel failed')),
+							);
+				const body = new ReadableStream<Uint8Array>({
+					pull(controller) {
+						if (index >= chunks.length) {
+							controller.close();
+							return;
+						}
+						controller.enqueue(chunks[index]);
+						index += 1;
+					},
+					cancel,
+				});
+				mockFetch.mockResolvedValueOnce(fakeResponse({ body }));
+				const provider = new HttpProvider('http://localhost:8545', {
+					maxResponseBytes: 2048,
+				});
+
+				const request = provider.request(payload);
+				await expect(request).rejects.toThrow(ResponseTooLargeError);
+				await expect(request).rejects.toMatchObject({
+					maxResponseBytes: 2048,
+					receivedBytes: 3072,
+				});
+				expect(cancel).toHaveBeenCalledTimes(1);
+				const { signal } = mockFetch.mock.calls[0][1] as RequestInit;
+				expect(signal?.aborted).toBe(true);
+			},
+		);
+
+		it('preserves the size error when destroying a Node body mid-read throws (P4-L-19)', async () => {
+			const body = new Readable({
+				read() {
+					this.push(Buffer.alloc(1024, 0x61));
+				},
+			});
+			const destroy = jest.spyOn(body, 'destroy').mockImplementation(() => {
+				throw new Error('destroy failed');
+			});
+			mockFetch.mockResolvedValueOnce(fakeResponse({ body }));
+			const provider = new HttpProvider('http://localhost:8545', { maxResponseBytes: 2048 });
+
+			const request = provider.request(payload);
+			await expect(request).rejects.toThrow(ResponseTooLargeError);
+			await expect(request).rejects.toMatchObject({
+				maxResponseBytes: 2048,
+				receivedBytes: 3072,
+			});
+			expect(destroy).toHaveBeenCalled();
+			const { signal } = mockFetch.mock.calls[0][1] as RequestInit;
+			expect(signal?.aborted).toBe(true);
+			destroy.mockRestore();
+			body.destroy();
+		});
+
+		it.each([
+			['absent', undefined],
+			['buffered', new Uint8Array(8)],
+			['unsupported', { unreadable: true }],
+		])('preserves the size error when the body is %s', async (_label, body) => {
+			mockFetch.mockResolvedValueOnce(
+				fakeResponse({ headers: { 'content-length': '99999' }, body }),
+			);
+			const provider = new HttpProvider('http://localhost:8545', { maxResponseBytes: 2048 });
+
+			await expect(provider.request(payload)).rejects.toThrow(ResponseTooLargeError);
+			const { signal } = mockFetch.mock.calls[0][1] as RequestInit;
+			expect(signal?.aborted).toBe(true);
 		});
 
 		it('counts bytes, not string characters, for multi-byte content', async () => {
@@ -209,7 +386,9 @@ describe('HttpProvider - request lifecycle bounds', () => {
 		});
 
 		it('reassembles a multi-chunk body split mid multi-byte character', async () => {
-			const bytes = encoder.encode(JSON.stringify({ jsonrpc: '2.0', id: 42, result: '日本' }));
+			const bytes = encoder.encode(
+				JSON.stringify({ jsonrpc: '2.0', id: 42, result: '日本' }),
+			);
 			const body = new ReadableStream<Uint8Array>({
 				start(controller) {
 					// Split at an arbitrary byte, likely mid-character.
@@ -276,9 +455,9 @@ describe('HttpProvider - request lifecycle bounds', () => {
 			const provider = new HttpProvider('http://localhost:8545');
 
 			// There is deliberately no infinite opt-out, per-request included.
-			await expect(
-				provider.request(payload, { requestTimeout: Infinity }),
-			).rejects.toThrow(ProviderError);
+			await expect(provider.request(payload, { requestTimeout: Infinity })).rejects.toThrow(
+				ProviderError,
+			);
 			expect(mockFetch).not.toHaveBeenCalled();
 		});
 	});
@@ -317,10 +496,14 @@ describe('HttpProvider - request lifecycle bounds', () => {
 			await Promise.resolve();
 			jest.advanceTimersByTime(DEFAULT_CONNECTION_TIMEOUT + 1);
 			await Promise.resolve();
+			const { signal } = mockFetch.mock.calls[0][1] as RequestInit;
+			expect(signal?.aborted).toBe(false);
 
 			jest.advanceTimersByTime(DEFAULT_REQUEST_TIMEOUT);
 			await assertion;
 			expect(state.cancelled).toBe(true);
+			expect(signal?.aborted).toBe(true);
+			expect(signal?.reason).toBeInstanceOf(RequestTimeoutError);
 		});
 
 		it('honours a shorter per-request requestTimeout override', async () => {
@@ -371,6 +554,33 @@ describe('HttpProvider - request lifecycle bounds', () => {
 	});
 
 	describe('caller cancellation', () => {
+		it('aborts transport after headers and preserves the caller reason if the stream errors', async () => {
+			const controller = new AbortController();
+			const reason = new Error('caller cancelled the body read');
+			let streamController!: ReadableStreamDefaultController<Uint8Array>;
+			const stream = new ReadableStream<Uint8Array>({
+				start(value) {
+					streamController = value;
+				},
+			});
+			mockFetch.mockImplementationOnce(async (_url: string, init: RequestInit) => {
+				init.signal?.addEventListener('abort', () =>
+					streamController.error(new Error('transport aborted')),
+				);
+				return Promise.resolve(fakeResponse({ body: stream }));
+			});
+			const provider = new HttpProvider('http://localhost:8545');
+			const promise = provider.request(payload, { signal: controller.signal });
+			const assertion = expect(promise).rejects.toBe(reason);
+			await new Promise<void>(resolve => setImmediate(resolve));
+			expect(stream.locked).toBe(true);
+			controller.abort(reason);
+			await assertion;
+			const { signal } = mockFetch.mock.calls[0][1] as RequestInit;
+			expect(signal?.aborted).toBe(true);
+			expect(signal?.reason).toBe(reason);
+		});
+
 		it('propagates a caller abort and does not mislabel it as a timeout', async () => {
 			const controller = new AbortController();
 			const reason = new Error('caller changed their mind');
@@ -406,9 +616,9 @@ describe('HttpProvider - request lifecycle bounds', () => {
 
 			const provider = new HttpProvider('http://localhost:8545');
 
-			await expect(
-				provider.request(payload, { signal: controller.signal }),
-			).rejects.toThrow('too late');
+			await expect(provider.request(payload, { signal: controller.signal })).rejects.toThrow(
+				'too late',
+			);
 		});
 
 		it('lets the request deadline win when the caller never cancels', async () => {
@@ -460,6 +670,18 @@ describe('HttpProvider - request lifecycle bounds', () => {
 
 			// Both the connect and request deadlines must be disposed.
 			expect(jest.getTimerCount()).toBe(0);
+		});
+
+		it('does not abort a completed transport when the caller cancels later', async () => {
+			const controller = new AbortController();
+			mockFetch.mockResolvedValueOnce(
+				fakeResponse({ body: jsonStream({ jsonrpc: '2.0', id: 42, result: '0x1' }) }),
+			);
+			const provider = new HttpProvider('http://localhost:8545');
+			await provider.request(payload, { signal: controller.signal });
+			controller.abort();
+			const { signal } = mockFetch.mock.calls[0][1] as RequestInit;
+			expect(signal?.aborted).toBe(false);
 		});
 
 		it('leaves no pending timers after a failed request', async () => {
@@ -554,4 +776,98 @@ describe('HttpProvider - request lifecycle bounds', () => {
 			expect(init.method).toBe('POST');
 		});
 	});
+});
+
+describe('dispatcher option validation (pass-7)', () => {
+	// eslint-disable-next-line no-null/no-null -- exercise explicit null from untyped callers
+	it.each([null, {}, 'dispatcher', { dispatch: true }])(
+		'rejects an invalid dispatcher before fetch: %p',
+		async dispatcher => {
+			mockFetch.mockClear();
+			const provider = new HttpProvider('http://127.0.0.1:8545');
+			await expect(provider.request(payload, { dispatcher })).rejects.toBeInstanceOf(
+				ProviderError,
+			);
+			expect(mockFetch).not.toHaveBeenCalled();
+		},
+	);
+});
+
+test.each([undefined, { dispatch: jest.fn() }])(
+	'accepts an optional native dispatcher: %p',
+	async dispatcher => {
+		mockFetch.mockReset();
+		const { stream } = countingStream([
+			encoder.encode(JSON.stringify({ jsonrpc: '2.0', id: 42, result: '0x1' })),
+		]);
+		mockFetch.mockResolvedValue(fakeResponse({ body: stream }));
+		const provider = new HttpProvider('http://127.0.0.1:8545', {
+			providerOptions: { dispatcher },
+		});
+		await expect(provider.request(payload)).resolves.toHaveProperty('result', '0x1');
+		expect(mockFetch).toHaveBeenCalledWith(
+			expect.any(String),
+			expect.objectContaining({ dispatcher }),
+		);
+	},
+);
+
+test.each([
+	[200, '[]'],
+	[500, '[]'],
+	[200, '{}'],
+	[500, '{}'],
+] as const)(
+	'rejects empty-container bombs in HTTP status %s before JSON.parse (item=%s)',
+	async (status, item) => {
+		const provider = new HttpProvider('http://localhost:8545', { maxResponseBytes: 65536 });
+		const body = Buffer.from('{"id":42,"result":[' + `${item},`.repeat(5000) + item + ']}');
+		mockFetch.mockResolvedValueOnce(fakeResponse({ status, body }));
+		await expect(provider.request(payload)).rejects.toThrow(InvalidResponseError);
+	},
+);
+
+test.each([65536, DEFAULT_MAX_RESPONSE_BYTES])(
+	'HTTP accepts struct-logger traces with empty memory near the byte cap (%s)',
+	async maxResponseBytes => {
+		const entry = {
+			pc: 0,
+			op: 'PUSH1',
+			gas: 900000,
+			gasCost: 3,
+			depth: 1,
+			stack: ['0x1'],
+			memory: [],
+		};
+		const encoded = JSON.stringify(entry);
+		const prefix =
+			'{"jsonrpc":"2.0","id":42,"result":{"gas":1,"failed":false,"returnValue":"","structLogs":[';
+		const suffix = ']}}';
+		const count = Math.floor(
+			(maxResponseBytes - prefix.length - suffix.length + 1) / (encoded.length + 1),
+		);
+		const body = Buffer.from(prefix + `${encoded},`.repeat(count - 1) + encoded + suffix);
+		expect(body.length).toBeLessThanOrEqual(maxResponseBytes);
+		expect(body.length).toBeGreaterThan(maxResponseBytes * 0.99);
+		mockFetch.mockResolvedValueOnce(fakeResponse({ body }));
+		const provider = new HttpProvider('http://localhost:8545', { maxResponseBytes });
+		const reply = await provider.request(payload);
+		expect(reply).toHaveProperty('result.structLogs.length', count);
+		expect(reply).toHaveProperty('result.structLogs.0', entry);
+		expect(reply).toHaveProperty(`result.structLogs.${count - 1}`, entry);
+	},
+);
+
+test('HTTP accepts 1024-frame traces and enforces a custom depth', async () => {
+	const body = Buffer.from(
+		'{"id":42,"result":' + '{"calls":['.repeat(1024) + '{}' + ']}'.repeat(1024) + '}',
+	);
+	mockFetch.mockResolvedValueOnce(fakeResponse({ body }));
+	await expect(
+		new HttpProvider('http://localhost:8545').request(payload),
+	).resolves.toHaveProperty('id', 42);
+	mockFetch.mockResolvedValueOnce(fakeResponse({ body }));
+	await expect(
+		new HttpProvider('http://localhost:8545', { maxResponseDepth: 100 }).request(payload),
+	).rejects.toThrow('nesting depth 100');
 });

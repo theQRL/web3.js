@@ -21,7 +21,6 @@ import {
 	FMT_NUMBER,
 	SupportedProviders,
 } from '@theqrl/web3-types';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { Contract } from '@theqrl/web3-qrl-contract';
 import { validator } from '@theqrl/web3-validator';
 import { Web3QRL } from '../../../src';

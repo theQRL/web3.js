@@ -38,8 +38,6 @@ import {
 	waitForOpenConnection,
 } from '../shared_fixtures/system_tests_utils';
 
-/* eslint-disable jest/no-standalone-expect */
-
 describe('Web3 instance', () => {
 	let provider: string | SupportedProviders;
 	let providerUrl: string;
@@ -183,7 +181,6 @@ describe('Web3 instance', () => {
 			} else {
 				newProvider = new IpcProvider(providerUrl);
 			}
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-call
 			web3.setProvider(newProvider as SupportedProviders);
 
 			expect(web3.provider).toBe(newProvider);
@@ -325,20 +322,20 @@ describe('Web3 instance', () => {
 		});
 
 		it('should update defaults on contract instance', () => {
-			const hardfork = 'berlin';
+			const defaultBlock = 'pending';
 
 			contract = new web3.qrl.Contract(GreeterAbi, undefined, {
 				provider: getSystemTestProvider(),
 				syncWithContext: true,
 			});
 
-			web3.defaultHardfork = hardfork;
+			web3.defaultBlock = defaultBlock;
 
-			expect(contract.defaultHardfork).toBe(hardfork);
+			expect(contract.defaultBlock).toBe(defaultBlock);
 		});
 
 		it('should update defaults on deployed contract instance', async () => {
-			const hardfork = 'berlin';
+			const defaultBlock = 'latest';
 
 			contract = new web3.qrl.Contract(GreeterAbi, undefined, {
 				provider: getSystemTestProvider(),
@@ -346,9 +343,9 @@ describe('Web3 instance', () => {
 			});
 			contract = await contract.deploy(deployOptions).send(sendOptions);
 
-			web3.defaultHardfork = hardfork;
+			web3.defaultBlock = defaultBlock;
 
-			expect(contract.defaultHardfork).toBe(hardfork);
+			expect(contract.defaultBlock).toBe(defaultBlock);
 		});
 	});
 });

@@ -36,6 +36,7 @@ describe('getGasPrice', () => {
 	});
 
 	it('should call rpcMethods.getGasPrice with expected parameters', async () => {
+		(qrlRpcMethods.getGasPrice as jest.Mock).mockResolvedValueOnce('0x1');
 		await getGasPrice(web3Context, DEFAULT_RETURN_FORMAT);
 		expect(qrlRpcMethods.getGasPrice).toHaveBeenCalledWith(web3Context.requestManager);
 	});

@@ -51,9 +51,9 @@ describe('provider_bounds', () => {
 			expect(() => validateTimeout('1000' as unknown as number, 'requestTimeout')).toThrow(
 				ProviderError,
 			);
-			expect(() =>
-				validateTimeout(undefined as unknown as number, 'requestTimeout'),
-			).toThrow(ProviderError);
+			expect(() => validateTimeout(undefined as unknown as number, 'requestTimeout')).toThrow(
+				ProviderError,
+			);
 		});
 
 		it('names the offending option in the message', () => {
@@ -81,6 +81,7 @@ describe('provider_bounds', () => {
 				requestTimeout: DEFAULT_REQUEST_TIMEOUT,
 				maxResponseBytes: DEFAULT_MAX_RESPONSE_BYTES,
 				maxInFlightRequests: DEFAULT_MAX_IN_FLIGHT_REQUESTS,
+				maxResponseDepth: 4096,
 			});
 		});
 
@@ -90,6 +91,7 @@ describe('provider_bounds', () => {
 				requestTimeout: 5000,
 				maxResponseBytes: DEFAULT_MAX_RESPONSE_BYTES,
 				maxInFlightRequests: DEFAULT_MAX_IN_FLIGHT_REQUESTS,
+				maxResponseDepth: 4096,
 			});
 		});
 
@@ -100,12 +102,14 @@ describe('provider_bounds', () => {
 					requestTimeout: 2000,
 					maxResponseBytes: 1024,
 					maxInFlightRequests: 8,
+					maxResponseDepth: 4096,
 				}),
 			).toEqual({
 				connectionTimeout: 1000,
 				requestTimeout: 2000,
 				maxResponseBytes: 1024,
 				maxInFlightRequests: 8,
+				maxResponseDepth: 4096,
 			});
 		});
 
@@ -120,3 +124,22 @@ describe('provider_bounds', () => {
 		});
 	});
 });
+
+test.each([536_870_889, 2 ** 53, 1e300])(
+	'rejects unsupported response size %s',
+	maxResponseBytes => {
+		expect(() => resolveProviderBounds({ maxResponseBytes })).toThrow(ProviderError);
+	},
+);
+test('accepts the maximum supported response size', () => {
+	expect(resolveProviderBounds({ maxResponseBytes: 536_870_888 }).maxResponseBytes).toBe(
+		536_870_888,
+	);
+});
+
+test.each([0, -1, 1.5, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1])(
+	'rejects invalid maxResponseDepth %p',
+	maxResponseDepth => {
+		expect(() => resolveProviderBounds({ maxResponseDepth })).toThrow(ProviderError);
+	},
+);

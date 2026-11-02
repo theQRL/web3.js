@@ -22,8 +22,10 @@ import {
 	InvalidResponseError,
 } from '@theqrl/web3-errors';
 import { decodeContractErrorData, isAbiErrorFragment } from '@theqrl/web3-qrl-abi';
+import { isNullish } from '@theqrl/web3-validator';
 import {
 	AbiErrorFragment,
+	BlockNumberOrTag,
 	ContractAbi,
 	DataFormat,
 	DEFAULT_RETURN_FORMAT,
@@ -36,6 +38,16 @@ import {
 import { call } from './rpc_method_wrappers_readers.js';
 import { RevertReason, RevertReasonWithCustomError } from '../types.js';
 
+/** The JSON-RPC error code of an execution error (EIP-1474): the code of a revert. */
+const JSONRPC_EXECUTION_ERROR_CODE = 3;
+
+/**
+ * Turns the error of a failed `qrl_call` into a revert reason.
+ *
+ * @returns the reason for a {@link ContractExecutionError} (decoded against `contractAbi` when
+ * given) or for an {@link InvalidResponseError} carrying the execution error code `3`.
+ * @throws any other error unchanged: it describes a failed request, not a revert (L-52).
+ */
 export const parseTransactionError = (error: unknown, contractAbi?: ContractAbi) => {
 	if (
 		error instanceof ContractExecutionError &&
@@ -70,10 +82,15 @@ export const parseTransactionError = (error: unknown, contractAbi?: ContractAbi)
 		} as RevertReason;
 	}
 
+	// A JSON-RPC error reply that the request manager did not already classify as a revert is a
+	// revert only when it carries the execution error code. Any other error (`insufficient
+	// funds`, `method not found`, a transport failure) describes a failed request, not a
+	// reverted execution, and is rethrown unchanged (L-52).
 	if (
 		error instanceof InvalidResponseError &&
 		!Array.isArray(error.innerError) &&
-		error.innerError !== undefined
+		error.innerError !== undefined &&
+		(error.innerError as unknown as { code?: unknown }).code === JSONRPC_EXECUTION_ERROR_CODE
 	) {
 		return error.innerError.message;
 	}
@@ -86,7 +103,8 @@ export const parseTransactionError = (error: unknown, contractAbi?: ContractAbi)
  *
  * @param web3Context - ({@link Web3Context}) Web3 configuration object that contains things such as the provider, request manager, wallet, etc.
  * @param transaction - A transaction object where all properties are optional except `to`, however it's recommended to include the `from` property or it may default to `Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000` depending on your node or provider.
- * @returns `undefined` if no revert reason was given, a revert reason object, a revert reason string, or an `unknown` error
+ * @returns `undefined` if the call did not revert, a revert reason object or a revert reason string.
+ * @throws the error of the `qrl_call` when it failed for a reason other than a revert (`insufficient funds`, `method not found`, a transport failure): such a failure is not a revert reason (L-52).
  */
 export async function getRevertReason<
 	ReturnFormat extends DataFormat = typeof DEFAULT_RETURN_FORMAT,
@@ -95,11 +113,32 @@ export async function getRevertReason<
 	transaction: TransactionCall,
 	contractAbi?: ContractAbi,
 	returnFormat: ReturnFormat = DEFAULT_RETURN_FORMAT as ReturnFormat,
+	blockNumber?: BlockNumberOrTag,
 ): Promise<undefined | RevertReason | RevertReasonWithCustomError | string> {
+	const simulate = async (block: BlockNumberOrTag) => {
+		try {
+			await call(web3Context, transaction, block, returnFormat);
+			return undefined;
+		} catch (error) {
+			// Throws for anything that is not a revert (L-52).
+			return parseTransactionError(error, contractAbi);
+		}
+	};
+	if (isNullish(blockNumber)) {
+		return simulate(web3Context.defaultBlock);
+	}
+	// The caller may supply N-1 as a pre-state approximation for a mined receipt.
+	// Only missing/pruned historical state warrants a fallback to defaultBlock.
 	try {
-		await call(web3Context, transaction, web3Context.defaultBlock, returnFormat);
-		return undefined;
+		return await simulate(blockNumber);
 	} catch (error) {
-		return parseTransactionError(error, contractAbi);
+		const message = error instanceof Error ? error.message : '';
+		if (
+			!/missing trie node|(?:historical|pruned|missing|unavailable).*state|state.*(?:unavailable|not available|pruned|not found)/i.test(
+				message,
+			)
+		)
+			throw error;
+		return simulate(web3Context.defaultBlock);
 	}
 }

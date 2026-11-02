@@ -23,6 +23,9 @@ import { AnonymousCoder } from './anonymous.js';
 
 const logger = new Logger(version);
 
+// Largest fixed array length `defaultValue()` materialises (M-10).
+export const MAX_DEFAULT_ARRAY_LENGTH = 65536;
+
 export function pack(
 	writer: Writer,
 	coders: ReadonlyArray<Coder>,
@@ -174,6 +177,13 @@ export function unpack(reader: Reader, coders: Array<Coder>): Result {
 			name = '_length';
 		}
 
+		// A name that is a canonical integer (`'1'`, `'0'`) would land in the positional slots
+		// of the result (and extend its `length`), and `__length__` is the consumer's own
+		// counter: such outputs stay reachable by position only.
+		if (/^(0|[1-9][0-9]*)$/.test(name) || name === '__length__') {
+			return;
+		}
+
 		if (values[name] != null) {
 			return;
 		}
@@ -212,6 +222,11 @@ export class ArrayCoder extends Coder {
 	readonly length: number;
 
 	constructor(coder: Coder, length: number, localName: string) {
+		// Diff vs ethers v5 (P4-M-2): the length comes from the ABI; anything but -1 (dynamic) or
+		// a non-negative safe integer would corrupt the element budget and the allocations below.
+		if (length !== -1 && !(Number.isSafeInteger(length) && length >= 0)) {
+			logger.throwArgumentError('invalid array length', 'length', length);
+		}
 		const type = `${coder.type}[${length >= 0 ? length : ''}]`;
 		const dynamic = length === -1 || coder.dynamic;
 		super('array', type, localName, dynamic);
@@ -223,6 +238,15 @@ export class ArrayCoder extends Coder {
 	defaultValue(): Array<any> {
 		// Verifies the child coder is valid (even if the array is dynamic or 0-length)
 		const defaultChild = this.coder.defaultValue();
+
+		// Diff vs ethers v5 (M-10): a fixed length comes from the (untrusted) ABI and sizes an
+		// allocation that no data bounds, so it is capped here.
+		if (this.length > MAX_DEFAULT_ARRAY_LENGTH) {
+			logger.throwError('array length too large for a default value', Logger.errors.BUFFER_OVERRUN, {
+				length: this.length,
+				maximum: MAX_DEFAULT_ARRAY_LENGTH,
+			});
+		}
 
 		const result: Array<any> = [];
 		for (let i = 0; i < this.length; i++) {
@@ -261,23 +285,30 @@ export class ArrayCoder extends Coder {
 		let count = this.length;
 		if (count === -1) {
 			count = reader.readValue().toNumber();
+		}
 
-			// Check that there is *roughly* enough data to ensure
-			// stray random data is not being read as a length. Each
-			// slot requires at least one word for its value or as a link
-			// to the data. This could use a much
-			// tighter bound, but we are erroring on the side of safety.
-			if (count * reader.wordSize > reader._data.length) {
-				logger.throwError('insufficient data length', Logger.errors.BUFFER_OVERRUN, {
-					length: reader._data.length,
-					count,
-				});
-			}
+		// Check that there is *roughly* enough data to ensure
+		// stray random data is not being read as a length. Each
+		// slot requires at least one word for its value or as a link
+		// to the data. This could use a much
+		// tighter bound, but we are erroring on the side of safety.
+		// Diff vs ethers v5 (M-10): the check also covers a fixed length, which comes from the
+		// (untrusted) ABI and used to size an allocation before any data was read.
+		if (count * reader.wordSize > reader._data.length) {
+			logger.throwError('insufficient data length', Logger.errors.BUFFER_OVERRUN, {
+				length: reader._data.length,
+				count,
+			});
 		}
-		const coders = [];
-		for (let i = 0; i < count; i++) {
-			coders.push(new AnonymousCoder(this.coder));
-		}
+
+		// Diff vs ethers v5 (M-10): count the elements against the shared element budget, which
+		// is what bounds nested arrays of zero-size elements (`tuple()[][]`): they pass the data
+		// length check at every level while reading nothing.
+		reader._incrementElementsDecoded(count);
+
+		// Diff vs ethers v5 (M-10): one anonymous coder serves every element; the coders are
+		// stateless, so there is no need for an instance per element.
+		const coders: Array<Coder> = new Array<Coder>(count).fill(new AnonymousCoder(this.coder));
 
 		return reader.coerce(this.name, unpack(reader, coders));
 	}

@@ -27,7 +27,6 @@ import {
 import { isAbiParameterSchema } from './validation/abi.js';
 import { isHexStrict } from './validation/string.js';
 import { Web3ValidatorError } from './errors.js';
-// eslint-disable-next-line import/no-cycle
 import { isAddressString } from './validation/address.js';
 
 // Format names that are not ABI types. A name must appear here as well as in `formats.ts`,
@@ -39,10 +38,38 @@ const extraTypes = [
 	'blockNumberOrTag',
 	'filter',
 	'bloom',
-	'eip712TypedData',
+	'qrlTypedData',
 ];
 
-export const parseBaseType = <T = typeof VALID_QRL_BASE_TYPES[number]>(
+// An ABI type name: a lowercase word, an optional decimal size and any number of `[n]` / `[]`
+// dimensions. Nothing else is tolerated: `uint8x` used to parse as `uint8`, `bytes 3 2` as
+// `bytes3` and `uint[ 2]` as a plain `uint`, so a typo silently changed what was validated
+// (I-11). The size is only meaningful for `int`, `uint` and `bytes`.
+const ABI_TYPE_PATTERN = /^([a-z]+)(\d*)((?:\[\d*\])*)$/;
+
+const assertAbiDepth = (depth: number): void => {
+	if (depth > 64) {
+		throw new Web3ValidatorError([
+			{
+				keyword: 'maxDepth',
+				message: 'ABI nesting exceeds maximum depth 64',
+				params: { maxDepth: 64 },
+				instancePath: '',
+				schemaPath: '',
+			},
+		]);
+	}
+};
+
+/**
+ * Splits an ABI type into its base type, its size and its array dimensions.
+ *
+ * `baseType` is `undefined` for anything that is not a well-formed ABI type (unknown base
+ * type, a size on a type that has none, whitespace, stray characters, a non-string).
+ * Dynamic dimensions (`[]`) are reported as `-1`; a size that is out of range for the base
+ * type (`uint7`, `bytes65`) is returned as is and rejected by the schema conversion.
+ */
+export const parseBaseType = <T = (typeof VALID_QRL_BASE_TYPES)[number]>(
 	type: string,
 ): {
 	baseType?: T;
@@ -50,41 +77,33 @@ export const parseBaseType = <T = typeof VALID_QRL_BASE_TYPES[number]>(
 	arraySizes: number[];
 	isArray: boolean;
 } => {
-	// Remove all empty spaces to avoid any parsing issue.
-	let strippedType = type.replace(/ /, '');
-	let baseTypeSize: number | undefined;
-	let isArray = false;
-	let arraySizes: number[] = [];
+	const match = typeof type === 'string' ? ABI_TYPE_PATTERN.exec(type) : undefined;
 
-	if (type.includes('[')) {
-		// Extract the array type
-		strippedType = strippedType.slice(0, strippedType.indexOf('['));
-		// Extract array indexes
-		arraySizes = [...type.matchAll(/(?:\[(\d*)\])/g)]
-			.map(match => parseInt(match[1], 10))
-			.map(size => (Number.isNaN(size) ? -1 : size));
-
-		isArray = arraySizes.length > 0;
+	if (!match) {
+		return { baseType: undefined, isArray: false, baseTypeSize: undefined, arraySizes: [] };
 	}
 
-	if (VALID_QRL_BASE_TYPES.includes(strippedType)) {
-		return { baseType: strippedType as unknown as T, isArray, baseTypeSize, arraySizes };
+	const [, name, size, dimensions] = match;
+	assertAbiDepth(dimensions.match(/\[/g)?.length ?? 0);
+	const arraySizes = [...dimensions.matchAll(/\[(\d*)\]/g)].map(([, digits]) =>
+		digits === '' ? -1 : parseInt(digits, 10),
+	);
+	const isArray = arraySizes.length > 0;
+
+	if (size === '' && VALID_QRL_BASE_TYPES.includes(name)) {
+		return { baseType: name as unknown as T, isArray, baseTypeSize: undefined, arraySizes };
 	}
 
-	if (strippedType.startsWith('int')) {
-		baseTypeSize = parseInt(strippedType.substring(3), 10);
-		strippedType = 'int';
-	} else if (strippedType.startsWith('uint')) {
-		baseTypeSize = parseInt(strippedType.substring(4), 10);
-		strippedType = 'uint';
-	} else if (strippedType.startsWith('bytes')) {
-		baseTypeSize = parseInt(strippedType.substring(5), 10);
-		strippedType = 'bytes';
-	} else {
-		return { baseType: undefined, isArray: false, baseTypeSize: undefined, arraySizes };
+	if (size !== '' && (name === 'int' || name === 'uint' || name === 'bytes')) {
+		return {
+			baseType: name as unknown as T,
+			isArray,
+			baseTypeSize: parseInt(size, 10),
+			arraySizes,
+		};
 	}
 
-	return { baseType: strippedType as unknown as T, isArray, baseTypeSize, arraySizes };
+	return { baseType: undefined, isArray: false, baseTypeSize: undefined, arraySizes };
 };
 
 const assertSupportedSize = (
@@ -95,7 +114,7 @@ const assertSupportedSize = (
 	if (baseTypeSize === undefined || Number.isNaN(baseTypeSize)) return;
 	if (
 		(baseType === 'int' || baseType === 'uint') &&
-		(baseTypeSize <= 0 || baseTypeSize > 256 || baseTypeSize % 8 !== 0)
+		(baseTypeSize <= 0 || baseTypeSize > 512 || baseTypeSize % 8 !== 0)
 	) {
 		throw new Web3ValidatorError([
 			{
@@ -107,7 +126,7 @@ const assertSupportedSize = (
 			},
 		]);
 	}
-	if (baseType === 'bytes' && (baseTypeSize <= 0 || baseTypeSize > 32)) {
+	if (baseType === 'bytes' && (baseTypeSize <= 0 || baseTypeSize > 64)) {
 		throw new Web3ValidatorError([
 			{
 				keyword: 'eth',
@@ -169,6 +188,7 @@ const convertEthType = (
 export const abiSchemaToJsonSchema = (
 	abis: ShortValidationSchema | FullValidationSchema,
 	level = '/0',
+	depth = 0,
 ) => {
 	const schema: JsonSchema = {
 		type: 'array',
@@ -178,7 +198,6 @@ export const abiSchemaToJsonSchema = (
 	};
 
 	for (const [index, abi] of abis.entries()) {
-		// eslint-disable-next-line no-nested-ternary
 		let abiType!: string;
 		let abiName!: string;
 		let abiComponents: ShortValidationSchema | FullValidationSchema | undefined = [];
@@ -205,7 +224,6 @@ export const abiSchemaToJsonSchema = (
 				abi[1] &&
 				Array.isArray(abi[1])
 			) {
-				// eslint-disable-next-line prefer-destructuring
 				abiType = abi[0];
 				abiName = `${level}/${index}`;
 				abiComponents = abi[1] as ReadonlyArray<ShortValidationSchema>;
@@ -216,14 +234,44 @@ export const abiSchemaToJsonSchema = (
 			}
 		}
 
-		const { baseType, isArray, arraySizes } = parseBaseType(abiType);
+		// A schema entry that is neither an ABI parameter, a type name nor a tuple (`null`, a
+		// number, ...) must surface as a validation error, not as a `TypeError` from the parser.
+		if (typeof abiType !== 'string') {
+			throw new Web3ValidatorError([
+				{
+					keyword: 'eth',
+					message: `Invalid abi schema entry at "${level}/${index}"`,
+					params: { eth: abiType },
+					instancePath: '',
+					schemaPath: '',
+				},
+			]);
+		}
+
+		const { baseType, baseTypeSize, isArray, arraySizes } = parseBaseType(abiType);
+		const nextDepth = depth + arraySizes.length + (baseType === 'tuple' ? 1 : 0);
+		assertAbiDepth(nextDepth);
+
+		// A tuple without `components` used to reach `abiSchemaToJsonSchema(undefined)` and die
+		// with a raw `TypeError`; it is a schema error and is reported as one.
+		if (baseType === 'tuple' && !Array.isArray(abiComponents)) {
+			throw new Web3ValidatorError([
+				{
+					keyword: 'components',
+					message: `Tuple type "${abiType}" at "${level}/${index}" requires "components"`,
+					params: { eth: abiType },
+					instancePath: '',
+					schemaPath: '',
+				},
+			]);
+		}
 
 		// Schema for the element type, i.e. the ABI type with every array
 		// dimension stripped off (`uint` for `uint[2][3]`, the tuple for `tuple[3][5]`).
 		let elementSchema: JsonSchema;
 
 		if (baseType === 'tuple') {
-			elementSchema = abiSchemaToJsonSchema(abiComponents, abiName);
+			elementSchema = abiSchemaToJsonSchema(abiComponents, abiName, nextDepth);
 
 			// For a bare tuple the `$id` belongs on the tuple itself. For an array of
 			// tuples it belongs on the outermost array, and is set after wrapping below.
@@ -231,7 +279,13 @@ export const abiSchemaToJsonSchema = (
 				elementSchema.$id = abiName;
 			}
 		} else if (isArray) {
-			elementSchema = convertEthType(String(baseType));
+			// The element keeps its declared size: `bytes32[]` elements are `bytes32`, not any
+			// `bytes`, and `uint8[]` elements are `uint8`, not `uint256`.
+			elementSchema = convertEthType(
+				baseTypeSize === undefined
+					? String(baseType)
+					: `${String(baseType)}${baseTypeSize}`,
+			);
 		} else {
 			elementSchema = { $id: abiName, ...convertEthType(abiType) };
 		}
@@ -282,7 +336,6 @@ export const transformJsonDataToAbiFormat = (
 	const newData: Array<unknown> = [];
 
 	for (const [index, abi] of abis.entries()) {
-		// eslint-disable-next-line no-nested-ternary
 		let abiType!: string;
 		let abiName!: string;
 		let abiComponents: ShortValidationSchema | FullValidationSchema | undefined = [];
@@ -323,48 +376,48 @@ export const transformJsonDataToAbiFormat = (
 				),
 			);
 		} else if (baseType === 'tuple' && isArray) {
-			const tupleData = [];
-			for (const tupleItem of dataItem as Array<unknown>) {
-				// Nested array
-				if (arraySizes.length > 1) {
-					const nestedItems = fetchArrayElement(
-						tupleItem as Array<unknown>,
-						arraySizes.length - 1,
-					);
-					const nestedData = [];
-
-					for (const nestedItem of nestedItems as Array<unknown>) {
-						nestedData.push(
-							transformJsonDataToAbiFormat(
-								abiComponents as FullValidationSchema,
-								nestedItem as Array<unknown>,
-								transformedData,
-							),
-						);
-					}
-					tupleData.push(nestedData);
-				} else {
-					tupleData.push(
-						transformJsonDataToAbiFormat(
-							abiComponents as FullValidationSchema,
-							tupleItem as Array<unknown>,
-							transformedData,
-						),
-					);
-				}
-			}
-			newData.push(tupleData);
+			// One recursion per array dimension: `tuple[][][]` used to follow `data[0]` only and
+			// lost every other element of the outer dimensions (P4-L-40).
+			newData.push(
+				// eslint-disable-next-line no-use-before-define
+				transformTupleArray(
+					abiComponents as FullValidationSchema,
+					dataItem,
+					arraySizes.length,
+					transformedData,
+				),
+			);
 		} else {
 			newData.push(dataItem);
 		}
 	}
 
 	// Have to reassign before pushing to transformedData
-	// eslint-disable-next-line no-param-reassign
 	transformedData = transformedData ?? [];
 	transformedData.push(...newData);
 
 	return transformedData;
+};
+
+/**
+ * Transforms every element of a (possibly multi-dimensional) array of tuples into the
+ * positional ABI form, one recursion level per array dimension.
+ */
+const transformTupleArray = (
+	components: FullValidationSchema,
+	data: unknown,
+	dimensions: number,
+	transformedData?: Array<unknown>,
+): unknown => {
+	if (!Array.isArray(data)) {
+		return data;
+	}
+	if (dimensions <= 1) {
+		return data.map(item =>
+			transformJsonDataToAbiFormat(components, item as Array<unknown>, transformedData),
+		);
+	}
+	return data.map(item => transformTupleArray(components, item, dimensions - 1, transformedData));
 };
 
 /**
@@ -391,25 +444,34 @@ export const codePointToInt = (codePoint: number): number => {
 };
 
 /**
- * Converts value to it's number representation
+ * Converts a `0x`-prefixed hex quantity to its number representation (a `number` when it is a
+ * safe integer, a `bigint` otherwise).
+ *
+ * @throws InvalidNumberError for anything that is not strict hex, and for the bare prefix
+ * `0x` / `-0x`, which is valid hex *bytes* but, like go-ethereum's "hex number has no digits",
+ * not a quantity (L-26).
  */
 export const hexToNumber = (value: string): bigint | number => {
 	if (!isHexStrict(value)) {
-		throw new Error('Invalid hex string');
+		throw new InvalidNumberError(value);
 	}
 
 	const [negative, hexValue] = value.startsWith('-') ? [true, value.slice(1)] : [false, value];
+
+	if (hexValue.length <= 2) {
+		throw new InvalidNumberError(value);
+	}
+
 	const num = BigInt(hexValue);
 
 	if (num > Number.MAX_SAFE_INTEGER) {
 		return negative ? -num : num;
 	}
 
-	if (num < Number.MIN_SAFE_INTEGER) {
-		return num;
-	}
+	const asNumber = Number(num);
 
-	return negative ? -1 * Number(num) : Number(num);
+	// `-1 * 0` is `-0`, which is not what a caller comparing against `0` expects.
+	return negative && asNumber !== 0 ? -asNumber : asNumber;
 };
 
 /**
@@ -423,9 +485,19 @@ export const addressToHex = (value: string): string => {
 };
 
 /**
- * Converts value to it's hex representation
+ * Converts an integer (`number`, `bigint`, decimal string or hex string) to its canonical hex
+ * representation: lowercase, no leading zero digits, at least one digit (`0x0`), a leading `-`
+ * for negative values.
+ *
+ * @throws InvalidNumberError for non-integer or non-finite numbers, for `0x` / `-0x` (no
+ * digits) and for strings that are neither strict hex nor a plain decimal integer (`''`,
+ * `' 1 '`, `'+1'`, `'0b11'`, `'1e3'` are all rejected, L-28).
  */
 export const numberToHex = (value: ValidInputTypes): string => {
+	if (typeof value === 'number' && !Number.isInteger(value)) {
+		throw new InvalidNumberError(value);
+	}
+
 	if ((typeof value === 'number' || typeof value === 'bigint') && value < 0) {
 		return `-0x${value.toString(16).slice(1)}`;
 	}
@@ -436,11 +508,18 @@ export const numberToHex = (value: ValidInputTypes): string => {
 
 	if (typeof value === 'string' && isHexStrict(value)) {
 		const [negative, hex] = value.startsWith('-') ? [true, value.slice(1)] : [false, value];
-		const hexValue = hex.split(/^(-)?0(x|X)/).slice(-1)[0];
-		return `${negative ? '-' : ''}0x${hexValue.replace(/^0+/, '').toLowerCase()}`;
+		const digits = hex.slice(2);
+
+		if (digits.length === 0) {
+			throw new InvalidNumberError(value);
+		}
+
+		// Strip leading zeros but keep the last digit: `0x0` must stay `0x0`, not become the
+		// invalid quantity `0x` (L-27).
+		return `${negative ? '-' : ''}0x${digits.replace(/^0+(?=.)/, '').toLowerCase()}`;
 	}
 
-	if (typeof value === 'string' && !isHexStrict(value)) {
+	if (typeof value === 'string' && /^-?\d+$/.test(value)) {
 		return numberToHex(BigInt(value));
 	}
 
@@ -462,13 +541,17 @@ export const padLeft = (value: ValidInputTypes, characterAmount: number, sign = 
 	return `${prefix}${hexValue.padStart(characterAmount, sign)}`;
 };
 
+const HEX_BYTES = Array.from({ length: 256 }, (_, i) => i.toString(16).padStart(2, '0'));
+
 export function uint8ArrayToHexString(uint8Array: Uint8Array): string {
-	let hexString = '0x';
-	for (const e of uint8Array) {
-		const hex = e.toString(16);
-		hexString += hex.length === 1 ? `0${hex}` : hex;
+	const chunks: string[] = [];
+	for (let start = 0; start < uint8Array.length; start += 8192) {
+		const length = Math.min(8192, uint8Array.length - start);
+		const part = new Array<string>(length);
+		for (let i = 0; i < length; i += 1) part[i] = HEX_BYTES[uint8Array[start + i]];
+		chunks.push(part.join(''));
 	}
-	return hexString;
+	return `0x${chunks.join('')}`;
 }
 
 export function hexToUint8Array(hex: string): Uint8Array {

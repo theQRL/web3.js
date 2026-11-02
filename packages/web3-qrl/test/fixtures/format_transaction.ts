@@ -28,8 +28,8 @@ export const bytesAsHexStringTransaction: FormatType<
 	Transaction,
 	{ number: typeof DEFAULT_RETURN_FORMAT.number; bytes: FMT_BYTES.HEX }
 > = {
-	from: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000eb014f8c8b418db6b45774c326a0e64c78914dc0',
-	to: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000003535353535353535353535353535353535353535',
+	from: 'QdBb14ea952DfAedB0788Beae4fD92393f215CAa2c115ac22bc68805E171cfadE76CFF540c1ADC7B13017E4c66b6109135f25ff73412650da569E458E4A43800b',
+	to: 'QFcAc5a47dc5363999c60BC3b4288720E870a423A1383F00cFaa9E1135a60E43eA809688917A789EE0BDd6828dB2dcd848Bc632c28023794f8187af3Bac5DB018',
 	value: BigInt('100000000000'),
 	gas: BigInt('21000'),
 	type: BigInt(2),
@@ -62,8 +62,8 @@ export const bytesAsUint8ArrayTransaction: FormatType<
 	Transaction,
 	{ number: typeof DEFAULT_RETURN_FORMAT.number; bytes: FMT_BYTES.UINT8ARRAY }
 > = {
-	from: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000eb014f8c8b418db6b45774c326a0e64c78914dc0',
-	to: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000003535353535353535353535353535353535353535',
+	from: 'QdBb14ea952DfAedB0788Beae4fD92393f215CAa2c115ac22bc68805E171cfadE76CFF540c1ADC7B13017E4c66b6109135f25ff73412650da569E458E4A43800b',
+	to: 'QFcAc5a47dc5363999c60BC3b4288720E870a423A1383F00cFaa9E1135a60E43eA809688917A789EE0BDd6828dB2dcd848Bc632c28023794f8187af3Bac5DB018',
 	value: BigInt('100000000000'),
 	gas: BigInt('21000'),
 	type: BigInt('2'),
@@ -98,8 +98,8 @@ export const numbersAsHexStringTransaction: FormatType<
 	Transaction,
 	{ number: FMT_NUMBER.HEX; bytes: typeof DEFAULT_RETURN_FORMAT.bytes }
 > = {
-	from: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000eb014f8c8b418db6b45774c326a0e64c78914dc0',
-	to: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000003535353535353535353535353535353535353535',
+	from: 'QdBb14ea952DfAedB0788Beae4fD92393f215CAa2c115ac22bc68805E171cfadE76CFF540c1ADC7B13017E4c66b6109135f25ff73412650da569E458E4A43800b',
+	to: 'QFcAc5a47dc5363999c60BC3b4288720E870a423A1383F00cFaa9E1135a60E43eA809688917A789EE0BDd6828dB2dcd848Bc632c28023794f8187af3Bac5DB018',
 	value: '0x174876e800',
 	gas: '0x5208',
 	type: '0x2',
@@ -132,8 +132,8 @@ export const numbersAsNumberTransaction: FormatType<
 	Transaction,
 	{ number: FMT_NUMBER.NUMBER; bytes: typeof DEFAULT_RETURN_FORMAT.bytes }
 > = {
-	from: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000eb014f8c8b418db6b45774c326a0e64c78914dc0',
-	to: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000003535353535353535353535353535353535353535',
+	from: 'QdBb14ea952DfAedB0788Beae4fD92393f215CAa2c115ac22bc68805E171cfadE76CFF540c1ADC7B13017E4c66b6109135f25ff73412650da569E458E4A43800b',
+	to: 'QFcAc5a47dc5363999c60BC3b4288720E870a423A1383F00cFaa9E1135a60E43eA809688917A789EE0BDd6828dB2dcd848Bc632c28023794f8187af3Bac5DB018',
 	value: 100000000000,
 	gas: 21000,
 	type: 2,
@@ -166,8 +166,8 @@ export const numbersAsStringTransaction: FormatType<
 	Transaction,
 	{ number: FMT_NUMBER.STR; bytes: typeof DEFAULT_RETURN_FORMAT.bytes }
 > = {
-	from: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000eb014f8c8b418db6b45774c326a0e64c78914dc0',
-	to: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000003535353535353535353535353535353535353535',
+	from: 'QdBb14ea952DfAedB0788Beae4fD92393f215CAa2c115ac22bc68805E171cfadE76CFF540c1ADC7B13017E4c66b6109135f25ff73412650da569E458E4A43800b',
+	to: 'QFcAc5a47dc5363999c60BC3b4288720E870a423A1383F00cFaa9E1135a60E43eA809688917A789EE0BDd6828dB2dcd848Bc632c28023794f8187af3Bac5DB018',
 	value: '100000000000',
 	gas: '21000',
 	type: '2',
@@ -200,8 +200,8 @@ export const numbersAsBigIntTransaction: FormatType<
 	Transaction,
 	{ number: FMT_NUMBER.BIGINT; bytes: typeof DEFAULT_RETURN_FORMAT.bytes }
 > = {
-	from: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000eb014f8c8b418db6b45774c326a0e64c78914dc0',
-	to: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000003535353535353535353535353535353535353535',
+	from: 'QdBb14ea952DfAedB0788Beae4fD92393f215CAa2c115ac22bc68805E171cfadE76CFF540c1ADC7B13017E4c66b6109135f25ff73412650da569E458E4A43800b',
+	to: 'QFcAc5a47dc5363999c60BC3b4288720E870a423A1383F00cFaa9E1135a60E43eA809688917A789EE0BDd6828dB2dcd848Bc632c28023794f8187af3Bac5DB018',
 	value: BigInt(100000000000),
 	gas: BigInt(21000),
 	type: BigInt(2),
@@ -231,8 +231,8 @@ export const numbersAsBigIntTransaction: FormatType<
 };
 
 const dummyTransaction: Transaction = {
-	from: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000eb014f8c8b418db6b45774c326a0e64c78914dc0',
-	to: 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000003535353535353535353535353535353535353535',
+	from: 'QdBb14ea952DfAedB0788Beae4fD92393f215CAa2c115ac22bc68805E171cfadE76CFF540c1ADC7B13017E4c66b6109135f25ff73412650da569E458E4A43800b',
+	to: 'QFcAc5a47dc5363999c60BC3b4288720E870a423A1383F00cFaa9E1135a60E43eA809688917A789EE0BDd6828dB2dcd848Bc632c28023794f8187af3Bac5DB018',
 	value: '0x174876e800',
 	gas: '0x5208',
 	maxFeePerGas: '0x4a817c800',
@@ -249,10 +249,10 @@ export const validGetTransactionFromOrToAttrData: { input: any; output: any }[] 
 			role: 'from',
 			transaction: {
 				...dummyTransaction,
-				from: 'Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000058422b64d0e95ab4e93a9d95b755d9b53545c9ef',
+				from: 'Qb91F17071d03E9eCFf788C990fAdD8a4D6728f5303088F291E3fe2997d1dc02fAc7AeBD9149C91D1F7F62fAEDB784d48fDf75c9eb0AdBe7530F959d6A7dC7D28',
 			},
 		},
-		output: 'Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000058422b64d0e95ab4e93a9d95b755d9b53545c9ef',
+		output: 'Qb91F17071d03E9eCFf788C990fAdD8a4D6728f5303088F291E3fe2997d1dc02fAc7AeBD9149C91D1F7F62fAEDB784d48fDf75c9eb0AdBe7530F959d6A7dC7D28',
 	},
 ];
 export const invalidGetTransactionFromOrToAttrData: { input: any; output: any }[] = [
@@ -295,6 +295,88 @@ export const invalidGetTransactionFromOrToAttrData: { input: any; output: any }[
 			},
 		},
 		output: 'Invalid value given "LocalWalletNotAvailableError". Error: Attempted to index account in local wallet, but no wallet is available.',
+	},
+	// Strings that are not QRL addresses are never wallet indexes (L-51).
+	{
+		input: {
+			role: 'from',
+			transaction: {
+				...dummyTransaction,
+				from: '0x1',
+			},
+		},
+		output: 'Invalid value given "0x1". Error: invalid transaction with invalid sender',
+	},
+	{
+		input: {
+			role: 'to',
+			transaction: {
+				...dummyTransaction,
+				to: '0x1',
+			},
+		},
+		output: 'Invalid value given "0x1". Error: invalid transaction with invalid receiver',
+	},
+	{
+		input: {
+			role: 'to',
+			transaction: {
+				...dummyTransaction,
+				to: '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045',
+			},
+		},
+		output: 'Invalid value given "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045". Error: invalid transaction with invalid receiver',
+	},
+	{
+		input: {
+			role: 'from',
+			transaction: {
+				...dummyTransaction,
+				from: '1',
+			},
+		},
+		output: 'Invalid value given "1". Error: invalid transaction with invalid sender',
+	},
+	// Only non-negative safe integers of type number are wallet indexes (L-51).
+	{
+		input: {
+			role: 'from',
+			transaction: {
+				...dummyTransaction,
+				from: 1.5,
+			},
+		},
+		output: 'Invalid value given "1.5". Error: invalid transaction with invalid sender',
+	},
+	{
+		input: {
+			role: 'from',
+			transaction: {
+				...dummyTransaction,
+				from: -1,
+			},
+		},
+		output: 'Invalid value given "-1". Error: invalid transaction with invalid sender',
+	},
+	{
+		input: {
+			role: 'to',
+			transaction: {
+				...dummyTransaction,
+				to: 2 ** 53,
+			},
+		},
+		output: 'Invalid value given "9007199254740992". Error: invalid transaction with invalid receiver',
+	},
+	{
+		input: {
+			role: 'from',
+			transaction: {
+				...dummyTransaction,
+				from: BigInt(1),
+			},
+		},
+		output: 'Invalid value given "1". Error: invalid transaction with invalid sender',
 	},
 ];
 

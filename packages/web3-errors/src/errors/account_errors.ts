@@ -15,8 +15,6 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/* eslint-disable max-classes-per-file */
-
 import {
 	ERR_PUBLIC_KEY_LENGTH,
 	ERR_INVALID_SIGNATURE,
@@ -27,7 +25,9 @@ import {
 	ERR_IV_LENGTH,
 	ERR_INVALID_SEED,
 	ERR_SEED_LENGTH,
+	ERR_UNSUPPORTED_CIPHER,
 	ERR_INVALID_KEYSTORE,
+	ERR_KEYSTORE_DECRYPTION,
 } from '../error_codes.js';
 import { BaseWeb3Error } from '../web3_error_base.js';
 
@@ -61,8 +61,8 @@ export class InvalidSignatureError extends BaseWeb3Error {
 
 export class InvalidKdfError extends BaseWeb3Error {
 	public code = ERR_UNSUPPORTED_KDF;
-	public constructor() {
-		super(`Invalid key derivation function`);
+	public constructor(details?: string) {
+		super(`Invalid key derivation function${details ? `: ${details}` : ''}`);
 	}
 }
 
@@ -76,7 +76,7 @@ export class KeyStoreVersionError extends BaseWeb3Error {
 export class InvalidPasswordError extends BaseWeb3Error {
 	public code = ERR_INVALID_PASSWORD;
 	public constructor() {
-		super('Password cannot be empty');
+		super('Password must be a string or a Uint8Array');
 	}
 }
 
@@ -91,6 +91,25 @@ export class InvalidPublicKeyError extends BaseWeb3Error {
 	public code = ERR_INVALID_PUBLIC_KEY;
 	public constructor() {
 		super(`Invalid Public Key, Not a valid string or uint8Array`);
+	}
+}
+
+export class InvalidCipherError extends BaseWeb3Error {
+	public code = ERR_UNSUPPORTED_CIPHER;
+	public constructor(cipher?: unknown) {
+		super(
+			`Unsupported keystore cipher ${JSON.stringify(cipher ?? '')}. Only "aes-256-gcm" is supported`,
+		);
+	}
+}
+
+export class KeyStoreDecryptionError extends BaseWeb3Error {
+	public code = ERR_KEYSTORE_DECRYPTION;
+
+	public constructor() {
+		super(
+			'Keystore decryption failed: wrong password, or the ciphertext or IV was tampered with (AES-GCM cannot tell these apart)',
+		);
 	}
 }
 

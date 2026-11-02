@@ -16,10 +16,17 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { AbiParameter } from '@theqrl/web3-types';
-import { ZodIssueBase } from 'zod';
 
 export type ValidInputTypes = Uint8Array | bigint | string | number | boolean;
-export type QRLBaseTypes = 'bool' | 'bytes' | 'string' | 'uint' | 'int' | 'address' | 'tuple';
+export type QRLBaseTypes =
+	| 'bool'
+	| 'bytes'
+	| 'string'
+	| 'uint'
+	| 'int'
+	| 'address'
+	| 'tuple'
+	| 'function';
 export type QRLBaseTypesWithMeta =
 	| `string${string}`
 	| `string${string}[${number}]`
@@ -27,6 +34,8 @@ export type QRLBaseTypesWithMeta =
 	| `bytes${string}[${number}]`
 	| `address[${number}]`
 	| `bool[${number}]`
+	| `function[]`
+	| `function[${number}]`
 	| `int${string}`
 	| `int${string}[${number}]`
 	| `uint${string}`
@@ -49,12 +58,18 @@ export type ShortValidationSchema = ReadonlyArray<
 export type ValidationSchemaInput = FullValidationSchema | ShortValidationSchema;
 
 export type Web3ValidationOptions = {
-	readonly silent: boolean;
+	readonly silent?: boolean;
+	/**
+	 * Optional aggregate value limit when validating untrusted data. No value-count
+	 * limit applies by default, so large ABI argument arrays remain valid. Must be a
+	 * positive safe integer. Containers count as values; Uint8Array contents do not.
+	 */
+	readonly maxEntries?: number;
 };
 
 export type Json = string | number | boolean | Array<Json> | { [id: string]: Json };
 
-export type ValidationError = ZodIssueBase;
+export type ValidationError = { path: (string | number)[]; message?: string };
 
 export interface Validate {
 	(value: Json): boolean;

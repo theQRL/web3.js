@@ -32,7 +32,7 @@ describe('web3_qrl_methods formatting', () => {
 
 	describe('getPastLogs makes sure data is prepared properly', () => {
 		it.each(getPastLogsValidFormatData)('input: %s\nrpcMethodParameters: %s', async filter => {
-			jest.spyOn(qrlRpcMethods, 'getLogs').mockResolvedValue(['']);
+			jest.spyOn(qrlRpcMethods, 'getLogs').mockResolvedValue([]);
 			await rpcMethodWrappers.getLogs(web3QRL, filter, DEFAULT_RETURN_FORMAT);
 			let { fromBlock, toBlock } = filter;
 			if (

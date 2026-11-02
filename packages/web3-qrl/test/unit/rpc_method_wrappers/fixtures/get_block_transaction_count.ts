@@ -30,19 +30,19 @@ export const testData: TestData[] = [
 	// Testing block cases
 	// blockNumber = bytes
 	[
-		'blockNumber = "0xd5677cf67b5aa051bb40496e68ad359eb97cfbf8"',
-		['0xd5677cf67b5aa051bb40496e68ad359eb97cfbf8'],
+		'blockNumber = "0xdc0818cf78f21a8e70579cb46a43643f78291264dda342ae31049421c82d21ae"',
+		['0xdc0818cf78f21a8e70579cb46a43643f78291264dda342ae31049421c82d21ae'],
 	],
 	[
-		'blockNumber = hexToBytes("0xd5677cf67b5aa051bb40496e68ad359eb97cfbf8")',
-		[hexToBytes('0xd5677cf67b5aa051bb40496e68ad359eb97cfbf8')],
+		'blockNumber = hexToBytes("0xdc0818cf78f21a8e70579cb46a43643f78291264dda342ae31049421c82d21ae")',
+		[hexToBytes('0xdc0818cf78f21a8e70579cb46a43643f78291264dda342ae31049421c82d21ae')],
 	],
 	[
-		'blockNumber = hexToBytes("d5677cf67b5aa051bb40496e68ad359eb97cfbf8")',
+		'blockNumber = hexToBytes("dc0818cf78f21a8e70579cb46a43643f78291264dda342ae31049421c82d21ae")',
 		[
 			new Uint8Array([
-				213, 103, 124, 246, 123, 90, 160, 81, 187, 64, 73, 110, 104, 173, 53, 158, 185, 124,
-				251, 248,
+				220, 8, 24, 207, 120, 242, 26, 142, 112, 87, 156, 180, 106, 67, 100, 63, 120, 41,
+				18, 100, 221, 163, 66, 174, 49, 4, 148, 33, 200, 45, 33, 174,
 			]),
 		],
 	],
@@ -54,6 +54,12 @@ export const testData: TestData[] = [
 	['blockNumber = BlockTags.FINALIZED', [BlockTags.FINALIZED]],
 	// blockNumber = Numbers
 	['blockNumber = "0x4b7"', ['0x4b7']],
+	// Even-length hex strings shorter than 32 bytes are block numbers, not hashes (P4-L-11)
+	['blockNumber = "0x10"', ['0x10']],
+	[
+		'blockNumber = "0xd5677cf67b5aa051bb40496e68ad359eb97cfbf8" (20 bytes)',
+		['0xd5677cf67b5aa051bb40496e68ad359eb97cfbf8'],
+	],
 	['blockNumber = 1207', [1207]],
 	['blockNumber = "1207"', ['1207']],
 	['blockNumber = BigInt("0x4b7")', [BigInt('0x4b7')]],

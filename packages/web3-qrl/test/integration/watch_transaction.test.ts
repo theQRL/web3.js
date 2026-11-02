@@ -17,7 +17,6 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import { SupportedProviders, TransactionReceipt, DEFAULT_RETURN_FORMAT } from '@theqrl/web3-types';
 import { Web3PromiEvent } from '@theqrl/web3-core';
 import { Web3Account } from '@theqrl/web3-qrl-accounts';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { Web3 } from '@theqrl/web3';
 import { SendTransactionEvents } from '../../src';
 import {
@@ -64,7 +63,6 @@ describeIf(isSocket)('watch subscription transaction', () => {
 
 			const receiptPromise = new Promise((resolve: Resolve) => {
 				// Tx promise is handled separately
-				// eslint-disable-next-line no-void
 				void sentTx.on('receipt', (params: TransactionReceipt) => {
 					expect(params.status).toBe(BigInt(1));
 					resolve();
@@ -74,7 +72,6 @@ describeIf(isSocket)('watch subscription transaction', () => {
 			let shouldBe = 1;
 			const confirmationPromise = new Promise((resolve: Resolve) => {
 				// Tx promise is handled separately
-				// eslint-disable-next-line no-void
 				void sentTx.on('confirmation', ({ confirmations }) => {
 					expect(Number(confirmations)).toBeGreaterThanOrEqual(shouldBe);
 					shouldBe += 1;

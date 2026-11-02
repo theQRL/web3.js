@@ -68,7 +68,6 @@ package pattern.
 | [`@theqrl/web3-qrl-abi`](https://github.com/theQRL/web3.js/tree/main/packages/web3-qrl-abi)               | [npm](https://www.npmjs.com/package/@theqrl/web3-qrl-abi)         | [API](https://docs.theqrl.org/api/web3-qrl-abi)        | QRVM ABI helpers.                                                                  |
 | [`@theqrl/web3-qrl-accounts`](https://github.com/theQRL/web3.js/tree/main/packages/web3-qrl-accounts)     | [npm](https://www.npmjs.com/package/@theqrl/web3-qrl-accounts)    | [API](https://docs.theqrl.org/api/web3-qrl-accounts)   | QRL account and signing helpers.                                                   |
 | [`@theqrl/web3-qrl-contract`](https://github.com/theQRL/web3.js/tree/main/packages/web3-qrl-contract)     | [npm](https://www.npmjs.com/package/@theqrl/web3-qrl-contract)    | [API](https://docs.theqrl.org/api/web3-qrl-contract)   | Contract wrappers and method/event helpers.                                        |
-| [`@theqrl/web3-qrl-iban`](https://github.com/theQRL/web3.js/tree/main/packages/web3-qrl-iban)             | [npm](https://www.npmjs.com/package/@theqrl/web3-qrl-iban)        | [API](https://docs.theqrl.org/api/web3-qrl-iban)       | QRL address and IBAN conversion helpers.                                           |
 | [`@theqrl/web3-qrl-qrns`](https://github.com/theQRL/web3.js/tree/main/packages/web3-qrl-qrns)             | [npm](https://www.npmjs.com/package/@theqrl/web3-qrl-qrns)        | [API](https://docs.theqrl.org/api/web3-qrl-qrns)       | Quantum Resistant Name Service helpers.                                            |
 | [`@theqrl/web3-rpc-methods`](https://github.com/theQRL/web3.js/tree/main/packages/web3-rpc-methods)       | [npm](https://www.npmjs.com/package/@theqrl/web3-rpc-methods)     | [API](https://docs.theqrl.org/api/web3-rpc-methods)    | Low-level RPC method wrappers.                                                     |
 | [`@theqrl/web3-types`](https://github.com/theQRL/web3.js/tree/main/packages/web3-types)                   | [npm](https://www.npmjs.com/package/@theqrl/web3-types)           | [API](https://docs.theqrl.org/api/web3-types)          | Shared TypeScript types.                                                           |
@@ -79,16 +78,29 @@ package pattern.
 
 ## Package.json Scripts
 
-| Script           | Description                                                        |
-| ---------------- | ------------------------------------------------------------------ |
-| clean            | Uses `rimraf` to remove `dist/`                                    |
-| build            | Uses `tsc` to build all packages                                   |
-| lint             | Uses `eslint` to lint all packages                                 |
-| lint:fix         | Uses `eslint` to check and fix any warnings                        |
-| format           | Uses `prettier` to format the code                                 |
-| test             | Uses `jest` to run unit tests in each package                      |
-| test:integration | Uses `jest` to run tests under `/test/integration` in each package |
-| test:unit        | Uses `jest` to run tests under `/test/unit` in each package        |
+Root scripts (run with `pnpm run <script>`):
+
+| Script | Description |
+| --- | --- |
+| `bootstrap` | `pnpm install --frozen-lockfile` |
+| `build` / `build:cjs` / `build:esm` / `build:types` | Turbo-driven `tsc` builds of every package and tool (`build` cleans first via `prebuild`) |
+| `build:web` / `build:web:analyze` | webpack browser bundles for `@theqrl/web3` and `@theqrl/web3-validator` (`:analyze` adds the bundle report) |
+| `build:docs` | Docusaurus/TypeDoc documentation build (`docs/`) |
+| `clean` | `scripts/clean.sh`: removes generated output — every package's `lib/`, `dist/` and coverage directories, `*.tsbuildinfo`, the root `tmp/`, `.coverage/`, `.nyc_output/` and the docs build output (`docs/build`, `docs/.docusaurus`, generated API docs); never `node_modules` and never the developer-owned `.secrets.json` |
+| `doctor` | Toolchain, lockfile, override/allowBuilds inventory, `.trivyignore` and package-dependency checks (`scripts/doctor.js`) |
+| `check:dependencies` | Declared-vs-imported dependency cross-check of every package (`scripts/check-package-dependencies.js`) |
+| `hygiene` | Repository hygiene checks (`scripts/check-repo-hygiene.js`), also the `pre-commit` hook |
+| `lint` / `lint:fix` / `lint:budget` | ESLint across packages and tools; `lint:budget` enforces the per-package warning budget |
+| `format` | Prettier across packages, tools and scripts |
+| `test` / `test:unit` | Jest unit suites of every package plus the script tests under `scripts/test` |
+| `test:integration` / `test:coverage:unit` / `test:coverage:integration` | Integration suites (need a node) and coverage variants |
+| `test:e2e:gqrl:http` / `test:e2e:gqrl:ws` / `test:e2e:testnet:*` / `test:e2e:mainnet:*` / `test:e2e:coverage` | `scripts/test-runner.sh` wrappers for a local gqrl node or the public networks |
+| `pos:start` / `pos:stop` | Start and stop the local test network (`scripts/local_testnet`) |
+| `compile:contracts` | Compiles the Hyperion test fixtures with the pinned `@theqrl/hypc` |
+| `audit:supply-chain` | Pinned Trivy scan of `pnpm-lock.yaml` (HIGH/CRITICAL, production and development dependencies) |
+| `release:*` | Release helpers (`packages`, `inspect-packages`, `pack-packages`, `smoke-tarballs`, `published-versions`, `publish-tarballs`, `touch-packages`, `dry-run`); see `RELEASE.md` |
+| `changelog` | Changelog tooling under `scripts/changelog` |
+| `husky:install` / `husky:uninstall` | Install the git hooks (`.husky/pre-commit` runs `hygiene`, `.husky/pre-push` runs `lint`) or detach them again; husky 9 has no `uninstall` command, so `husky:uninstall` runs `git config --unset core.hooksPath` |
 
 [npm-url]: https://npmjs.org/package/@theqrl/web3
 [downloads-image]: https://img.shields.io/npm/dm/@theqrl/web3?label=npm%20downloads

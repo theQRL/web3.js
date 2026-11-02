@@ -22,9 +22,16 @@ export type Mutable<T> = {
 	-readonly [P in keyof T]: T[P];
 };
 
+/**
+ * What a socket provider knows about why a connection ended.
+ *
+ * Every field is optional: a WebSocket close event carries a close `code`, a `reason` and
+ * `wasClean`, but a Node `net` socket (the IPC provider) reports only that it closed, so the
+ * IPC provider passes neither a code nor a reason.
+ */
 export type ConnectionEvent = {
-	code: number;
-	reason: string;
+	code?: number;
+	reason?: string;
 	wasClean?: boolean; // if WS connection was closed properly
 };
 

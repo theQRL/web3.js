@@ -50,7 +50,6 @@ export interface TransactionCallAPI {
 }
 
 export interface BaseTransactionAPI {
-	// eslint-disable-next-line @typescript-eslint/ban-types
 	readonly to?: Address | null;
 	readonly type: HexStringSingleByte;
 	readonly nonce: Uint;
@@ -131,24 +130,15 @@ export type FeeHistoryResultAPI = FeeHistoryBase<Uint>;
 // https://github.com/ethereum/execution-apis/blob/main/src/schemas/filter.yaml#L2
 export type FilterResultsAPI = HexString32Bytes[] | LogAPI[];
 
-export interface CompileResultAPI {
-	readonly code: HexStringBytes;
-	readonly info: {
-		readonly source: string;
-		readonly language: string;
-		readonly languageVersion: string;
-		readonly compilerVersion: string;
-		readonly abiDefinition: Record<string, unknown>[];
-		readonly userDoc: {
-			readonly methods: Record<string, unknown>;
-		};
-		readonly developerDoc: {
-			readonly methods: Record<string, unknown>;
-		};
-	};
+// The reply of `qrl_createAccessList` (go-qrl `internal/qrlapi` `accessListResult`): the
+// access list the call touched, the gas it used with that list, and the revert reason when
+// the simulated call failed.
+export interface AccessListResultAPI {
+	readonly accessList: AccessList;
+	readonly gasUsed: Uint;
+	readonly error?: string;
 }
 
-/* eslint-disable camelcase */
 export type QRLExecutionAPI = {
 	// https://github.com/ethereum/execution-apis/blob/main/src/eth/block.yaml
 	qrl_getBlockByHash: (blockHash: HexString32Bytes, hydrated: boolean) => BlockAPI;
@@ -173,7 +163,6 @@ export type QRLExecutionAPI = {
 	) => TransactionReceiptAPI | undefined;
 
 	// https://github.com/ethereum/execution-apis/blob/main/src/eth/client.yaml
-	qrl_protocolVersion: () => string;
 	qrl_syncing: () => SyncingStatusAPI;
 	qrl_accounts: () => Address[];
 	qrl_blockNumber: () => Uint;
@@ -184,9 +173,14 @@ export type QRLExecutionAPI = {
 		transaction: Partial<TransactionWithSenderAPI>,
 		blockNumber: BlockNumberOrTag,
 	) => Uint;
+	qrl_createAccessList: (
+		transaction: TransactionWithSenderAPI | Partial<TransactionWithSenderAPI>,
+		blockNumber: BlockNumberOrTag,
+	) => AccessListResultAPI;
 
 	// https://github.com/ethereum/execution-apis/blob/main/src/eth/fee_market.yaml
 	qrl_gasPrice: () => Uint;
+	qrl_maxPriorityFeePerGas: () => Uint;
 	qrl_feeHistory: (
 		blockCount: Uint,
 		newestBlock: BlockNumberOrTag,
@@ -233,8 +227,6 @@ export type QRLExecutionAPI = {
 			| ['logs', { address?: HexString; topics?: HexString[] }]
 	) => HexString;
 	qrl_unsubscribe: (subscriptionId: HexString) => HexString;
-	qrl_clearSubscriptions: (keepSyncing?: boolean) => void;
-	// Non-supported by execution-apis specs
-	qrl_getCompilers: () => string[];
-	qrl_compileHyperion: (code: string) => CompileResultAPI;
+	// `qrl_clearSubscriptions` is a client-side helper of the subscription manager, not a
+	// JSON-RPC method served by any node, so it is not part of this API surface.
 };

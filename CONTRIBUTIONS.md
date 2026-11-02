@@ -34,13 +34,23 @@ Read more in [Review Guidelines](./REVIEW.md).
 
 ### Releases
 
-1.  All releases should be proposed in a PR and subject to community review for a minimum of one week.
-1.  Release review periods should be accompanied by a published `rc` version which can be used for sanity checks / additional testing.
-1.  During release review, the code is frozen unless new changes are proposed, approved and merged.
-1.  Changes should trigger a new `rc` release and set the release clock back enough that reviewers have the time they need to test new changes.
-1.  Regular maintainers should manually test the `rc` against a Node project and the published
-    minified bundle in a browser context. An external reviewer should verify they've done the same.
-1.  A release PR must be approved at least by two known contributors of the web3.js project.
+Releases are produced by GitHub Actions from `main`, not proposed in a pull request:
+
+1.  Every pull request merged to `main` is a release candidate. Its Conventional Commit types decide
+    whether a package is released and how its version is bumped (`fix:`/`perf:` patch, `feat:` minor,
+    `feat!:`/`BREAKING CHANGE:` major); commits without a release type publish nothing.
+1.  The review that gates a release is the pull-request review (CODEOWNERS approval, the required
+    status checks including package inspection and the tarball smoke tests) plus the approval of the
+    protected `npm-publish` environment, which a release maintainer grants per run after the
+    candidate tarballs have passed the smoke test on the advertised Node floor.
+1.  There are no `rc` versions: what is approved is the exact tarball that gets published, and the
+    GitHub release, attestations and provenance describe those bytes.
+1.  Testing against a Node project and the published browser bundle happens on the pull request
+    (the black-box test projects under `packages/web3/test/*_black_box` are the manual aid for
+    that) and in the post-release verification steps of the release guidelines.
+
+The previous process — a release PR with a one-week community review and published `rc` versions —
+predates the automated pipeline and no longer applies.
 
 Read more in [Release Guidelines](./RELEASE.md).
 

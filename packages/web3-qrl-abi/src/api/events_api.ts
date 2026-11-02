@@ -15,15 +15,25 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { sha3Raw } from '@theqrl/web3-utils';
+import { rightPad, sha3Raw } from '@theqrl/web3-utils';
 import { AbiError } from '@theqrl/web3-errors';
 import { AbiEventFragment } from '@theqrl/web3-types';
-import { jsonInterfaceMethodToString, isAbiEventFragment } from '../utils.js';
+import {
+	canonicalizeSignature,
+	jsonInterfaceMethodToString,
+	isAbiEventFragment,
+} from '../utils.js';
+
+/** Length, in hex characters, of a QRVM log topic (64 bytes; go-qrl's `common.LogTopicLength`). */
+const TOPIC_HEX_LENGTH = 128;
 
 /**
- * Encodes the event name to its ABI signature, which are the sha3 hash of the event name including input types.
+ * Encodes the event name to its log topic: the keccak256 hash of the canonical event signature
+ * (name and input types) in the high 32 bytes of a 64-byte QRVM topic, the low 32 bytes zero.
+ * That is the `topics[0]` Hyperion emits for the event and the form go-qrl's `ParseLogTopic`
+ * accepts in a `qrl_getLogs` / `logs` filter; a 32-byte value is rejected by the node.
  * @param functionName - The event name to encode, or the {@link AbiEventFragment} object of the event. If string, it has to be in the form of `eventName(param1Type,param2Type,...)`. eg: myEvent(uint256,bytes32).
- * @returns - The ABI signature of the event.
+ * @returns - The 64-byte log topic of the event as a hex string.
  *
  * @example
  * ```ts
@@ -42,7 +52,7 @@ import { jsonInterfaceMethodToString, isAbiEventFragment } from '../utils.js';
  *   ],
  * });
  * console.log(event);
- * > 0xf2eeb729e636a8cb783be044acf6b7b1e2c5863735b60d6daae84c366ee87d97
+ * > 0xf2eeb729e636a8cb783be044acf6b7b1e2c5863735b60d6daae84c366ee87d970000000000000000000000000000000000000000000000000000000000000000
  *
  *  const event = web3.qrl.abi.encodeEventSignature({
  *   inputs: [
@@ -66,7 +76,7 @@ import { jsonInterfaceMethodToString, isAbiEventFragment } from '../utils.js';
  *   type: "event",
  * });
  * console.log(event);
- * > 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
+ * > 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef0000000000000000000000000000000000000000000000000000000000000000
  * ```
  */
 export const encodeEventSignature = (functionName: string | AbiEventFragment): string => {
@@ -77,10 +87,10 @@ export const encodeEventSignature = (functionName: string | AbiEventFragment): s
 	let name: string;
 
 	if (typeof functionName === 'string') {
-		name = functionName;
+		name = canonicalizeSignature(functionName);
 	} else {
 		name = jsonInterfaceMethodToString(functionName);
 	}
 
-	return sha3Raw(name);
+	return rightPad(sha3Raw(name), TOPIC_HEX_LENGTH);
 };

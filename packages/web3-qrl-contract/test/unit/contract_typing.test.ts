@@ -15,8 +15,6 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/* eslint-disable jest/expect-expect */
-
 import { expectTypeOf, typecheck } from '@humeris/espresso-shot';
 import { Numbers } from '@theqrl/web3-types';
 import { Contract } from '../../src/contract';

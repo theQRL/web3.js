@@ -38,7 +38,6 @@ const validateTxTypeAndHandleErrors = (txSchema: object, tx: Transaction, txType
 	} catch (error) {
 		if (error instanceof Web3ValidatorError)
 			// Erroneously reported error
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-call
 			throw new InvalidPropertiesForTransactionTypeError(error.errors, txType);
 
 		throw error;

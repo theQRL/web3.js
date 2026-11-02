@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { EventEmitter } from 'events';
+import { EventEmitter } from '@theqrl/web3-utils';
 
 export type Web3EventMap = Record<string, unknown>;
 export type Web3EventKey<T extends Web3EventMap> = string & keyof T;
@@ -47,6 +47,14 @@ export class Web3EventEmitter<T extends Web3EventMap> implements Web3Emitter<T> 
 
 	public emit<K extends Web3EventKey<T>>(eventName: K, params: T[K]) {
 		this._emitter.emit(eventName, params);
+	}
+
+	protected emitSafe<K extends Web3EventKey<T>>(
+		eventName: K,
+		params: T[K],
+		onError: (error: unknown) => void,
+	) {
+		this._emitter.emitSafe(eventName, onError, params);
 	}
 
 	public listenerCount<K extends Web3EventKey<T>>(eventName: K) {

@@ -15,9 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-// eslint-disable-next-line import/no-extraneous-dependencies
 import Web3 from '@theqrl/web3';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { Web3Account } from '@theqrl/web3-qrl-accounts';
 import { Contract } from '../../../src';
 import { SQRCTF1TokenAbi, SQRCTF1TokenBytecode } from '../../shared_fixtures/build/SQRCTF1Token';

@@ -15,12 +15,15 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import WebSocket from 'ws';
+import { once } from 'events';
+import { AddressInfo } from 'net';
 
 export const createProxy = async (
 	port: number,
 	origin: string,
 ): Promise<{
 	server: WebSocket.Server;
+	port: number;
 	path: string;
 	close: () => Promise<void>;
 	originWs: WebSocket;
@@ -28,16 +31,14 @@ export const createProxy = async (
 	const originWs = new WebSocket(origin);
 	const connectedClients = new Set<WebSocket>();
 
-	await new Promise(resolve => {
-		originWs.on('open', () => {
-			resolve(true);
-		});
-	});
+	await once(originWs, 'open');
 
 	const webSocketServer = new WebSocket.Server({
 		host: '127.0.0.1',
 		port,
 	});
+	await once(webSocketServer, 'listening');
+	const boundPort = (webSocketServer.address() as AddressInfo).port;
 	const closeSocket = async (socket: WebSocket) =>
 		new Promise(resolve => {
 			if (socket.readyState === WebSocket.CLOSED) {
@@ -76,7 +77,8 @@ export const createProxy = async (
 	});
 
 	return {
-		path: `ws://127.0.0.1:${port}`,
+		path: `ws://127.0.0.1:${boundPort}`,
+		port: boundPort,
 		server: webSocketServer,
 		originWs,
 		close: async () => {

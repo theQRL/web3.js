@@ -19,7 +19,7 @@ import { hexToBytes } from '@theqrl/web3-utils';
 
 export const mockRpcResponse: Block = {
 	parentHash: '0xe99e022112df268087ea7eafaf4790497fd21dbeeb6bd7a1721df161a6657a54',
-	miner: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000bb7b8287f3f0a933474a79eae42cbca977791171',
+	miner: 'Q3268305Ca04D8742fEEe646e4cC5936463E12197162f086D72b85f8F2DAFea881B291ce929E87d9D518D7664Db23989d42c355B6A4590BAA9f571c4614fFa232',
 	stateRoot: '0xddc8b0234c2e0cad087c8b389aa7ef01f7d79b2570bccb77ce48648aa61c904d',
 	transactionsRoot: '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421',
 	receiptsRoot: '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421',
@@ -43,14 +43,14 @@ export const mockRpcResponse: Block = {
 const hydratedTransaction: TransactionInfo = {
 	blockHash: '0x1d59ff54b1eb26b013ce3cb5fc9dab3705b415a67127a003c3e61eb445bb8df2',
 	blockNumber: '0x5daf3b',
-	from: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a7d9ddbe1f17865597fbd27ec712455208b6b76d',
+	from: 'QC69054B1dF3CFFddF5efB69E34489bDA0842F163689A4f208eAa538366524a3E6985678f038456539180B520D6e1aa86c0Ba8A5dCae3E53735c5a5Eada5650B1',
 	gas: '0xc350',
 	maxFeePerGas: '0x4a817c800',
 	maxPriorityFeePerGas: '0x0',
 	hash: '0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b',
 	input: '0x68656c6c6f21',
 	nonce: '0x15',
-	to: 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000f02c1c8e6114b1dbe8937a39260b5b0a374432bb',
+	to: 'QDd41F80c7261547983dB61532eF6bbCf319ebc94f840491af80709ce214De95a94eceE96615210fD3DE18eBAC3DBD6C369Ab815f1C0546087696AaA17d8CA106',
 	transactionIndex: '0x41',
 	value: '0xf3dbb76162000',
 	descriptor: '0x010000',
@@ -78,19 +78,19 @@ export const testData: TestData[] = [
 	// Testing block cases, hydrated = false
 	// blockNumber = bytes
 	[
-		'blockNumber = "0xd5677cf67b5aa051bb40496e68ad359eb97cfbf8", hydrated = false',
-		['0xd5677cf67b5aa051bb40496e68ad359eb97cfbf8', false],
+		'blockNumber = "0xdc0818cf78f21a8e70579cb46a43643f78291264dda342ae31049421c82d21ae", hydrated = false',
+		['0xdc0818cf78f21a8e70579cb46a43643f78291264dda342ae31049421c82d21ae', false],
 	],
 	[
-		'blockNumber = hexToBytes("0xd5677cf67b5aa051bb40496e68ad359eb97cfbf8"), hydrated = false',
-		[hexToBytes('0xd5677cf67b5aa051bb40496e68ad359eb97cfbf8'), false],
+		'blockNumber = hexToBytes("0xdc0818cf78f21a8e70579cb46a43643f78291264dda342ae31049421c82d21ae"), hydrated = false',
+		[hexToBytes('0xdc0818cf78f21a8e70579cb46a43643f78291264dda342ae31049421c82d21ae'), false],
 	],
 	[
-		'blockNumber = hexToBytes("d5677cf67b5aa051bb40496e68ad359eb97cfbf8"), hydrated = false',
+		'blockNumber = hexToBytes("dc0818cf78f21a8e70579cb46a43643f78291264dda342ae31049421c82d21ae"), hydrated = false',
 		[
 			new Uint8Array([
-				213, 103, 124, 246, 123, 90, 160, 81, 187, 64, 73, 110, 104, 173, 53, 158, 185, 124,
-				251, 248,
+				220, 8, 24, 207, 120, 242, 26, 142, 112, 87, 156, 180, 106, 67, 100, 63, 120, 41,
+				18, 100, 221, 163, 66, 174, 49, 4, 148, 33, 200, 45, 33, 174,
 			]),
 			false,
 		],
@@ -103,6 +103,12 @@ export const testData: TestData[] = [
 	['blockNumber = BlockTags.FINALIZED, hydrated = false', [BlockTags.FINALIZED, false]],
 	// blockNumber = Numbers
 	['blockNumber = "0x4b7", hydrated = false', ['0x4b7', false]],
+	// Even-length hex strings shorter than 32 bytes are block numbers, not hashes (P4-L-11)
+	['blockNumber = "0x10", hydrated = false', ['0x10', false]],
+	[
+		'blockNumber = "0xd5677cf67b5aa051bb40496e68ad359eb97cfbf8" (20 bytes), hydrated = false',
+		['0xd5677cf67b5aa051bb40496e68ad359eb97cfbf8', false],
+	],
 	['blockNumber = 1207, hydrated = false', [1207, false]],
 	['blockNumber = "1207", hydrated = false', ['1207', false]],
 	['blockNumber = BigInt("0x4b7"), hydrated = false', [BigInt('0x4b7'), false]],
@@ -111,19 +117,19 @@ export const testData: TestData[] = [
 	// Testing block cases, hydrated = true
 	// blockNumber = bytes
 	[
-		'blockNumber = "0xd5677cf67b5aa051bb40496e68ad359eb97cfbf8", hydrated = true',
-		['0xd5677cf67b5aa051bb40496e68ad359eb97cfbf8', true],
+		'blockNumber = "0xdc0818cf78f21a8e70579cb46a43643f78291264dda342ae31049421c82d21ae", hydrated = true',
+		['0xdc0818cf78f21a8e70579cb46a43643f78291264dda342ae31049421c82d21ae', true],
 	],
 	[
-		'blockNumber = hexToBytes("0xd5677cf67b5aa051bb40496e68ad359eb97cfbf8"), hydrated = true',
-		[hexToBytes('0xd5677cf67b5aa051bb40496e68ad359eb97cfbf8'), true],
+		'blockNumber = hexToBytes("0xdc0818cf78f21a8e70579cb46a43643f78291264dda342ae31049421c82d21ae"), hydrated = true',
+		[hexToBytes('0xdc0818cf78f21a8e70579cb46a43643f78291264dda342ae31049421c82d21ae'), true],
 	],
 	[
-		'blockNumber = hexToBytes("d5677cf67b5aa051bb40496e68ad359eb97cfbf8"), hydrated = true',
+		'blockNumber = hexToBytes("dc0818cf78f21a8e70579cb46a43643f78291264dda342ae31049421c82d21ae"), hydrated = true',
 		[
 			new Uint8Array([
-				213, 103, 124, 246, 123, 90, 160, 81, 187, 64, 73, 110, 104, 173, 53, 158, 185, 124,
-				251, 248,
+				220, 8, 24, 207, 120, 242, 26, 142, 112, 87, 156, 180, 106, 67, 100, 63, 120, 41,
+				18, 100, 221, 163, 66, 174, 49, 4, 148, 33, 200, 45, 33, 174,
 			]),
 			true,
 		],
@@ -134,6 +140,7 @@ export const testData: TestData[] = [
 	['blockNumber = BlockTags.PENDING, hydrated = true', [BlockTags.PENDING, true]],
 	// // blockNumber = Numbers
 	['blockNumber = "0x4b7", hydrated = true', ['0x4b7', true]],
+	['blockNumber = "0x10", hydrated = true', ['0x10', true]],
 	['blockNumber = 1207, hydrated = true', [1207, true]],
 	['blockNumber = "1207", hydrated = true', ['1207', true]],
 	['blockNumber = BigInt("0x4b7"), hydrated = true', [BigInt('0x4b7'), true]],

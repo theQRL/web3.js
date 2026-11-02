@@ -50,3 +50,11 @@ Current publishable package names follow this shape:
 - `@theqrl/web3-*` for Web3.js runtime packages and published workspace tools.
 - `@theqrl/abi` as the documented foundational ABI-coder exception.
 
+Private workspace tools are outside this policy because they are never
+published: `@theqrl/eslint-config-base-web3` (`tools/eslint-config-base-web3`)
+is `"private": true`, consumed only through `workspace:` links, skipped by
+`multi-semantic-release --ignore-private-packages` and absent from the release
+helper's list. Making it publishable would require renaming it to
+`@theqrl/web3-*`, adding `files` and `repository.directory`, and configuring
+trusted publishing for the new name.
+

@@ -23,6 +23,7 @@ import {
 	decodeParameters,
 	encodeFunctionCall,
 	encodeFunctionSignature,
+	encodeEventSignature,
 	encodeParameter,
 	encodeParameters,
 } from '@theqrl/web3-qrl-abi';
@@ -38,7 +39,6 @@ import {
 import { Contract } from '@theqrl/web3-qrl-contract';
 import { QRNS } from '@theqrl/web3-qrl-qrns';
 import { Net } from '@theqrl/web3-net';
-import { Iban } from '@theqrl/web3-qrl-iban';
 
 /**
  * The QRL interface for main web3 object. It provides extra methods in addition to `web3-qrl` interface.
@@ -49,18 +49,22 @@ export interface Web3QRLInterface extends QRL {
 	/**
 	 * Extended [Contract](/api/@theqrl/web3-qrl-contract/classes/Contract) constructor for main `web3` object. See [Contract](/api/@theqrl/web3-qrl-contract/classes/Contract) for further details.
 	 *
-	 * You can use `.setProvider` on this constructor to set provider for **all the instances** of the contracts which were created by `web3.qrl.Contract`.
+	 * Every contract created through `web3.qrl.Contract` shares the request manager, wallet,
+	 * account provider, subscription manager and configuration of the `web3` instance (M-6).
+	 * There is no static `setProvider` on the constructor: change the provider on the instance
+	 * and **all** these contracts follow, because they use the same request manager. For the
+	 * same reason `contract.setProvider(p)` on one of them also switches `web3` and every other
+	 * contract created from it.
 	 *
 	 * ```ts
-	 * web3.qrl.Contract.setProvider(myProvider)
+	 * web3.setProvider(myProvider); // reaches every contract created with web3.qrl.Contract
 	 * ```
 	 */
 	Contract: typeof Contract;
-	Iban: typeof Iban;
 	net: Net;
 	qrns: QRNS;
 	abi: {
-		encodeEventSignature: typeof encodeFunctionSignature;
+		encodeEventSignature: typeof encodeEventSignature;
 		encodeFunctionCall: typeof encodeFunctionCall;
 		encodeFunctionSignature: typeof encodeFunctionSignature;
 		encodeParameter: typeof encodeParameter;

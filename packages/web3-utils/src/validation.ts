@@ -18,6 +18,16 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import { InvalidBlockError } from '@theqrl/web3-errors';
 import { isBlockTag, isNullish as isNullishValidator } from '@theqrl/web3-validator';
 import { BlockNumberOrTag, BlockTags } from '@theqrl/web3-types';
+import { toBigInt } from './converters.js';
+
+/** A block number as a bigint; anything that is not an integer is an {@link InvalidBlockError}, not a raw `SyntaxError` (L-26). */
+const toBlockBigInt = (block: BlockNumberOrTag): bigint => {
+	try {
+		return toBigInt(block);
+	} catch {
+		throw new InvalidBlockError(String(block));
+	}
+};
 
 /**
  * Compares between block A and block B
@@ -72,8 +82,8 @@ export const compareBlockNumbers = (blockA: BlockNumberOrTag, blockB: BlockNumbe
 		throw new InvalidBlockError('Cannot compare blocktag with provided non-blocktag input.');
 	}
 
-	const bigIntA = BigInt(blockA);
-	const bigIntB = BigInt(blockB);
+	const bigIntA = toBlockBigInt(blockA);
+	const bigIntB = toBlockBigInt(blockB);
 
 	if (bigIntA < bigIntB) {
 		return -1;

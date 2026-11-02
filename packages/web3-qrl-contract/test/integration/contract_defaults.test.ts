@@ -45,7 +45,6 @@ describe('contract', () => {
 
 		it('should use "defaultAccount" on "instance" level instead of "from"', async () => {
 			const deployedContract = await contract.deploy(deployOptions).send(sendOptions);
-			// eslint-disable-next-line prefer-destructuring
 			deployedContract.defaultAccount = acc.address;
 			// We didn't specify "from" in this call
 			const receipt = await deployedContract.methods
@@ -111,10 +110,8 @@ describe('contract', () => {
 					'request',
 				);
 
-				// Forcefully delete this property from the contract instance
-				// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-				// @ts-expect-error
-				contract.defaultBlock = undefined;
+				// The call-level block must override a valid instance default.
+				contract.defaultBlock = 'latest';
 
 				await contract.methods.greet().call(undefined, 'pending');
 

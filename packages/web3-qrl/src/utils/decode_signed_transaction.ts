@@ -21,7 +21,7 @@ import {
 	TransactionSignedAPI,
 } from '@theqrl/web3-types';
 import { bytesToHex, format, hexToBytes, keccak256 } from '@theqrl/web3-utils';
-import { TransactionFactory } from '@theqrl/web3-qrl-accounts';
+import { TransactionFactory, assertSerializedTransactionSize } from '@theqrl/web3-qrl-accounts';
 import { detectRawTransactionType } from './detect_transaction_type.js';
 import { formatTransaction } from './format_transaction.js';
 
@@ -37,15 +37,16 @@ export function decodeSignedTransaction<ReturnFormat extends DataFormat>(
 	returnFormat: ReturnFormat,
 	options: { fillInputAndData?: boolean } = { fillInputAndData: false },
 ): SignedTransactionInfoAPI {
+	assertSerializedTransactionSize(encodedSignedTransaction);
+	const serialized = hexToBytes(encodedSignedTransaction);
+	const transaction = TransactionFactory.fromSerializedData(serialized);
 	return {
 		raw: format({ format: 'bytes' }, encodedSignedTransaction, returnFormat),
 		tx: formatTransaction(
 			{
-				...TransactionFactory.fromSerializedData(
-					hexToBytes(encodedSignedTransaction),
-				).toJSON(),
-				hash: bytesToHex(keccak256(hexToBytes(encodedSignedTransaction))),
-				type: detectRawTransactionType(hexToBytes(encodedSignedTransaction)),
+				...transaction.toJSON(),
+				hash: bytesToHex(keccak256(serialized)),
+				type: detectRawTransactionType(serialized),
 			} as TransactionSignedAPI,
 			returnFormat,
 			{ fillInputAndData: options.fillInputAndData },

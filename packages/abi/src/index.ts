@@ -28,6 +28,7 @@ import {
 } from './fragments.js';
 import { AbiCoder, CoerceFunc, defaultAbiCoder } from './abi-coder.js';
 import { checkResultErrors, Result } from './coders/abstract-coder.js';
+import { booleanToBit } from './coders/boolean.js';
 
 export {
 	ConstructorFragment,
@@ -39,6 +40,8 @@ export {
 	FormatTypes,
 	AbiCoder,
 	defaultAbiCoder,
+	// The set of values the `bool` coder accepts (H-3); shared with web3-qrl-abi's formatParam.
+	booleanToBit,
 
 	/// //////////////////////
 	// Types

@@ -15,8 +15,6 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/* eslint-disable max-classes-per-file */
-
 import {
 	ERR_PROVIDER,
 	ERR_INVALID_PROVIDER,
@@ -26,8 +24,9 @@ import {
 	ERR_REQUEST_TIMEOUT,
 	ERR_REQUEST_QUEUE_FULL,
 	ERR_PROVIDER_CAPABILITY,
+	ERR_REQUEST_SERIALIZATION,
 } from '../error_codes.js';
-import { BaseWeb3Error } from '../web3_error_base.js';
+import { BaseWeb3Error, redactClientUrl } from '../web3_error_base.js';
 
 export class ProviderError extends BaseWeb3Error {
 	public code = ERR_PROVIDER;
@@ -37,15 +36,42 @@ export class InvalidProviderError extends BaseWeb3Error {
 	public code = ERR_INVALID_PROVIDER;
 
 	public constructor(public clientUrl: string) {
-		super(`Provider with url "${clientUrl}" is not set or invalid`);
+		super(`Provider with url "${redactClientUrl(clientUrl)}" is not set or invalid`);
 	}
 }
 
+/**
+ * Thrown when a provider is constructed with a URL (or an IPC path) it cannot use.
+ *
+ * The message carries the URL with its credentials and path removed (see
+ * {@link redactClientUrl}); it is the one place a client URL is echoed back.
+ */
 export class InvalidClientError extends BaseWeb3Error {
 	public code = ERR_INVALID_CLIENT;
 
 	public constructor(clientUrl: string) {
-		super(`Client URL "${clientUrl}" is invalid.`);
+		super(`Client URL "${redactClientUrl(clientUrl)}" is invalid.`);
+	}
+}
+
+/**
+ * Thrown by a provider, before anything is sent, when a JSON-RPC payload cannot be
+ * serialised as JSON: a `bigint` inside `params`, a circular structure or a throwing
+ * `toJSON`. The payload itself is not echoed; `reason` is the serialiser's message (I-15).
+ */
+export class RequestSerializationError extends BaseWeb3Error {
+	public code = ERR_REQUEST_SERIALIZATION;
+
+	public constructor(public reason?: string) {
+		super(
+			`REQUEST SERIALIZATION FAILED: the JSON-RPC payload could not be serialised as JSON${
+				reason ? ` (${reason})` : ''
+			}`,
+		);
+	}
+
+	public toJSON() {
+		return { ...super.toJSON(), reason: this.reason };
 	}
 }
 
@@ -67,7 +93,10 @@ export class Web3WSProviderError extends BaseWeb3Error {
 export class RequestTimeoutError extends ProviderError {
 	public code = ERR_REQUEST_TIMEOUT;
 
-	public constructor(public duration: number, public method?: string) {
+	public constructor(
+		public duration: number,
+		public method?: string,
+	) {
 		super(
 			`REQUEST TIMEOUT: request${
 				method ? ` "${method}"` : ''
@@ -117,7 +146,10 @@ export class RequestQueueFullError extends ProviderError {
 export class ProviderCapabilityError extends ProviderError {
 	public code = ERR_PROVIDER_CAPABILITY;
 
-	public constructor(public capability: string, reason?: string) {
+	public constructor(
+		public capability: string,
+		reason?: string,
+	) {
 		super(
 			`PROVIDER CAPABILITY MISSING: "${capability}" is required but unavailable${
 				reason ? `: ${reason}` : ''

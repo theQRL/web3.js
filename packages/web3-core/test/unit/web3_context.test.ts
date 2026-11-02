@@ -15,15 +15,12 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-// eslint-disable-next-line max-classes-per-file
 import { ExistingPluginNamespaceError } from '@theqrl/web3-errors';
 import HttpProvider from '@theqrl/web3-providers-http';
 import { Web3Context, Web3PluginBase } from '../../src/web3_context';
 import { Web3RequestManager } from '../../src/web3_request_manager';
 
-// eslint-disable-next-line @typescript-eslint/ban-types
 class Context1 extends Web3Context<{}> {}
-// eslint-disable-next-line @typescript-eslint/ban-types
 class Context2 extends Web3Context<{}> {}
 
 describe('Web3Context', () => {
@@ -84,21 +81,21 @@ describe('Web3Context', () => {
 		it('should init context with correct configuration', () => {
 			const parent = new Context1({
 				provider: 'http://test/abc',
-				config: { defaultNetworkId: 'my-network-id', defaultHardfork: 'my-fork' },
+				config: { defaultNetworkId: 31337, defaultHardfork: 'zond' },
 			});
 			const child = parent.use(Context2);
 
-			expect(child.defaultNetworkId).toBe('my-network-id');
-			expect(child.defaultHardfork).toBe('my-fork');
+			expect(child.defaultNetworkId).toBe(31337);
+			expect(child.defaultHardfork).toBe('zond');
 		});
 
 		it('should change config of child context', () => {
 			const parent = new Context1('http://test/abc');
 			const child = parent.use(Context2);
 
-			parent.defaultNetworkId = 'my-network-id';
+			parent.defaultNetworkId = 31337;
 
-			expect(child.defaultNetworkId).toBe('my-network-id');
+			expect(child.defaultNetworkId).toBe(31337);
 		});
 
 		it('should use same instance of request manager', () => {
@@ -132,7 +129,7 @@ describe('Web3Context', () => {
 					defaultCommon: {
 						customChain: {
 							name: 'foo',
-							networkId: 'my-network-id',
+							networkId: 31337,
 							chainId: 1337,
 						},
 						baseChain: 'mainnet',
@@ -142,7 +139,7 @@ describe('Web3Context', () => {
 			});
 			const child = parent.use(Context2);
 
-			expect(child.defaultCommon?.customChain.networkId).toBe('my-network-id');
+			expect(child.defaultCommon?.customChain.networkId).toBe(31337);
 			expect(child.defaultCommon?.customChain.chainId).toBe(1337);
 		});
 	});
@@ -151,14 +148,14 @@ describe('Web3Context', () => {
 		it('should link context with correct configuration', () => {
 			const parent = new Context1({
 				provider: 'http://test/abc',
-				config: { defaultNetworkId: 'my-network-id', defaultHardfork: 'my-fork' },
+				config: { defaultNetworkId: 31337, defaultHardfork: 'zond' },
 			});
 			const child = new Context2('http://test/abc');
 
 			child.link(parent);
 
-			expect(child.defaultNetworkId).toBe('my-network-id');
-			expect(child.defaultHardfork).toBe('my-fork');
+			expect(child.defaultNetworkId).toBe(31337);
+			expect(child.defaultHardfork).toBe('zond');
 		});
 
 		it('should change config of child context', () => {
@@ -167,9 +164,9 @@ describe('Web3Context', () => {
 
 			child.link(parent);
 
-			parent.defaultNetworkId = 'my-network-id';
+			parent.defaultNetworkId = 31337;
 
-			expect(child.defaultNetworkId).toBe('my-network-id');
+			expect(child.defaultNetworkId).toBe(31337);
 		});
 
 		it('should use same instance of request manager', () => {

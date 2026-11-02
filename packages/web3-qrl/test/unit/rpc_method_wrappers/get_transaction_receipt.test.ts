@@ -58,15 +58,21 @@ describe('getTransactionReceipt', () => {
 	it.each(testData)(
 		`should format mockRpcResponse using provided return format\nTitle: %s\nInput parameters: %s\n`,
 		async (_, inputParameters) => {
+			const reply = {
+				...mockRpcResponse,
+				transactionHash: format(
+					{ format: 'bytes32' },
+					inputParameters[0],
+					DEFAULT_RETURN_FORMAT,
+				),
+			};
 			const expectedReturnFormat = { number: FMT_NUMBER.STR, bytes: FMT_BYTES.UINT8ARRAY };
 			const expectedFormattedResult = format(
 				transactionReceiptSchema,
-				mockRpcResponse,
+				reply,
 				expectedReturnFormat,
 			);
-			(qrlRpcMethods.getTransactionReceipt as jest.Mock).mockResolvedValueOnce(
-				mockRpcResponse,
-			);
+			(qrlRpcMethods.getTransactionReceipt as jest.Mock).mockResolvedValueOnce(reply);
 
 			const result = await getTransactionReceipt(
 				web3Context,
@@ -76,4 +82,22 @@ describe('getTransactionReceipt', () => {
 			expect(result).toStrictEqual(expectedFormattedResult);
 		},
 	);
+});
+
+test('matches the returned transaction hash to the request before formatting', async () => {
+	const hash = `0x${'ab'.repeat(32)}`;
+	(qrlRpcMethods.getTransactionReceipt as jest.Mock).mockResolvedValue({
+		...mockRpcResponse,
+		transactionHash: hash,
+	});
+	await expect(
+		getTransactionReceipt(new Web3Context(), `0x${'cd'.repeat(32)}`, DEFAULT_RETURN_FORMAT),
+	).rejects.toThrow(/requested transaction hash/);
+	await expect(
+		getTransactionReceipt(
+			new Web3Context(),
+			hash.toUpperCase().replace('0X', '0x'),
+			DEFAULT_RETURN_FORMAT,
+		),
+	).resolves.toBeDefined();
 });

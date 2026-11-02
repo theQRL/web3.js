@@ -32,61 +32,42 @@ Error.stackTraceLimit = Infinity;
 describe('qrl', () => {
 	let web3: Web3;
 	let accounts: string[] = [];
-	let clientUrl: string;
 
 	let contract: Contract<typeof BasicAbi>;
 	let deployOptions: Record<string, unknown>;
 	let sendOptions: Record<string, unknown>;
 
 	beforeEach(async () => {
-		clientUrl = getSystemTestProviderUrl();
+		const clientUrl = getSystemTestProviderUrl();
 		const acc1 = await createTempAccount();
 		const acc2 = await createTempAccount();
 		accounts = [acc1.address, acc2.address];
-		web3 = new Web3(getSystemTestProvider());
-		if (isWs) {
-			web3 = new Web3(
-				new WebSocketProvider(
+		const provider = isWs
+			? new WebSocketProvider(
 					clientUrl,
 					{},
 					{ delay: 1, autoReconnect: false, maxAttempts: 1 },
-				),
-			);
-		} else {
-			web3 = new Web3(clientUrl);
-		}
-
-		if (isWs) {
-			contract = new web3.qrl.Contract(BasicAbi, undefined, {
-				provider: new WebSocketProvider(
-					clientUrl,
-					{},
-					{ delay: 1, autoReconnect: false, maxAttempts: 1 },
-				),
-			});
-		} else {
-			contract = new web3.qrl.Contract(BasicAbi, undefined, {
-				provider: clientUrl,
-			});
-		}
+				)
+			: getSystemTestProvider();
+		web3 = new Web3(provider);
+		contract = new web3.qrl.Contract(BasicAbi);
 
 		deployOptions = {
 			data: BasicBytecode,
 			arguments: [10, 'string init value'],
 		};
 
-		sendOptions = { from: accounts[0], gas: '1000000' };
+		sendOptions = { from: accounts[0], gas: '1200000' };
 
 		contract = await contract.deploy(deployOptions).send(sendOptions);
 	});
-	afterAll(async () => {
+	afterEach(async () => {
 		await closeOpenConnection(web3);
 		await closeOpenConnection(contract);
 	});
 
 	describe('handleRevert', () => {
 		// todo enable when figure out what happening in qrl_call (doesn't throw error)
-		// eslint-disable-next-line jest/expect-expect
 		it('should get revert reason', async () => {
 			contract.handleRevert = true;
 			await expect(contract.methods.reverts().send({ from: accounts[0] })).rejects.toThrow(
@@ -96,7 +77,7 @@ describe('qrl', () => {
 			);
 		});
 
-		it('should get revert reason for qrl tx', async () => {
+		it('should preserve a malformed RPC input error when handleRevert is enabled', async () => {
 			web3.qrl.handleRevert = true;
 			await expect(
 				web3.qrl.sendTransaction({
@@ -114,11 +95,13 @@ describe('qrl', () => {
 					signature: '0x39f77e0b68d5524826e4385ad4e1f01e748f32c177840184ae65d9592fdfe5c',
 					publicKey: '0x1ba80b16306d1de8ff809c00f67c305e8636326096aba282828d331aa2ec30a1',
 				}),
-			).rejects.toThrow(
-				new TransactionRevertInstructionError(
-					'Returned error: invalid argument 0: json: cannot unmarshal invalid hex string into Go struct field TransactionArgs.data of type hexutil.Bytes',
-				),
-			);
+			).rejects.toMatchObject({
+				name: 'InvalidResponseError',
+				innerError: {
+					code: -32602,
+					message: expect.stringContaining('cannot unmarshal invalid hex string'),
+				},
+			});
 		});
 
 		it('should execute transaction', async () => {

@@ -55,6 +55,7 @@ describe('getCode', () => {
 				);
 			}
 
+			(qrlRpcMethods.getCode as jest.Mock).mockResolvedValueOnce(mockRpcResponse);
 			await getCode(web3Context, ...inputParameters, DEFAULT_RETURN_FORMAT);
 			expect(qrlRpcMethods.getCode).toHaveBeenCalledWith(
 				web3Context.requestManager,

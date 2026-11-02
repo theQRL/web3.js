@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Pass 11 audit corrections
+
+- Use one streaming UTF-8 decoder per socket; document decoded byte accounting and `maxResponseDepth`.
+
+### Pass 9 audit corrections
+
+- Enforce container-count limits and configurable maxResponseDepth (default 4096) while scanning streams; discard rejected messages and resume at the next boundary (P9-TR-1/3).
+
+### Pass 8 audit corrections
+
+- Bound JSON nesting and contain throwing provider/parser listeners. Failed manual reconnects during backoff preserve the automatic attempt budget.
+
+### Pass 7 audit corrections
+
+- Recover queued requests after a manual connect fails during reconnect backoff. Reject maxResponseBytes above 536,870,888 and recover parser state immediately on an allocation failure (P7-TR-1/2).
+
+### Pass 6 audit corrections
+
+- Validate the path before replacing an explicitly reconnected live socket, preserving in-flight requests when validation fails. Explicit connect cancels any pending reconnect timer (P6-TR-2, P6-TR-5).
+
+### Fixed
+
+- Fail affected requests on a chunk timeout regardless of reconnect configuration and replace/destroy sockets on explicit reconnect (P5-TR-2/3).
+
 <!-- EXAMPLE
 
 ## [1.0.0]

@@ -15,43 +15,19 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { exec } from 'child_process';
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
+import { getSystemTestProviderUrl } from './system_test_utils';
 
-const IPC_DIR_PATH = path.join(__dirname, '..', '..', '..', '..', 'tmp');
-const IPC_PATH = path.join(IPC_DIR_PATH, 'some.ipc');
-const IPC_ORIGIN_PATH = path.join(IPC_DIR_PATH, 'some.ipc');
-
-const createSymlink = `ln -s ${path.join(IPC_DIR_PATH, 'ipc.ipc')} ${IPC_ORIGIN_PATH}`;
-
-const execPromise = async (command: string): Promise<string> =>
-	new Promise((resolve, reject) => {
-		exec(command, (error, stdout, stderr) => {
-			if (error) {
-				reject(error);
-				return;
-			}
-			if (stderr) {
-				reject(stderr);
-				return;
-			}
-			resolve(stdout);
-		});
-	});
-
-const removeIfExists = () => {
-	if (fs.existsSync(IPC_PATH)) {
-		fs.unlinkSync(IPC_PATH);
-	}
-};
-export const startGqrlServer = async (): Promise<{ path: string; close: () => void }> => {
-	removeIfExists();
-	await execPromise(createSymlink);
+// A private alias lets this test make its endpoint unavailable without stopping
+// the real node or depending on a pre-existing repository-local tmp directory.
+export const createIpcEndpointAlias = (): { path: string; close: () => void } => {
+	const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'web3-ipc-reconnect-'));
+	const socketPath = path.join(directory, 'node.ipc');
+	fs.symlinkSync(getSystemTestProviderUrl(), socketPath);
 	return {
-		path: IPC_PATH,
-		close: (): void => {
-			removeIfExists();
-		},
+		path: socketPath,
+		close: () => fs.rmSync(directory, { recursive: true, force: true }),
 	};
 };

@@ -14,7 +14,7 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { Socket } from 'net';
+import type { Socket } from 'net';
 
 import { Web3Error } from './error_types.js';
 import { QRLExecutionAPI } from './apis/qrl_execution_api.js';
@@ -38,7 +38,6 @@ import {
 	ProviderRpcError,
 	ProviderMessage,
 } from './web3_api_types';
-// eslint-disable-next-line require-extensions/require-extensions
 import { Web3QRLExecutionAPI } from './apis/web3_qrl_execution_api.js';
 // eslint-disable-next-line require-extensions/require-extensions
 import { Web3DeferredPromiseInterface } from './web3_deferred_promise_type';
@@ -70,7 +69,6 @@ export type Web3Eip1193ProviderEventCallback<T> = (data: T) => void;
 
 export type Web3ProviderRequestCallback<ResultType = unknown> = (
 	// Used "null" value to match the legacy version
-	// eslint-disable-next-line @typescript-eslint/ban-types
 	err?: Error | Web3Error | null | JsonRpcResponseWithError<Error>,
 	response?: JsonRpcResponseWithResult<ResultType>,
 ) => void;
@@ -79,7 +77,6 @@ export interface LegacySendProvider {
 	send<R = JsonRpcResult, P = unknown>(
 		payload: JsonRpcPayload<P>,
 		// Used "null" value to match the legacy version
-		// eslint-disable-next-line @typescript-eslint/ban-types
 		callback: (err: Error | null, response?: JsonRpcResponse<R>) => void,
 	): void;
 }
@@ -93,7 +90,6 @@ export interface LegacySendAsyncProvider {
 export interface LegacyRequestProvider {
 	request<R = JsonRpcResult, P = unknown>(
 		payload: JsonRpcPayload<P>,
-		// eslint-disable-next-line @typescript-eslint/ban-types
 		callback: (err: Error | null, response: JsonRpcResponse<R>) => void,
 	): void;
 }
@@ -134,7 +130,6 @@ export interface EIP1193Provider<API extends Web3APISpec> extends SimpleProvider
 }
 
 export type Eip1193Compatible<API extends Web3APISpec = QRLExecutionAPI> = Omit<
-	// eslint-disable-next-line no-use-before-define
 	Omit<Web3BaseProvider, 'request'>,
 	'asEIP1193Provider'
 > & {
@@ -177,7 +172,6 @@ export abstract class Web3BaseProvider<API extends Web3APISpec = QRLExecutionAPI
 	 */
 	public send<ResultType = JsonRpcResult, P = unknown>(
 		payload: JsonRpcPayload<P>,
-		// eslint-disable-next-line @typescript-eslint/ban-types
 		callback: (err: Error | null, response?: JsonRpcResponse<ResultType>) => void,
 	) {
 		this.request<Web3APIMethod<API>, ResultType>(
@@ -219,15 +213,18 @@ export abstract class Web3BaseProvider<API extends Web3APISpec = QRLExecutionAPI
 	 * ```
 	 */
 	public asEIP1193Provider(): Eip1193Compatible<API> {
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 		const newObj = Object.create(this) as Eip1193Compatible<API>;
 		// eslint-disable-next-line @typescript-eslint/unbound-method
 		const originalRequest = newObj.request;
 		newObj.request = async function request(
 			args: Web3APIPayload<API, Web3APIMethod<API>>,
 		): Promise<unknown> {
-			// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
-			const response = (await originalRequest(args)) as JsonRpcResponseWithResult<unknown>;
+			// The provider's `request` is a prototype method that reads `this` (bounds, socket
+			// state): calling it unbound broke every built-in provider (P4-L-38).
+			const response = (await originalRequest.call(
+				newObj,
+				args,
+			)) as JsonRpcResponseWithResult<unknown>;
 			return response.result;
 		} as typeof newObj.request;
 		// @ts-expect-error the property should not be available in the new object because of using Object.create(this).
@@ -327,6 +324,15 @@ export type SupportedProviders<API extends Web3APISpec = Web3QRLExecutionAPI> =
 	| LegacySendAsyncProvider
 	| SimpleProvider<API>;
 
+/**
+ * The shape of a provider class that `Web3RequestManager` can instantiate from a URL.
+ *
+ * The second parameter is an Ethereum-era leftover: no provider in this library takes a
+ * `net.Socket` (the IPC provider takes the socket *path* as its first argument).
+ *
+ * @deprecated The `net` parameter is ignored by every provider and will be removed from this
+ * type in the next major version; construct providers with their URL or path only.
+ */
 export type Web3BaseProviderConstructor = new <API extends Web3APISpec>(
 	url: string,
 	net?: Socket,

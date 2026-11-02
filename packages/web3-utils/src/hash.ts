@@ -22,8 +22,10 @@ import {
 	InvalidBooleanError,
 	InvalidBytesError,
 	InvalidLargeValueError,
+	InvalidNumberError,
 	InvalidSizeError,
 	InvalidStringError,
+	InvalidTypeError,
 	InvalidUnsignedIntegerError,
 } from '@theqrl/web3-errors';
 import {
@@ -42,17 +44,37 @@ import {
 	toBigInt,
 	toHex,
 	toNumber,
-	utf8ToHex,
 	addressToHex,
 } from './converters.js';
-import { leftPad, rightPad, toTwosComplement } from './string_manipulation.js';
+import { leftPad, toTwosComplement } from './string_manipulation.js';
 
 const SHA3_EMPTY_BYTES = '0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470';
 
 /**
+ * Whether a string input is hashed as hex bytes rather than as UTF-8 text.
+ *
+ * This is the one rule shared by {@link sha3}, {@link sha3Raw} and {@link keccak256}: a string
+ * that starts with `0x` or `0X` and is valid hex is decoded as bytes; a string with a sign
+ * (`-0x…`) or anything else is text. The three used to disagree on `0X…` and `-0x…` (I-11).
+ */
+const isHexBytesInput = (data: string): boolean => /^0x/i.test(data) && isHexStrict(data);
+
+/**
  * computes the Keccak-256 hash of the input and returns a hexstring
+ *
+ * A string input is interpreted by its spelling, which matters whenever the text to hash can
+ * itself look like hex (QRNS labels, user-supplied names, M-11):
+ * - a string starting with `0x`/`0X` that is valid hex is decoded as **bytes**, so
+ *   `sha3('0x6162') === sha3(new Uint8Array([0x61, 0x62]))`, and an odd-length or malformed
+ *   `0x…` string throws;
+ * - every other string, including `-0x…`, is hashed as **UTF-8 text**.
+ *
+ * To hash hex-looking text as text, encode it yourself: `sha3(utf8ToBytes('0x6162'))`.
+ * Non-string input must be a byte array (or a number array); anything else throws a typed
+ * error instead of a raw `TypeError` (L-26).
+ *
  * @param data - the input to hash
- * @returns - the Keccak-256 hash of the input
+ * @returns - the Keccak-256 hash of the input, or `undefined` for empty input
  *
  * @example
  * ```ts
@@ -67,13 +89,9 @@ export const sha3 = (data: Bytes): string | undefined => {
 	let updatedData: Uint8Array;
 
 	if (typeof data === 'string') {
-		if (data.startsWith('0x') && isHexStrict(data)) {
-			updatedData = hexToBytes(data);
-		} else {
-			updatedData = utf8ToBytes(data);
-		}
+		updatedData = isHexBytesInput(data) ? hexToBytes(data) : utf8ToBytes(data);
 	} else {
-		updatedData = data;
+		updatedData = bytesToUint8Array(data);
 	}
 	const hash = bytesToHex(keccak256(updatedData));
 
@@ -83,6 +101,10 @@ export const sha3 = (data: Bytes): string | undefined => {
 
 /**
  * Will calculate the sha3 of the input but does return the hash value instead of null if for example a empty string is passed.
+ *
+ * Strings follow the {@link sha3} rule: `0x`-prefixed valid hex is hashed as bytes, anything
+ * else as UTF-8 text. Hash hex-looking text with `sha3Raw(utf8ToBytes(text))`.
+ *
  * @param data - the input to hash
  * @returns - the Keccak-256 hash of the input
  *
@@ -106,6 +128,10 @@ export const sha3Raw = (data: Bytes): string => {
 
 /**
  * A wrapper for qrl-cryptography/keccak256 to allow hashing a `string` and a `bigint` in addition to `UInt8Array`
+ *
+ * Numbers and bigints are hashed as their decimal text. Strings follow the {@link sha3} rule:
+ * `0x`-prefixed valid hex is hashed as bytes, anything else (including `-0x…`) as UTF-8 text.
+ *
  * @param data - the input to hash
  * @returns - the Keccak-256 hash of the input
  *
@@ -129,7 +155,7 @@ export const keccak256Wrapper = (
 		processedData = utf8ToBytes(data.toString());
 	} else if (Array.isArray(data)) {
 		processedData = new Uint8Array(data);
-	} else if (typeof data === 'string' && !isHexStrict(data)) {
+	} else if (typeof data === 'string' && !isHexBytesInput(data)) {
 		processedData = utf8ToBytes(data);
 	} else {
 		processedData = bytesToUint8Array(data as Bytes);
@@ -145,6 +171,10 @@ export { keccak256Wrapper as keccak256 };
  * @returns - the type and value of the input
  */
 const getType = (arg: Sha3Input): [string, EncodingTypes] => {
+	// `null`/`undefined` used to reach the `'t' in arg` probe and die with a raw `TypeError`.
+	if (isNullish(arg)) {
+		throw new InvalidTypeError(arg);
+	}
 	if (Array.isArray(arg)) {
 		throw new Error('Autodetection of array types is not supported.');
 	}
@@ -167,7 +197,14 @@ const getType = (arg: Sha3Input): [string, EncodingTypes] => {
 	// otherwise try to guess the type
 	else {
 		type = toHex(arg, true);
+		// Text is packed as its raw UTF-8 bytes: routing it through `toHex` trimmed a leading and
+		// a trailing NUL character (P4-L-36).
+		if (type === 'string' && typeof arg === 'string') {
+			return ['string', arg];
+		}
 		value = toHex(arg);
+		// Numeric autodetection follows the same aliases as explicit ABI types.
+		type = type.replace(/^(u?int)512$/, '$1');
 
 		if (!type.startsWith('int') && !type.startsWith('uint')) {
 			type = 'bytes';
@@ -197,7 +234,7 @@ const elementaryName = (name: string): string => {
 		return 'int256';
 	}
 	if (name.startsWith('uint[')) {
-		return `uint256'${name.slice(4)}`;
+		return `uint256${name.slice(4)}`;
 	}
 	if (name === 'uint') {
 		return 'uint256';
@@ -206,11 +243,13 @@ const elementaryName = (name: string): string => {
 };
 
 /**
- * returns the size of the value of type 'byte'
+ * The size of an elementary type name: `uint8` → 8, `bytes32` → 32. Only `<prefix><digits>` is
+ * a type; `uint8x` used to parse as `uint8` and `int256[2]x` as `int256`, so a typo changed
+ * what was hashed without an error (P4-L-42).
  */
-const parseTypeN = (value: string, typeLength: number): number => {
-	const typesize = /^(\d+)/.exec(value.slice(typeLength));
-	return typesize ? parseInt(typesize[1], 10) : 0;
+const parseTypeN = (value: string, prefix: string): number | undefined => {
+	const typesize = new RegExp(`^${prefix}(\\d+)$`).exec(value);
+	return typesize ? parseInt(typesize[1], 10) : undefined;
 };
 
 /**
@@ -230,9 +269,18 @@ const bitLength = (value: bigint | number): number => {
  * @returns = the padded value
  */
 const hyperionPack = (type: string, val: EncodingTypes): string => {
+	if (type === 'function') {
+		const pointer = val instanceof Uint8Array ? bytesToHex(val) : val.toString();
+		if (!/^0x[0-9a-f]{136}$/i.test(pointer)) {
+			throw new InvalidBytesError(pointer);
+		}
+		return pointer;
+	}
 	const value = val.toString();
 	if (type === 'string') {
-		if (typeof val === 'string') return utf8ToHex(val);
+		// The raw UTF-8 bytes, exactly like Hyperion's `abi.encodePacked(string)`: `utf8ToHex`
+		// trims a leading and a trailing NUL for 1.x compatibility (P4-L-36).
+		if (typeof val === 'string') return bytesToHex(utf8ToBytes(val));
 		throw new InvalidStringError(val);
 	}
 	if (type === 'bool' || type === 'boolean') {
@@ -248,9 +296,11 @@ const hyperionPack = (type: string, val: EncodingTypes): string => {
 	}
 	const name = elementaryName(type);
 	if (type.startsWith('uint')) {
-		const size = parseTypeN(name, 'uint'.length);
-
-		if (size % 8 || size < 8 || size > 256) {
+		const size = parseTypeN(name, 'uint');
+		if (size === undefined) {
+			throw new InvalidTypeError(type);
+		}
+		if (size % 8 || size < 8 || size > 512) {
 			throw new InvalidSizeError(value);
 		}
 		const num = toNumber(value);
@@ -265,13 +315,17 @@ const hyperionPack = (type: string, val: EncodingTypes): string => {
 	}
 
 	if (type.startsWith('int')) {
-		const size = parseTypeN(name, 'int'.length);
-		if (size % 8 || size < 8 || size > 256) {
+		const size = parseTypeN(name, 'int');
+		if (size === undefined) {
+			throw new InvalidTypeError(type);
+		}
+		if (size % 8 || size < 8 || size > 512) {
 			throw new InvalidSizeError(type);
 		}
 
 		const num = toNumber(value);
-		if (bitLength(num) > size) {
+		const signedLimit = BigInt(1) << BigInt(size - 1);
+		if (num < -signedLimit || num >= signedLimit) {
 			throw new InvalidLargeValueError(value);
 		}
 		if (num < BigInt(0)) {
@@ -280,27 +334,32 @@ const hyperionPack = (type: string, val: EncodingTypes): string => {
 		return size ? leftPad(num.toString(16), size / 4) : num.toString(16);
 	}
 
-	if (name === 'bytes') {
-		if (value.replace(/^0x/i, '').length % 2 !== 0) {
+	if (name === 'bytes' || type.startsWith('bytes')) {
+		// Bytes must be hex (optionally `0x`-prefixed) of even length; `zz` used to be packed
+		// verbatim as `0xzz` (L-29).
+		const hex = val instanceof Uint8Array ? bytesToHex(val).slice(2) : value.replace(/^0x/i, '');
+		if (hex.length % 2 !== 0 || !/^[0-9a-f]*$/i.test(hex)) {
 			throw new InvalidBytesError(value);
 		}
-		return value;
+
+		if (name === 'bytes') {
+			return hex;
+		}
+
+		const size = parseTypeN(type, 'bytes');
+		if (size === undefined) {
+			throw new InvalidTypeError(type);
+		}
+		if (size < 1 || size > 64 || size < hex.length / 2) {
+			throw new InvalidBytesError(value);
+		}
+
+		return hex.padEnd(size * 2, '0');
 	}
 
-	if (type.startsWith('bytes')) {
-		if (value.replace(/^0x/i, '').length % 2 !== 0) {
-			throw new InvalidBytesError(value);
-		}
-
-		const size = parseTypeN(type, 'bytes'.length);
-
-		if (!size || size < 1 || size > 64 || size < value.replace(/^0x/i, '').length / 2) {
-			throw new InvalidBytesError(value);
-		}
-
-		return rightPad(value, size * 2);
-	}
-	return '';
+	// A type nobody knows must not be packed as nothing: the resulting hash would silently
+	// cover fewer arguments than the caller passed.
+	throw new InvalidTypeError(type);
 };
 
 /**
@@ -311,10 +370,43 @@ const hyperionPack = (type: string, val: EncodingTypes): string => {
 export const processHyperionEncodePackedArgs = (arg: Sha3Input): string => {
 	const [type, val] = getType(arg);
 
+	const arrayType = /\[(\d*)\]$/.exec(type);
+	if (!arrayType && Array.isArray(val)) {
+		// A scalar type with an array value used to be packed as if the type were `T[]` (P4-L-42).
+		throw new InvalidTypeError(type);
+	}
+	if (arrayType) {
+		// `T[]` and `T[n]` take an array; `T[n]` takes exactly `n` elements. A declared size
+		// used to be ignored, so `uint8[2]` happily packed three values (L-29).
+		if (!Array.isArray(val)) {
+			throw new InvalidTypeError(type);
+		}
+		if (arrayType[1] !== '' && val.length !== parseInt(arrayType[1], 10)) {
+			throw new InvalidSizeError(`${type} with ${val.length} elements`);
+		}
+	}
+
 	// array case
 	if (Array.isArray(val)) {
-		// go through each element of the array and use map function to create new hexarg list
-		const hexArg = val.map((v: Numbers | boolean) => hyperionPack(type, v).replace('0x', ''));
+		const elementType = type.replace(/\[\d*\]$/, '');
+		const hexArg = val.map((v: Numbers | boolean) => {
+			const packed = hyperionPack(elementType, v).replace(/^0x/, '');
+			if (elementType === 'function') {
+				return packed.slice(0, 128) + packed.slice(128).padStart(128, '0');
+			}
+			if (/^u?int/.test(elementType)) {
+				const padding =
+					elementType.startsWith('int') && toNumber(v.toString()) < 0 ? 'f' : '0';
+				return packed.padStart(128, padding);
+			}
+			if (elementType === 'bool' || elementType === 'boolean') {
+				return packed.padStart(128, '0');
+			}
+			if (/^bytes\d+$/.test(elementType)) {
+				return packed.padEnd(128, '0');
+			}
+			return packed;
+		});
 		return hexArg.join('');
 	}
 
@@ -368,10 +460,26 @@ export const hyperionSha3Raw = (...values: TypedObject[] | TypedObjectAbbreviate
  * @param mainSlotNumber - the slot number where will be stored hash of long string
  * @returns - the slot number where will be stored long string
  */
-export const getStorageSlotNumForLongString = (mainSlotNumber: number | string) =>
-	sha3(
-		`0x${(typeof mainSlotNumber === 'number'
-			? mainSlotNumber.toString()
-			: mainSlotNumber
-		).padStart(64, '0')}`,
-	);
+export const getStorageSlotNumForLongString = (mainSlotNumber: number | string) => {
+	// The pre-image is the slot as a hex 64-byte VM word, matching hyperion's `keccak256(0, VMWordBytes=64)`;
+	// the 32-byte keccak output is the storage key. Numeric slots must be hex-formatted (`toString(16)`).
+	let slotHex: string;
+
+	if (typeof mainSlotNumber === 'number') {
+		if (!Number.isSafeInteger(mainSlotNumber) || mainSlotNumber < 0) {
+			throw new InvalidNumberError(mainSlotNumber);
+		}
+		slotHex = mainSlotNumber.toString(16);
+	} else if (typeof mainSlotNumber === 'string' && /^(0x)?[0-9a-f]+$/i.test(mainSlotNumber)) {
+		// A `0x` prefix used to end up inside the padded pre-image, which then hashed as text (L-29).
+		slotHex = mainSlotNumber.replace(/^0x/i, '');
+	} else {
+		throw new InvalidNumberError(mainSlotNumber);
+	}
+
+	if (slotHex.length > 128) {
+		throw new InvalidNumberError(mainSlotNumber);
+	}
+
+	return sha3(`0x${slotHex.padStart(128, '0')}`);
+};

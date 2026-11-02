@@ -33,15 +33,27 @@ import { uuidV4 } from './uuid.js';
 
 // check if code is a valid rpc server error code
 export const isResponseRpcError = (rpcError: JsonRpcResponseWithError) => {
-	const errorCode = rpcError.error.code;
-	return rpcErrorsMap.has(errorCode) || (errorCode >= -32099 && errorCode <= -32000);
+	// `error` and `code` are provider supplied; a missing or non-numeric code is not an RPC
+	// error code, it is a malformed reply.
+	const errorCode = (rpcError as { error?: { code?: unknown } } | undefined)?.error?.code;
+	return (
+		typeof errorCode === 'number' &&
+		(rpcErrorsMap.has(errorCode) || (errorCode >= -32099 && errorCode <= -32000))
+	);
 };
+
+/**
+ * A single JSON-RPC message is always a non-null, non-array object. Every shape predicate below
+ * establishes this first, so that `null` (a value a peer can legitimately put inside a batch
+ * array) and other primitives are rejected instead of dereferenced.
+ */
+const isJsonRpcObject = (response: unknown): response is Record<string, unknown> =>
+	typeof response === 'object' && !isNullish(response) && !Array.isArray(response);
 
 export const isResponseWithResult = <Result = unknown, Error = unknown>(
 	response: JsonRpcResponse<Result, Error>,
 ): response is JsonRpcResponseWithResult<Result> =>
-	!Array.isArray(response) &&
-	!!response &&
+	isJsonRpcObject(response) &&
 	response.jsonrpc === '2.0' &&
 	// JSON RPC consider "null" as valid response
 	'result' in response &&
@@ -52,19 +64,18 @@ export const isResponseWithResult = <Result = unknown, Error = unknown>(
 export const isResponseWithError = <Error = unknown, Result = unknown>(
 	response: JsonRpcResponse<Result, Error>,
 ): response is JsonRpcResponseWithError<Error> =>
-	!Array.isArray(response) &&
+	isJsonRpcObject(response) &&
 	response.jsonrpc === '2.0' &&
-	!!response &&
 	isNullish(response.result) &&
-	// JSON RPC consider "null" as valid response
-	'error' in response &&
+	// JSON-RPC 2.0 defines `error` as an object; `"error": null` next to a missing result is
+	// a malformed reply, not an error reply, and must not be dereferenced as one.
+	isJsonRpcObject(response.error) &&
 	(typeof response.id === 'number' || typeof response.id === 'string');
 
 export const isResponseWithNotification = <Result>(
 	response: JsonRpcNotification<Result> | JsonRpcSubscriptionResult,
 ): response is JsonRpcNotification<Result> =>
-	!Array.isArray(response) &&
-	!!response &&
+	isJsonRpcObject(response) &&
 	response.jsonrpc === '2.0' &&
 	!isNullish(response.params) &&
 	!isNullish(response.method);
@@ -72,8 +83,7 @@ export const isResponseWithNotification = <Result>(
 export const isSubscriptionResult = <Result>(
 	response: JsonRpcNotification<Result> | JsonRpcSubscriptionResult,
 ): response is JsonRpcSubscriptionResult =>
-	!Array.isArray(response) &&
-	!!response &&
+	isJsonRpcObject(response) &&
 	response.jsonrpc === '2.0' &&
 	'id' in response &&
 	// JSON RPC consider "null" as valid response

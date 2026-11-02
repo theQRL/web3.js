@@ -40,6 +40,7 @@ import {
 	Web3ProviderStatus,
 } from '@theqrl/web3-types';
 import {
+	BaseWeb3Error,
 	ConnectionError,
 	ConnectionNotOpenError,
 	ConnectionTimeoutError,
@@ -52,6 +53,7 @@ import {
 	RequestTimeoutError,
 	ResponseError,
 	Web3WSProviderError,
+	redactClientUrl,
 } from '@theqrl/web3-errors';
 import { Eip1193Provider } from './web3_eip1193_provider.js';
 import { ChunkResponseParser } from './chunk_response_parser.js';
@@ -95,8 +97,14 @@ export interface SocketProviderDiagnostics {
 /**
  * Constructor options shared by the socket (WebSocket / IPC) providers.
  *
- * The bound names (`connectionTimeout`, `requestTimeout`, `maxInFlightRequests`) are the
- * same ones the HTTP provider accepts, so every transport presents one surface.
+ * The bound names (`connectionTimeout`, `requestTimeout`, `maxResponseBytes`,
+ * `maxResponseDepth`, `maxInFlightRequests`) are the same ones the HTTP provider accepts.
+ * `maxResponseDepth` bounds JSON nesting before parsing. `maxResponseBytes` bounds the
+ * UTF-8 size of each decoded message (invalid bytes can expand to three-byte U+FFFD): a larger one
+ * is dropped unparsed and identified requests fail with a `ResponseTooLargeError`.
+ * Oversized notifications are dropped without failing unrelated requests. WebSocket also
+ * has a separate wire limit (twice this bound, capped at 536,870,888 bytes); exceeding it closes the
+ * connection and fails all outstanding requests with `ResponseTooLargeError`.
  */
 export interface SocketProviderOptions extends ProviderBoundsOptions {
 	/**
@@ -136,6 +144,22 @@ const DEFAULT_RECONNECTION_OPTIONS = {
 
 const NORMAL_CLOSE_CODE = 1000; // https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/close
 
+/**
+ * Names a transport error without echoing its message. `ws` formats the full URL, credentials
+ * and path included, into `Invalid URL: <url>` (P4-L-15), so only the error's class name and,
+ * when it carries one, its short `code` (`ERR_INVALID_URL`, `ECONNREFUSED`, ...) are kept.
+ * This library's own errors are the exception: their messages are built here, with any URL
+ * already redacted, and are kept whole.
+ */
+const describeTransportError = (error: unknown): string => {
+	if (error instanceof BaseWeb3Error) return error.message;
+	const { name, code } = (error ?? {}) as { name?: unknown; code?: unknown };
+	const safeName = typeof name === 'string' && name !== '' ? name : 'Error';
+	return typeof code === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(code)
+		? `${safeName} (${code})`
+		: safeName;
+};
+
 const unrefTimer = (timer: unknown): void => {
 	// A pending provider timer must not, by itself, keep a Node process alive.
 	if (typeof (timer as { unref?: () => void }).unref === 'function') {
@@ -143,6 +167,12 @@ const unrefTimer = (timer: unknown): void => {
 	}
 };
 
+/**
+ * Base transport with bounded requests and JSON parsing. Notifications for newly
+ * acknowledged subscription ids are parked until a zero-delay timer runs (at least
+ * 1 ms in Node), then dispatched in order. This park has no item-count cap and is
+ * cleared on connection reset; it only admits ids from outstanding subscribe replies.
+ */
 export abstract class SocketProvider<
 	MessageEvent,
 	CloseEvent,
@@ -159,7 +189,7 @@ export abstract class SocketProvider<
 	protected _reconnectAttempts!: number;
 	protected readonly _socketOptions?: unknown;
 	protected readonly _reconnectOptions: ReconnectOptions;
-	/** Validated `connectionTimeout` / `requestTimeout` / `maxInFlightRequests`. */
+	/** Validated timeouts, UTF-8 `maxResponseBytes`, `maxResponseDepth` and `maxInFlightRequests`. */
 	protected readonly _providerBounds: ResolvedProviderBounds;
 	/**
 	 * Teardown state for every in-flight request, reachable from either queue map via the
@@ -173,6 +203,13 @@ export abstract class SocketProvider<
 	>();
 	/** Bounds the connect / handshake phase. Separate from the per-request deadline. */
 	private _connectionTimer?: ReturnType<typeof setTimeout>;
+	/** The pending reconnect attempt armed by {@link _reconnect}, so it can be cancelled. */
+	private _reconnectTimer?: ReturnType<typeof setTimeout>;
+	// A subscribe reply can share a socket read with hundreds of notifications. The
+	// manager cannot install its id until the reply promise resumes. Park only ids
+	// acknowledged by an outstanding subscribe request, then dispatch after that turn.
+	private readonly _acknowledgedSubscriptions = new Map<string, JsonRpcNotification[]>();
+	private _subscriptionNotificationTimer?: ReturnType<typeof setTimeout>;
 	private _peakInFlight = 0;
 	private readonly _onDiagnostics?: (diagnostics: SocketProviderDiagnostics) => void;
 	protected _socketConnection?: unknown;
@@ -225,16 +262,34 @@ export abstract class SocketProvider<
 		this._pendingRequestsQueue = new Map<JsonRpcId, SocketRequestItem<any, any, any>>();
 		this._sentRequestsQueue = new Map<JsonRpcId, SocketRequestItem<any, any, any>>();
 
-		this._init();
-		this.connect();
+		// Created before the first `connect()` so that every connection, including the first,
+		// starts from an empty parser.
 		this.chunkResponseParser = new ChunkResponseParser(
 			this._eventEmitter,
 			this._reconnectOptions.autoReconnect,
+			{
+				framed: this._isFramedTransport(),
+				maxResponseBytes: this._providerBounds.maxResponseBytes,
+				maxResponseDepth: this._providerBounds.maxResponseDepth,
+			},
 		);
-		this.chunkResponseParser.onError(() => {
-			this._clearQueues();
+		this.chunkResponseParser.onError((error, requestIds) => {
+			// A protocol error can fail requests without closing the live transport.
+			// Keep its listeners so replies received after the parser resets still work.
+			if (requestIds !== undefined && requestIds.length > 0) {
+				// An oversized reply names the requests it answers: only those fail, an
+				// unrelated request in flight on the same connection is unaffected (P4-M-5).
+				for (const id of requestIds) {
+					this._settleRequest(id, { reject: error });
+				}
+				return;
+			}
+			this._rejectAllRequests(error);
 		});
 		this.isReconnecting = false;
+
+		this._init();
+		this.connect();
 	}
 
 	protected _init() {
@@ -242,10 +297,23 @@ export abstract class SocketProvider<
 	}
 
 	/**
-	 * Try to establish a connection to the socket
+	 * Try to establish a connection to the socket.
+	 *
+	 * A request already written to the socket being replaced is failed with
+	 * `PendingRequestsOnReconnectingError` right away: its reply could only have arrived on
+	 * that socket, so waiting would only end at the request's deadline (P4-L-21). Requests still
+	 * waiting for a connection stay queued and are written once the new socket opens.
 	 */
 	public connect(): void {
+		const cancelledReconnect = this._reconnectTimer !== undefined;
+		if (this._reconnectTimer !== undefined) this._cancelReconnect();
+		this._invalidateConnection();
 		try {
+			// Bytes left over from a previous connection must never prefix the first message of
+			// this one.
+			this.chunkResponseParser.reset();
+			this._clearSubscriptionNotifications();
+			this._rejectSentRequests();
 			this._openSocketConnection();
 			this._connectionStatus = 'connecting';
 			this._armConnectionTimer();
@@ -254,11 +322,19 @@ export abstract class SocketProvider<
 			this._clearConnectionTimer();
 			if (!this.isReconnecting) {
 				this._connectionStatus = 'disconnected';
+				if (cancelledReconnect) {
+					// Reuse the cancelled slot; a failed manual call is not an automatic attempt.
+					this._reconnectAttempts -= 1;
+					this._reconnect();
+				}
 				if (e && (e as Error).message) {
+					// The socket path may be a `ws://user:password@host/path` URL: credentials
+					// and path never belong in an error message (L-48), and neither does the
+					// transport's message, which may quote the URL in full (P4-L-15).
 					throw new ConnectionError(
-						`Error while connecting to ${this._socketPath}. Reason: ${
-							(e as Error).message
-						}`,
+						`Error while connecting to ${redactClientUrl(
+							this._socketPath,
+						)}. Reason: ${describeTransportError(e)}`,
 					);
 				} else {
 					throw new InvalidClientError(this._socketPath);
@@ -278,6 +354,18 @@ export abstract class SocketProvider<
 	 * This bound is *separate* from the per-request deadline but does not replace it: a
 	 * request issued while connecting has already armed its own `requestTimeout`, so the
 	 * connection wait is spent out of the request's total budget (see {@link request}).
+	 *
+	 * When the deadline fires the attempt is abandoned for good: the socket's listeners are
+	 * detached and the socket is closed, so a late handshake cannot resurrect it and nothing is
+	 * left half-open. With `autoReconnect` the regular reconnect cycle takes over; without it
+	 * the provider is `disconnected` and the next {@link request} opens a fresh socket. A peer
+	 * that accepts TCP but never completes the handshake used to wedge the provider for the
+	 * lifetime of the process (M-8).
+	 *
+	 * The timer belongs to one attempt. {@link _reconnect} clears it when that attempt fails,
+	 * and the callback stands down while a reconnect is pending: it used to survive a fast
+	 * socket failure, fire during the back-off and reject the requests parked for the reconnect
+	 * with a `ConnectionTimeoutError` (P4-L-16).
 	 */
 	private _armConnectionTimer(): void {
 		this._clearConnectionTimer();
@@ -287,17 +375,36 @@ export abstract class SocketProvider<
 		this._connectionTimer = setTimeout(() => {
 			this._connectionTimer = undefined;
 
-			if (this.getStatus() === 'connected') return;
+			if (this.getStatus() === 'connected' || this.isReconnecting) return;
 
 			const error = new ConnectionTimeoutError(duration);
 			this._connectionStatus = 'disconnected';
+			// Listeners go first: closing the stalled socket must not be reported as a lost
+			// connection by the transport's close / error handlers.
+			this._removeSocketListeners();
 			// A handshake that never completes must not strand the requests queued behind
 			// it, whether or not their own 120s deadline has elapsed.
 			this._rejectAllRequests(error);
+			if (this._reconnectOptions.autoReconnect) {
+				this._reconnect();
+			}
 			this._emitError(error);
+			this._closeSocketConnection(NORMAL_CLOSE_CODE, 'connection timeout');
 		}, duration);
 
 		unrefTimer(this._connectionTimer);
+	}
+
+	/**
+	 * Drops a pending reconnect attempt. Called by every caller-initiated teardown: a provider
+	 * that was disconnected or reset must not re-open a socket on its own a minute later (L-22).
+	 */
+	private _cancelReconnect(): void {
+		if (this._reconnectTimer !== undefined) {
+			clearTimeout(this._reconnectTimer);
+			this._reconnectTimer = undefined;
+		}
+		this.isReconnecting = false;
 	}
 
 	private _clearConnectionTimer(): void {
@@ -323,6 +430,16 @@ export abstract class SocketProvider<
 	// eslint-disable-next-line class-methods-use-this
 	protected _validateProviderPath(path: string): boolean {
 		return !!path;
+	}
+
+	/**
+	 * Whether the transport delivers whole messages (WebSocket frames) rather than a byte
+	 * stream (IPC). A framed transport never keeps partial input between messages, so one
+	 * malformed frame cannot corrupt the parsing of every frame that follows it.
+	 */
+	// eslint-disable-next-line class-methods-use-this
+	protected _isFramedTransport(): boolean {
+		return false;
 	}
 
 	/**
@@ -460,7 +577,10 @@ export abstract class SocketProvider<
 	 */
 	public disconnect(code?: number, data?: string): void {
 		const disconnectCode = code ?? NORMAL_CLOSE_CODE;
+		this._cancelReconnect();
 		this._clearConnectionTimer();
+		this.chunkResponseParser.reset();
+		this._clearSubscriptionNotifications();
 		this._removeSocketListeners();
 		if (this.getStatus() !== 'disconnected') {
 			this._closeSocketConnection(disconnectCode, data);
@@ -565,10 +685,24 @@ export abstract class SocketProvider<
 	 *
 	 * Ids are snapshotted first because settling a batch removes its sibling ids.
 	 */
-	private _rejectAllRequests(error: unknown): void {
+	protected _rejectAllRequests(error: unknown): void {
 		const ids = [...this._pendingRequestsQueue.keys(), ...this._sentRequestsQueue.keys()];
 
 		for (const id of ids) {
+			this._settleRequest(id, { reject: error });
+		}
+	}
+
+	/**
+	 * Rejects every request already written to the socket with
+	 * `PendingRequestsOnReconnectingError`, leaving requests that still wait for a connection
+	 * queued. Called whenever the socket a request was written to is given up (a reconnect, a
+	 * caller's {@link connect}): its reply can only arrive on that socket (P4-L-21).
+	 */
+	private _rejectSentRequests(): void {
+		if (this._sentRequestsQueue.size === 0) return;
+		const error = new PendingRequestsOnReconnectingError();
+		for (const id of [...this._sentRequestsQueue.keys()]) {
 			this._settleRequest(id, { reject: error });
 		}
 	}
@@ -591,10 +725,18 @@ export abstract class SocketProvider<
 	}
 
 	/**
-	 * Resets the socket, removing all listeners and pending requests
+	 * Resets the provider: cancels every pending request and any pending reconnect, drops any
+	 * partially received message and restarts the reconnect attempt counter.
+	 *
+	 * The transport listeners registered by {@link connect} stay attached. They used to be
+	 * removed and re-added here, which on a transport that keeps its `error` listener across
+	 * `_removeSocketListeners` (IPC) registered one more `error` listener per call (L-24).
 	 */
 	public reset(): void {
+		this._cancelReconnect();
 		this._clearConnectionTimer();
+		this.chunkResponseParser.reset();
+		this._clearSubscriptionNotifications();
 		// Previously these maps were simply cleared, which abandoned every caller's promise
 		// in `pending` forever. Reset cancels outstanding work; it does not forget it.
 		this._rejectAllRequests(
@@ -602,8 +744,6 @@ export abstract class SocketProvider<
 		);
 
 		this._init();
-		this._removeSocketListeners();
-		this._addSocketListeners();
 	}
 
 	protected _reconnect(): void {
@@ -611,13 +751,12 @@ export abstract class SocketProvider<
 			return;
 		}
 		this.isReconnecting = true;
-
-		if (this._sentRequestsQueue.size > 0) {
-			const error = new PendingRequestsOnReconnectingError();
-			for (const id of [...this._sentRequestsQueue.keys()]) {
-				this._settleRequest(id, { reject: error });
-			}
-		}
+		this._invalidateConnection();
+		// The attempt that just failed must not time out during the back-off (P4-L-16).
+		this._clearConnectionTimer();
+		this.chunkResponseParser.reset();
+		this._clearSubscriptionNotifications();
+		this._rejectSentRequests();
 
 		if (this._reconnectAttempts < this._reconnectOptions.maxAttempts) {
 			this._reconnectAttempts += 1;
@@ -626,11 +765,15 @@ export abstract class SocketProvider<
 			const capped = Math.min(exp, 60_000);
 			const jitter = capped * (Math.random() * 0.4 - 0.2);
 			const wait = Math.max(0, Math.floor(capped + jitter));
-			setTimeout(() => {
+			// Stored so that `disconnect()` / `reset()` can cancel it (L-22) and unref'd so that
+			// a pending attempt alone does not keep the process alive.
+			this._reconnectTimer = setTimeout(() => {
+				this._reconnectTimer = undefined;
 				this._removeSocketListeners();
 				this.connect();
 				this.isReconnecting = false;
 			}, wait);
+			unrefTimer(this._reconnectTimer);
 		} else {
 			this.isReconnecting = false;
 			this._clearQueues();
@@ -652,7 +795,7 @@ export abstract class SocketProvider<
 		if (jsonRpc.isBatchRequest(request as unknown as JsonRpcBatchRequest)) {
 			const ids = (request as unknown as JsonRpcBatchRequest).map(entry => entry.id);
 
-			if (ids.length === 0 || ids.some(id => !id)) {
+			if (ids.length === 0 || ids.some(id => isNullish(id))) {
 				throw new Web3WSProviderError('Request Id not defined');
 			}
 			if (new Set(ids).size !== ids.length) {
@@ -664,7 +807,7 @@ export abstract class SocketProvider<
 
 		const id = (request as unknown as JsonRpcRequest).id;
 
-		if (!id) {
+		if (isNullish(id)) {
 			throw new Web3WSProviderError('Request Id not defined');
 		}
 
@@ -691,8 +834,12 @@ export abstract class SocketProvider<
 		if (isNullish(this._socketConnection)) {
 			throw new Error('Connection is undefined');
 		}
-		// if socket disconnected - open connection
-		if (this.getStatus() === 'disconnected') {
+		// If the socket is disconnected, open a connection. Not while a reconnect is pending:
+		// the request would open a socket of its own, the reconnect timer would then open
+		// another one and the first would never be closed (L-44). The request is parked in the
+		// pending queue instead and written once the reconnect completes, within its own
+		// deadline.
+		if (this.getStatus() === 'disconnected' && !this.isReconnecting) {
 			this.connect();
 		}
 
@@ -756,8 +903,8 @@ export abstract class SocketProvider<
 			// `timedOut` is what separates our own deadline from a caller cancelling: an
 			// abort reason alone cannot, since a caller may abort with any reason at all.
 			const reason = abort.timedOut
-				? abort.signal.reason ?? new RequestTimeoutError(requestTimeout, method)
-				: abort.signal.reason ?? new ProviderError('Request aborted');
+				? (abort.signal.reason ?? new RequestTimeoutError(requestTimeout, method))
+				: (abort.signal.reason ?? new ProviderError('Request aborted'));
 
 			this._settleRequest(primaryId, { reject: reason });
 		};
@@ -765,7 +912,9 @@ export abstract class SocketProvider<
 		abort.signal.addEventListener('abort', onAbort, { once: true });
 
 		const queue =
-			this.getStatus() === 'connecting' ? this._pendingRequestsQueue : this._sentRequestsQueue;
+			this.getStatus() === 'connecting' || this.isReconnecting
+				? this._pendingRequestsQueue
+				: this._sentRequestsQueue;
 
 		for (const id of requestIds) {
 			queue.set(id, reqItem);
@@ -827,62 +976,157 @@ export abstract class SocketProvider<
 		}
 	}
 
-	protected _onMessage(event: MessageEvent): void {
-		const responses = this._parseResponses(event);
-		if (responses.length === 0) {
-			// no responses means lost connection, autoreconnect if possible
-			if (this._reconnectOptions.autoReconnect) {
-				this._reconnect();
+	private _clearSubscriptionNotifications(): void {
+		if (this._subscriptionNotificationTimer !== undefined)
+			clearTimeout(this._subscriptionNotificationTimer);
+		this._subscriptionNotificationTimer = undefined;
+		this._acknowledgedSubscriptions.clear();
+	}
+
+	/**
+	 * Whether this id is backed by an outstanding subscribe reply during its initial
+	 * notification flush. The subscription manager trusts `true` to bypass its unknown-id
+	 * count and byte caps while registration finishes. Custom providers implementing this
+	 * optional contract must only acknowledge such ids and clear them on reset/disconnect;
+	 * returning `true` for arbitrary ids disables those bounds. False after the park flush.
+	 */
+	public isSubscriptionAcknowledged(id: string): boolean {
+		return this._acknowledgedSubscriptions.has(id);
+	}
+
+	private _acknowledgeSubscription(id: string): void {
+		if (!this._acknowledgedSubscriptions.has(id)) this._acknowledgedSubscriptions.set(id, []);
+		if (this._subscriptionNotificationTimer !== undefined) return;
+		this._subscriptionNotificationTimer = setTimeout(() => {
+			this._subscriptionNotificationTimer = undefined;
+			for (const [subscriptionId, notifications] of [...this._acknowledgedSubscriptions]) {
+				for (const notification of notifications) {
+					// A listener can disconnect/reset the provider. Never replay across that boundary.
+					if (this._acknowledgedSubscriptions.get(subscriptionId) !== notifications)
+						break;
+					this._emit('message', notification);
+				}
+				if (this._acknowledgedSubscriptions.get(subscriptionId) === notifications)
+					this._acknowledgedSubscriptions.delete(subscriptionId);
 			}
+		}, 0);
+	}
+
+	protected _onMessage(event: MessageEvent): void {
+		let responses: JsonRpcResponse[];
+		try {
+			responses = this._parseResponses(event);
+		} catch (error) {
+			// Input the transport could not even hand to the parser (a binary frame on a text
+			// protocol, for example) is a protocol error from the peer. It is reported, never
+			// thrown: an exception escaping a socket callback terminates the process. Nor is it
+			// a sign that the connection was lost, so it does not trigger a reconnect.
+			this._emitError(error);
 			return;
 		}
+
+		// A message that yields nothing parseable (a partial IPC chunk, or garbage that was
+		// reported by the parser) is simply not a response. It is never treated as a lost
+		// connection: connection loss is signalled by the transport's close/error events.
 		for (const response of responses) {
+			try {
+				this._handleResponse(response);
+			} catch (error) {
+				this._emitError(error);
+			}
+		}
+	}
+
+	private _handleResponse(response: JsonRpcResponse): void {
+		// Only an object can be a response, a batch or a notification. Anything else (`null`
+		// inside a batch array, a number, ...) is malformed input from the peer and is reported
+		// instead of being dereferenced.
+		if (typeof response !== 'object' || isNullish(response)) {
+			this._emitError(
+				new ResponseError(
+					response as never,
+					'Invalid JSON-RPC response received from the node',
+				),
+			);
+			return;
+		}
+
+		if (
+			jsonRpc.isResponseWithNotification(response as JsonRpcNotification) &&
+			typeof (response as JsonRpcNotification).method === 'string' &&
+			(response as JsonRpcNotification).method.endsWith('_subscription')
+		) {
+			// An established subscription's stream is exempt from the per-request
+			// deadline: notifications carry no request id, hold no queue slot and arm no
+			// timer. The `*_subscribe` call that established it was bounded like any
+			// other request; from here the stream is governed by reconnect, unsubscribe,
+			// and disconnect semantics. There is no built-in idle heartbeat.
+			const notification = response as JsonRpcNotification;
+			const pending = this._acknowledgedSubscriptions.get(notification.params.subscription);
+			if (pending) pending.push(notification);
+			else this._emit('message', response);
+			return;
+		}
+
+		if (Array.isArray(response) && !jsonRpc.isBatchResponse(response)) {
+			// An array whose entries are not all well-formed responses (`[null]`, for example)
+			// cannot be correlated with any request.
+			this._emitError(
+				new ResponseError(
+					response as never,
+					'Invalid JSON-RPC batch response received from the node',
+				),
+			);
+			return;
+		}
+
+		const requestId = jsonRpc.isBatchResponse(response)
+			? (response as unknown as JsonRpcBatchResponse)[0].id
+			: (response as unknown as JsonRpcResponseWithResult).id;
+
+		// Unknown ids, and duplicate ids for an already-settled request, find nothing
+		// here and are dropped. A late response that lost the race against the deadline
+		// is exactly this case, so it cannot double-settle.
+		if (!this._sentRequestsQueue.has(requestId)) {
+			return;
+		}
+
+		if (
+			jsonRpc.isBatchResponse(response) ||
+			jsonRpc.isResponseWithResult(response) ||
+			jsonRpc.isResponseWithError(response)
+		) {
+			// Settled before the event goes out: a `message` listener that throws must not
+			// leave the request to fail by deadline although its reply arrived (P4-L-20). The
+			// throw is reported by the caller's per-response catch.
+			const request = this._sentRequestsQueue.get(requestId)?.payload;
 			if (
-				jsonRpc.isResponseWithNotification(response as JsonRpcNotification) &&
-				(response as JsonRpcNotification).method.endsWith('_subscription')
+				!Array.isArray(request) &&
+				request?.method === 'qrl_subscribe' &&
+				jsonRpc.isResponseWithResult(response) &&
+				typeof response.result === 'string' &&
+				/^0x[0-9a-f]+$/i.test(response.result)
 			) {
-				// An established subscription's stream is exempt from the per-request
-				// deadline: notifications carry no request id, hold no queue slot and arm no
-				// timer. The `*_subscribe` call that established it was bounded like any
-				// other request; from here the stream is governed by heartbeat / reconnect /
-				// unsubscribe / disconnect semantics instead.
-				this._eventEmitter.emit('message', response);
-				continue;
+				this._acknowledgeSubscription(response.result);
 			}
-
-			const requestId = jsonRpc.isBatchResponse(response)
-				? (response as unknown as JsonRpcBatchResponse)[0].id
-				: (response as unknown as JsonRpcResponseWithResult).id;
-
-			// Unknown ids, and duplicate ids for an already-settled request, find nothing
-			// here and are dropped. A late response that lost the race against the deadline
-			// is exactly this case, so it cannot double-settle.
-			if (!this._sentRequestsQueue.has(requestId)) {
-				continue;
-			}
-
-			if (
-				jsonRpc.isBatchResponse(response) ||
-				jsonRpc.isResponseWithResult(response) ||
-				jsonRpc.isResponseWithError(response)
-			) {
-				this._eventEmitter.emit('message', response);
-				this._settleRequest(requestId, { resolve: response });
-			} else {
-				// Malformed but id-matching. This used to drop the map entry without
-				// settling, stranding the caller's promise permanently.
-				this._settleRequest(requestId, {
-					reject: new ResponseError(
-						response,
-						'Invalid JSON-RPC response received from the node',
-					),
-				});
-			}
+			this._settleRequest(requestId, { resolve: response });
+			this._emit('message', response);
+		} else {
+			// Malformed but id-matching. This used to drop the map entry without
+			// settling, stranding the caller's promise permanently.
+			this._settleRequest(requestId, {
+				reject: new ResponseError(
+					response,
+					'Invalid JSON-RPC response received from the node',
+				),
+			});
 		}
 	}
 
 	protected _clearQueues(event?: ConnectionEvent) {
 		this._clearConnectionTimer();
+		this.chunkResponseParser.reset();
+		this._clearSubscriptionNotifications();
 		this._rejectAllRequests(new ConnectionNotOpenError(event));
 		this._removeSocketListeners();
 	}

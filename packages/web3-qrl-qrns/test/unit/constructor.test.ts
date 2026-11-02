@@ -19,7 +19,7 @@ import { Web3Context, Web3ContextObject } from '@theqrl/web3-core';
 import { Registry } from '../../src/registry';
 import { Resolver } from '../../src/resolver';
 import { QRNS } from '../../src/qrns';
-import { registryAddresses } from '../../src/config';
+import { CUSTOM_REGISTRY } from '../fixtures/fake_provider';
 
 describe('qrns', () => {
 	let object: Web3ContextObject;
@@ -41,23 +41,29 @@ describe('qrns', () => {
 		const registry = new Registry(object);
 		const resolver = new Resolver(registry);
 
+		expect(resolver.setAddress).toBeDefined();
 		expect(resolver.getAddress).toBeDefined();
 		expect(resolver.checkInterfaceSupport).toBeDefined();
 		expect(resolver.supportsInterface).toBeDefined();
 		expect(resolver.getPubkey).toBeDefined();
 		expect(resolver.getContenthash).toBeDefined();
+		expect(resolver.getText).toBeDefined();
+		expect(resolver.getName).toBeDefined();
 	});
 
 	it('should construct main qrns class with expected methods', () => {
-		const qrns = new QRNS(registryAddresses.main, 'http://127.0.0.1:8545');
+		const qrns = new QRNS(CUSTOM_REGISTRY, 'http://127.0.0.1:8545');
 
 		expect(qrns.getResolver).toBeDefined();
+		expect(qrns.setAddress).toBeDefined();
 		expect(qrns.recordExists).toBeDefined();
 		expect(qrns.getTTL).toBeDefined();
 		expect(qrns.getOwner).toBeDefined();
 		expect(qrns.getAddress).toBeDefined();
 		expect(qrns.getPubkey).toBeDefined();
 		expect(qrns.getContenthash).toBeDefined();
+		expect(qrns.getText).toBeDefined();
+		expect(qrns.getName).toBeDefined();
 		expect(qrns.checkNetwork).toBeDefined();
 		expect(qrns.supportsInterface).toBeDefined();
 	});

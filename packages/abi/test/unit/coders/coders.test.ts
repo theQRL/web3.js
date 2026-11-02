@@ -17,12 +17,13 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 import { BigNumber } from '@ethersproject/bignumber';
 
-import { Reader, Writer } from '../../../src/coders/abstract-coder.js';
+import { Coder, Reader, Writer } from '../../../src/coders/abstract-coder.js';
 import { AnonymousCoder } from '../../../src/coders/anonymous.js';
 import { ArrayCoder } from '../../../src/coders/array.js';
-import { BooleanCoder } from '../../../src/coders/boolean.js';
-import { BytesCoder, DynamicBytesCoder } from '../../../src/coders/bytes.js';
+import { BooleanCoder, booleanToBit } from '../../../src/coders/boolean.js';
+import { BytesCoder, DynamicBytesCoder, bytesToHexString } from '../../../src/coders/bytes.js';
 import { FixedBytesCoder } from '../../../src/coders/fixed-bytes.js';
+import { FunctionCoder } from '../../../src/coders/function.js';
 import { NullCoder } from '../../../src/coders/null.js';
 import { NumberCoder } from '../../../src/coders/number.js';
 import { StringCoder } from '../../../src/coders/string.js';
@@ -37,16 +38,18 @@ const word = (n: number | string) => {
 };
 const bytesWord = (hex: string) => `${hex}${'0'.repeat(WORD * 2 - hex.length)}`;
 
-const write = (coder: any, value: any) => {
+const write = (coder: Coder, value: unknown) => {
 	const writer = new Writer(WORD);
 	coder.encode(writer, value);
 	return writer.data;
 };
-const read = (coder: any, data: string) => coder.decode(new Reader(data, WORD));
+const read = (coder: Coder, data: string) => coder.decode(new Reader(data, WORD));
 
 describe('NumberCoder', () => {
 	it('names itself uint/int with the bit width', () => {
 		expect(new NumberCoder(32, false, 'a').name).toBe('uint256');
+		expect(new NumberCoder(64, false, 'a').name).toBe('uint512');
+		expect(new NumberCoder(64, true, 'a').name).toBe('int512');
 		expect(new NumberCoder(1, true, 'a').name).toBe('int8');
 		expect(new NumberCoder(32, false, 'a').dynamic).toBe(false);
 	});
@@ -71,6 +74,11 @@ describe('NumberCoder', () => {
 		);
 	});
 
+	it('encodes uint512 max as a full word with no padding', () => {
+		const max = BigNumber.from(`0x${'ff'.repeat(WORD)}`);
+		expect(write(new NumberCoder(WORD, false, 'a'), max)).toBe(`0x${'ff'.repeat(WORD)}`);
+	});
+
 	it('sign-extends a negative int8 across the whole 64-byte word', () => {
 		// -1 as int8 is 0xff, sign-extended to 64 bytes is all-ones.
 		expect(write(new NumberCoder(1, true, 'a'), -1)).toBe(`0x${'ff'.repeat(WORD)}`);
@@ -78,6 +86,12 @@ describe('NumberCoder', () => {
 
 	it('encodes int8 min (-128) sign-extended', () => {
 		expect(write(new NumberCoder(1, true, 'a'), -128)).toBe(`0x${'ff'.repeat(63)}80`);
+	});
+
+	it('encodes int512 extremes across the exact word', () => {
+		expect(write(new NumberCoder(WORD, true, 'a'), -1)).toBe(`0x${'ff'.repeat(WORD)}`);
+		const min = BigNumber.from(`0x80${'00'.repeat(WORD - 1)}`).mul(-1);
+		expect(write(new NumberCoder(WORD, true, 'a'), min)).toBe(`0x80${'00'.repeat(WORD - 1)}`);
 	});
 
 	it('encodes a positive signed value the same as an unsigned one', () => {
@@ -138,9 +152,17 @@ describe('NumberCoder', () => {
 		expect(read(coder, write(coder, value))).toBe(value);
 	});
 
-	it('masks off bits above its own width when decoding', () => {
-		// uint8 reading a word whose value is 0x0100 must see 0, not 256.
-		expect(read(new NumberCoder(1, false, 'a'), `0x${word(0x100)}`)).toBe(0);
+	it('rejects a word with bits above its own width when decoding', () => {
+		// uint8 reading a word whose value is 0x0100 is not a canonical uint8 encoding; the
+		// on-chain decoder rejects it, and so must this one rather than quietly seeing 0.
+		expect(() => {
+			read(new NumberCoder(1, false, 'a'), `0x${word(0x100)}`);
+		}).toThrow(/out-of-bounds/);
+		// A signed value must be sign-extended across the whole word.
+		expect(() => {
+			read(new NumberCoder(1, true, 'a'), `0x${word(0xff)}`);
+		}).toThrow(/out-of-bounds/);
+		expect(read(new NumberCoder(1, true, 'a'), `0x${'ff'.repeat(WORD)}`)).toBe(-1);
 	});
 });
 
@@ -161,17 +183,67 @@ describe('BooleanCoder', () => {
 		expect(write(new BooleanCoder('flag'), false)).toBe(`0x${word(0)}`);
 	});
 
-	it('decodes zero as false and anything non-zero as true', () => {
+	it('decodes zero as false and one as true, and rejects any other word', () => {
 		expect(read(new BooleanCoder('flag'), `0x${word(0)}`)).toBe(false);
 		expect(read(new BooleanCoder('flag'), `0x${word(1)}`)).toBe(true);
-		expect(read(new BooleanCoder('flag'), `0x${word(2)}`)).toBe(true);
-		expect(read(new BooleanCoder('flag'), `0x${'ff'.repeat(WORD)}`)).toBe(true);
+		expect(() => {
+			read(new BooleanCoder('flag'), `0x${word(2)}`);
+		}).toThrow(/invalid boolean value/);
+		expect(() => {
+			read(new BooleanCoder('flag'), `0x${'ff'.repeat(WORD)}`);
+		}).toThrow(/invalid boolean value/);
 	});
 
 	it('round-trips', () => {
 		const coder = new BooleanCoder('flag');
 		expect(read(coder, write(coder, true))).toBe(true);
 		expect(read(coder, write(coder, false))).toBe(false);
+	});
+
+	// The explicit forms are exactly the ones web3-validator's `bool` format accepts.
+	it.each([
+		[true, 1],
+		[1, 1],
+		[BigInt(1), 1],
+		['1', 1],
+		['0x1', 1],
+		[false, 0],
+		[0, 0],
+		[BigInt(0), 0],
+		['0', 0],
+		['0x0', 0],
+	])('encodes the explicit form %p by value as %i (H-3)', (value, bit) => {
+		expect(booleanToBit(value)).toBe(bit);
+		expect(write(new BooleanCoder('flag'), value)).toBe(`0x${word(bit)}`);
+		expect(read(new BooleanCoder('flag'), write(new BooleanCoder('flag'), value))).toBe(
+			bit === 1,
+		);
+	});
+
+	it.each([
+		'false',
+		'true',
+		'False',
+		'',
+		' ',
+		'00',
+		'0x00',
+		'0x01',
+		'0X0',
+		'2',
+		2,
+		-1,
+		1.5,
+		NaN,
+		BigInt(2),
+		undefined,
+		{},
+		[],
+		[1],
+		new Boolean(true),
+	])('rejects %p, which is not an encoding of a boolean (H-3)', value => {
+		expect(booleanToBit(value)).toBeUndefined();
+		expect(() => write(new BooleanCoder('flag'), value)).toThrow(/invalid boolean value/);
 	});
 });
 
@@ -213,11 +285,12 @@ describe('NullCoder', () => {
 describe('FixedBytesCoder', () => {
 	it('names itself bytesN and is static', () => {
 		expect(new FixedBytesCoder(32, 'a').name).toBe('bytes32');
+		expect(new FixedBytesCoder(64, 'a').name).toBe('bytes64');
 		expect(new FixedBytesCoder(1, 'a').name).toBe('bytes1');
 		expect(new FixedBytesCoder(32, 'a').dynamic).toBe(false);
 	});
 
-	it.each([1, 4, 16, 32])('defaults bytes%i to that many zero bytes', size => {
+	it.each([1, 4, 16, 32, 64])('defaults bytes%i to that many zero bytes', size => {
 		const value = new FixedBytesCoder(size, 'a').defaultValue();
 		expect(value).toBe(`0x${'00'.repeat(size)}`);
 	});
@@ -230,6 +303,12 @@ describe('FixedBytesCoder', () => {
 	it('encodes bytes32 with 32 bytes of trailing padding', () => {
 		expect(write(new FixedBytesCoder(32, 'a'), `0x${'ab'.repeat(32)}`)).toBe(
 			`0x${'ab'.repeat(32)}${'00'.repeat(32)}`,
+		);
+	});
+
+	it('encodes bytes64 filling the word with no padding', () => {
+		expect(write(new FixedBytesCoder(WORD, 'a'), `0x${'ab'.repeat(WORD)}`)).toBe(
+			`0x${'ab'.repeat(WORD)}`,
 		);
 	});
 
@@ -278,6 +357,19 @@ describe('DynamicBytesCoder / BytesCoder', () => {
 
 	it('decodes back to a hex string', () => {
 		expect(read(new BytesCoder('a'), `0x${word(2)}${bytesWord('1234')}`)).toBe('0x1234');
+	});
+
+	it('decodes every byte value to the same lowercase hex as the encoder input (M-9)', () => {
+		const all = `0x${Array.from({ length: 256 }, (_, i) => i.toString(16).padStart(2, '0')).join(
+			'',
+		)}`;
+		const coder = new BytesCoder('b');
+		expect(read(coder, write(coder, all))).toBe(all);
+		expect(bytesToHexString(new Uint8Array(0))).toBe('0x');
+		expect(bytesToHexString(Uint8Array.from([0, 0x0f, 0xf0, 0xff]))).toBe('0x000ff0ff');
+		// A large payload decodes to a flat string with the exact bytes.
+		const big = `0x${'a5'.repeat(1 << 18)}`;
+		expect(read(coder, write(coder, big))).toBe(big);
 	});
 
 	it('DynamicBytesCoder decodes to a Uint8Array', () => {
@@ -397,6 +489,26 @@ describe('ArrayCoder', () => {
 		expect(() => read(coder, `0x${word(1000)}`)).toThrow(/insufficient data length/);
 	});
 
+	it('refuses a fixed length that could not possibly fit in the data before allocating anything (M-10)', () => {
+		// 10^8 elements on one word of data used to allocate 10^8 coders and end in a V8 OOM.
+		const coder = new ArrayCoder(new NumberCoder(1, false, ''), 100000000, 'a');
+		expect(() => {
+			read(coder, `0x${word(1)}`);
+		}).toThrow(/insufficient data length/);
+		// One word short.
+		const three = new ArrayCoder(new NumberCoder(1, false, ''), 3, 'a');
+		expect(() => {
+			read(three, `0x${word(1)}${word(2)}`);
+		}).toThrow(/insufficient data length/);
+	});
+
+	it('still decodes a fixed array that fits exactly (M-10)', () => {
+		const coder = new ArrayCoder(new NumberCoder(1, false, ''), 3, 'a');
+		expect(Array.from(read(coder, `0x${word(1)}${word(2)}${word(3)}`))).toEqual([1, 2, 3]);
+		const empty = new ArrayCoder(new NumberCoder(1, false, ''), 0, 'a');
+		expect(Array.from(read(empty, '0x'))).toEqual([]);
+	});
+
 	it('round-trips a fixed array', () => {
 		const coder = new ArrayCoder(new NumberCoder(1, false, ''), 3, 'a');
 		expect(Array.from(read(coder, write(coder, [1, 2, 3])))).toEqual([1, 2, 3]);
@@ -507,5 +619,35 @@ describe('AnonymousCoder', () => {
 		expect(coder.defaultValue()).toBe(false);
 		expect(write(coder, true)).toBe(`0x${word(1)}`);
 		expect(read(coder, `0x${word(1)}`)).toBe(true);
+	});
+});
+
+describe('FunctionCoder', () => {
+	const address = 'aa'.repeat(64);
+	const value = `0x${address}deadbeef`;
+
+	it('is a static coder named function with a zero default', () => {
+		const coder = new FunctionCoder('f');
+		expect(coder.name).toBe('function');
+		expect(coder.dynamic).toBe(false);
+		expect(coder.defaultValue()).toBe(`0x${'00'.repeat(68)}`);
+	});
+
+	it('encodes the address word then the selector right-aligned in its own word', () => {
+		expect(write(new FunctionCoder('f'), value)).toBe(`0x${address}${word('deadbeef')}`);
+	});
+
+	it('round-trips', () => {
+		const coder = new FunctionCoder('f');
+		expect(read(coder, write(coder, value))).toBe(value);
+	});
+
+	it('rejects a selector word with non-zero padding (I-10)', () => {
+		expect(() => {
+			read(new FunctionCoder('f'), `0x${address}${'ff'.repeat(60)}deadbeef`);
+		}).toThrow(/non-zero padding in function selector/);
+		expect(() => {
+			read(new FunctionCoder('f'), `0x${address}${'00'.repeat(59)}01deadbeef`);
+		}).toThrow(/non-zero padding in function selector/);
 	});
 });

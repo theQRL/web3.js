@@ -104,7 +104,7 @@ import { Contract, ContractAbi, Web3 } from '@theqrl/web3';
 import ERC20 from './artifacts/ERC20';
 
 (async function () {
-	const web3 = new Web3('https://goerli.infura.io/v3/fd1f29ab70844ef48e644489a411d4b3');
+	const web3 = new Web3('http://localhost:8545'); // a local gqrl node with HTTP JSON-RPC enabled
 
 	const contract = new Contract(
 		SQRCTF1.abi as ContractAbi,

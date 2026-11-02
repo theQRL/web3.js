@@ -37,6 +37,11 @@ export interface ContractInitOptions {
 	 */
 	readonly data?: Bytes;
 	readonly input?: Bytes;
+	/**
+	 * The address of the deployed contract, as an alternative to the positional `address`
+	 * constructor argument (the positional argument wins when both are given) (P4-L-28).
+	 */
+	readonly address?: Address;
 
 	readonly provider?: SupportedProviders<QRLExecutionAPI> | string;
 	/**

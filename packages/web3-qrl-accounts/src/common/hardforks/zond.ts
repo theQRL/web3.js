@@ -25,7 +25,7 @@ export default {
 			d: 'Maximum block gas target elasticity',
 		},
 		initialBaseFee: {
-			v: 1000000000,
+			v: 100000000000,
 			d: 'Initial base fee on first EIP1559 block',
 		},
 	},
@@ -136,11 +136,11 @@ export default {
 		},
 		copy: {
 			v: 3,
-			d: 'Multiplied by the number of 32-byte words that are copied (round up) for any *COPY operation and added',
+			d: 'Multiplied by the number of 64-byte words that are copied (round up) for any *COPY operation and added',
 		},
 		depositroot: {
-			v: 19992,
-			d: '',
+			v: 18000,
+			d: 'Gas cost for one deposit-root precompile (address 0x01)',
 		},
 		sha256: {
 			v: 60,
@@ -390,21 +390,9 @@ export default {
 			v: 3,
 			d: 'Gquaddivisor from modexp precompile for gas calculation',
 		},
-		ecAdd: {
-			v: 150,
-			d: 'Gas costs for curve addition precompile',
-		},
-		ecMul: {
-			v: 6000,
-			d: 'Gas costs for curve multiplication precompile',
-		},
-		ecPairing: {
-			v: 45000,
-			d: 'Base gas costs for curve pairing precompile',
-		},
-		ecPairingWord: {
-			v: 34000,
-			d: 'Gas costs regarding curve pairing precompile input length',
+		mldsa87Verify: {
+			v: 125000,
+			d: 'Gas cost for one ML-DSA-87 verification precompile (address 0x03)',
 		},
 		revert: {
 			v: 0,
@@ -512,7 +500,7 @@ export default {
 		},
 		initCodeWordCost: {
 			v: 2,
-			d: 'Gas to pay for each word (32 bytes) of initcode when creating a contract',
+			d: 'Gas to pay for each word (64 bytes) of initcode when creating a contract',
 		},
 	},
 	vm: {

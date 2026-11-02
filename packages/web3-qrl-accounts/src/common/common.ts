@@ -15,9 +15,8 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import CRC32 from 'crc-32';
-import { EventEmitter } from 'events';
 import type { Numbers } from '@theqrl/web3-types';
-import { bytesToHex, hexToBytes, uint8ArrayConcat } from '@theqrl/web3-utils';
+import { EventEmitter, bytesToHex, hexToBytes, uint8ArrayConcat } from '@theqrl/web3-utils';
 import { TypeOutput } from './types.js';
 import { intToUint8Array, toType, parseGqrlGenesis } from './utils.js';
 import mainnet from './chains/mainnet.js';
@@ -94,7 +93,9 @@ export class Common extends EventEmitter {
 		opts: CustomCommonOpts = {},
 	): Common {
 		const baseChain = opts.baseChain ?? 'mainnet';
-		const standardChainParams = { ...Common._getChainParams(baseChain) };
+		// A fresh copy of the base chain: the custom chain must not share nested state (hardforks,
+		// genesis, bootstrap nodes) with the base chain's parameters.
+		const standardChainParams = Common.cloneChainData(Common._getChainParams(baseChain));
 		standardChainParams.name = 'custom-chain';
 
 		if (typeof chainParamsOrName !== 'string') {
@@ -107,7 +108,6 @@ export class Common extends EventEmitter {
 			});
 		}
 
-		// eslint-disable-next-line @typescript-eslint/restrict-template-expressions
 		throw new Error(`Custom chain ${chainParamsOrName} not supported`);
 	}
 
@@ -208,7 +208,9 @@ export class Common extends EventEmitter {
 					throw new Error(`Missing required chain parameter: ${param}`);
 				}
 			}
-			this._chainParams = chain as ChainConfig;
+			// Keep a private copy: the caller's object must not be able to change this instance's
+			// chain parameters after construction, and this instance must not mutate it.
+			this._chainParams = Common.cloneChainData(chain as ChainConfig);
 		} else {
 			throw new Error('Wrong input format');
 		}
@@ -347,7 +349,6 @@ export class Common extends EventEmitter {
 	 * @param hardfork Hardfork name
 	 * @returns Dictionary with hardfork params or null if hardfork not on chain
 	 */
-	// eslint-disable-next-line @typescript-eslint/ban-types
 	public _getHardfork(hardfork: string | Hardfork): HardforkConfig | null {
 		const hfs = this.hardforks();
 		for (const hf of hfs) {
@@ -370,7 +371,6 @@ export class Common extends EventEmitter {
 			const minHF = this.gteHardfork(QIPs[qip].minimumHardfork);
 			if (!minHF) {
 				throw new Error(
-					// eslint-disable-next-line @typescript-eslint/restrict-template-expressions
 					`${qip} cannot be activated on hardfork ${this.hardfork()}, minimumHardfork: ${minHF}`,
 				);
 			}
@@ -381,7 +381,6 @@ export class Common extends EventEmitter {
 					// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
 					if (!(qips.includes(elem) || this.isActivatedQIP(elem))) {
 						throw new Error(
-							// eslint-disable-next-line @typescript-eslint/restrict-template-expressions
 							`${qip} requires QIP ${elem}, but is not included in the QIP list`,
 						);
 					}
@@ -531,7 +530,6 @@ export class Common extends EventEmitter {
 	 * @returns True if HF is active on block number
 	 */
 	public hardforkIsActiveOnBlock(
-		// eslint-disable-next-line @typescript-eslint/ban-types
 		_hardfork: string | Hardfork | null,
 		_blockNumber: Numbers,
 	): boolean {
@@ -562,7 +560,6 @@ export class Common extends EventEmitter {
 	 * @returns True if HF1 gte HF2
 	 */
 	public hardforkGteHardfork(
-		// eslint-disable-next-line @typescript-eslint/ban-types
 		_hardfork1: string | Hardfork | null,
 		hardfork2: string | Hardfork,
 	): boolean {
@@ -595,7 +592,6 @@ export class Common extends EventEmitter {
 	 * @param hardfork Hardfork name, optional if HF set
 	 * @returns Block number or null if unscheduled
 	 */
-	// eslint-disable-next-line @typescript-eslint/ban-types
 	public hardforkBlock(_hardfork?: string | Hardfork): bigint | null {
 		const hardfork = _hardfork ?? this._hardfork;
 		const block = this._getHardfork(hardfork)?.block;
@@ -606,7 +602,6 @@ export class Common extends EventEmitter {
 		}
 		return BigInt(block);
 	}
-	// eslint-disable-next-line @typescript-eslint/ban-types
 	public hardforkTimestamp(_hardfork?: string | Hardfork): bigint | null {
 		const hardfork = _hardfork ?? this._hardfork;
 		const timestamp = this._getHardfork(hardfork)?.timestamp;
@@ -623,13 +618,12 @@ export class Common extends EventEmitter {
 	 * @param qip QIP number
 	 * @returns Block number or null if unscheduled
 	 */
-	// eslint-disable-next-line @typescript-eslint/ban-types
 	public qipBlock(qip: number): bigint | null {
 		for (const hfChanges of this.HARDFORK_CHANGES) {
 			// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 			const hf = hfChanges[1];
 			if ('qips' in hf) {
-				// eslint-disable-next-line @typescript-eslint/strict-boolean-expressions, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+				// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
 				if (hf.qips.includes(qip)) {
 					return this.hardforkBlock(
 						typeof hfChanges[0] === 'number' ? String(hfChanges[0]) : hfChanges[0],
@@ -646,7 +640,6 @@ export class Common extends EventEmitter {
 	 * @param hardfork Hardfork name, optional if HF set
 	 * @returns Block timestamp, number or null if not available
 	 */
-	// eslint-disable-next-line @typescript-eslint/ban-types
 	public nextHardforkBlockOrTimestamp(_hardfork?: string | Hardfork): bigint | null {
 		const hardfork = _hardfork ?? this._hardfork;
 		const hfs = this.hardforks();
@@ -732,7 +725,6 @@ export class Common extends EventEmitter {
 
 		// CRC32 delivers result as signed (negative) 32-bit integer,
 		// convert to hex string
-		// eslint-disable-next-line no-bitwise
 		const forkhash = bytesToHex(intToUint8Array(crc32Uint8Array(inputUint8Array) >>> 0));
 		return forkhash;
 	}
@@ -767,7 +759,6 @@ export class Common extends EventEmitter {
 	 * @param forkHash Fork hash as a hex string
 	 * @returns Array with hardfork data (name, block, forkHash)
 	 */
-	// eslint-disable-next-line @typescript-eslint/ban-types
 	public hardforkForForkHash(forkHash: string): HardforkConfig | null {
 		const resArray = this.hardforks().filter((hf: HardforkConfig) => hf.forkHash === forkHash);
 		// eslint-disable-next-line no-null/no-null
@@ -942,14 +933,42 @@ export class Common extends EventEmitter {
 
 	/**
 	 * Returns a deep copy of this {@link Common} instance.
+	 *
+	 * The copy has no event listeners and owns its chain parameters and QIP list, so changes
+	 * made through one instance (for example `setForkHashes`) never show up in the other.
 	 */
 	public copy(): Common {
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment
-		const copy = Object.assign(Object.create(Object.getPrototypeOf(this)), this);
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+		const copy = Object.assign(
+			Object.create(Object.getPrototypeOf(this) as object) as Common,
+			this,
+		);
 		copy.removeAllListeners();
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-return
+		copy._chainParams = Common.cloneChainData(this._chainParams);
+		copy._qips = [...this._qips];
 		return copy;
+	}
+
+	/**
+	 * Deep-copies plain chain configuration data (objects, arrays, primitives, bigints and byte
+	 * arrays). Chain parameters are handed to every {@link Common} instance as a private copy so
+	 * that neither the module-level chain definitions nor a caller's configuration object are
+	 * shared, and a fork hash or other value written by one instance stays local to it.
+	 */
+	private static cloneChainData<T>(value: T): T {
+		if (!value || typeof value !== 'object') {
+			return value;
+		}
+		if (value instanceof Uint8Array) {
+			return new Uint8Array(value) as unknown as T;
+		}
+		if (Array.isArray(value)) {
+			return (value as unknown[]).map(item => Common.cloneChainData(item)) as unknown as T;
+		}
+		const copy: Record<string, unknown> = {};
+		for (const [key, item] of Object.entries(value as unknown as Record<string, unknown>)) {
+			copy[key] = Common.cloneChainData(item);
+		}
+		return copy as unknown as T;
 	}
 
 	public static _getInitializedChains(customChains?: ChainConfig[]): ChainsConfig {
@@ -957,12 +976,14 @@ export class Common extends EventEmitter {
 		for (const [name, id] of Object.entries(Chain)) {
 			names[id] = name.toLowerCase();
 		}
-		const chains = { mainnet } as ChainsConfig;
+		// Every lookup returns a private copy: the module-level `mainnet` definition and the
+		// caller's custom chain objects are never handed out by reference.
+		const chains = { mainnet: Common.cloneChainData(mainnet) } as ChainsConfig;
 		if (customChains) {
 			for (const chain of customChains) {
 				const { name } = chain;
 				names[chain.chainId.toString()] = name;
-				chains[name] = chain;
+				chains[name] = Common.cloneChainData(chain);
 			}
 		}
 		chains.names = names;

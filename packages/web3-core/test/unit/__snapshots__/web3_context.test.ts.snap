@@ -35,9 +35,11 @@ exports[`Web3Context getContextObject should return correct context object 1`] =
       "connectionTimeout": 30000,
       "maxInFlightRequests": 256,
       "maxResponseBytes": 10485760,
+      "maxResponseDepth": 4096,
       "requestTimeout": 120000,
     },
     "clientUrl": "http://test/abc",
+    "endpoint": "test",
     "httpProviderOptions": undefined,
   },
   "providers": {
@@ -47,52 +49,90 @@ exports[`Web3Context getContextObject should return correct context object 1`] =
   "registeredSubscriptions": {},
   "requestManager": Web3RequestManager {
     "_emitter": EventEmitter {
-      "_events": {
-        "BEFORE_PROVIDER_CHANGE": [Function],
-        "PROVIDER_CHANGED": [Function],
+      "_events": Map {
+        "BEFORE_PROVIDER_CHANGE" => [
+          {
+            "listener": [Function],
+            "once": false,
+          },
+        ],
+        "PROVIDER_CHANGED" => [
+          {
+            "listener": [Function],
+            "once": false,
+          },
+        ],
       },
-      "_eventsCount": 2,
-      "_maxListeners": undefined,
-      Symbol(shapeMode): false,
-      Symbol(kCapture): false,
+      "_warned": Set {},
     },
     "_provider": HttpProvider {
       "bounds": {
         "connectionTimeout": 30000,
         "maxInFlightRequests": 256,
         "maxResponseBytes": 10485760,
+        "maxResponseDepth": 4096,
         "requestTimeout": 120000,
       },
       "clientUrl": "http://test/abc",
+      "endpoint": "test",
       "httpProviderOptions": undefined,
     },
-    "useRpcCallSpecification": undefined,
+    "useRpcCallSpecification": false,
   },
   "subscriptionManager": Web3SubscriptionManager {
+    "_beforeProviderChangeListener": [Function],
+    "_connectionGeneration": 0,
+    "_disposed": false,
+    "_earlyNotificationBytes": 0,
+    "_earlyNotifications": [],
+    "_emitter": EventEmitter {
+      "_events": Map {},
+      "_warned": Set {},
+    },
+    "_generation": 0,
+    "_intendedSubscriptions": Set {},
+    "_pendingRegistrations": Map {},
+    "_pendingResubscriptions": Map {},
+    "_providerChangedListener": [Function],
+    "_providerConnected": false,
+    "_resubscribeAgain": false,
+    "_resubscribeOnConnect": false,
+    "_subscribesInFlight": 0,
+    "_subscriptionConnections": WeakMap {},
     "_subscriptions": Map {},
+    "_unknownNotificationCount": 0,
     "registeredSubscriptions": {},
     "requestManager": Web3RequestManager {
       "_emitter": EventEmitter {
-        "_events": {
-          "BEFORE_PROVIDER_CHANGE": [Function],
-          "PROVIDER_CHANGED": [Function],
+        "_events": Map {
+          "BEFORE_PROVIDER_CHANGE" => [
+            {
+              "listener": [Function],
+              "once": false,
+            },
+          ],
+          "PROVIDER_CHANGED" => [
+            {
+              "listener": [Function],
+              "once": false,
+            },
+          ],
         },
-        "_eventsCount": 2,
-        "_maxListeners": undefined,
-        Symbol(shapeMode): false,
-        Symbol(kCapture): false,
+        "_warned": Set {},
       },
       "_provider": HttpProvider {
         "bounds": {
           "connectionTimeout": 30000,
           "maxInFlightRequests": 256,
           "maxResponseBytes": 10485760,
+          "maxResponseDepth": 4096,
           "requestTimeout": 120000,
         },
         "clientUrl": "http://test/abc",
+        "endpoint": "test",
         "httpProviderOptions": undefined,
       },
-      "useRpcCallSpecification": undefined,
+      "useRpcCallSpecification": false,
     },
   },
   "wallet": undefined,

@@ -24,28 +24,32 @@ import {
 	FormatType,
 	QRL_DATA_FORMAT,
 } from '@theqrl/web3-types';
-import { isNullish } from '@theqrl/web3-validator';
-import { UnsupportedTransactionTypeError } from '@theqrl/web3-errors';
-import { format } from '@theqrl/web3-utils';
+import { isNullish, isObject } from '@theqrl/web3-validator';
+import {
+	InvalidMaxPriorityFeePerGasOrMaxFeePerGas,
+	UnsupportedTransactionTypeError,
+} from '@theqrl/web3-errors';
+import { format, toBigInt } from '@theqrl/web3-utils';
 import { getBlock } from './rpc_method_wrappers_readers.js';
 import { InternalTransaction } from '../types.js';
 import { getTransactionType } from './get_transaction_type.js';
+import { invalidResponseError } from './invalid_response_error.js';
 
 // 256-bit unsigned upper bound; on-chain fee fields are uint256.
 const MAX_UINT256 = (BigInt(1) << BigInt(256)) - BigInt(1);
 
-const safeBigInt = (value: Numbers | undefined, label: string): bigint => {
-	if (isNullish(value)) {
-		throw new Error(`Expected numeric ${label}, got ${String(value)}`);
+/**
+ * The value as an unsigned 256-bit quantity, or `undefined` when it is missing, negative,
+ * out of range or not a number at all.
+ */
+const toUint256 = (value: unknown): bigint | undefined => {
+	if (typeof value === 'string' && value.startsWith('-')) return undefined;
+	try {
+		const result = toBigInt(value);
+		return result < BigInt(0) || result > MAX_UINT256 ? undefined : result;
+	} catch {
+		return undefined;
 	}
-	if (typeof value === 'string' && value.startsWith('-')) {
-		throw new Error(`Negative ${label} from RPC: ${value}`);
-	}
-	const result = BigInt(value);
-	if (result < BigInt(0) || result > MAX_UINT256) {
-		throw new Error(`${label} out of uint256 range: ${result.toString()}`);
-	}
-	return result;
 };
 
 async function getEip1559GasPricing<ReturnFormat extends DataFormat>(
@@ -53,13 +57,52 @@ async function getEip1559GasPricing<ReturnFormat extends DataFormat>(
 	web3Context: Web3Context<QRLExecutionAPI>,
 	returnFormat: ReturnFormat,
 ): Promise<FormatType<{ maxPriorityFeePerGas?: Numbers; maxFeePerGas?: Numbers }, ReturnFormat>> {
-	const block = await getBlock(web3Context, web3Context.defaultBlock, false, returnFormat);
-
-	const baseFeePerGas = safeBigInt(block.baseFeePerGas as Numbers, 'block.baseFeePerGas');
-	const maxPriorityFeePerGas = safeBigInt(
-		(transaction.maxPriorityFeePerGas ?? web3Context.defaultMaxPriorityFeePerGas) as Numbers,
-		'maxPriorityFeePerGas',
+	const block: unknown = await getBlock(
+		web3Context,
+		web3Context.defaultBlock,
+		false,
+		returnFormat,
 	);
+
+	// The block is node supplied: a missing block or a `baseFeePerGas` that is not a quantity
+	// used to surface as a raw `TypeError`/`SyntaxError` or a plain `Error` (L-26).
+	if (!isObject(block)) {
+		throw invalidResponseError('qrl_getBlockByNumber', 'a block object', block);
+	}
+	const baseFeePerGas = toUint256(block.baseFeePerGas);
+	if (baseFeePerGas === undefined) {
+		throw invalidResponseError(
+			'qrl_getBlockByNumber',
+			'a block with a hex quantity in baseFeePerGas',
+			block.baseFeePerGas,
+		);
+	}
+
+	const requestedMaxPriorityFeePerGas =
+		transaction.maxPriorityFeePerGas ?? web3Context.defaultMaxPriorityFeePerGas;
+	let maxPriorityFeePerGas = toUint256(requestedMaxPriorityFeePerGas);
+	if (maxPriorityFeePerGas === undefined) {
+		throw new InvalidMaxPriorityFeePerGasOrMaxFeePerGas({
+			maxPriorityFeePerGas: requestedMaxPriorityFeePerGas as Numbers | undefined,
+			maxFeePerGas: transaction.maxFeePerGas,
+		});
+	}
+	const maxFeePerGas = toUint256(
+		transaction.maxFeePerGas ?? baseFeePerGas * BigInt(2) + maxPriorityFeePerGas,
+	);
+	if (maxFeePerGas === undefined) {
+		throw new InvalidMaxPriorityFeePerGasOrMaxFeePerGas({
+			maxPriorityFeePerGas,
+			maxFeePerGas:
+				transaction.maxFeePerGas ?? baseFeePerGas * BigInt(2) + maxPriorityFeePerGas,
+		});
+	}
+	// An omitted tip is a default, not permission to exceed the caller's fee cap.
+	if (isNullish(transaction.maxPriorityFeePerGas) && maxPriorityFeePerGas > maxFeePerGas)
+		maxPriorityFeePerGas = maxFeePerGas;
+	if (maxPriorityFeePerGas > maxFeePerGas) {
+		throw new InvalidMaxPriorityFeePerGasOrMaxFeePerGas({ maxPriorityFeePerGas, maxFeePerGas });
+	}
 
 	return {
 		maxPriorityFeePerGas: format(
@@ -67,11 +110,7 @@ async function getEip1559GasPricing<ReturnFormat extends DataFormat>(
 			maxPriorityFeePerGas as Numbers,
 			returnFormat,
 		),
-		maxFeePerGas: format(
-			{ format: 'uint' },
-			(transaction.maxFeePerGas ?? baseFeePerGas * BigInt(2) + maxPriorityFeePerGas) as Numbers,
-			returnFormat,
-		),
+		maxFeePerGas: format({ format: 'uint' }, maxFeePerGas as Numbers, returnFormat),
 	};
 }
 

@@ -315,6 +315,8 @@ function workspaceDirectories(rootDir) {
 function createWeb3Config({ rootDir }) {
 	const workspaceDirs = workspaceDirectories(rootDir);
 	const typedProjects = existingProjects(rootDir, [
+		// Keep strict type checking while resolving the Jest globals used in tests.
+		'tsconfig.eslint.json',
 		'tsconfig.base.json',
 		...workspaceDirs.flatMap(directory => [
 			`${directory}/tsconfig.esm.json`,

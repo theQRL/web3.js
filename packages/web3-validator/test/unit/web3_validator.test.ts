@@ -93,6 +93,15 @@ describe('web3-validator', () => {
 				},
 			);
 
+			// Using "null" value intentionally for validation
+			// eslint-disable-next-line no-null/no-null
+			it.each([['uintt'], ['bytesabc'], ['uint8x'], [null], [5], [undefined]])(
+				'throws a Web3ValidatorError, not a TypeError, for the schema entry %j (L-26)',
+				entry => {
+					expect(() => validator.validate([entry as never], [1])).toThrow(Web3ValidatorError);
+				},
+			);
+
 			it('should add id if empty', () => {
 				expect(
 					validator.validate(
@@ -374,6 +383,18 @@ describe('web3-validator', () => {
 				).toBeUndefined();
 			});
 
+			it.each(['nope', '__proto__', 'constructor', 'toString', 'hasOwnProperty'])(
+				'rejects the unknown format %j with a Web3ValidatorError (L-26, I-11)',
+				format => {
+					expect(() => validator.validateJSONSchema({ format }, 'anything' as unknown as object)).toThrow(
+						Web3ValidatorError,
+					);
+					expect(() => validator.validateJSONSchema({ format }, 'anything' as unknown as object)).toThrow(
+						`Unknown format "${format}"`,
+					);
+				},
+			);
+
 			it('should throw', () => {
 				expect(() => {
 					validator.validateJSONSchema(
@@ -410,5 +431,32 @@ describe('web3-validator', () => {
 				]);
 			});
 		});
+	});
+});
+
+describe('array element types keep their declared size (pass-3 residual)', () => {
+	const validator = new Web3Validator();
+
+	it('rejects bytes32[] elements that are not exactly 32 bytes', () => {
+		expect(() => validator.validate(['bytes32[]'], [['0xabababab']])).toThrow(Web3ValidatorError);
+		expect(() => validator.validate(['bytes32[]'], [[`0x${'ab'.repeat(33)}`]])).toThrow(
+			Web3ValidatorError,
+		);
+		expect(validator.validate(['bytes32[]'], [[`0x${'ab'.repeat(32)}`]])).toBeUndefined();
+	});
+
+	it('rejects uint8[] elements above 255 and validates nested fixed dimensions', () => {
+		expect(() => validator.validate(['uint8[]'], [[300]])).toThrow(Web3ValidatorError);
+		expect(() => validator.validate(['uint8[2][]'], [[[256, 0]]])).toThrow(Web3ValidatorError);
+		expect(validator.validate(['uint8[2][]'], [[[255, 0]]])).toBeUndefined();
+	});
+
+	it('still accepts unsized uint[] elements up to 256 bits', () => {
+		expect(
+			validator.validate(['uint[]'], [[BigInt(2) ** BigInt(256) - BigInt(1)]]),
+		).toBeUndefined();
+		expect(() => validator.validate(['uint[]'], [[BigInt(2) ** BigInt(256)]])).toThrow(
+			Web3ValidatorError,
+		);
 	});
 });

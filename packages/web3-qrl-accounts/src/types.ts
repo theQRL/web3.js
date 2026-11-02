@@ -58,10 +58,8 @@ export interface WebStorage {
 	 */
 	clear(): void;
 	/** Returns the current value associated with the given key, or null if the given key does not exist. */
-	// eslint-disable-next-line @typescript-eslint/ban-types
 	getItem(key: string): string | null;
 	/** Returns the name of the nth key, or null if n is greater than or equal to the number of key/value pairs. */
-	// eslint-disable-next-line @typescript-eslint/ban-types
 	key(index: number): string | null;
 	/**
 	 * Removes the key/value pair with the given key, if a key/value pair with the given key exists.

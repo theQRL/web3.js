@@ -37,6 +37,16 @@ describe('validation', () => {
 				it.each(invalidFilterObjectData)('%s', input => {
 					expect(isFilterObject(input)).toBeFalsy();
 				});
+
+				it('returns false instead of throwing when topics is not an array (L-26)', () => {
+					expect(() => isFilterObject({ topics: 'abc' } as never)).not.toThrow();
+					expect(isFilterObject({ topics: 'abc' } as never)).toBe(false);
+					expect(isFilterObject({ topics: {} } as never)).toBe(false);
+				});
+
+				it('returns false for an array (I-11)', () => {
+					expect(isFilterObject([] as never)).toBe(false);
+				});
 			});
 		});
 	});

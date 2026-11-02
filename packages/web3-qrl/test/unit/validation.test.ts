@@ -27,6 +27,7 @@ import {
 	isTransactionWithSender,
 	validateTransactionCall,
 	validateTransactionWithSender,
+	validateFeeMarketGas,
 } from '../../src/validation';
 import {
 	isAccessListEntryValidData,
@@ -40,6 +41,20 @@ import {
 } from '../fixtures/validation';
 
 describe('validation', () => {
+	it('rejects transaction fees wider than the 256-bit transaction field', () => {
+		const wide = `0x${(BigInt(1) << BigInt(400)).toString(16)}`;
+		expect(() =>
+			validateFeeMarketGas({ gas: '0x5208', maxFeePerGas: wide, maxPriorityFeePerGas: wide }),
+		).toThrow();
+		expect(() =>
+			validateFeeMarketGas({
+				gas: '0x5208',
+				maxFeePerGas: `-${wide}`,
+				maxPriorityFeePerGas: wide,
+			}),
+		).toThrow();
+	});
+
 	describe('isBaseTransaction', () => {
 		it.each(isBaseTransactionValidData)('%s', (input, output) => {
 			expect(isBaseTransaction(input)).toEqual(output);
@@ -93,5 +108,50 @@ describe('validation', () => {
 				}
 			},
 		);
+	});
+
+	describe('type and fee-market fields (pass-4 informational)', () => {
+		const [baseTransaction] = isBaseTransactionValidData[0];
+		const { to } = isTransactionCallValidData[0][0];
+
+		it('isBaseTransaction requires a hex type', () => {
+			expect(isBaseTransaction({ ...baseTransaction, type: '0x2' })).toBe(true);
+			expect(isBaseTransaction({ ...baseTransaction, type: 'ab' } as never)).toBe(false);
+			expect(isBaseTransaction({ ...baseTransaction, type: '02' } as never)).toBe(false);
+		});
+
+		it('isTransactionCall recognises a call that sets a type or the 1559 fields', () => {
+			expect(isTransactionCall({ to, type: '0x2' })).toBe(true);
+			expect(
+				isTransactionCall({
+					to,
+					type: '0x2',
+					maxFeePerGas: '0x1',
+					maxPriorityFeePerGas: '0x1',
+					accessList: [],
+				}),
+			).toBe(true);
+			expect(
+				isTransactionCall({
+					to,
+					type: '0x2',
+					nonce: '0x0',
+					gas: '0x5208',
+					value: '0x1',
+					input: '0x',
+					chainId: '0x1',
+					maxFeePerGas: '0x1',
+					maxPriorityFeePerGas: '0x1',
+					accessList: [],
+				}),
+			).toBe(true);
+		});
+
+		it('isTransactionCall still rejects malformed type and fee-market fields', () => {
+			expect(isTransactionCall({ to, type: 'abc' })).toBe(false);
+			expect(isTransactionCall({ to, maxFeePerGas: 'abc' })).toBe(false);
+			expect(isTransactionCall({ to, maxPriorityFeePerGas: '1' })).toBe(false);
+			expect(isTransactionCall({ to, accessList: 'abc' } as never)).toBe(false);
+		});
 	});
 });

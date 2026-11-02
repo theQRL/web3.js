@@ -173,6 +173,28 @@ describe('Web3SubscriptionManager', () => {
 
 			expect(subManager.subscriptions).toEqual(new Map([['123', sub]]));
 		});
+
+		it('releases the node id when the subscription lost its id while subscribing', async () => {
+			const request = jest.fn().mockResolvedValue(true);
+			requestManager.provider = { on: jest.fn(), request };
+			subManager = new Web3SubscriptionManager(requestManager, subscriptions);
+			jest.spyOn(subManager, 'supportsSubscriptions').mockReturnValue(true);
+			sub = new ExampleSubscription(
+				{ param1: 'param1' },
+				{ subscriptionManager: subManager },
+			);
+			// The node answered, but the subscription was marked unsubscribed meanwhile.
+			jest.spyOn(sub, 'sendSubscriptionRequest').mockResolvedValue('node-id');
+
+			await expect(subManager.addSubscription(sub)).rejects.toThrow(
+				'Subscription is not subscribed yet.',
+			);
+			await new Promise(resolve => setTimeout(resolve, 0));
+			expect(request.mock.calls.map(([payload]: [unknown]) => payload)).toContainEqual(
+				expect.objectContaining({ method: 'qrl_unsubscribe', params: ['node-id'] }),
+			);
+			expect(subManager.subscriptions.size).toBe(0);
+		});
 	});
 
 	describe('removeSubscription', () => {
@@ -190,12 +212,12 @@ describe('Web3SubscriptionManager', () => {
 			await subManager.addSubscription(sub);
 		});
 
-		it('should throw error if a subscription id does not exists', async () => {
+		it('cancels an owned subscription without a current node id', async () => {
 			delete (sub as any).id;
 
-			await expect(subManager.removeSubscription(sub)).rejects.toThrow(
-				'Subscription is not subscribed yet.',
-			);
+			await expect(subManager.removeSubscription(sub)).resolves.toBeUndefined();
+			expect(subManager.hasSubscription(sub)).toBe(false);
+			expect(subManager.subscriptions.size).toBe(0);
 		});
 
 		it('should throw error if a subscription does not exists', async () => {

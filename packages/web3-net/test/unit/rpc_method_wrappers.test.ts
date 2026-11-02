@@ -58,8 +58,23 @@ describe('rpc_method_wrappers', () => {
 		});
 
 		it('isListening', async () => {
-			await isListening(web3Net);
+			// The wrapper validates the reply (L-40), so the mocked node answers with a boolean.
+			(netRpcMethods.isListening as jest.Mock).mockResolvedValueOnce(true);
+			await expect(isListening(web3Net)).resolves.toBe(true);
 			expect(netRpcMethods.isListening).toHaveBeenCalledWith(web3Net.requestManager);
 		});
 	});
+});
+
+// eslint-disable-next-line no-null/no-null -- exercise the public nullish format contract
+test.each([undefined, null])('normalizes the nullish return format %s', async returnFormat => {
+	const net = new Net();
+	(netRpcMethods.getId as jest.Mock).mockResolvedValue('17');
+	(netRpcMethods.getPeerCount as jest.Mock).mockResolvedValue('0x11');
+	expect(await getId(net, returnFormat as never)).toBe(BigInt(17));
+	expect(await getPeerCount(net, returnFormat as never)).toBe(BigInt(17));
+});
+test('refuses oversized decimal network quantities', async () => {
+	(netRpcMethods.getId as jest.Mock).mockResolvedValue('9'.repeat(1024 * 1024));
+	await expect(getId(new Net(), undefined as never)).rejects.toThrow(/Invalid/);
 });

@@ -33,7 +33,7 @@ Actually, the provider could be any of the following:
 -   An instance of [HttpProvider](/api/@theqrl/web3-providers-http/classes/HttpProvider)
 -   An instance of [WebSocketProvider](/api/@theqrl/web3-providers-ws/classes/WebSocketProvider)
 -   An instance of [IpcProvider](/api/@theqrl/web3-providers-ipc/classes/IpcProvider)
--   A string containing string url for `http`/`https` or `ws`/`wss` protocol. And when a string is passed, an instance of the compatible class above will be created accordingly. ex. WebSocketProvider instance will be created for string containing `ws` or `wss`. And you access this instance by calling `web3.provider` to read the provider and possibly register an event listener.
+-   A string containing string url for `http`/`https` or `ws`/`wss` protocol. And when a string is passed, an instance of the compatible class above will be created accordingly. ex. WebSocketProvider instance will be created for string containing `ws` or `wss`. And you access this instance by calling `web3.provider` to read the provider and possibly register an event listener. Only HTTP(S) and WS(S) URLs are auto-detected: an IPC socket path is not, so an `IpcProvider` must always be constructed explicitly (see the [Local Gqrl Node](#local-gqrl-node) example).
 -   Any provider object that adheres to [EIP-1193](https://eips.ethereum.org/EIPS/eip-1193) and speaks QRL-compatible JSON-RPC.
 
 For both [WebSocketProvider](/api/@theqrl/web3-providers-ws/classes/WebSocketProvider) and [IpcProvider](/api/@theqrl/web3-providers-ipc/classes/IpcProvider) the user can listen to emitted events. More on this is at [Providers Events Listening](events_listening).
@@ -49,14 +49,13 @@ There are multiple ways to set the provider.
 ```ts title='Setting a provider'
 web3.setProvider(myProvider);
 web3.qrl.setProvider(myProvider);
-web3.Contract.setProvider(myProvider);
 contractInstance.setProvider(myProvider);
 ```
 
 The key rule for setting provider is as follows:
 
-1. Any provider set on the higher level will be applied to all lower levels. e.g. Any provider set using `web3.setProvider` will also be applied to `web3.qrl` object.
-2. For contracts `web3.Contract.setProvider` can be used to set provider for **all instances** of contracts created by `web3.qrl.Contract`.
+1. Any provider set on the higher level will be applied to all lower levels. e.g. Any provider set using `web3.setProvider` will also be applied to the `web3.qrl` object and to the contracts created with `new web3.qrl.Contract(...)`, because they share the `web3` context.
+2. A single contract instance can be given its own provider with `contractInstance.setProvider(myProvider)`. There is no static `Contract.setProvider`: a provider is set either on an instance or on the `web3` context it was created from.
 
 ---
 
@@ -74,17 +73,23 @@ const web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:8545'));
 web3.setProvider('ws://localhost:8546');
 // or
 web3.setProvider(new Web3.providers.WebsocketProvider('ws://localhost:8546'));
+```
 
-// Using the IPC provider in node.js
-const net = require('net');
-const web3 = new Web3('/Users/myuser/Library/QRL/Execution/gqrl.ipc', net); // mac os path
-// or
-const web3 = new Web3(
-	new Web3.providers.IpcProvider('/Users/myuser/Library/QRL/Execution/gqrl.ipc', net),
-); // mac os path
+The IPC transport is a separate, Node.js-only package (`@theqrl/web3-providers-ipc`) and is never created from a string. `Web3.providers` only lists `HttpProvider` and `WebsocketProvider`; construct the `IpcProvider` yourself and pass the instance:
+
+```ts
+const { Web3 } = require('@theqrl/web3');
+const { IpcProvider } = require('@theqrl/web3-providers-ipc');
+
+const web3 = new Web3(new IpcProvider('/Users/myuser/Library/QRL/Execution/gqrl.ipc')); // mac os path
 // on windows the path is: "\\\\.\\pipe\\gqrl.ipc"
 // on linux the path is: "/users/myuser/.qrl/execution/gqrl.ipc"
+
+// the same instance can be set later
+web3.setProvider(new IpcProvider('/users/myuser/.qrl/execution/gqrl.ipc'));
 ```
+
+The socket is opened with Node's `net` module internally; nothing else needs to be passed. Browser bundles cannot use the IPC provider: the runtime packages are bundler-safe (they load no Node built-in modules), and `@theqrl/web3-providers-ipc` is the one package that intentionally depends on Node.
 
 ### Remote Node Provider
 
@@ -324,3 +329,80 @@ provider.on('error', error => {
 	}
 });
 ```
+
+## Response structure limits
+
+HTTP, WebSocket and IPC responses are bounded before `JSON.parse`, including HTTP
+error bodies. `maxResponseBytes` defaults to 10 MiB and counts UTF-8 bytes on all
+three transports, including multibyte text and split IPC chunks. HTTP counts
+response-body bytes; sockets count the UTF-8 size of decoded text. Invalid UTF-8
+bytes replaced with U+FFFD can therefore count up to three times on sockets.
+`maxResponseDepth` defaults to
+4096 and accepts a positive safe integer; this accommodates a complete 1024-frame
+call trace with its JSON wrapper. HTTP accepts these in its second constructor
+argument; WebSocket and IPC accept them in the fourth (`providerOptions`).
+
+Each message may contain at most `max(1024, floor(maxResponseBytes / 16))` object
+and array containers (655,360 at the default byte limit), including empty ones.
+This heuristic allows dense struct-logger traces with empty memory arrays near
+the byte limit while bounding allocations for container-heavy payloads. Container and depth
+violations raise `InvalidResponseError`; byte violations raise
+`ResponseTooLargeError`. Socket parsers discard the offending message and can
+process the following message. Identifiable response ids are failed individually;
+without an identifiable id, pending requests may all fail.
+
+The byte limit is not a heap allowance. Text, transport buffers, parsed strings,
+arrays and objects coexist, and concurrent replies multiply memory use. The
+container budget rejects the measured roughly 30× structural allocation attack,
+but key-dense objects still used about 14× their response text size (132 MiB for a
+10 MiB reply). Container/number-dense cases used about 4×; the previously measured
+50 MiB empty-container case was not a worst-case bound for all JSON shapes.
+
+Plan at least `15 × maxResponseBytes × concurrent replies` of heap, plus headroom
+for text, transport buffers and your application. These measurements are sizing
+guidance, not a guaranteed upper bound. Use lower byte limits and concurrency for
+small heaps and browsers. Raising `maxResponseDepth` or the byte limit raises the
+work and allocation a peer can impose.
+
+Socket `maxInFlightRequests` counts request ids, so every batch entry consumes a
+slot. Notifications coalesced with a subscription acknowledgement are parked until
+a zero-delay timer runs; they have no item-count cap. The manager also retains
+that acknowledged burst when a custom `request()` wrapper delays promise
+completion. Delivery stays ordered within each subscription, and cancellation
+removes its provider-parked items. A cancelled registration's manager-retained burst
+can remain until the in-flight registration count reaches zero. Unknown ids share
+a separate 128-item / 1,048,576 UTF-16-code-unit budget, measured with
+`JSON.stringify(notification).length`; retained acknowledged bursts consume neither
+allowance. Changing providers or connections, clearing or disposing the manager stops an active
+flush before it can deliver or retain any more notifications from that generation.
+
+Custom providers may expose `isSubscriptionAcknowledged(id): boolean`. Return
+`true` only for an id acknowledged by an outstanding `qrl_subscribe` request while
+dispatching its initial notifications, and clear that state on disconnect/reset.
+The manager trusts this signal to bypass both registration limits; a provider
+that returns `true` for arbitrary ids removes those bounds. Socket providers
+park notifications until a zero-delay timer runs (at least 1 ms in Node), keep
+the acknowledgement during that flush, then clear it. Providers without this
+method use the bounded unknown-id buffer.
+
+`assertRpcResult(method, value, schema, path?)`, exported by `@theqrl/web3-qrl`,
+checks known result fields before formatting. Unknown and absent fields are
+ignored; callers must require identity fields separately. Null requires a
+nullable schema, a null alternative, or the declared `nullableWhen` condition.
+The optional `path` labels nested validation errors and defaults to `result`.
+
+Both `getLogs` and raw `logs` subscriptions check returned addresses and positional
+topics against the requested filter before formatting. A mismatching subscription
+notification reports `InvalidResponseError` through the subscription's error path.
+
+Transaction confirmation events report the confirming block’s own hash in
+`latestBlockHash`; confirmation one uses the receipt’s block hash. This applies
+to both polling and subscriptions.
+
+Raw `logs` subscriptions copy their options, including address lists and nested
+topic alternatives, before registration. Mutating the original options does not
+change replay, live matching or resubscription. Null or non-object options raise
+`SubscriptionError` before a node subscription is created. Numeric `fromBlock`
+and `toBlock` values are sent as hex quantities. Only numeric `fromBlock` values
+trigger historical backfill; `latest` and `earliest` are live-only, and go-qrl
+refuses `pending`, `safe` and `finalized` for log subscriptions.

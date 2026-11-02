@@ -43,7 +43,8 @@ describe('getBlockTransactionCount', () => {
 		`should call rpcMethods.getBlock with expected parameters\nTitle: %s\nInput parameters: %s\n`,
 		async (_, inputParameters) => {
 			const [inputBlock] = inputParameters;
-			const inputBlockIsBytes = isBytes(inputBlock as Bytes);
+			// Only a 32-byte value is a block hash (P4-L-11).
+			const inputBlockIsBytes = isBytes(inputBlock as Bytes, { size: 32 });
 
 			let inputBlockFormatted;
 
@@ -55,6 +56,12 @@ describe('getBlockTransactionCount', () => {
 				inputBlockFormatted = format({ format: 'uint' }, inputBlock, QRL_DATA_FORMAT);
 			}
 
+			(qrlRpcMethods.getBlockTransactionCountByHash as jest.Mock).mockResolvedValueOnce(
+				mockRpcResponse,
+			);
+			(qrlRpcMethods.getBlockTransactionCountByNumber as jest.Mock).mockResolvedValueOnce(
+				mockRpcResponse,
+			);
 			await getBlockTransactionCount(web3Context, ...inputParameters, DEFAULT_RETURN_FORMAT);
 			expect(
 				inputBlockIsBytes
@@ -74,7 +81,8 @@ describe('getBlockTransactionCount', () => {
 				mockRpcResponse,
 				expectedReturnFormat,
 			);
-			const inputBlockIsBytes = isBytes(inputBlock as Bytes);
+			// Only a 32-byte value is a block hash (P4-L-11).
+			const inputBlockIsBytes = isBytes(inputBlock as Bytes, { size: 32 });
 			(
 				(inputBlockIsBytes
 					? qrlRpcMethods.getBlockTransactionCountByHash

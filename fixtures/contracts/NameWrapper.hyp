@@ -1,0 +1,16 @@
+// SPDX-License-Identifier: MIT
+pragma hyperion >=0.0;
+
+// VM64 fixture port of ens-contracts d9e260dcb87843c6b0161be019aeb55e2da6ef5d.
+
+// resolvers/mocks/DummyNameWrapper.sol
+/**
+ * @dev Implements a dummy NameWrapper which returns the caller's address
+ */
+contract NameWrapper {
+    function ownerOf(
+        uint256 /* id */
+    ) public view returns (address) {
+        return tx.origin;
+    }
+}

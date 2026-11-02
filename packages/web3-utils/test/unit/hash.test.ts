@@ -18,12 +18,20 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import { keccak256 as qrlKeccak256 } from '@theqrl/qrl-cryptography/keccak.js';
 import { bytesToHex, utf8ToBytes } from '@theqrl/qrl-cryptography/utils.js';
 import {
+	InvalidBytesError,
+	InvalidNumberError,
+	InvalidSizeError,
+	InvalidTypeError,
+} from '@theqrl/web3-errors';
+import { Web3ValidatorError } from '@theqrl/web3-validator';
+import {
 	sha3,
 	sha3Raw,
 	hyperionSha3,
 	hyperionSha3Raw,
 	encodePacked,
 	keccak256 as web3keccak256,
+	getStorageSlotNumForLongString,
 } from '../../src/hash';
 import {
 	sha3Data,
@@ -112,6 +120,41 @@ describe('hash', () => {
 				expect(encodePacked(...input)).toEqual(output);
 			});
 		});
+		describe.each(['[]', '[2]'])('array padding for %s', suffix => {
+			it.each(['bool', 'boolean'])('left-pads %s elements to 64 bytes', type => {
+				const arg = { type: `${type}${suffix}`, value: [true, false] };
+				const expected = `0x${'00'.repeat(63)}01${'00'.repeat(64)}`;
+
+				expect(encodePacked(arg)).toBe(expected);
+				expect(hyperionSha3(arg)).toBe(web3keccak256(expected));
+				expect(hyperionSha3Raw(arg)).toBe(web3keccak256(expected));
+				expect(encodePacked({ type, value: true }, { type, value: false })).toBe('0x0100');
+			});
+
+			it.each([1, 2, 4, 32, 63, 64])('right-pads bytes%i elements to 64 bytes', size => {
+				const first = '12'.repeat(size);
+				const second = '34'.repeat(size);
+				const type = `bytes${size}`;
+				const arg = { type: `${type}${suffix}`, value: [`0x${first}`, `0x${second}`] };
+				const expected = `0x${first}${'00'.repeat(64 - size)}${second}${'00'.repeat(64 - size)}`;
+
+				expect(encodePacked(arg)).toBe(expected);
+				expect(hyperionSha3(arg)).toBe(web3keccak256(expected));
+				expect(hyperionSha3Raw(arg)).toBe(web3keccak256(expected));
+				expect(
+					encodePacked({ type, value: `0x${first}` }, { type, value: `0x${second}` }),
+				).toBe(`0x${first}${second}`);
+			});
+		});
+		it.each(['bool[]', 'boolean[]', 'bytes1[]', 'bytes64[]'])(
+			'keeps empty %s arrays empty',
+			type => {
+				const arg = { type, value: [] };
+				expect(encodePacked(arg)).toBe('0x');
+				expect(hyperionSha3(arg)).toBeUndefined();
+				expect(hyperionSha3Raw(arg)).toBe(web3keccak256('0x'));
+			},
+		);
 		describe('invalid cases', () => {
 			it.each(encodePackedInvalidData)('%s', (input, output) => {
 				expect(() => encodePacked(input)).toThrow(output);
@@ -123,6 +166,25 @@ describe('hash', () => {
 			it.each(keccak256ValidData)('%s', (input, output) => {
 				expect(web3keccak256(input)).toEqual(output);
 			});
+		});
+	});
+
+	describe('getStorageSlotNumForLongString', () => {
+		it.each([1, '1'])('hashes slot %s as a 64-byte VM word', slot => {
+			expect(getStorageSlotNumForLongString(slot)).toBe(
+				'0xa6eef7e35abe7026729641147f7915573c7e97b47efa546f5f6e3230263bcb49',
+			);
+		});
+
+		// Multi-digit numeric slots: the pre-image is hex, so slot 10 must hash 0x0a (not
+		// decimal text "10" read as 0x10). String slots are hex, so 'a' equals numeric 10.
+		it.each([
+			[10, '0x13da86008ba1c6922daee3e07db95305ef49ebced9f5467a0b8613fcc6b343e3'],
+			['a', '0x13da86008ba1c6922daee3e07db95305ef49ebced9f5467a0b8613fcc6b343e3'],
+			[255, '0x03d616f3758432b4d7452e2e9011612152589bfc903ce751686613c478b2af5f'],
+			['ff', '0x03d616f3758432b4d7452e2e9011612152589bfc903ce751686613c478b2af5f'],
+		])('hashes multi-digit slot %s from a hex pre-image', (slot, expected) => {
+			expect(getStorageSlotNumForLongString(slot)).toBe(expected);
 		});
 	});
 
@@ -153,6 +215,72 @@ describe('hash', () => {
 		describe('BigInt hyperionSha3', () => {
 			it.each(hyperionSha3BigIntValidData)('%s', (input, output) => {
 				expect(hyperionSha3(...input)).toEqual(output);
+			});
+		});
+	});
+
+	describe('third audit pass regressions', () => {
+		it('packs a bytes64 word with the top bit set (L-29)', () => {
+			const word = `0x80${'00'.repeat(63)}`;
+			expect(encodePacked({ t: 'bytes64', v: word })).toBe(word);
+			expect(hyperionSha3({ t: 'bytes64', v: word })).toBe(web3keccak256(word));
+			expect(encodePacked({ t: 'bytes64', v: `0x${'ff'.repeat(64)}` })).toBe(`0x${'ff'.repeat(64)}`);
+		});
+
+		it('rejects non-hex dynamic bytes instead of packing them verbatim (L-29)', () => {
+			expect(() => encodePacked({ t: 'bytes', v: 'zz' })).toThrow(InvalidBytesError);
+			expect(() => encodePacked({ t: 'bytes32', v: '0xzz' })).toThrow(InvalidBytesError);
+		});
+
+		it('accepts an uppercase prefix and byte arrays for bytes', () => {
+			expect(encodePacked({ t: 'bytes', v: '0X12' })).toBe('0x12');
+			expect(encodePacked({ t: 'bytes', v: new Uint8Array([1, 2]) as never })).toBe('0x0102');
+		});
+
+		it('rejects an unknown type instead of packing nothing (L-29)', () => {
+			expect(() => encodePacked({ t: 'foo', v: 1 })).toThrow(InvalidTypeError);
+		});
+
+		it('enforces a declared array size (L-29)', () => {
+			expect(() => encodePacked({ t: 'uint8[2]', v: [1, 2, 3] })).toThrow(InvalidSizeError);
+			expect(encodePacked({ t: 'uint8[2]', v: [1, 2] })).toHaveLength(2 + 2 * 128);
+			expect(() => encodePacked({ t: 'uint8[]', v: 5 })).toThrow(InvalidTypeError);
+		});
+
+		it('hashes a 0x-prefixed storage slot as a number (L-29)', () => {
+			expect(getStorageSlotNumForLongString('0x1')).toBe(getStorageSlotNumForLongString(1));
+			expect(getStorageSlotNumForLongString('0xff')).toBe(getStorageSlotNumForLongString(255));
+			expect(() => getStorageSlotNumForLongString('zz')).toThrow(InvalidNumberError);
+			expect(() => getStorageSlotNumForLongString(-1)).toThrow(InvalidNumberError);
+			expect(() => getStorageSlotNumForLongString(1.5)).toThrow(InvalidNumberError);
+		});
+
+		it('throws typed errors for a non-bytes input to sha3 and a digitless uint (L-26)', () => {
+			expect(() => sha3(123 as never)).toThrow(Web3ValidatorError);
+			expect(() => hyperionSha3({ t: 'uint', v: '0x' })).toThrow(InvalidNumberError);
+			expect(() => encodePacked({ t: 'uint', v: 'abc' })).toThrow(InvalidNumberError);
+		});
+
+		describe('string hashing rule shared by sha3, sha3Raw and keccak256 (M-11, I-11)', () => {
+			it('decodes a 0x/0X-prefixed hex string as bytes', () => {
+				const asBytes = web3keccak256(new Uint8Array([0x12, 0x34]));
+				expect(sha3('0x1234')).toBe(asBytes);
+				expect(sha3('0X1234')).toBe(asBytes);
+				expect(sha3Raw('0X1234')).toBe(asBytes);
+				expect(web3keccak256('0X1234')).toBe(asBytes);
+			});
+
+			it('hashes a signed hex string and hex-looking text as UTF-8 text', () => {
+				const signed = web3keccak256(utf8ToBytes('-0x12'));
+				expect(sha3('-0x12')).toBe(signed);
+				expect(sha3Raw('-0x12')).toBe(signed);
+				expect(web3keccak256('-0x12')).toBe(signed);
+				expect(sha3('0xzz')).toBe(web3keccak256(utf8ToBytes('0xzz')));
+			});
+
+			it('documents the collision the rule implies for hex-looking labels', () => {
+				expect(sha3Raw('0x6162')).toBe(sha3Raw('ab'));
+				expect(sha3Raw(utf8ToBytes('0x6162'))).not.toBe(sha3Raw('ab'));
 			});
 		});
 	});

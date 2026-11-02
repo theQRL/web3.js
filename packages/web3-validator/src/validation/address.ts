@@ -19,7 +19,9 @@ import { shake256 } from '@theqrl/qrl-cryptography/keccak.js';
 import { bytesToHex, utf8ToBytes } from '@theqrl/qrl-cryptography/utils.js';
 
 const QRL_ADDRESS_HEX_LENGTH = 128;
-const QRL_ADDRESS_REGEX = /^Q[0-9a-f]{128}$/i;
+// The prefix is a capital `Q`, exactly as go-qrl's `hasQPrefix` requires: with the `i` flag a
+// lowercase `q` passed every address check here while every node rejected it (P4-L-44).
+const QRL_ADDRESS_REGEX = /^Q[0-9a-fA-F]{128}$/;
 const QRL_CHECKSUM_BITS = 512;
 
 /**

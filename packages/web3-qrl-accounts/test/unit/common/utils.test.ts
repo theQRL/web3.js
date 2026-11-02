@@ -69,7 +69,6 @@ describe('[Utils/Parse]', () => {
 		});
 		expect(common.hardforks().map(hf => hf.name)).toEqual(['zond']);
 		for (const hf of common.hardforks()) {
-			/* eslint-disable @typescript-eslint/no-use-before-define */
 			expect(hf.forkHash).toEqual(kilnForkHashes[hf.name]);
 		}
 

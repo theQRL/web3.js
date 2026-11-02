@@ -34,14 +34,24 @@ export const DEFAULT_CONNECTION_TIMEOUT = 30_000;
 export const DEFAULT_REQUEST_TIMEOUT = 120_000;
 
 /**
- * Default bound on decoded response bytes accepted from a node (10 MiB).
+ * Default bound on UTF-8 response bytes accepted from a node (10 MiB).
  */
 export const DEFAULT_MAX_RESPONSE_BYTES = 10 * 1024 * 1024;
+
+/** Allows a complete 1024-call-frame trace, including its JSON wrapper. */
+export const DEFAULT_MAX_RESPONSE_DEPTH = 4096;
 
 /**
  * Default bound on combined pending + sent request IDs outstanding per provider.
  */
 export const DEFAULT_MAX_IN_FLIGHT_REQUESTS = 256;
+
+/**
+ * The longest delay a JavaScript timer can hold: 2^31 - 1 milliseconds (about 24.8 days).
+ * Node and browsers silently clamp a longer `setTimeout` delay to 1 ms, so a timeout above
+ * this value would fire immediately instead of "never" (P4-L-5).
+ */
+export const MAX_TIMER_DELAY_MS = 2_147_483_647;
 
 /**
  * Constructor-level bounds shared by the HTTP and socket (WebSocket / IPC) providers.
@@ -62,13 +72,28 @@ export interface ProviderBoundsOptions {
 	 */
 	requestTimeout?: number;
 	/**
-	 * Maximum decoded response bytes accepted from the node.
+	 * Maximum UTF-8 response bytes accepted from the node, at most 536,870,888.
+	 * HTTP counts response-body bytes; sockets count decoded text re-encoded as UTF-8.
+	 * Invalid socket bytes replaced by U+FFFD can count up to three times their wire size.
+	 * This is not a heap limit: decoded text, transport buffers and parsed values coexist.
+	 * Before parsing, responses are limited to max(1024, floor(maxResponseBytes / 16))
+	 * object/array containers, including empty ones. This heuristic leaves room for dense
+	 * struct-logger traces with empty memory arrays while rejecting structural payloads
+	 * that can otherwise allocate roughly 30 times their text size. Key-dense objects still
+	 * used about 14 times their text size in the audit; container/number-dense cases about
+	 * 4 times. Plan at least 15 * maxResponseBytes * concurrent replies of heap, plus text,
+	 * transport and application headroom. These are measurements, not an upper bound;
+	 * lower byte limits and concurrency on small heaps, especially in browsers.
 	 * @defaultValue {@link DEFAULT_MAX_RESPONSE_BYTES} (10 MiB)
 	 */
 	maxResponseBytes?: number;
+	/** Maximum JSON object/array nesting before parsing. Must be a positive safe integer.
+	 * @defaultValue 4096
+	 */
+	maxResponseDepth?: number;
 	/**
-	 * Maximum combined pending + sent requests outstanding per provider.
-	 * Currently enforced by the socket providers only.
+	 * Maximum combined pending + sent request IDs outstanding per provider.
+	 * Each entry in a batch counts separately. Enforced by socket providers only.
 	 * @defaultValue {@link DEFAULT_MAX_IN_FLIGHT_REQUESTS} (256)
 	 */
 	maxInFlightRequests?: number;
@@ -96,9 +121,10 @@ export interface RequestBoundsOptions {
 /**
  * Validates a timeout option.
  *
- * Rejects `Infinity`, `NaN`, non-numbers and non-positive values. Notably there is no
- * "infinite" or "disabled" opt-out: a caller that wants a long deadline must name a
- * finite one, so a request can never hang forever by configuration.
+ * Rejects `Infinity`, `NaN`, non-numbers, non-positive values and values above
+ * {@link MAX_TIMER_DELAY_MS}, which a JavaScript timer cannot hold (it would fire after 1 ms
+ * instead, P4-L-5). Notably there is no "infinite" or "disabled" opt-out: a caller that wants a
+ * long deadline must name a finite one, so a request can never hang forever by configuration.
  *
  * @param value - the candidate timeout in milliseconds
  * @param optionName - the option name, used in the error message
@@ -113,6 +139,14 @@ export const validateTimeout = (value: number, optionName: string): number => {
 		);
 	}
 
+	if (value > MAX_TIMER_DELAY_MS) {
+		throw new ProviderError(
+			`Invalid ${optionName}: ${String(
+				value,
+			)} ms exceeds the longest delay a timer can hold (${MAX_TIMER_DELAY_MS} ms, about 24.8 days); a longer value would fire after 1 ms.`,
+		);
+	}
+
 	return value;
 };
 
@@ -124,12 +158,23 @@ export const validateTimeout = (value: number, optionName: string): number => {
  * @returns the validated bound
  */
 export const validatePositiveInteger = (value: number, optionName: string): number => {
-	if (typeof value !== 'number' || !Number.isInteger(value) || value <= 0) {
+	if (typeof value !== 'number' || !Number.isSafeInteger(value) || value <= 0) {
 		throw new ProviderError(
 			`Invalid ${optionName}: expected a positive integer, got ${String(value)}.`,
 		);
 	}
 
+	return value;
+};
+
+/** Maximum decoded response size supported by the JavaScript string parser. */
+export const MAX_RESPONSE_BYTES = 536_870_888;
+
+export const validateMaxResponseBytes = (value: number): number => {
+	validatePositiveInteger(value, 'maxResponseBytes');
+	if (value > MAX_RESPONSE_BYTES) {
+		throw new ProviderError(`Invalid maxResponseBytes: must not exceed ${MAX_RESPONSE_BYTES}.`);
+	}
 	return value;
 };
 
@@ -142,9 +187,7 @@ export const validatePositiveInteger = (value: number, optionName: string): numb
  * @param options - user-supplied bounds, if any
  * @returns every bound resolved to a validated value
  */
-export const resolveProviderBounds = (
-	options?: ProviderBoundsOptions,
-): ResolvedProviderBounds => ({
+export const resolveProviderBounds = (options?: ProviderBoundsOptions): ResolvedProviderBounds => ({
 	connectionTimeout: validateTimeout(
 		options?.connectionTimeout ?? DEFAULT_CONNECTION_TIMEOUT,
 		'connectionTimeout',
@@ -153,9 +196,12 @@ export const resolveProviderBounds = (
 		options?.requestTimeout ?? DEFAULT_REQUEST_TIMEOUT,
 		'requestTimeout',
 	),
-	maxResponseBytes: validatePositiveInteger(
+	maxResponseBytes: validateMaxResponseBytes(
 		options?.maxResponseBytes ?? DEFAULT_MAX_RESPONSE_BYTES,
-		'maxResponseBytes',
+	),
+	maxResponseDepth: validatePositiveInteger(
+		options?.maxResponseDepth ?? DEFAULT_MAX_RESPONSE_DEPTH,
+		'maxResponseDepth',
 	),
 	maxInFlightRequests: validatePositiveInteger(
 		options?.maxInFlightRequests ?? DEFAULT_MAX_IN_FLIGHT_REQUESTS,

@@ -1,4 +1,4 @@
-﻿/*
+/*
 This file is part of web3.js.
 
 web3.js is free software: you can redistribute it and/or modify
@@ -15,11 +15,15 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { Numbers, HexString, BlockNumberOrTag, Common } from '@theqrl/web3-types';
-import { ConfigHardforkMismatchError, ConfigChainMismatchError } from '@theqrl/web3-errors';
-import { isNullish, toHex } from '@theqrl/web3-utils';
+import { Numbers, HexString, BlockNumberOrTag, BlockTags, Common } from '@theqrl/web3-types';
+import {
+	BaseWeb3Error,
+	ConfigHardforkMismatchError,
+	ConfigChainMismatchError,
+	InvalidMethodParamsError,
+} from '@theqrl/web3-errors';
+import { isNullish, MAX_TIMER_DELAY_MS, toHex } from '@theqrl/web3-utils';
 import { TransactionTypeParser } from './types.js';
-// eslint-disable-next-line import/no-cycle
 import { TransactionBuilder } from './web3_context.js';
 import { Web3EventEmitter } from './web3_event_emitter.js';
 
@@ -58,52 +62,280 @@ type ConfigEvent<T, P extends keyof T = keyof T> = P extends unknown
 	? { name: P; oldValue: T[P]; newValue: T[P] }
 	: never;
 
+/** The payload of a {@link Web3ConfigEvent.CONFIG_CHANGE} event. */
+export type Web3ConfigChangeEvent = ConfigEvent<Web3ConfigOptions>;
+
 export enum Web3ConfigEvent {
 	CONFIG_CHANGE = 'CONFIG_CHANGE',
 }
 
+const createDefaultConfig = (): Web3ConfigOptions => ({
+	handleRevert: false,
+	defaultAccount: undefined,
+	defaultBlock: 'latest',
+	transactionBlockTimeout: 50,
+	transactionConfirmationBlocks: 24,
+	transactionPollingInterval: 1000,
+	transactionPollingTimeout: 750 * 1000,
+	transactionReceiptPollingInterval: undefined,
+	transactionSendTimeout: 750 * 1000,
+	transactionConfirmationPollingInterval: undefined,
+	blockHeaderTimeout: 10,
+	maxListenersWarningThreshold: 100,
+	contractDataInputFill: 'input',
+	defaultNetworkId: undefined,
+	defaultChain: 'mainnet',
+	defaultHardfork: 'zond',
+	// TODO - Check if there is a default Common
+	defaultCommon: undefined,
+	defaultTransactionType: '0x2',
+	defaultMaxPriorityFeePerGas: toHex(2500000000),
+	enableExperimentalFeatures: {
+		useSubscriptionWhenCheckingBlockTimeout: false,
+		useRpcCallSpecification: false,
+	},
+	transactionBuilder: undefined,
+	transactionTypeParser: undefined,
+});
+
+const CONFIG_KEYS: ReadonlySet<string> = new Set(Object.keys(createDefaultConfig()));
+const BLOCK_TAGS: ReadonlySet<string> = new Set(Object.values(BlockTags));
+const CONTRACT_DATA_INPUT_FILL_VALUES: ReadonlySet<string> = new Set(['data', 'input', 'both']);
+const EXPERIMENTAL_FEATURE_FLAGS = [
+	'useSubscriptionWhenCheckingBlockTimeout',
+	'useRpcCallSpecification',
+] as const;
+
+const isPlainObject = (value: unknown): value is Record<string, unknown> =>
+	typeof value === 'object' && !isNullish(value) && !Array.isArray(value);
+
+// A positive number of milliseconds a JavaScript timer can hold: above 2^31 - 1 ms the
+// platform clamps the delay to 1 ms, so a "never time out" value timed out at once (P4-L-5).
+const isPositiveNumber = (value: unknown): boolean =>
+	typeof value === 'number' && Number.isFinite(value) && value > 0 && value <= MAX_TIMER_DELAY_MS;
+
+// The same bound for an option counted in seconds (`blockHeaderTimeout` is multiplied by 1000).
+const isPositiveSeconds = (value: unknown): boolean =>
+	typeof value === 'number' &&
+	Number.isFinite(value) &&
+	value > 0 &&
+	value * 1000 <= MAX_TIMER_DELAY_MS;
+
+const isNonNegativeInteger = (value: unknown): boolean =>
+	typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
+
+/** A `Numbers` value that is a non-negative integer: a safe integer, a bigint, a decimal or a hex string. */
+const isUnsignedNumberLike = (value: unknown): boolean =>
+	isNonNegativeInteger(value) ||
+	(typeof value === 'bigint' && value >= BigInt(0)) ||
+	(typeof value === 'string' && /^(0x[0-9a-f]+|[0-9]+)$/i.test(value));
+
+const isBlockNumberOrTag = (value: unknown): boolean =>
+	(typeof value === 'string' && BLOCK_TAGS.has(value)) || isUnsignedNumberLike(value);
+
+/** Format check only (capital `Q` + 128 hex digits, as go-qrl requires); the checksum is verified where the address is used. */
+const isAddressLike = (value: unknown): boolean =>
+	typeof value === 'string' && /^Q[0-9a-fA-F]{128}$/.test(value);
+
+const describeValue = (value: unknown): string => {
+	const text = BaseWeb3Error.convertToString(value);
+	return text.length > 64 ? `${text.slice(0, 64)}...` : text;
+};
+
+/**
+ * What every configuration option accepts. The setters and {@link Web3Config.setConfig}
+ * check a value against its rule before anything is stored or emitted (L-39, I-14).
+ */
+const CONFIG_RULES: {
+	[K in keyof Web3ConfigOptions]-?: { expected: string; test: (value: unknown) => boolean };
+} = {
+	handleRevert: { expected: 'a boolean', test: value => typeof value === 'boolean' },
+	defaultAccount: {
+		expected: 'undefined or a QRL address',
+		test: value => value === undefined || isAddressLike(value),
+	},
+	defaultBlock: {
+		expected: 'a block tag (earliest, latest, pending, safe, finalized) or a block number',
+		test: isBlockNumberOrTag,
+	},
+	transactionSendTimeout: {
+		expected: 'a positive number of milliseconds',
+		test: isPositiveNumber,
+	},
+	transactionBlockTimeout: {
+		expected: 'a positive integer number of blocks',
+		test: value => isNonNegativeInteger(value) && (value as number) > 0,
+	},
+	transactionConfirmationBlocks: {
+		expected: 'a non-negative integer number of blocks',
+		test: isNonNegativeInteger,
+	},
+	transactionPollingInterval: {
+		expected: 'a positive number of milliseconds',
+		test: isPositiveNumber,
+	},
+	transactionPollingTimeout: {
+		expected: 'a positive number of milliseconds',
+		test: isPositiveNumber,
+	},
+	transactionReceiptPollingInterval: {
+		expected: 'undefined or a positive number of milliseconds',
+		test: value => value === undefined || isPositiveNumber(value),
+	},
+	transactionConfirmationPollingInterval: {
+		expected: 'undefined or a positive number of milliseconds',
+		test: value => value === undefined || isPositiveNumber(value),
+	},
+	blockHeaderTimeout: {
+		expected: 'a positive number of seconds (at most 2147483 seconds)',
+		test: isPositiveSeconds,
+	},
+	maxListenersWarningThreshold: {
+		expected: 'a non-negative integer',
+		test: isNonNegativeInteger,
+	},
+	contractDataInputFill: {
+		expected: '"data", "input" or "both"',
+		test: value => typeof value === 'string' && CONTRACT_DATA_INPUT_FILL_VALUES.has(value),
+	},
+	defaultNetworkId: {
+		expected: 'undefined or a non-negative integer (number, bigint, decimal or hex string)',
+		test: value => value === undefined || isUnsignedNumberLike(value),
+	},
+	defaultChain: {
+		expected: '"mainnet" (use defaultCommon.customChain for a custom chain)',
+		test: value => value === 'mainnet',
+	},
+	defaultHardfork: { expected: '"zond"', test: value => value === 'zond' },
+	defaultCommon: {
+		expected: 'undefined or a Common object with a customChain',
+		test: value =>
+			value === undefined || (isPlainObject(value) && isPlainObject(value.customChain)),
+	},
+	defaultTransactionType: {
+		expected: 'a non-negative integer (number, bigint, decimal or hex string)',
+		test: isUnsignedNumberLike,
+	},
+	defaultMaxPriorityFeePerGas: {
+		expected: 'a non-negative integer (number, bigint, decimal or hex string)',
+		test: isUnsignedNumberLike,
+	},
+	enableExperimentalFeatures: {
+		expected: 'an object of boolean feature flags',
+		test: value =>
+			isPlainObject(value) &&
+			EXPERIMENTAL_FEATURE_FLAGS.every(
+				flag => value[flag] === undefined || typeof value[flag] === 'boolean',
+			),
+	},
+	transactionBuilder: {
+		expected: 'undefined or a function',
+		test: value => value === undefined || typeof value === 'function',
+	},
+	transactionTypeParser: {
+		expected: 'undefined or a function',
+		test: value => value === undefined || typeof value === 'function',
+	},
+};
+
 export abstract class Web3Config
-	extends Web3EventEmitter<{ [Web3ConfigEvent.CONFIG_CHANGE]: ConfigEvent<Web3ConfigOptions> }>
+	extends Web3EventEmitter<{ [Web3ConfigEvent.CONFIG_CHANGE]: Web3ConfigChangeEvent }>
 	implements Web3ConfigOptions
 {
-	public config: Web3ConfigOptions = {
-		handleRevert: false,
-		defaultAccount: undefined,
-		defaultBlock: 'latest',
-		transactionBlockTimeout: 50,
-		transactionConfirmationBlocks: 24,
-		transactionPollingInterval: 1000,
-		transactionPollingTimeout: 750 * 1000,
-		transactionReceiptPollingInterval: undefined,
-		transactionSendTimeout: 750 * 1000,
-		transactionConfirmationPollingInterval: undefined,
-		blockHeaderTimeout: 10,
-		maxListenersWarningThreshold: 100,
-		contractDataInputFill: 'input',
-		defaultNetworkId: undefined,
-		defaultChain: 'mainnet',
-		defaultHardfork: 'zond',
-		// TODO - Check if there is a default Common
-		defaultCommon: undefined,
-		defaultTransactionType: '0x2',
-		defaultMaxPriorityFeePerGas: toHex(2500000000),
-		enableExperimentalFeatures: {
-			useSubscriptionWhenCheckingBlockTimeout: false,
-			useRpcCallSpecification: false,
-		},
-		transactionBuilder: undefined,
-		transactionTypeParser: undefined,
-	};
+	private _config: Web3ConfigOptions = Web3Config._copyConfig(createDefaultConfig());
+
+	/** A read-only snapshot. Use setters or setConfig so validation and listeners run. */
+	public get config(): Web3ConfigOptions {
+		return this._config;
+	}
+
+	private static _copyConfig(config: Web3ConfigOptions): Web3ConfigOptions {
+		return Object.freeze({
+			...config,
+			enableExperimentalFeatures: Object.freeze({ ...config.enableExperimentalFeatures }),
+			defaultCommon:
+				config.defaultCommon === undefined
+					? undefined
+					: Object.freeze({
+							...config.defaultCommon,
+							customChain: Object.freeze({ ...config.defaultCommon.customChain }),
+						}),
+		});
+	}
 
 	public constructor(options?: Partial<Web3ConfigOptions>) {
 		super();
 
 		this.setConfig(options ?? {});
+		// The emitter's own default is Node's 10; the configured threshold applies from the
+		// start, not only once `maxListenersWarningThreshold` is assigned explicitly.
+		this.setMaxListenerWarningThreshold(this.config.maxListenersWarningThreshold);
 	}
 
+	/**
+	 * Applies several options at once.
+	 *
+	 * Every option is validated exactly as a direct assignment is. The whole update is
+	 * committed atomically, and a `CONFIG_CHANGE` event is emitted per option, so the contexts created
+	 * from this one with `use()` or attached to it with `link()` follow (L-39). An unknown option
+	 * and a value of the wrong type or out of range throw an {@link InvalidMethodParamsError}
+	 * naming the option. A `__proto__` key (a parsed JSON document, for example) is ignored
+	 * instead of re-parenting the configuration (I-14).
+	 */
 	public setConfig(options: Partial<Web3ConfigOptions>) {
-		// TODO: Improve and add key check
-		Object.assign(this.config, options);
+		if (!isPlainObject(options)) {
+			throw new InvalidMethodParamsError(
+				`setConfig expects a configuration object, got ${describeValue(options)}`,
+			);
+		}
+
+		const keys = Object.keys(options).filter(key => key !== '__proto__');
+		for (const key of keys) {
+			if (!CONFIG_KEYS.has(key)) {
+				throw new InvalidMethodParamsError(`Unknown configuration option "${key}"`);
+			}
+			Web3Config._assertValidConfigValue(
+				key as keyof Web3ConfigOptions,
+				options[key as keyof Web3ConfigOptions],
+			);
+		}
+		const updates = Object.fromEntries(
+			keys.map(key => [key, options[key as keyof Web3ConfigOptions]]),
+		);
+		if (keys.includes('transactionPollingInterval')) {
+			for (const key of [
+				'transactionReceiptPollingInterval',
+				'transactionConfirmationPollingInterval',
+			]) {
+				if (!keys.includes(key)) updates[key] = options.transactionPollingInterval;
+			}
+		}
+		const next = { ...this.config, ...updates } as Web3ConfigOptions;
+		if (
+			next.defaultCommon?.hardfork !== undefined &&
+			next.defaultCommon.hardfork !== next.defaultHardfork
+		) {
+			throw new ConfigHardforkMismatchError(
+				next.defaultHardfork,
+				next.defaultCommon.hardfork,
+			);
+		}
+		if (
+			next.defaultCommon?.baseChain !== undefined &&
+			next.defaultCommon.baseChain !== next.defaultChain
+		) {
+			throw new ConfigChainMismatchError(next.defaultChain, next.defaultCommon.baseChain);
+		}
+		// Commit only after every value and cross-option constraint has passed. Observers
+		// see the entire new configuration while handling any of its change events.
+		const previous = this.config;
+		this._config = Web3Config._copyConfig(next);
+		if ('maxListenersWarningThreshold' in updates)
+			this.setMaxListenerWarningThreshold(next.maxListenersWarningThreshold);
+		const ordered = [...CONFIG_KEYS].filter(key =>
+			Object.prototype.hasOwnProperty.call(updates, key),
+		) as (keyof Web3ConfigOptions)[];
+		for (const key of ordered) this._triggerConfigChange(key, this.config[key], previous[key]);
 	}
 
 	/**
@@ -121,11 +353,10 @@ export abstract class Web3Config
 	}
 
 	/**
-	 * Will set the handleRevert
+	 * Will set the handleRevert. Throws an {@link InvalidMethodParamsError} for a non-boolean.
 	 */
 	public set handleRevert(val) {
-		this._triggerConfigChange('handleRevert', val);
-		this.config.handleRevert = val;
+		this._setConfigValue('handleRevert', val);
 	}
 
 	/**
@@ -139,11 +370,11 @@ export abstract class Web3Config
 	}
 
 	/**
-	 * Will set the contractDataInputFill
+	 * Will set the contractDataInputFill. Throws an {@link InvalidMethodParamsError} for a value
+	 * other than `'data'`, `'input'` or `'both'`.
 	 */
 	public set contractDataInputFill(val) {
-		this._triggerConfigChange('contractDataInputFill', val);
-		this.config.contractDataInputFill = val;
+		this._setConfigValue('contractDataInputFill', val);
 	}
 
 	/**
@@ -157,11 +388,11 @@ export abstract class Web3Config
 		return this.config.defaultAccount;
 	}
 	/**
-	 * Will set the default account.
+	 * Will set the default account. Throws an {@link InvalidMethodParamsError} for a value that
+	 * is neither `undefined` nor a QRL address (`Q` followed by 128 hex digits).
 	 */
 	public set defaultAccount(val) {
-		this._triggerConfigChange('defaultAccount', val);
-		this.config.defaultAccount = val;
+		this._setConfigValue('defaultAccount', val);
 	}
 
 	/**
@@ -178,7 +409,7 @@ export abstract class Web3Config
 	}
 
 	/**
-	 * Will set the default block.
+	 * Will set the default block. Throws an {@link InvalidMethodParamsError} for anything but:
 	 *
 	 * - A block number
 	 * - `"earliest"` - String: The genesis block
@@ -188,8 +419,7 @@ export abstract class Web3Config
 	 * - `"safe"` - String: (For POS networks) The safe head block is one which under normal network conditions, is expected to be included in the canonical chain. Under normal network conditions the safe head and the actual tip of the chain will be equivalent (with safe head trailing only by a few seconds). Safe heads will be less likely to be reorged than the proof of work network`s latest blocks.
 	 */
 	public set defaultBlock(val) {
-		this._triggerConfigChange('defaultBlock', val);
-		this.config.defaultBlock = val;
+		this._setConfigValue('defaultBlock', val);
 	}
 
 	/**
@@ -202,11 +432,11 @@ export abstract class Web3Config
 	}
 
 	/**
-	 * Will set the transactionSendTimeout.
+	 * Will set the transactionSendTimeout. Throws an {@link InvalidMethodParamsError} for a
+	 * value that is not a positive number.
 	 */
 	public set transactionSendTimeout(val) {
-		this._triggerConfigChange('transactionSendTimeout', val);
-		this.config.transactionSendTimeout = val;
+		this._setConfigValue('transactionSendTimeout', val);
 	}
 
 	/**
@@ -218,11 +448,11 @@ export abstract class Web3Config
 	}
 
 	/**
-	 * Will set the transactionBlockTimeout.
+	 * Will set the transactionBlockTimeout. Throws an {@link InvalidMethodParamsError} for a
+	 * value that is not a positive integer.
 	 */
 	public set transactionBlockTimeout(val) {
-		this._triggerConfigChange('transactionBlockTimeout', val);
-		this.config.transactionBlockTimeout = val;
+		this._setConfigValue('transactionBlockTimeout', val);
 	}
 
 	/**
@@ -234,11 +464,11 @@ export abstract class Web3Config
 	}
 
 	/**
-	 * Will set the transactionConfirmationBlocks.
+	 * Will set the transactionConfirmationBlocks. Throws an {@link InvalidMethodParamsError}
+	 * for a value that is not a non-negative integer.
 	 */
 	public set transactionConfirmationBlocks(val) {
-		this._triggerConfigChange('transactionConfirmationBlocks', val);
-		this.config.transactionConfirmationBlocks = val;
+		this._setConfigValue('transactionConfirmationBlocks', val);
 	}
 
 	/**
@@ -250,14 +480,12 @@ export abstract class Web3Config
 	}
 
 	/**
-	 * Will set the transactionPollingInterval.
+	 * Will set the transactionPollingInterval (and, with it, `transactionReceiptPollingInterval`
+	 * and `transactionConfirmationPollingInterval`). Throws an {@link InvalidMethodParamsError}
+	 * for a value that is not a positive number.
 	 */
 	public set transactionPollingInterval(val) {
-		this._triggerConfigChange('transactionPollingInterval', val);
-		this.config.transactionPollingInterval = val;
-
-		this.transactionReceiptPollingInterval = val;
-		this.transactionConfirmationPollingInterval = val;
+		this._setConfigValue('transactionPollingInterval', val);
 	}
 	/**
 	 * Used over HTTP connections. This option defines the number of seconds Web3 will wait for a receipt which confirms that a transaction was mined by the network. Note: If this method times out, the transaction may still be pending.
@@ -268,12 +496,11 @@ export abstract class Web3Config
 	}
 
 	/**
-	 * Will set the transactionPollingTimeout.
+	 * Will set the transactionPollingTimeout. Throws an {@link InvalidMethodParamsError} for a
+	 * value that is not a positive number.
 	 */
 	public set transactionPollingTimeout(val) {
-		this._triggerConfigChange('transactionPollingTimeout', val);
-
-		this.config.transactionPollingTimeout = val;
+		this._setConfigValue('transactionPollingTimeout', val);
 	}
 
 	/**
@@ -285,20 +512,24 @@ export abstract class Web3Config
 	}
 
 	/**
-	 * Will set the transactionReceiptPollingInterval
+	 * Will set the transactionReceiptPollingInterval. Throws an {@link InvalidMethodParamsError}
+	 * for a value that is neither `undefined` nor a positive number.
 	 */
 	public set transactionReceiptPollingInterval(val) {
-		this._triggerConfigChange('transactionReceiptPollingInterval', val);
-		this.config.transactionReceiptPollingInterval = val;
+		this._setConfigValue('transactionReceiptPollingInterval', val);
 	}
 
 	public get transactionConfirmationPollingInterval() {
 		return this.config.transactionConfirmationPollingInterval;
 	}
 
+	/**
+	 * Will set the transactionConfirmationPollingInterval. Throws an
+	 * {@link InvalidMethodParamsError} for a value that is neither `undefined` nor a positive
+	 * number.
+	 */
 	public set transactionConfirmationPollingInterval(val) {
-		this._triggerConfigChange('transactionConfirmationPollingInterval', val);
-		this.config.transactionConfirmationPollingInterval = val;
+		this._setConfigValue('transactionConfirmationPollingInterval', val);
 	}
 
 	/**
@@ -310,12 +541,11 @@ export abstract class Web3Config
 	}
 
 	/**
-	 * Will set the blockHeaderTimeout
+	 * Will set the blockHeaderTimeout. Throws an {@link InvalidMethodParamsError} for a value
+	 * that is not a positive number.
 	 */
 	public set blockHeaderTimeout(val) {
-		this._triggerConfigChange('blockHeaderTimeout', val);
-
-		this.config.blockHeaderTimeout = val;
+		this._setConfigValue('blockHeaderTimeout', val);
 	}
 
 	/**
@@ -327,49 +557,49 @@ export abstract class Web3Config
 	}
 
 	/**
-	 * Will set the enableExperimentalFeatures
+	 * Will set the enableExperimentalFeatures. Throws an {@link InvalidMethodParamsError} for a
+	 * value that is not an object of boolean flags.
 	 */
 	public set enableExperimentalFeatures(val) {
-		this._triggerConfigChange('enableExperimentalFeatures', val);
-
-		this.config.enableExperimentalFeatures = val;
+		this._setConfigValue('enableExperimentalFeatures', val);
 	}
 
 	public get maxListenersWarningThreshold() {
 		return this.config.maxListenersWarningThreshold;
 	}
 
+	/**
+	 * Will set the maxListenersWarningThreshold. Throws an {@link InvalidMethodParamsError} for
+	 * a value that is not a non-negative integer, before any `CONFIG_CHANGE` is emitted (I-14).
+	 */
 	public set maxListenersWarningThreshold(val) {
-		this._triggerConfigChange('maxListenersWarningThreshold', val);
+		this._setConfigValue('maxListenersWarningThreshold', val);
 		this.setMaxListenerWarningThreshold(val);
-		this.config.maxListenersWarningThreshold = val;
 	}
 
 	public get defaultNetworkId() {
 		return this.config.defaultNetworkId;
 	}
 
+	/**
+	 * Will set the defaultNetworkId. Throws an {@link InvalidMethodParamsError} for a value that
+	 * is neither `undefined` nor a non-negative integer.
+	 */
 	public set defaultNetworkId(val) {
-		this._triggerConfigChange('defaultNetworkId', val);
-
-		this.config.defaultNetworkId = val;
+		this._setConfigValue('defaultNetworkId', val);
 	}
 
 	public get defaultChain() {
 		return this.config.defaultChain;
 	}
 
+	/**
+	 * Will set the defaultChain. Throws an {@link InvalidMethodParamsError} for a value that is
+	 * not a supported chain, and a {@link ConfigChainMismatchError} when it differs from
+	 * `defaultCommon.baseChain`.
+	 */
 	public set defaultChain(val) {
-		if (
-			!isNullish(this.config.defaultCommon) &&
-			!isNullish(this.config.defaultCommon.baseChain) &&
-			val !== this.config.defaultCommon.baseChain
-		)
-			throw new ConfigChainMismatchError(this.config.defaultChain, val);
-
-		this._triggerConfigChange('defaultChain', val);
-
-		this.config.defaultChain = val;
+		this._setConfigValue('defaultChain', val);
 	}
 
 	/**
@@ -383,19 +613,13 @@ export abstract class Web3Config
 	}
 
 	/**
-	 * Will set the default hardfork.
+	 * Will set the default hardfork. Throws an {@link InvalidMethodParamsError} for a value that
+	 * is not the supported hardfork (zond), and a {@link ConfigHardforkMismatchError} when it differs from
+	 * `defaultCommon.hardfork`.
 	 *
 	 */
 	public set defaultHardfork(val) {
-		if (
-			!isNullish(this.config.defaultCommon) &&
-			!isNullish(this.config.defaultCommon.hardfork) &&
-			val !== this.config.defaultCommon.hardfork
-		)
-			throw new ConfigHardforkMismatchError(this.config.defaultCommon.hardfork, val);
-		this._triggerConfigChange('defaultHardfork', val);
-
-		this.config.defaultHardfork = val;
+		this._setConfigValue('defaultHardfork', val);
 	}
 
 	/**
@@ -416,74 +640,94 @@ export abstract class Web3Config
 	}
 
 	/**
-	 * Will set the default common property
+	 * Will set the default common property. Throws an {@link InvalidMethodParamsError} for a
+	 * value that is neither `undefined` nor an object with a `customChain`, and a
+	 * {@link ConfigHardforkMismatchError} / {@link ConfigChainMismatchError} when its
+	 * `hardfork` / `baseChain` differ from `defaultHardfork` / `defaultChain`.
 	 *
 	 */
 	public set defaultCommon(val: Common | undefined) {
-		// validation check if default hardfork is set and matches defaultCommon hardfork
-		if (
-			!isNullish(this.config.defaultHardfork) &&
-			!isNullish(val) &&
-			!isNullish(val.hardfork) &&
-			this.config.defaultHardfork !== val.hardfork
-		)
-			throw new ConfigHardforkMismatchError(this.config.defaultHardfork, val.hardfork);
-		if (
-			!isNullish(this.config.defaultChain) &&
-			!isNullish(val) &&
-			!isNullish(val.baseChain) &&
-			this.config.defaultChain !== val.baseChain
-		)
-			throw new ConfigChainMismatchError(this.config.defaultChain, val.baseChain);
-		this._triggerConfigChange('defaultCommon', val);
-
-		this.config.defaultCommon = val;
+		this._setConfigValue('defaultCommon', val);
 	}
 
 	public get defaultTransactionType() {
 		return this.config.defaultTransactionType;
 	}
 
+	/**
+	 * Will set the defaultTransactionType. Throws an {@link InvalidMethodParamsError} for a
+	 * value that is not a non-negative integer.
+	 */
 	public set defaultTransactionType(val) {
-		this._triggerConfigChange('defaultTransactionType', val);
-
-		this.config.defaultTransactionType = val;
+		this._setConfigValue('defaultTransactionType', val);
 	}
 
 	public get defaultMaxPriorityFeePerGas() {
 		return this.config.defaultMaxPriorityFeePerGas;
 	}
 
+	/**
+	 * Will set the defaultMaxPriorityFeePerGas. Throws an {@link InvalidMethodParamsError} for
+	 * a value that is not a non-negative integer.
+	 */
 	public set defaultMaxPriorityFeePerGas(val) {
-		this._triggerConfigChange('defaultMaxPriorityFeePerGas', val);
-		this.config.defaultMaxPriorityFeePerGas = val;
+		this._setConfigValue('defaultMaxPriorityFeePerGas', val);
 	}
 
 	public get transactionBuilder() {
 		return this.config.transactionBuilder;
 	}
 
+	/**
+	 * Will set the transactionBuilder. Throws an {@link InvalidMethodParamsError} for a value
+	 * that is neither `undefined` nor a function.
+	 */
 	public set transactionBuilder(val) {
-		this._triggerConfigChange('transactionBuilder', val);
-		this.config.transactionBuilder = val;
+		this._setConfigValue('transactionBuilder', val);
 	}
 
 	public get transactionTypeParser() {
 		return this.config.transactionTypeParser;
 	}
 
+	/**
+	 * Will set the transactionTypeParser. Throws an {@link InvalidMethodParamsError} for a
+	 * value that is neither `undefined` nor a function.
+	 */
 	public set transactionTypeParser(val) {
-		this._triggerConfigChange('transactionTypeParser', val);
-		this.config.transactionTypeParser = val;
+		this._setConfigValue('transactionTypeParser', val);
+	}
+
+	/**
+	 * Validates, announces and stores one option, in that order: an invalid value is rejected
+	 * before any `CONFIG_CHANGE` reaches a child context (I-14).
+	 */
+	private _setConfigValue<K extends keyof Web3ConfigOptions>(
+		key: K,
+		value: Web3ConfigOptions[K],
+	) {
+		this.setConfig({ [key]: value });
+	}
+
+	private static _assertValidConfigValue(key: keyof Web3ConfigOptions, value: unknown): void {
+		const rule = CONFIG_RULES[key];
+		if (!rule.test(value)) {
+			throw new InvalidMethodParamsError(
+				`Invalid value for the "${key}" configuration option: expected ${
+					rule.expected
+				}, got ${describeValue(value)}`,
+			);
+		}
 	}
 
 	private _triggerConfigChange<K extends keyof Web3ConfigOptions>(
 		config: K,
 		newValue: Web3ConfigOptions[K],
+		oldValue: Web3ConfigOptions[K],
 	) {
 		this.emit(Web3ConfigEvent.CONFIG_CHANGE, {
 			name: config,
-			oldValue: this.config[config],
+			oldValue,
 			newValue,
 		} as ConfigEvent<Web3ConfigOptions>);
 	}

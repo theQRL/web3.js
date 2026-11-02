@@ -19,10 +19,8 @@ import { QRLExecutionAPI, Bytes } from '@theqrl/web3-types';
 import { AsyncFunction, rejectIfTimeout } from '@theqrl/web3-utils';
 import { TransactionSendTimeoutError } from '@theqrl/web3-errors';
 
-import { rejectIfBlockTimeout } from './reject_if_block_timeout.js';
-
 /**
- * An internal function to send a transaction or throws if sending did not finish during the timeout during the blocks-timeout.
+ * Sends a transaction with a wall-clock deadline. Block deadlines start after the broadcast reply.
  * @param web3Context - the context to read the configurations from
  * @param sendTransactionFunc - the function that will send the transaction (could be sendTransaction or sendRawTransaction)
  * @param transactionHash - to be used inside the exception message if there will be any exceptions.
@@ -41,20 +39,11 @@ export async function trySendTransaction(
 		}),
 	);
 
-	const [rejectOnBlockTimeout, blockTimeoutResourceCleaner] = await rejectIfBlockTimeout(
-		web3Context,
-		transactionHash,
-	);
-
 	try {
-		// If an error happened here, do not catch it, just clear the resources before raising it to the caller function.
-		return await Promise.race([
-			sendTransactionFunc(), // this is the function that will send the transaction
-			rejectOnTimeout, // this will throw an error on Transaction Send Timeout
-			rejectOnBlockTimeout, // this will throw an error on Transaction Block Timeout
-		]);
+		// Block inclusion deadlines belong to waitForTransactionReceipt, after the node
+		// returns a hash. A header during broadcast cannot establish that sending failed.
+		return await Promise.race([Promise.resolve().then(sendTransactionFunc), rejectOnTimeout]);
 	} finally {
 		clearTimeout(timeoutId);
-		blockTimeoutResourceCleaner.clean();
 	}
 }

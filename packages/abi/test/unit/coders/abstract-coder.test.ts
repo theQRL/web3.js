@@ -17,7 +17,12 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 import { BigNumber } from '@ethersproject/bignumber';
 
-import { Reader, Writer, checkResultErrors } from '../../../src/coders/abstract-coder.js';
+import {
+	MAX_INFLATION,
+	Reader,
+	Writer,
+	checkResultErrors,
+} from '../../../src/coders/abstract-coder.js';
 
 // The normative QRL ABI word is 64 bytes for every type. Numbers, VM words and
 // addresses are right-aligned within it; byte sequences and other string-like
@@ -365,7 +370,7 @@ describe('Reader', () => {
 			expect(typeof Reader.coerce(`int${bits}`, BigNumber.from(1))).toBe('number');
 		});
 
-		it.each([56, 64, 128, 256])('leaves uint%i as a BigNumber', bits => {
+		it.each([56, 64, 128, 256, 512])('leaves uint%i as a BigNumber', bits => {
 			expect(BigNumber.isBigNumber(Reader.coerce(`uint${bits}`, BigNumber.from(1)))).toBe(
 				true,
 			);
@@ -429,5 +434,77 @@ describe('checkResultErrors', () => {
 		expect(errors).toHaveLength(1);
 		expect(errors[0].error).toBe(boom);
 		expect(errors[0].path).toEqual(['0', '0']);
+	});
+});
+
+describe('Reader: shared buffer and read budget (M-9)', () => {
+	const twoWords = `0x${rightAligned('01').slice(2)}${rightAligned('02').slice(2)}`;
+
+	it('creates a sub-reader as a view on the same buffer instead of a copy (M-9)', () => {
+		const reader = new Reader(twoWords, WORD);
+		const sub = reader.subReader(WORD);
+		expect(sub._data.buffer).toBe(reader._data.buffer);
+		expect(sub._data.byteOffset).toBe(reader._data.byteOffset + WORD);
+		expect(sub._data.length).toBe(WORD);
+		expect(sub.readValue().toNumber()).toBe(2);
+
+		// Nested sub-readers keep sharing the root buffer.
+		const nested = reader.subReader(0).subReader(WORD);
+		expect(nested._data.buffer).toBe(reader._data.buffer);
+		expect(nested.readValue().toNumber()).toBe(2);
+		expect(nested.data).toBe(rightAligned('02'));
+	});
+
+	it('keeps the sub-reader offset relative to its own base', () => {
+		const reader = new Reader(twoWords, WORD);
+		reader.readValue();
+		const sub = reader.subReader(0);
+		expect(sub.consumed).toBe(0);
+		expect(sub.readValue().toNumber()).toBe(2);
+		expect(() => sub.readValue()).toThrow(/out-of-bounds/);
+	});
+
+	it('accounts every read against one budget shared by all sub-readers (M-9)', () => {
+		const reader = new Reader(twoWords, WORD);
+		expect(reader.bytesRead).toBe(0);
+		reader.readValue();
+		expect(reader.bytesRead).toBe(WORD);
+		reader.subReader(0).readValue();
+		expect(reader.bytesRead).toBe(2 * WORD);
+		// `reader` sits at the second word: the sub-reader starts there.
+		const sub = reader.subReader(0);
+		sub.readBytes(3);
+		expect(reader.bytesRead).toBe(2 * WORD + 3);
+		expect(sub.bytesRead).toBe(reader.bytesRead);
+		expect(sub.subReader(0).bytesRead).toBe(reader.bytesRead);
+	});
+
+	it('rejects a decode that reads more than MAX_INFLATION times the input (M-9)', () => {
+		const reader = new Reader(rightAligned('01'), WORD);
+		for (let i = 0; i < MAX_INFLATION; i++) {
+			expect(reader.subReader(0).readValue().toNumber()).toBe(1);
+		}
+		expect(reader.bytesRead).toBe(MAX_INFLATION * WORD);
+		expect(() => reader.subReader(0).readValue()).toThrow(/inflation ratio/);
+	});
+
+	it('reports the budget error as BUFFER_OVERRUN so that it cannot be deferred', () => {
+		const reader = new Reader(rightAligned('01'), WORD);
+		for (let i = 0; i < MAX_INFLATION; i++) {
+			reader.subReader(0).readValue();
+		}
+		let caught: { code?: string } | undefined;
+		try {
+			reader.readValue();
+		} catch (error) {
+			caught = error as { code?: string };
+		}
+		expect(caught?.code).toBe('BUFFER_OVERRUN');
+	});
+
+	it('does not count a read that is out-of-bounds', () => {
+		const reader = new Reader(rightAligned('01'), WORD);
+		expect(() => reader.subReader(WORD).readValue()).toThrow(/out-of-bounds/);
+		expect(reader.bytesRead).toBe(0);
 	});
 });

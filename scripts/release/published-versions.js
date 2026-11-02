@@ -1,63 +1,87 @@
 #!/usr/bin/env node
 
+/*
+This file is part of web3.js.
+
+web3.js is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+web3.js is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License
+along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+// Compares what this checkout says was released with what the registry holds.
+//
+// Usage: published-versions.js [--tags] [--check]
+//
+//   (default)  compares the committed manifest versions with the registry's
+//              `latest` tag (post-release verification, RELEASE.md).
+//   --tags     compares the last release tag of every publishable package —
+//              the version multi-semantic-release derives the next release and
+//              the sibling ranges from — with the registry's version list. A
+//              tagged version that is missing from the registry wedges every
+//              dependant's next release (`^<missing version>` fails to install),
+//              see RELEASE.md "Recovering From A Failed Release Run" (P4-M-12).
+//   --check    exit 1 when any compared version is missing from the registry
+//              or a registry lookup failed; used as the release pre-flight.
+
 const { publishablePackages } = require('./packages');
-
-const REGISTRY = process.env.npm_config_registry || 'https://registry.npmjs.org';
-
-const cmpSemver = (a, b) => {
-	const parts = s =>
-		s.split(/[.\-+]/).map(p => (Number.isFinite(Number(p)) ? Number(p) : p));
-	const pa = parts(a);
-	const pb = parts(b);
-	for (let i = 0; i < Math.max(pa.length, pb.length); i += 1) {
-		if (pa[i] === pb[i]) continue;
-		if (pa[i] === undefined) return -1;
-		if (pb[i] === undefined) return 1;
-		if (typeof pa[i] !== typeof pb[i]) return typeof pa[i] === 'number' ? -1 : 1;
-		return pa[i] < pb[i] ? -1 : 1;
-	}
-	return 0;
-};
-
-const fetchPublished = async name => {
-	const url = `${REGISTRY}/${encodeURIComponent(name).replace(/%40/g, '@')}`;
-	const res = await fetch(url, { headers: { accept: 'application/json' } });
-	if (res.status === 404) return { latest: null, versions: [] };
-	if (!res.ok) throw new Error(`${name}: HTTP ${res.status}`);
-	const data = await res.json();
-	const versions = Object.keys(data.versions || {});
-	return { latest: data['dist-tags']?.latest ?? null, versions };
-};
+const { fetchPublished } = require('./registry');
+const { compareVersions, lastReleaseAt } = require('./tags');
 
 const status = (local, latest) => {
 	if (latest === null) return 'unpublished';
 	if (local === latest) return 'in-sync';
-	const cmp = cmpSemver(local, latest);
+	const cmp = compareVersions(local, latest);
 	if (cmp > 0) return 'ahead-of-npm';
 	if (cmp < 0) return 'behind-npm';
 	return 'in-sync';
 };
 
-(async () => {
+// One row per publishable package, from the manifest version (default) or the
+// last release tag (`useTags`).
+const compareWithRegistry = async ({ useTags = false, fetchImpl, cwd } = {}) => {
 	const packages = publishablePackages();
-	const rows = await Promise.all(
+	return Promise.all(
 		packages.map(async pkg => {
+			const release = useTags ? lastReleaseAt(pkg.name, 'HEAD', cwd) : { version: pkg.version };
+			if (!release) {
+				return { name: pkg.name, local: '—', npm: '—', status: 'untagged', note: 'never released' };
+			}
 			try {
-				const { latest, versions } = await fetchPublished(pkg.name);
-				const localPublished = versions.includes(pkg.version);
+				const { latest, versions } = await fetchPublished(pkg.name, fetchImpl);
+				const published = versions.includes(release.version);
+				if (useTags) {
+					return {
+						name: pkg.name,
+						local: release.version,
+						npm: latest ?? '—',
+						status: published ? 'published' : 'missing',
+						note: published ? '' : `tag ${release.tag} is not on the registry`,
+					};
+				}
 				return {
 					name: pkg.name,
-					local: pkg.version,
+					local: release.version,
 					npm: latest ?? '—',
-					status: status(pkg.version, latest),
-					note: !localPublished && latest !== null ? `local ${pkg.version} not on npm` : '',
+					status: status(release.version, latest),
+					note: !published && latest !== null ? `local ${release.version} not on npm` : '',
 				};
 			} catch (err) {
-				return { name: pkg.name, local: pkg.version, npm: 'ERROR', status: 'error', note: err.message };
+				return { name: pkg.name, local: release.version, npm: 'ERROR', status: 'error', note: err.message };
 			}
 		}),
 	);
+};
 
+const printTable = rows => {
 	const widths = {
 		name: Math.max(7, ...rows.map(r => r.name.length)),
 		local: Math.max(5, ...rows.map(r => r.local.length)),
@@ -82,7 +106,30 @@ const status = (local, latest) => {
 	console.log(
 		`\n${rows.length} publishable packages. ${Object.entries(counts).map(([k, v]) => `${k}=${v}`).join('  ')}`,
 	);
-})().catch(err => {
-	console.error(err);
-	process.exit(1);
-});
+};
+
+if (require.main === module) {
+	const args = new Set(process.argv.slice(2));
+	const useTags = args.has('--tags');
+	const check = args.has('--check');
+
+	compareWithRegistry({ useTags })
+		.then(rows => {
+			printTable(rows);
+			if (!check) return;
+			const blocking = rows.filter(row => row.status === 'missing' || row.status === 'error');
+			if (blocking.length > 0) {
+				console.error(
+					`\n${blocking.length} package(s) have a release that is not on the registry: ${blocking.map(row => `${row.name}@${row.local}`).join(', ')}.\n` +
+						'Publish them first: run the Release workflow manually (workflow_dispatch) with "all-missing", or delete an unpublished tag and its draft release if that version must never ship. See RELEASE.md, "Recovering From A Failed Release Run".',
+				);
+				process.exit(1);
+			}
+		})
+		.catch(err => {
+			console.error(err);
+			process.exit(1);
+		});
+}
+
+module.exports = { compareWithRegistry, status };

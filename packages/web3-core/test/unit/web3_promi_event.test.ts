@@ -70,7 +70,6 @@ describe('Web3PromiEvent', () => {
 
 			const p = func();
 
-			// eslint-disable-next-line no-void
 			void p.on('data', data => {
 				expect(data).toBe('emitted data');
 				done(undefined);

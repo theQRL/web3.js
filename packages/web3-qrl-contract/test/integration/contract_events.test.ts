@@ -53,7 +53,6 @@ describe('contract', () => {
 
 	describe('events', () => {
 		itIf(isWs)('should trigger the "contract.events.<eventName>"', async () => {
-			// eslint-disable-next-line jest/no-standalone-expect
 			return expect(
 				processAsync(async (resolve, reject) => {
 					const event = contractDeployed.events.MultiValueEvent();
@@ -92,9 +91,7 @@ describe('contract', () => {
 						.firesMultiValueIndexedEvent('value', 100, true)
 						.send(sendOptions);
 				});
-				// eslint-disable-next-line jest/no-standalone-expect
 				expect((res as any)?.event).toBe('MultiValueIndexedEvent');
-				// eslint-disable-next-line jest/no-standalone-expect
 				expect((res as any)?.returnValues.val).toBe(BigInt(100));
 			},
 		);
@@ -102,7 +99,6 @@ describe('contract', () => {
 		itIf(isWs)(
 			'should trigger when "fromBlock" is passed to contract.events.<eventName>',
 			async () => {
-				// eslint-disable-next-line jest/no-standalone-expect
 				return expect(
 					processAsync(async (resolve, reject) => {
 						const event = contractDeployed.events.MultiValueEvent({
@@ -129,7 +125,6 @@ describe('contract', () => {
 			'should fetch past events when "fromBlock" is passed to contract.events.<eventName>',
 			async () => {
 				const eventValues = [11, 12, 13, 14];
-				// eslint-disable-next-line jest/no-standalone-expect
 				return expect(
 					processAsync(async resolve => {
 						// trigger multiple events
@@ -167,7 +162,6 @@ describe('contract', () => {
 
 	describe('events subscription with HTTP', () => {
 		itIf(isHttp)('should fail to subscribe', async () => {
-			// eslint-disable-next-line no-async-promise-executor, @typescript-eslint/no-misused-promises
 			const failedSubscriptionPromise = new Promise<void>((resolve, reject) => {
 				const event = contractDeployed.events.MultiValueEvent({ fromBlock: 'latest' });
 
@@ -179,7 +173,6 @@ describe('contract', () => {
 				});
 			});
 
-			// eslint-disable-next-line jest/no-standalone-expect
 			await expect(failedSubscriptionPromise).rejects.toThrow('Failed to subscribe.');
 		});
 	});
@@ -250,7 +243,6 @@ describe('contract', () => {
 
 	describeIf(isWs)('allEvents', () => {
 		it('should sub and get event using earliest options with allEvents()', async () => {
-			// eslint-disable-next-line jest/no-standalone-expect
 			return expect(
 				processAsync(async (resolve, reject) => {
 					const event = contractDeployed.events.allEvents({ fromBlock: 'earliest' });
@@ -271,7 +263,6 @@ describe('contract', () => {
 		});
 
 		it('should sub allEvents()', async () => {
-			// eslint-disable-next-line jest/no-standalone-expect
 			return expect(
 				processAsync(async (resolve, reject) => {
 					const event = contractDeployed.events.allEvents();

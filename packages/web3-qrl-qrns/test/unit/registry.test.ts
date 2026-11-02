@@ -24,9 +24,7 @@ describe('registry', () => {
 	let object: Web3ContextObject;
 	let registry: Registry;
 	const mockAddress = 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000';
-	// A structurally valid, non-zero QRL address (Q + 128 hex chars).
 	const nonZeroAddress = `Q${'0'.repeat(127)}1`;
-	// The QRL zero address (Q + 128 zeros) — must be rejected as a resolver.
 	const zeroResolverAddress = `Q${'0'.repeat(128)}`;
 	const QRNS_NAME = 'web3js.qrl';
 
@@ -49,17 +47,37 @@ describe('registry', () => {
 
 	describe('owner', () => {
 		it('getOwner', async () => {
-			// eslint-disable-next-line @typescript-eslint/no-empty-function
-			const call = jest.spyOn({ call: () => {} }, 'call');
+			const call = jest.fn().mockResolvedValue(nonZeroAddress);
 
 			const getOwnerMock = jest.spyOn(registry['contract'].methods, 'owner').mockReturnValue({
 				call,
 			} as unknown as NonPayableMethodObject<any, any>);
 
-			await registry.getOwner(QRNS_NAME);
+			await expect(registry.getOwner(QRNS_NAME)).resolves.toBe(nonZeroAddress);
 			expect(getOwnerMock).toHaveBeenCalledWith(namehash(QRNS_NAME));
 			expect(call).toHaveBeenCalled();
 		});
+
+		it('getOwner returns the zero address of an unowned name', async () => {
+			jest.spyOn(registry['contract'].methods, 'owner').mockReturnValue({
+				call: jest.fn().mockResolvedValue(zeroResolverAddress),
+			} as unknown as NonPayableMethodObject<any, any>);
+
+			await expect(registry.getOwner(QRNS_NAME)).resolves.toBe(zeroResolverAddress);
+		});
+
+		it.each([undefined, 42, 'Q1234', `0x${'0'.repeat(128)}`])(
+			'getOwner rejects the malformed owner %p',
+			async owner => {
+				jest.spyOn(registry['contract'].methods, 'owner').mockReturnValue({
+					call: jest.fn().mockResolvedValue(owner),
+				} as unknown as NonPayableMethodObject<any, any>);
+
+				await expect(registry.getOwner(QRNS_NAME)).rejects.toThrow(
+					/QRNS registry returned (non-string|invalid) owner address/,
+				);
+			},
+		);
 		it('getOwner throw (transaction reverted)', async () => {
 			// eslint-disable-next-line @typescript-eslint/no-empty-function
 			const call = jest.spyOn({ call: () => {} }, 'call').mockImplementation(() => {
@@ -78,8 +96,6 @@ describe('registry', () => {
 		});
 		it('getOwner surfaces a non-empty, cause-preserving error', async () => {
 			const underlying = new Error('underlying call failure');
-			// Reject asynchronously so the failure only surfaces if the call is
-			// actually awaited inside the try/catch.
 			const call = jest
 				.spyOn({ call: async () => undefined }, 'call')
 				.mockRejectedValue(underlying);
@@ -163,7 +179,6 @@ describe('registry', () => {
 
 	describe('resolver', () => {
 		it('resolver', async () => {
-			// eslint-disable-next-line @typescript-eslint/no-empty-function
 			const call = jest
 				.spyOn(
 					{
@@ -187,8 +202,6 @@ describe('registry', () => {
 		});
 
 		it('resolver (rejects a zero resolver address)', async () => {
-			// A real QRL zero address (Q + 128 zeros) is structurally valid but must
-			// be rejected by the zero-resolver guard.
 			const call = jest
 				.spyOn(
 					{
@@ -214,7 +227,6 @@ describe('registry', () => {
 		});
 
 		it('resolver (return non string)', async () => {
-			// eslint-disable-next-line @typescript-eslint/no-empty-function
 			const call = jest
 				.spyOn(
 					{

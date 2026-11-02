@@ -18,7 +18,10 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import { AbiParameter } from '@theqrl/web3-types';
 // eslint-disable-next-line require-extensions/require-extensions
 import { ShortValidationSchema } from '../types';
+import { isNullish } from './object.js';
 
 export const isAbiParameterSchema = (
 	schema: string | ShortValidationSchema | AbiParameter,
-): schema is AbiParameter => typeof schema === 'object' && 'type' in schema && 'name' in schema;
+): schema is AbiParameter =>
+	// `'type' in null` throws; a `null` schema entry is simply not a parameter (L-26).
+	typeof schema === 'object' && !isNullish(schema) && 'type' in schema && 'name' in schema;

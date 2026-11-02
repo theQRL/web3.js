@@ -15,7 +15,13 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { ARGON2ID_BOUNDS, validateArgon2idParams } from '../../src/kdf_policy';
+import { InvalidKdfError } from '@theqrl/web3-errors';
+import {
+	ARGON2ID_BOUNDS,
+	ARGON2ID_DECRYPT_MEMORY_MIN,
+	validateArgon2idParams,
+	validateArgon2idSalt,
+} from '../../src/kdf_policy';
 
 describe('kdf_policy', () => {
 	describe('validateArgon2idParams', () => {
@@ -26,27 +32,93 @@ describe('kdf_policy', () => {
 		});
 
 		it('rejects m below the OWASP floor', () => {
-			expect(() =>
-				validateArgon2idParams({ m: 8192, t: 8, p: 1, dklen: 32 }),
-			).toThrow(/Argon2id m out of range/);
+			expect(() => validateArgon2idParams({ m: 8192, t: 8, p: 1, dklen: 32 })).toThrow(
+				/Argon2id m out of range/,
+			);
 		});
 
 		it('rejects m at the previous 4096 minimum', () => {
-			expect(() =>
-				validateArgon2idParams({ m: 4096, t: 8, p: 1, dklen: 32 }),
-			).toThrow(/Argon2id m out of range/);
+			expect(() => validateArgon2idParams({ m: 4096, t: 8, p: 1, dklen: 32 })).toThrow(
+				/Argon2id m out of range/,
+			);
 		});
 
 		it('accepts m at the OWASP floor', () => {
-			expect(() =>
-				validateArgon2idParams({ m: 19456, t: 8, p: 1, dklen: 32 }),
-			).not.toThrow();
+			expect(() => validateArgon2idParams({ m: 19456, t: 8, p: 1, dklen: 32 })).not.toThrow();
 		});
 
 		it('accepts the strong encrypt defaults', () => {
 			expect(() =>
 				validateArgon2idParams({ m: 262144, t: 8, p: 1, dklen: 32 }),
 			).not.toThrow();
+		});
+
+		it.each([
+			['m', 1],
+			['m', 524_289],
+			['t', 0],
+			['t', 17],
+			['p', 0],
+			['p', 17],
+			['dklen', 0],
+			['dklen', 65],
+			['m', '19456'],
+			['t', 2.5],
+		])('rejects %s=%s with a typed KDF error', (field, value) => {
+			expect(() =>
+				validateArgon2idParams({ m: 19456, t: 2, p: 1, dklen: 32, [field]: value }),
+			).toThrow(InvalidKdfError);
+		});
+
+		it('pins dklen to the AES-256-GCM key length (L-12)', () => {
+			expect(ARGON2ID_BOUNDS.dklen).toEqual({ min: 32, max: 32 });
+			for (const dklen of [16, 24, 31, 33, 48, 64]) {
+				expect(() => validateArgon2idParams({ m: 19456, t: 2, p: 1, dklen })).toThrow(
+					/Argon2id dklen must be 32/,
+				);
+				expect(() =>
+					validateArgon2idParams({ m: 19456, t: 2, p: 1, dklen }, 'decrypt'),
+				).toThrow(InvalidKdfError);
+			}
+		});
+
+		describe('decrypt purpose (L-72)', () => {
+			it('accepts the go-qrl --lightkdf memory parameter on decrypt only', () => {
+				expect(ARGON2ID_DECRYPT_MEMORY_MIN).toBe(4096);
+				const light = { m: 4096, t: 8, p: 1, dklen: 32 };
+				expect(() => validateArgon2idParams(light, 'decrypt')).not.toThrow();
+				expect(() => validateArgon2idParams(light, 'encrypt')).toThrow(InvalidKdfError);
+				expect(() => validateArgon2idParams(light)).toThrow(InvalidKdfError);
+			});
+
+			it('keeps every other bound on decrypt', () => {
+				const valid = { m: 4096, t: 8, p: 1, dklen: 32 };
+				expect(() => validateArgon2idParams({ ...valid, m: 4095 }, 'decrypt')).toThrow(
+					/Argon2id m out of range \[4096, 524288\]/,
+				);
+				expect(() => validateArgon2idParams({ ...valid, m: 524_289 }, 'decrypt')).toThrow(
+					InvalidKdfError,
+				);
+				expect(() => validateArgon2idParams({ ...valid, t: 1 }, 'decrypt')).toThrow(
+					InvalidKdfError,
+				);
+				expect(() => validateArgon2idParams({ ...valid, p: 17 }, 'decrypt')).toThrow(
+					InvalidKdfError,
+				);
+				expect(() => validateArgon2idParams({ ...valid, dklen: 16 }, 'decrypt')).toThrow(
+					InvalidKdfError,
+				);
+			});
+		});
+	});
+
+	describe('validateArgon2idSalt', () => {
+		it.each([0, 1, 7])('rejects a %s-byte salt with a typed KDF error', length => {
+			expect(() => validateArgon2idSalt(new Uint8Array(length))).toThrow(InvalidKdfError);
+		});
+
+		it.each([8, 32])('accepts a %s-byte salt', length => {
+			expect(() => validateArgon2idSalt(new Uint8Array(length))).not.toThrow();
 		});
 	});
 });

@@ -35,6 +35,32 @@ export const checkMaxInitCodeSize = (common: Common, length: number) => {
 	}
 };
 
+/**
+ * Asserts the byte-level *shape* of an access list as it comes out of an RLP decoder: a list of
+ * `[address, [storageKey, ...]]` pairs whose members are byte strings. A list in place of a byte
+ * string (or vice versa) is refused here; the address and storage-key lengths are checked by
+ * {@link verifyAccessList}.
+ */
+export function assertAccessListUint8Array(
+	accessList: unknown,
+): asserts accessList is AccessListUint8Array {
+	if (!Array.isArray(accessList)) {
+		throw new Error('Invalid EIP-1559 transaction: accessList must be a list');
+	}
+	for (const item of accessList as unknown[]) {
+		if (
+			!Array.isArray(item) ||
+			!(item[0] instanceof Uint8Array) ||
+			!Array.isArray(item[1]) ||
+			!(item[1] as unknown[]).every(key => key instanceof Uint8Array)
+		) {
+			throw new Error(
+				'Invalid EIP-1559 transaction: each access list item must be [address, [storageKeys...]] of byte strings',
+			);
+		}
+	}
+}
+
 export const getAccessListData = (accessList: AccessListUint8Array | AccessList) => {
 	let AccessListJSON;
 	let uint8arrayAccessList;
@@ -55,6 +81,7 @@ export const getAccessListData = (accessList: AccessListUint8Array | AccessList)
 		uint8arrayAccessList = newAccessList;
 	} else {
 		uint8arrayAccessList = accessList ?? [];
+		assertAccessListUint8Array(uint8arrayAccessList);
 		// build the JSON
 		const json: AccessList = [];
 		// eslint-disable-next-line @typescript-eslint/prefer-for-of

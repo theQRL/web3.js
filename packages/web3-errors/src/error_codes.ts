@@ -88,6 +88,7 @@ export const ERR_TX_REVERT_TRANSACTION_CUSTOM_ERROR = 438;
 export const ERR_TX_INVALID_PROPERTIES_FOR_TYPE = 439;
 
 export const ERR_TX_MISSING_GAS_INNER_ERROR = 440;
+export const ERR_TX_NODE_CHAIN_ID_MISMATCH = 441;
 // Connection error codes
 export const ERR_CONN = 500;
 export const ERR_CONN_INVALID = 501;
@@ -97,6 +98,7 @@ export const ERR_CONN_CLOSE = 504;
 export const ERR_CONN_MAX_ATTEMPTS = 505;
 export const ERR_CONN_PENDING_REQUESTS = 506;
 export const ERR_REQ_ALREADY_SENT = 507;
+export const ERR_CONN_HTTP_STATUS = 508;
 
 // Provider error codes
 export const ERR_PROVIDER = 600;
@@ -107,6 +109,7 @@ export const ERR_WS_PROVIDER = 604;
 export const ERR_REQUEST_TIMEOUT = 605;
 export const ERR_REQUEST_QUEUE_FULL = 606;
 export const ERR_PROVIDER_CAPABILITY = 607;
+export const ERR_REQUEST_SERIALIZATION = 608;
 
 // Account error codes
 export const ERR_UNSUPPORTED_KDF = 703;
@@ -118,6 +121,8 @@ export const ERR_INVALID_SEED = 710;
 export const ERR_PUBLIC_KEY_LENGTH = 711;
 export const ERR_INVALID_PUBLIC_KEY = 712;
 export const ERR_SEED_LENGTH = 713;
+export const ERR_UNSUPPORTED_CIPHER = 714;
+export const ERR_KEYSTORE_DECRYPTION = 715;
 
 // Signature error codes
 export const ERR_SIGNATURE_FAILED = 801;

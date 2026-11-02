@@ -121,7 +121,8 @@ const path = require('path');
 
 // Set up a connection to the QRL network
 const web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:8545'));
-web3.qrl.Contract.handleRevert = true;
+// Context option, inherited by `web3.qrl` and by contracts created from `web3`.
+web3.handleRevert = true;
 
 async function interact() {
 	//fetch all the available accounts
@@ -142,9 +143,9 @@ async function interact() {
 		value: web3.utils.toPlanck('1', 'quanta'), // value should be passed in planck. For easier use and to avoid mistakes we utilize the auxiliary `toPlanck` function.
 	};
 
-	//send the actual transaction
-	const transactionHash = await web3.qrl.sendTransaction(transaction);
-	console.log('transactionHash', transactionHash);
+	//send the actual transaction; the promise resolves with the receipt of the mined transaction
+	const receipt = await web3.qrl.sendTransaction(transaction);
+	console.log('transactionHash', receipt.transactionHash);
 
 	balance1 = await web3.qrl.getBalance(accounts[0]);
 	balance2 = await web3.qrl.getBalance(accounts[1]);
@@ -189,19 +190,7 @@ If everything is working correctly, you should see something like the following:
 ]
 100000000000000000000n 100000000000000000000n
 
-transactionHash {
-  transactionHash: '0xf685b64ccf5930d3779a33335ca22195b68901dbdc439f79dfc65d87c7ae88b0',
-  transactionIndex: 0n,
-  blockHash: '0x5bc044ad949cfd32ea4cbb249f0292e7dded44c3b0f599236c6d20ddaa96cc06',
-  blockNumber: 1n,
-  from: 'Qc68863f36c48ec168ad45a86c96347d520eac1cf',
-  to: 'Q80c05939b307f9833d905a685575b45659d3ea70',
-  gasUsed: 21000n,
-  cumulativeGasUsed: 21000n,
-  logs: [],
-  status: 1n,
-  logsBloom: '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
-}
+transactionHash 0xf685b64ccf5930d3779a33335ca22195b68901dbdc439f79dfc65d87c7ae88b0
 
 98999580000000000000n 101000000000000000000n
 
@@ -303,8 +292,12 @@ In the next example we are going to sign a transaction and use `sendSignedTransa
 import Web3 from '@theqrl/web3';
 const web3 = new Web3('http://localhost:8545');
 
-// Replace this with a private key for a local development account only.
-const privateKey = '0x...';
+// Replace this with the extended seed of a local development account only.
+// A QRL account is identified by a 51-byte extended seed (hex string of 102
+// characters after `0x`): a 3-byte descriptor followed by the 48-byte seed from
+// which the ML-DSA-87 key pair is derived. `web3.qrl.accounts.create().seed`
+// returns one; there is no separate "private key" value.
+const seed = '0x010000...';
 const value = web3.utils.toPlanck('1', 'quanta');
 
 async function sendSigned() {
@@ -322,8 +315,8 @@ async function sendSigned() {
 		nonce: await web3.qrl.getTransactionCount(fromAddress),
 	};
 
-	// Sign the transaction with the private key
-	const signedTx = await web3.qrl.accounts.signTransaction(tx, privateKey);
+	// Sign the transaction with the account seed
+	const signedTx = await web3.qrl.accounts.signTransaction(tx, seed);
 
 	// Send the signed transaction to the network
 	const receipt = await web3.qrl.sendSignedTransaction(signedTx.rawTransaction);

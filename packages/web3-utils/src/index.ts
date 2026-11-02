@@ -32,4 +32,6 @@ export * from './web3_eip1193_provider.js';
 export * from './socket_provider.js';
 export * from './uint8array.js';
 export * from './provider_bounds.js';
+export * from './json_response_bounds.js';
 export * from './abort_helpers.js';
+export * from './event_emitter.js';

@@ -26,6 +26,13 @@
 				"prepareCmd": "node ../../scripts/release/set-package-version.js ${nextRelease.version}"
 			}
 		],
-		"@semantic-release/github"
+		[
+			"@semantic-release/github",
+			{
+				"draftRelease": true,
+				"successCommentCondition": false,
+				"failCommentCondition": false
+			}
+		]
 	]
 }

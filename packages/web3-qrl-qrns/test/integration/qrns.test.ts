@@ -15,12 +15,9 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import { getBlock } from '@theqrl/web3-qrl';
 import { Contract, PayableTxOptions } from '@theqrl/web3-qrl-contract';
-import { Address, Bytes, DEFAULT_RETURN_FORMAT } from '@theqrl/web3-types';
+import { Address, Bytes } from '@theqrl/web3-types';
 import { sha3, toChecksumAddress } from '@theqrl/web3-utils';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { IpcProvider } from '@theqrl/web3-providers-ipc';
 import { QRNS } from '../../src';
 import { namehash } from '../../src/utils';
@@ -36,12 +33,9 @@ import {
 } from '../fixtures/system_tests_utils';
 
 import { PublicResolverAbi as PublicResolver } from '../../src/abi/qrns/PublicResolver';
-import { QRNSRegistryAbi } from '../fixtures/qrns/abi/QRNSRegistry';
-import { NameWrapperAbi } from '../fixtures/qrns/abi/NameWrapper';
-import { PublicResolverAbi } from '../fixtures/qrns/abi/PublicResolver';
-import { QRNSRegistryBytecode } from '../fixtures/qrns/bytecode/QRNSRegistryBytecode';
-import { NameWrapperBytecode } from '../fixtures/qrns/bytecode/NameWrapperBytecode';
-import { PublicResolverBytecode } from '../fixtures/qrns/bytecode/PublicResolverBytecode';
+import { NameWrapperAbi, NameWrapperBytecode } from '../shared_fixtures/build/NameWrapper';
+import { PublicResolverAbi, PublicResolverBytecode } from '../shared_fixtures/build/PublicResolver';
+import { QRNSRegistryAbi, QRNSRegistryBytecode } from '../shared_fixtures/build/QRNSRegistry';
 
 describe('qrns', () => {
 	let registry: Contract<typeof QRNSRegistryAbi>;
@@ -63,18 +57,16 @@ describe('qrns', () => {
 	const fullDomain = `${subdomain}.${domain}`;
 	const web3jsName = 'web3js.test';
 
-	let accounts: string[];
 	let qrns: QRNS;
 	let defaultAccount: string;
 	let accountOne: string;
 
 	const ZERO_NODE: Bytes = '0x0000000000000000000000000000000000000000000000000000000000000000';
-	const addressOne: Address = 'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001';
+	const addressOne: Address =
+		'Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001';
 
 	beforeAll(async () => {
-		accounts = await getSystemTestAccounts();
-
-		[defaultAccount, accountOne] = accounts;
+		[defaultAccount, accountOne] = await getSystemTestAccounts();
 
 		sendOptions = { from: defaultAccount, gas: '10000000' };
 
@@ -121,15 +113,6 @@ describe('qrns', () => {
 		else provider = new QRNS.providers.HttpProvider(clientUrl);
 
 		qrns = new QRNS(registry.options.address, provider);
-
-		const block = await getBlock(qrns, 'latest', false, DEFAULT_RETURN_FORMAT);
-		const gas = block.gasLimit.toString();
-
-		// Increase gas for contract calls
-		sendOptions = {
-			...sendOptions,
-			gas,
-		};
 	});
 
 	afterAll(async () => {

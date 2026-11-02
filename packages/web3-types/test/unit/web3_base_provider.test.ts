@@ -33,7 +33,6 @@ class Web3ChildProvider extends Web3BaseProvider {
 		// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	>(_: Web3APIPayload<QRLExecutionAPI, Method>): Promise<JsonRpcResponseWithResult<ResultType>> {
 		return new Promise(resolve =>
-			// eslint-disable-next-line no-promise-executor-return
 			resolve({
 				jsonrpc: '2.0',
 				id: 1,

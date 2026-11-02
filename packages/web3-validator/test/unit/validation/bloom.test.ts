@@ -83,3 +83,7 @@ describe('validation', () => {
 		});
 	});
 });
+
+test('returns false for an odd-length hex bloom value', () => {
+	expect(isInBloom(`0x${'f'.repeat(512)}`, '0x1')).toBe(false);
+});

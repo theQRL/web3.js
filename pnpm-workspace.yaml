@@ -11,30 +11,43 @@ nodeLinker: hoisted
 minimumReleaseAge: 10080
 minimumReleaseAgeExclude:
 - '@theqrl/*'
-# CVE remediation — bypass quarantine for security-only patch releases
-- '@babel/plugin-transform-modules-systemjs'
-- 'brace-expansion'
-- 'fast-uri'
-- 'postcss'
-- 'svgo'
+# CVE remediation — bypass quarantine for the exact security patch releases the
+# overrides below resolve to. Every entry other than @theqrl/* must be pinned to
+# exact versions (`name@x.y.z`, several joined with `||`): a name-only entry
+# would exempt every future release of the package, and `pnpm run doctor`
+# fails on it.
+- 'body-parser@2.4.0'
+- 'joi@17.13.9'
 blockExoticSubdeps: true
 overrides:
+  # CVE-2026-118664 — remove decode-uri-component via micromatch 3's
+  # snapdragon/source-map-resolve chain in the Cypress adapter's Jest 24.
+  # jest-message-util only uses micromatch.some, which is retained in v4.
+  "jest-message-util@24.9.0>micromatch": "4.0.8"
   "braces@<3.0.3": "3.0.3"
-  "undici@<6.27.0": "6.27.0"
-  "undici@>=7.0.0 <7.28.0": "7.28.0"
-  "fast-uri@<3.1.5": "3.1.5"
-  # CVE-2026-69152 — brace-expansion unbounded intermediate-array DoS (high)
-  "brace-expansion@<1.1.18": "1.1.18"
-  "brace-expansion@>=2.0.0 <2.1.4": "2.1.4"
-  "brace-expansion@>=5.0.0 <5.0.9": "5.0.9"
+  # CVE-2026-13697 / CVE-2026-19534 / CVE-2026-84961 — undici TLS validation
+  # bypass (BalancedPool) and request handling (high); dev tooling via
+  # @semantic-release/github and @actions/http-client.
+  "undici@>=6.0.0 <6.29.1": "6.29.1"
+  "undici@>=7.0.0 <7.30.1": "7.30.1"
+  # CVE-2026-111181 — compressed request body trailing-byte DoS (dev tooling).
+  "body-parser@>=2.0.0 <2.4.0": "2.4.0"
+  "fast-uri@<3.1.7": "3.1.7"
+  # CVE-2026-102276 / CVE-2026-102278 — recursive brace-expansion DoS
+  "brace-expansion@<1.1.20": "1.1.20"
+  "brace-expansion@>=2.0.0 <2.1.6": "2.1.6"
+  "brace-expansion@>=5.0.0 <5.0.11": "5.0.11"
   "postcss@<8.5.18": "8.5.18"
-  "svgo@>=3.0.0 <3.3.4": "3.3.4"
-  # CVE remediation — shell-quote newline escaping (critical) + ws memory-exhaustion DoS (high)
-  "shell-quote@<1.8.4": "1.9.0"
+  "svgo@>=3.0.0 <3.3.5": "3.3.5"
+  # CVE-2026-102422 — shell-quote command injection after comment tokens
+  "shell-quote@<1.11.0": "1.11.0"
+  # CVE-2026-106445 / CVE-2026-106446 — handlebars JavaScript injection
+  # (critical); release tooling via conventional-changelog-writer.
+  "handlebars@<4.7.10": "4.7.10"
+  # CVE remediation — ws memory-exhaustion DoS (high)
   "ws@>=7.0.0 <7.5.11": "7.5.11"
   "ws@>=8.0.0 <8.21.0": "8.21.0"
   # CVE remediation — high/critical in dev tooling (Trivy HIGH,CRITICAL gate)
-  "adm-zip@<0.6.0": "0.6.0"
   "http-proxy-middleware@<2.0.10": "2.0.10"
   "http-proxy-middleware@>=4.0.0 <4.1.1": "4.2.0"
   "linkify-it@<5.0.1": "5.0.2"
@@ -43,58 +56,64 @@ overrides:
   "@babel/plugin-transform-modules-systemjs@<7.29.4": "7.29.4"
   "qs@>=6.11.1 <6.15.2": "6.15.3"
   "cookie@<0.7.0": "0.7.2"
-  "markdown-it@<14.2.0": "14.3.0"
-  "joi@<17.13.4": "17.13.4"
-  "launch-editor@<2.14.1": "2.14.1"
+  # CVE-2026-111758 / CVE-2026-111759 — markdown-it DoS (high); docs via typedoc.
+  "markdown-it@>=14.0.0 <14.3.3": "14.3.3"
+  # GHSA-4528-x5fx-h6hg — quadratic `string().email({ multiple: true })` split DoS
+  # (high); docs via @docusaurus/types.
+  "joi@<17.13.9": "17.13.9"
+  "launch-editor@<2.14.2": "2.14.2"
   "webpack-dev-server@<5.2.5": "5.2.6"
   "@babel/core@<7.29.6": "7.29.7"
   "uuid@<11.1.1": "11.1.1"
-  "js-yaml@>=3.0.0 <4.0.0": "3.15.0"
-  "js-yaml@>=4.0.0 <4.2.0": "4.3.0"
-  "@docusaurus/core": 3.10.1
-  "@docusaurus/mdx-loader": 3.10.1
-  "@docusaurus/module-type-aliases": 3.10.1
-  "@docusaurus/plugin-content-blog": 3.10.1
-  "@docusaurus/plugin-content-docs": 3.10.1
-  "@docusaurus/plugin-content-pages": 3.10.1
-  "@docusaurus/plugin-css-cascade-layers": 3.10.1
-  "@docusaurus/plugin-debug": 3.10.1
-  "@docusaurus/plugin-google-analytics": 3.10.1
-  "@docusaurus/plugin-google-gtag": 3.10.1
-  "@docusaurus/plugin-google-tag-manager": 3.10.1
-  "@docusaurus/plugin-sitemap": 3.10.1
-  "@docusaurus/plugin-svgr": 3.10.1
-  "@docusaurus/preset-classic": 3.10.1
-  "@docusaurus/theme-classic": 3.10.1
-  "@docusaurus/theme-common": 3.10.1
-  "@docusaurus/theme-live-codeblock": 3.10.1
-  "@docusaurus/theme-search-algolia": 3.10.1
-  "@docusaurus/types": 3.10.1
-  "@docusaurus/utils": 3.10.1
-  "@docusaurus/utils-common": 3.10.1
-  "@docusaurus/utils-validation": 3.10.1
-  baseline-browser-mapping: 2.8.9
-  browserslist: 4.26.3
+  "js-yaml@>=3.0.0 <3.15.2": "3.15.2"
+  "js-yaml@>=4.0.0 <4.3.2": "4.3.2"
+  "nanoid@<3.3.18": "3.3.18"
+  # October 2026 audit: docs/build/release-tooling security fixes.
+  "compression@<1.8.2": "1.8.2"
+  # CVE-2026-116689 — cross-realm sensitiveHeaders bypass (high); @theqrl/hypc.
+  "follow-redirects@<1.16.2": "1.16.2"
+  "http-cache-semantics@<4.3.0": "4.3.0"
+  "image-size@>=2.0.0 <2.0.4": "2.0.4"
+  "proxy-addr@<2.0.8": "2.0.8"
+  "source-map-js@<1.2.2": "1.2.2"
+  "tinypool@<2.1.2": "2.1.2"
+  "webpack-dev-middleware@>=7.0.0 <7.4.6": "7.4.6"
+  "@docusaurus/core": 3.10.2
+  "@docusaurus/mdx-loader": 3.10.2
+  "@docusaurus/module-type-aliases": 3.10.2
+  "@docusaurus/plugin-content-blog": 3.10.2
+  "@docusaurus/plugin-content-docs": 3.10.2
+  "@docusaurus/plugin-content-pages": 3.10.2
+  "@docusaurus/plugin-css-cascade-layers": 3.10.2
+  "@docusaurus/plugin-debug": 3.10.2
+  "@docusaurus/plugin-google-analytics": 3.10.2
+  "@docusaurus/plugin-google-gtag": 3.10.2
+  "@docusaurus/plugin-google-tag-manager": 3.10.2
+  "@docusaurus/plugin-sitemap": 3.10.2
+  "@docusaurus/plugin-svgr": 3.10.2
+  "@docusaurus/preset-classic": 3.10.2
+  "@docusaurus/theme-classic": 3.10.2
+  "@docusaurus/theme-common": 3.10.2
+  "@docusaurus/theme-live-codeblock": 3.10.2
+  "@docusaurus/theme-search-algolia": 3.10.2
+  "@docusaurus/types": 3.10.2
+  "@docusaurus/utils": 3.10.2
+  "@docusaurus/utils-common": 3.10.2
+  "@docusaurus/utils-validation": 3.10.2
+  baseline-browser-mapping: 2.11.21
+  browserslist: 4.28.9
   es-module-lexer: 2.0.0
-  express: 5.2.1
+  express: 5.3.0
   loader-runner: 4.3.1
-  path-to-regexp: 0.1.13
   "schema-utils@4>ajv": 8.17.1
   serialize-javascript: 7.0.5
-  socks: 2.8.7
-  webpack: 5.107.1
+  webpack: 5.112.2
   webpack-sources: 3.3.3
 strictDepBuilds: true
+# Every key below must exist in pnpm-lock.yaml: `pnpm run doctor` fails on a
+# stale entry so install scripts are never pre-approved for an absent package.
 allowBuilds:
-  "@parcel/watcher": true
   bufferutil: true
   core-js: true
-  es5-ext: true
-  keccak: true
-  nx: true
-  secp256k1: true
   unrs-resolver: true
   utf-8-validate: true
-  web3: true
-  web3-bzz: true
-  web3-shh: true

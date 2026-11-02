@@ -29,6 +29,9 @@ declare module './reexported_web3_context' {
 }
 
 describe('Web3Context extend tests', () => {
+	const testAddress =
+		'Q78802C1E641D04248953Fb6d81a1520e9BF82Bb87Aa298F298CDcb0EB5CbD6DE6f29047BaA010E6C776E1C6cfC2e58ed9A1294E1FD99621a3AC53b08D24D8f48';
+
 	it('Web3Context extend should send correct rpc call', async () => {
 		const web3 = new Web3Context('http://127.0.0.1:7545');
 
@@ -45,11 +48,11 @@ describe('Web3Context extend tests', () => {
 			],
 		});
 
-		await web3.L2Module.getL2Balance('Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000005b43746580aaf00a69019fa59d9ed7d9c85ddd70', 'latest');
+		await web3.L2Module.getL2Balance(testAddress, 'latest');
 
 		expect(requestManagerSendSpy).toHaveBeenCalledWith({
 			method: 'qrl_getBalance',
-			params: ['Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000005b43746580aaf00a69019fa59d9ed7d9c85ddd70', 'latest'],
+			params: [testAddress, 'latest'],
 		});
 	});
 
@@ -68,11 +71,11 @@ describe('Web3Context extend tests', () => {
 			],
 		});
 
-		await web3.getL0Balance('Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000005b43746580aaf00a69019fa59d9ed7d9c85ddd70', 'latest');
+		await web3.getL0Balance(testAddress, 'latest');
 
 		expect(requestManagerSendSpy).toHaveBeenCalledWith({
 			method: 'qrl_getBalance',
-			params: ['Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000005b43746580aaf00a69019fa59d9ed7d9c85ddd70', 'latest'],
+			params: [testAddress, 'latest'],
 		});
 	});
 });

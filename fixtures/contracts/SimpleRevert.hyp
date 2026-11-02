@@ -1,0 +1,28 @@
+// SPDX-License-Identifier: GNU
+pragma hyperion >=0.0;
+
+error ErrorWithNoParams();
+error ErrorWithParams(uint256 code, string message);
+
+contract SimpleRevert {
+	constructor() {}
+
+	function revertCall() public pure {
+		revert('This is a call revert');
+	}
+
+	function revertErrorWithNoParams() public {
+		revert ErrorWithNoParams();
+	}
+
+	function revertErrorWithParams() public {
+		revert ErrorWithParams(42, 'This is an error with params');
+	}
+
+	function revertSend(string memory revertString) public {
+		require(
+			keccak256(bytes(revertString)) != keccak256(bytes('revert')),
+			'This is a send revert'
+		);
+	}
+}

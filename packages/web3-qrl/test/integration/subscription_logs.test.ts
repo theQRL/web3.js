@@ -15,10 +15,8 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 import WebSocketProvider from '@theqrl/web3-providers-ws';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { Contract, decodeEventABI } from '@theqrl/web3-qrl-contract';
 import { AbiEventFragment, Web3BaseProvider } from '@theqrl/web3-types';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { IpcProvider } from '@theqrl/web3-providers-ipc';
 import { Web3QRL } from '../../src';
 import { LogsSubscription } from '../../src/web3_subscriptions';
@@ -45,10 +43,9 @@ const makeFewTxToContract = async ({
 	sendOptions,
 	testDataString,
 }: MakeFewTxToContract): Promise<void> => {
-	const prs = [];
 	for (let i = 0; i < checkEventCount; i += 1) {
 		// eslint-disable-next-line no-await-in-loop
-		prs.push(await contract.methods?.firesStringEvent(testDataString).send(sendOptions));
+		await contract.methods?.firesStringEvent(testDataString).send(sendOptions);
 	}
 };
 describeIf(isSocket)('subscription', () => {
@@ -84,7 +81,7 @@ describeIf(isSocket)('subscription', () => {
 				arguments: [10, 'string init value'],
 			};
 
-			sendOptions = { from, gas: '1000000' };
+			sendOptions = { from, gas: '1200000' };
 			contractDeployed = await contract.deploy(deployOptions).send(sendOptions);
 
 			const sub: LogsSubscription = await web3QRL.subscribe('logs', {

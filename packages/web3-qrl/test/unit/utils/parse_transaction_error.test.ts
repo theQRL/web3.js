@@ -17,7 +17,7 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import { ContractExecutionError, InvalidResponseError } from '@theqrl/web3-errors';
 
 import { parseTransactionError } from '../../../src/utils/get_revert_reason';
-import { SimpleRevertAbi } from '../../fixtures/simple_revert';
+import { SimpleRevertAbi } from '../../shared_fixtures/build/SimpleRevert';
 
 describe('parseTransactionError', () => {
 	it('should return object of type RevertReason', () => {
@@ -81,15 +81,29 @@ describe('parseTransactionError', () => {
 		expect(() => parseTransactionError(numericDataError, SimpleRevertAbi)).not.toThrow();
 	});
 
-	it('should return object of type string', () => {
+	it('should return object of type string for an execution error (code 3) reply', () => {
 		const error = new InvalidResponseError({
 			jsonrpc: '2.0',
 			id: '3f839900-afdd-4553-bca7-b4e2b835c687',
-			error: { code: -32000, message: 'intrinsic gas too low' },
+			error: { code: 3, message: 'execution failed' },
 		});
 
 		const result = parseTransactionError(error);
-		expect(result).toBe('intrinsic gas too low');
+		expect(result).toBe('execution failed');
+	});
+
+	it.each([
+		[-32000, 'insufficient funds for gas * price + value'],
+		[-32000, 'intrinsic gas too low'],
+		[-32601, 'the method qrl_call does not exist'],
+	])('rethrows a non-revert error reply (code %i) instead of turning it into a reason (L-52)', (code, message) => {
+		const error = new InvalidResponseError({
+			jsonrpc: '2.0',
+			id: '3f839900-afdd-4553-bca7-b4e2b835c687',
+			error: { code, message },
+		});
+
+		expect(() => parseTransactionError(error)).toThrow(error);
 	});
 
 	it('should throw an error', () => {

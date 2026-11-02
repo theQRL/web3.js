@@ -69,7 +69,7 @@ const loadSecrets = (): Secrets => {
 const secrets = loadSecrets();
 
 export const getSystemE2ETestProvider = (): string => {
-	if (process.env.WEB3_SYTEM_TEST_MODE === 'http') {
+	if (process.env.WEB3_SYSTEM_TEST_MODE === 'http') {
 		return getSystemTestBackend() === 'testnet'
 			? process.env.QRL_TESTNET_HTTP ?? secrets.TESTNET.HTTP
 			: process.env.QRL_MAINNET_HTTP ?? secrets.MAINNET.HTTP;
@@ -82,7 +82,6 @@ export const getSystemE2ETestProvider = (): string => {
 export const getE2ETestAccountAddress = (): string => {
 	if (process.env.TEST_ACCOUNT_ADDRESS !== undefined) {
 		return process.env.TEST_ACCOUNT_ADDRESS;
-		// eslint-disable-next-line no-else-return
 	} else if (getSystemTestBackend() === 'testnet' || getSystemTestBackend() === 'mainnet') {
 		return secrets[getSystemTestBackend().toUpperCase() as 'TESTNET' | 'MAINNET'].ACCOUNT
 			.address;
@@ -92,7 +91,6 @@ export const getE2ETestAccountAddress = (): string => {
 };
 
 export const getE2ETestContractAddress = () =>
-	// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
 	secrets[getSystemTestBackend().toUpperCase() as 'TESTNET' | 'MAINNET']
 		.DEPLOYED_TEST_CONTRACT_ADDRESS as string;
 
@@ -104,7 +102,6 @@ export const getAllowedSendTransaction = (): boolean => {
 		}
 
 		return Boolean(process.env.ALLOWED_SEND_TRANSACTION);
-		// eslint-disable-next-line no-else-return
 	} else if (getSystemTestBackend() === 'testnet' || getSystemTestBackend() === 'mainnet') {
 		return secrets[getSystemTestBackend().toUpperCase() as 'TESTNET' | 'MAINNET']
 			.ALLOWED_SEND_TRANSACTION;
@@ -116,7 +113,6 @@ export const getAllowedSendTransaction = (): boolean => {
 export const getE2ETestAccountSeed = (): string => {
 	if (process.env.TEST_ACCOUNT_PRIVATE_KEY !== undefined) {
 		return process.env.TEST_ACCOUNT_PRIVATE_KEY;
-		// eslint-disable-next-line no-else-return
 	} else if (getSystemTestBackend() === 'testnet' || getSystemTestBackend() === 'mainnet') {
 		return secrets[getSystemTestBackend().toUpperCase() as 'TESTNET' | 'MAINNET'].ACCOUNT.seed;
 	}

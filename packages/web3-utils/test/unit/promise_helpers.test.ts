@@ -138,4 +138,42 @@ describe('promise helpers', () => {
 			clearInterval(intervalId);
 		});
 	});
+
+	describe('third audit pass regressions (L-25)', () => {
+		afterEach(() => {
+			jest.useRealTimers();
+		});
+
+		it('isPromise is false for null and undefined', () => {
+			// eslint-disable-next-line no-null/no-null
+			expect(isPromise(null)).toBe(false);
+			expect(isPromise(undefined)).toBe(false);
+		});
+
+		it('rejectIfConditionAtInterval rejects when the condition throws and stops polling', async () => {
+			jest.useFakeTimers();
+			let calls = 0;
+			const [intervalId, promise] = rejectIfConditionAtInterval(async () => {
+				calls += 1;
+				await Promise.resolve();
+				throw new Error(`cond failed #${calls}`);
+			}, 100);
+			const assertion = expect(promise).rejects.toThrow('cond failed #1');
+
+			await jest.advanceTimersByTimeAsync(100);
+			await assertion;
+
+			await jest.advanceTimersByTimeAsync(1_000);
+			expect(calls).toBe(1);
+			clearInterval(intervalId);
+		});
+
+		it('waitWithTimeout clears its timer when the awaitable rejects', async () => {
+			jest.useFakeTimers();
+			await expect(
+				waitWithTimeout(Promise.reject(new Error('boom')), 60_000, new Error('timeout')),
+			).rejects.toThrow('boom');
+			expect(jest.getTimerCount()).toBe(0);
+		});
+	});
 });

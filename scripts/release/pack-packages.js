@@ -17,11 +17,18 @@ const releasedPackages = publishablePackages().map(pkg => ({
 	tarballName: tarballName(pkg),
 }));
 
-// `pnpm pack` (unlike `npm pack`) replaces the `workspace:` protocol on
-// dependencies with the resolved version range, so the tarballs install
-// cleanly under any package manager.
+// Sibling ranges in the packed manifests. In the release workflow
+// `multi-semantic-release --deps.prefix=^` has already rewritten EVERY
+// `workspace:^` entry of a released package to a caret range: `^<new version>`
+// for a sibling released in the same run and `^<sibling's last release tag>`
+// for one that was not (it derives both from git tags, never from the committed
+// `version` field — node_modules/multi-semantic-release/lib/updateDeps.js).
+// Outside a release (CI's package inspection, local evidence runs, this script)
+// the manifests still carry `workspace:^`, which `pnpm pack` substitutes with
+// `^<committed sibling version>`; those tarballs are inspected and smoke-tested
+// but never published. See RELEASE.md, "Cross-Package Version Ranges".
 for (const pkg of releasedPackages) {
-	console.log(`Packing ${pkg.name}@${pkg.version}`);
+	console.info(`Packing ${pkg.name}@${pkg.version}`);
 	execFileSync('pnpm', ['pack', '--pack-destination', tarballDirectory], {
 		cwd: pkg.path,
 		stdio: 'inherit',
@@ -33,6 +40,6 @@ const tsv = releasedPackages
 	.join('\n');
 
 writeFileSync(resolve(outputDirectory, 'released-packages.tsv'), `${tsv}\n`);
-writeFileSync(resolve(outputDirectory, 'released-packages.json'), `${JSON.stringify(releasedPackages, null, 2)}\n`);
+writeFileSync(resolve(outputDirectory, 'released-packages.json'), `${JSON.stringify(releasedPackages, undefined, 2)}\n`);
 
-console.log(`Packed ${releasedPackages.length} publishable packages into ${tarballDirectory}`);
+console.info(`Packed ${releasedPackages.length} publishable packages into ${tarballDirectory}`);

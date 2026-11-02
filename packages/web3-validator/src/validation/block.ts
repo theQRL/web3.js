@@ -18,7 +18,8 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import { BlockTags } from '@theqrl/web3-types';
 import { isUInt } from './numbers.js';
 
-export const isBlockNumber = (value: string | number | bigint): boolean => isUInt(value);
+export const isBlockNumber = (value: string | number | bigint): boolean =>
+	isUInt(value, { bitSize: 512 });
 
 /**
  * Returns true if the given blockNumber is 'latest', 'pending', 'earliest, 'safe' or 'finalized'
