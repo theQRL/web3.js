@@ -23,16 +23,24 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 // multi-semantic-release derives sibling ranges from the last tag, so a
 // tagged-but-unpublished version blocks every dependant until it is published.
 //
-// Usage: republish-plan.js <"all-missing" | tag[,tag...]> <output directory>
+// Usage: republish-plan.js [--reattest] <"all-missing" | "latest" | tag[,tag...]> <output directory>
 //
 // Writes <output directory>/republish.tsv (commit, package path, name, version,
 // release tag, tarball name — one row per package to rebuild, grouped by
 // commit), plus released-packages.tsv/.json in the shape packages.js writes so
 // the rest of the release workflow is unchanged, and the GitHub outputs
-// `released`, `count` and `packages`. A requested tag whose version is already
-// on the registry is reported and left out: publish-tarballs.js would only
-// re-verify its integrity, and a rebuilt tarball is not guaranteed to be
-// byte-identical.
+// `released`, `count`, `packages`, `mode` and `source-commit` (the one commit
+// every planned tag points at, empty when they span several). A requested tag
+// whose version is already on the registry is reported and left out: a
+// rebuilt tarball is not guaranteed to be byte-identical (its gzip framing
+// depends on the runner's zlib), so publish-tarballs.js could only fail it.
+//
+// With --reattest the plan is the reverse: only versions already on the
+// registry are kept, for a run that rebuilds them, proves the rebuild matches
+// the published contents (verify-registry-tarballs.js) and then produces the
+// SBOMs, attestations and GitHub releases an earlier run did not. `latest`
+// requests the last release tag of every publishable package; it is the
+// re-attest counterpart of `all-missing`.
 
 const { mkdirSync, writeFileSync } = require('fs');
 const { join } = require('path');
@@ -49,12 +57,20 @@ const writeGithubOutput = values => {
 };
 
 // Resolves the request into `{ entries, skipped }`; throws on an invalid tag.
-const planRepublish = async (request, { cwd, fetchImpl } = {}) => {
+const planRepublish = async (request, { cwd, fetchImpl, reattest = false } = {}) => {
 	const packages = publishablePackages();
 	const byName = new Map(packages.map(pkg => [pkg.name, pkg]));
 	const wanted = [];
+	const keyword = request.trim();
 
-	if (request.trim() === 'all-missing') {
+	if (keyword === (reattest ? 'all-missing' : 'latest')) {
+		throw new Error(
+			reattest
+				? '"all-missing" plans unpublished versions; re-attest takes "latest" or a list of tags'
+				: '"latest" is for --reattest; republishing takes "all-missing" or a list of tags',
+		);
+	}
+	if (keyword === 'all-missing' || keyword === 'latest') {
 		for (const pkg of packages) {
 			const release = lastReleaseAt(pkg.name, 'HEAD', cwd);
 			if (release) wanted.push({ pkg, tag: release.tag, version: release.version });
@@ -76,8 +92,13 @@ const planRepublish = async (request, { cwd, fetchImpl } = {}) => {
 	const skipped = [];
 	for (const { pkg, tag, version } of wanted) {
 		const { versions } = await fetchPublished(pkg.name, fetchImpl);
-		if (versions.includes(version)) {
+		const onRegistry = versions.includes(version);
+		if (onRegistry && !reattest) {
 			skipped.push(`${tag} (already on the registry)`);
+			continue;
+		}
+		if (!onRegistry && reattest) {
+			skipped.push(`${tag} (not on the registry; republish it instead)`);
 			continue;
 		}
 		const released = { ...pkg, version };
@@ -117,22 +138,34 @@ const writePlan = (outputDirectory, entries) => {
 };
 
 if (require.main === module) {
-	const [request, outputDirectory] = process.argv.slice(2);
+	const args = process.argv.slice(2);
+	const reattest = args[0] === '--reattest';
+	const [request, outputDirectory] = reattest ? args.slice(1) : args;
 	if (!request || !outputDirectory) {
-		console.error('Usage: republish-plan.js <"all-missing" | tag[,tag...]> <output directory>');
+		console.error('Usage: republish-plan.js [--reattest] <"all-missing" | "latest" | tag[,tag...]> <output directory>');
 		process.exit(2);
 	}
-	planRepublish(request)
+	planRepublish(request, { reattest })
 		.then(({ entries, skipped }) => {
+			const verb = reattest ? 'Re-attesting' : 'Republishing';
 			for (const note of skipped) console.info(`Skipping ${note}`);
-			for (const entry of entries) console.info(`Republishing ${entry.releaseTag} from ${entry.commit}`);
+			for (const entry of entries) console.info(`${verb} ${entry.releaseTag} from ${entry.commit}`);
 			writePlan(outputDirectory, entries);
+			const commits = new Set(entries.map(entry => entry.commit));
 			writeGithubOutput({
 				released: entries.length > 0 ? 'true' : 'false',
 				count: String(entries.length),
 				packages: entries.map(entry => entry.name).join(','),
+				mode: reattest ? 'reattest' : 'republish',
+				'source-commit': commits.size === 1 ? [...commits][0] : '',
 			});
-			if (entries.length === 0) console.info('Nothing to republish: every requested version is on the registry');
+			if (entries.length === 0) {
+				console.info(
+					reattest
+						? 'Nothing to re-attest: no requested version is on the registry'
+						: 'Nothing to republish: every requested version is on the registry',
+				);
+			}
 		})
 		.catch(err => {
 			console.error(err.message || err);

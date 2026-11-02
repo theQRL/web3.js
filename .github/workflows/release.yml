@@ -6,14 +6,28 @@ on:
   # Manual path: rebuild and publish versions that an earlier run tagged but
   # never published (RELEASE.md, "Recovering From A Failed Release Run"). It
   # runs through the same `npm-publish` environment and the same publish,
-  # attestation and provenance jobs as a push release.
+  # attestation and provenance jobs as a push release. The `reattest` mode
+  # rebuilds versions that are already on the registry, proves the rebuild
+  # matches the published contents and completes the SBOMs, attestations and
+  # GitHub releases an earlier run did not; it publishes nothing.
   workflow_dispatch:
     inputs:
+      mode:
+        description: >-
+          "republish" publishes tagged versions missing from the registry;
+          "reattest" attests and releases tagged versions already on it.
+        required: true
+        default: republish
+        type: choice
+        options:
+          - republish
+          - reattest
       tags:
         description: >-
-          Release tags to rebuild and publish, comma-separated
-          (e.g. "@theqrl/web3@1.0.4,@theqrl/web3-utils@1.0.4"), or "all-missing"
-          for every package whose last tag is not on the registry.
+          Release tags, comma-separated
+          (e.g. "@theqrl/web3@1.0.4,@theqrl/web3-utils@1.0.4"); or "all-missing"
+          (republish) for every package whose last tag is not on the registry,
+          or "latest" (reattest) for the last tag of every package.
         required: true
         default: all-missing
         type: string
@@ -57,6 +71,12 @@ jobs:
       released: ${{ steps.released.outputs.released || steps.republish.outputs.released }}
       count: ${{ steps.released.outputs.count || steps.republish.outputs.count }}
       packages: ${{ steps.released.outputs.packages || steps.republish.outputs.packages }}
+      # `release` (push), `republish` or `reattest` (workflow_dispatch).
+      mode: ${{ steps.republish.outputs.mode || 'release' }}
+      # The commit the released versions were built from, which the SBOMs
+      # describe; a manual run spanning several tagged commits falls back to
+      # the dispatched commit.
+      source-commit: ${{ steps.republish.outputs.source-commit || github.sha }}
       # sha256sum output (base64) of every file in the release-candidate
       # artifact, and of the tarballs alone. Job outputs are fixed when this job
       # ends, so the consuming jobs verify the artifact they download against
@@ -141,16 +161,21 @@ jobs:
           done < .release/released-packages.tsv
 
       # Manual path. Resolves the requested tags to the versions that are
-      # missing from the registry and the commits they point at; every later
-      # step reads the same .release/released-packages.{tsv,json} as the push
-      # path. Versions already on the registry are skipped: publish-tarballs.js
-      # would only re-verify their integrity against a rebuild.
-      - name: Plan the versions to republish
+      # missing from the registry (republish) or already on it (reattest) and
+      # the commits they point at; every later step reads the same
+      # .release/released-packages.{tsv,json} as the push path.
+      - name: Plan the versions to republish or re-attest
         id: republish
         if: github.event_name == 'workflow_dispatch'
         env:
+          MODE: ${{ inputs.mode }}
           REQUESTED_TAGS: ${{ inputs.tags }}
-        run: node scripts/release/republish-plan.js "${REQUESTED_TAGS}" .release
+        run: |
+          case "${MODE}" in
+            republish) node scripts/release/republish-plan.js "${REQUESTED_TAGS}" .release ;;
+            reattest) node scripts/release/republish-plan.js --reattest "${REQUESTED_TAGS}" .release ;;
+            *) echo "Unknown mode: ${MODE}" >&2; exit 1 ;;
+          esac
 
       # Each tagged commit is checked out, installed from its own lockfile and
       # built; scripts/release/restore-tag-manifests.js re-creates the manifest
@@ -190,6 +215,13 @@ jobs:
           while IFS=$'\t' read -r _package_path _package_name _package_version _release_tag tarball_name; do
             test -s "dist/tarballs/${tarball_name}"
           done < .release/released-packages.tsv
+
+      # Re-attest only: the rebuilt tarballs must have exactly the published
+      # contents; they are then replaced with the registry's bytes, so the
+      # checksums, attestations and release assets name what npm serves.
+      - name: Verify the rebuilds against the registry
+        if: steps.republish.outputs.mode == 'reattest' && steps.republish.outputs.released == 'true'
+        run: node scripts/release/verify-registry-tarballs.js .release/released-packages.tsv dist/tarballs
 
       - name: Collect release metadata
         if: steps.released.outputs.released == 'true' || steps.republish.outputs.released == 'true'
@@ -277,7 +309,7 @@ jobs:
   publish:
     name: Publish
     needs: [prepare, smoke-node-floor]
-    if: needs.prepare.outputs.released == 'true'
+    if: needs.prepare.outputs.released == 'true' && needs.prepare.outputs.mode != 'reattest'
     runs-on: ubuntu-latest
     environment: npm-publish
     permissions:
@@ -353,7 +385,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ needs.prepare.outputs.source-commit }}
           persist-credentials: false
+
+      # sbom-action writes `output-file` without creating its directory.
+      - name: Create SBOM directory
+        run: mkdir -p dist/sbom
 
       # Both SBOMs describe the repository checkout, i.e. the whole locked
       # dependency graph (pnpm-lock.yaml, production and development
@@ -396,10 +433,18 @@ jobs:
   # deliberately NOT the npm-publish environment: npm trusted publishing is
   # scoped to repository, workflow file and environment, so an OIDC token
   # minted here cannot publish a package even if a step were compromised.
+  # A re-attest run skips publish (every version is already on the registry),
+  # so the job checks the needed results itself instead of the implicit
+  # success() of all needs.
   attest:
     name: Attest And Publish Releases
     needs: [prepare, publish, sbom]
-    if: needs.prepare.outputs.released == 'true'
+    if: >-
+      !cancelled()
+      && needs.prepare.outputs.released == 'true'
+      && needs.sbom.result == 'success'
+      && (needs.publish.result == 'success'
+        || (needs.prepare.outputs.mode == 'reattest' && needs.publish.result == 'skipped'))
     runs-on: ubuntu-latest
     permissions:
       contents: write # upload tarballs, checksums and SBOMs to the GitHub Releases and un-draft them
@@ -488,6 +533,8 @@ jobs:
             gh release edit "${release_tag}" --draft=false --repo "${GITHUB_REPOSITORY}"
           done < dist/released-packages.tsv
 
+  # Skipped in a re-attest run together with publish: the run that published
+  # the versions already attached their SLSA provenance.
   slsa-provenance:
     name: SLSA Provenance
     needs: [prepare, publish]
