@@ -36,6 +36,9 @@ export interface EventEmitterLike {
 interface RegisteredListener {
 	listener: EventEmitterListener;
 	once: boolean;
+	// Set when a once registration runs, so an emission snapshot taken before a reentrant emit
+	// does not run it a second time.
+	fired?: boolean;
 }
 
 /**
@@ -136,9 +139,14 @@ export class EventEmitter implements EventEmitterLike {
 			// The fired entry itself is removed, not the latest entry with the same function:
 			// a function registered with both `once()` and `on()` keeps its `on()` registration,
 			// as with Node's emitter (P4-L-22).
-			if (entry.once) this._removeEntry(eventName, entry);
+			if (entry.once) {
+				if (entry.fired) continue;
+				entry.fired = true;
+				this._removeEntry(eventName, entry);
+			}
 			try {
-				const result: unknown = entry.listener(...args);
+				// The emitter is the receiver of ordinary function listeners, as with Node's emitter.
+				const result: unknown = Reflect.apply(entry.listener, this, args);
 				if (onError && result !== undefined) void Promise.resolve(result).catch(onError);
 			} catch (error) {
 				if (!onError) throw error;

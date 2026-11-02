@@ -69,21 +69,23 @@ compiled against, is a GitHub-hosted dependency pinned to a commit and a SHA-512
 archive checksum in `pnpm-lock.yaml`. pnpm 10.27.0 does not generate this integrity
 field automatically, but enforces it when supplied: an incorrect archive checksum
 fails installation with `ERR_PNPM_TARBALL_INTEGRITY`.
-`pnpm run doctor` checks that the lockfile retains the reviewed checksum and URL.
-It also hashes the installed package tree (`scripts/git-dependency-digest.js`)
-and compares it with the reviewed tree digest in `scripts/doctor.js`.
+`pnpm run doctor` parses the lockfile and checks that every importer resolves the
+package to the reviewed archive and that its only package entry carries exactly the
+reviewed checksum and URL. It also hashes the installed package tree
+(`scripts/git-dependency-digest.js`) and compares it with the reviewed tree digest.
+The reviewed values are `expectedGitDependencies` in `scripts/doctor-checks.js`.
 
 When the pinned commit changes, download its codeload archive and review the
 source diff. Compute the archive's SHA-512 checksum, prefix the base64 output
 with `sha512-`, and record it as `resolution.integrity` alongside `tarball` in
-the lockfile and in `scripts/doctor.js`:
+the lockfile and in `scripts/doctor-checks.js`:
 
 ```sh
 openssl dgst -sha512 -binary qrl-contracts.tar.gz | openssl base64 -A
 ```
 
 Install with the updated lockfile, review the installed files, and record the
-new tree digest in `scripts/doctor.js`:
+new tree digest in `scripts/doctor-checks.js`:
 
 ```sh
 pnpm install --frozen-lockfile
@@ -107,7 +109,7 @@ hand as described above.
 Exit plan: publish a tagged `@theqrl/qrl-contracts` release built from that
 commit or a later one, change `package.json` back to the npm version, refresh
 the lockfile (npm supplies the integrity hash itself), remove the archive pin and
-the tree digest from `scripts/doctor.js`, and record the switch in
+the tree digest from `scripts/doctor-checks.js`, and record the switch in
 `CHANGELOG.md`. Until then, bump the commit only through the review procedure
 above and never to a moving reference (a branch or a tag that can be re-pointed).
 

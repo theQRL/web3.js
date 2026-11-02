@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### PR review corrections
+
+- The `bool` format accepts `0n` and `1n`, the values the ABI `bool` coder and `formatParam` accept.
+
 ### Pass 13 audit corrections
 
 - Treat array-buffer views from every realm as atomic during budget checks and summarize large views before rendering validation errors (P13-QRL-3).

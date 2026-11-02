@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### PR review corrections
+
+- A keystore that is not valid JSON keeps a `SyntaxError` as `innerError`, without the parser's message, which quotes part of the input.
+- `hashMessage` describes an odd-length hex message by its length instead of echoing it.
+
 ### Pass 12 audit corrections
 
 - Enforce the serialized-transaction size limit for array-buffer views from any JavaScript realm (P12-QRL-1).

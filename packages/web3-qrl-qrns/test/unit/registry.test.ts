@@ -47,17 +47,37 @@ describe('registry', () => {
 
 	describe('owner', () => {
 		it('getOwner', async () => {
-			// eslint-disable-next-line @typescript-eslint/no-empty-function
-			const call = jest.spyOn({ call: () => {} }, 'call');
+			const call = jest.fn().mockResolvedValue(nonZeroAddress);
 
 			const getOwnerMock = jest.spyOn(registry['contract'].methods, 'owner').mockReturnValue({
 				call,
 			} as unknown as NonPayableMethodObject<any, any>);
 
-			await registry.getOwner(QRNS_NAME);
+			await expect(registry.getOwner(QRNS_NAME)).resolves.toBe(nonZeroAddress);
 			expect(getOwnerMock).toHaveBeenCalledWith(namehash(QRNS_NAME));
 			expect(call).toHaveBeenCalled();
 		});
+
+		it('getOwner returns the zero address of an unowned name', async () => {
+			jest.spyOn(registry['contract'].methods, 'owner').mockReturnValue({
+				call: jest.fn().mockResolvedValue(zeroResolverAddress),
+			} as unknown as NonPayableMethodObject<any, any>);
+
+			await expect(registry.getOwner(QRNS_NAME)).resolves.toBe(zeroResolverAddress);
+		});
+
+		it.each([undefined, 42, 'Q1234', `0x${'0'.repeat(128)}`])(
+			'getOwner rejects the malformed owner %p',
+			async owner => {
+				jest.spyOn(registry['contract'].methods, 'owner').mockReturnValue({
+					call: jest.fn().mockResolvedValue(owner),
+				} as unknown as NonPayableMethodObject<any, any>);
+
+				await expect(registry.getOwner(QRNS_NAME)).rejects.toThrow(
+					/QRNS registry returned (non-string|invalid) owner address/,
+				);
+			},
+		);
 		it('getOwner throw (transaction reverted)', async () => {
 			// eslint-disable-next-line @typescript-eslint/no-empty-function
 			const call = jest.spyOn({ call: () => {} }, 'call').mockImplementation(() => {

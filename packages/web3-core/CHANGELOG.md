@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### PR review corrections
+
+- `addSubscription` sends `qrl_unsubscribe` for the id the node returned when the subscription lost its id while subscribing, so the node does not keep a subscription nobody owns.
+- A JSON-RPC parse error (-32700) or invalid request error (-32600) with `id: null` answers the single request it was sent for. With `useRpcCallSpecification` it is raised as its RPC error class instead of `InvalidResponseError`; it is never treated as a revert.
+
 ### Pass 13 audit corrections
 
 - Bound batch-failure, mismatched-id and non-JSON-RPC provider messages (P13-TR-2). Purge retired subscription notifications, including an active flush remainder, before a node can reuse an id.

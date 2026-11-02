@@ -13,6 +13,8 @@ const {
 	overridePolicyFailures,
 	npmrcPolicyFailures,
 	allowBuildsFailures,
+	expectedGitDependencies,
+	gitDependencyLockfileFailures,
 	listWorkspaceBlockKeys,
 	minimumReleaseAgeExcludeFailures,
 	trivyActionSettings,
@@ -342,26 +344,17 @@ checkCommand('curl', ['--version'], 'curl', false);
 
 // pnpm enforces a supplied integrity hash for GitHub tarballs, but does not generate
 // one automatically. Keep the reviewed archive checksum in the lockfile, in addition
-// to checking the installed tree. See docs/supply-chain-security.md for updates.
-const expectedGitDependencies = {
-	'@theqrl/qrl-contracts': {
-		tarball:
-			'https://codeload.github.com/theQRL/qrl-contracts/tar.gz/d3c84eedac4e051f6e99892397c5e42f0f0a2266',
-		integrity:
-			'sha512-l7G9mP4DJR1cF+8Vht3hN9Rk9KjY+/jz2C5BMUq5OaQ0IPcL1exO6Jcb4HgwFuZ3TuecSCVvWnZW2OATzQITAA==',
-		treeDigest: 'ba165d2f1305116539092a351a2c476a0cd3425336183ef6fd5b35f996f2d5b7',
-	},
-};
-
+// to checking the installed tree. The reviewed values are in scripts/doctor-checks.js;
+// see docs/supply-chain-security.md for updates.
 const dependencyLockfile = readText('pnpm-lock.yaml');
 for (const [packageName, { tarball, integrity, treeDigest }] of Object.entries(
 	expectedGitDependencies,
 )) {
-	if (
-		!dependencyLockfile.includes(`resolution: {integrity: ${integrity}, tarball: ${tarball}}`)
-	) {
-		fail(`${packageName} must retain its reviewed archive integrity and URL in pnpm-lock.yaml`);
-	}
+	for (const message of gitDependencyLockfileFailures(dependencyLockfile, packageName, {
+		tarball,
+		integrity,
+	}))
+		fail(message);
 	const actualDigest = digestInstalledPackage(installedPackageRoot(root, packageName));
 	if (!actualDigest) {
 		fail(

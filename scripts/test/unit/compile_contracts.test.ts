@@ -146,6 +146,39 @@ contract Sample is SQRCTF1 {
 		expectPreviousBuild();
 	});
 
+	it.each([
+		['a package path escaping node_modules', '@theqrl/../../outside.hyp'],
+		['a rooted path escaping node_modules', '/../outside.hyp'],
+	])('refuses to import %s and preserves existing fixtures', (_, importName) => {
+		writeFileSync(join(directory, 'outside.hyp'), 'OUTSIDE-SECRET line1\n');
+		writeFileSync(
+			join(contractsPath, 'Sample.hyp'),
+			`pragma hyperion >=0.0;\nimport '${importName}';\ncontract Sample {}\n`,
+		);
+
+		const result = compile();
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain('File outside of allowed directories');
+		expect(result.stderr).not.toContain('OUTSIDE-SECRET');
+		expectPreviousBuild();
+	});
+
+	it('refuses to import an absolute path', () => {
+		writeFileSync(join(directory, 'outside.hyp'), 'OUTSIDE-SECRET line1\n');
+		writeFileSync(
+			join(contractsPath, 'Sample.hyp'),
+			`pragma hyperion >=0.0;\nimport '${join(directory, 'outside.hyp')}';\ncontract Sample {}\n`,
+		);
+
+		const result = compile();
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain('File outside of allowed directories');
+		expect(result.stderr).not.toContain('OUTSIDE-SECRET');
+		expectPreviousBuild();
+	});
+
 	it('rejects a missing named contract instead of silently omitting its fixtures', () => {
 		writeFileSync(
 			join(contractsPath, 'Sample.hyp'),

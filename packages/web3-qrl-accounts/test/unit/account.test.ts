@@ -596,6 +596,7 @@ describe('accounts', () => {
 			expect(hashMessage('0X1234')).toBe(asBytes);
 			expect(() => hashMessage('0x123')).toThrow(InvalidBytesError);
 			expect(() => hashMessage('0X123')).toThrow(InvalidBytesError);
+			expect(() => hashMessage('0xabcdef1')).not.toThrow(/abcdef1/);
 		});
 
 		it('sign() classifies the message exactly like hashMessage (P4-L-43)', () => {
@@ -728,6 +729,9 @@ describe('accounts', () => {
 			expect(error).toBeInstanceOf(Web3ValidatorError);
 			expect((error as Web3ValidatorError).innerError).toBeInstanceOf(SyntaxError);
 			expect((error as Error).message).not.toContain('{not json');
+			expect(((error as Web3ValidatorError).innerError as Error).message).not.toContain(
+				'not json',
+			);
 		});
 
 		it('accepts an empty password on encrypt and decrypt, as go-qrl does (I-7)', async () => {

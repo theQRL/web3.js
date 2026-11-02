@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### PR review corrections
+
+- `EventEmitter` calls ordinary function listeners with the emitter as `this`, from both `emit` and `emitSafe`, as Node's emitter does.
+- A `once` listener runs at most once when an earlier listener re-emits the same event. A `once` listener removed during an emission still runs from that emission's snapshot.
+- `numberToHex` accepts decimal and hex strings across the whole `uint512` range, matching bigint input. Number and string inputs outside `int512` and `uint512` are rejected; bigints are not range checked.
+- **Breaking:** `toPlanck` and `fromPlanck` throw `InvalidUnitError` for `noquanta`, as in 1.x. The rewritten conversion had returned the amount unchanged.
+
 ### Pass 11 audit corrections
 
 - Document the provider acknowledgement contract, notification park and decoded UTF-8 byte accounting. Clarify that the 155-digit decimal bound applies to `toBigInt` and its callers; `toNumber`, `toHex` and `toPlanck` remain uncapped.

@@ -52,7 +52,9 @@ export const keystoreContainerError = (message: string, cause?: unknown): Web3Va
 		},
 	]);
 	if (cause instanceof Error) {
-		error.innerError = cause;
+		// Only the class is kept: a `JSON.parse` message quotes part of the input.
+		const ErrorClass = cause instanceof SyntaxError ? SyntaxError : Error;
+		error.innerError = new ErrorClass(`${cause.name} while reading the keystore`);
 	}
 	return error;
 };

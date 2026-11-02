@@ -75,12 +75,25 @@ export class Registry {
 		this.contract.options.address = value;
 	}
 
-	public async getOwner(name: string) {
+	/**
+	 * The owner of `name`. The zero address is returned for a name without an owner; a reply
+	 * that is not an address is rejected, as for {@link Registry.getResolver}.
+	 */
+	public async getOwner(name: string): Promise<Address> {
+		let owner: unknown;
 		try {
-			return await this.contract.methods.owner(namehash(name)).call();
+			owner = await this.contract.methods.owner(namehash(name)).call();
 		} catch (error) {
 			throw wrapContractCallError(error);
 		}
+
+		if (typeof owner !== 'string') {
+			throw new Web3ContractError('QRNS registry returned non-string owner address');
+		}
+		if (!isAddressString(owner)) {
+			throw new Web3ContractError(`QRNS registry returned invalid owner address: ${owner}`);
+		}
+		return owner;
 	}
 
 	public async getTTL(name: string) {

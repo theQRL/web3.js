@@ -160,6 +160,11 @@ export class Resolver {
 	}
 
 	public async setAddress(QRNSName: string, address: Address, txConfig: PayableCallOptions) {
+		// Checked before any request: the record directs funds, so it must not rely on the ABI
+		// encoder alone to reject a malformed address.
+		if (typeof address !== 'string' || !isAddressString(address)) {
+			throw new InvalidAddressError(address);
+		}
 		const resolverContract = await this.getResolverContractAdapter(QRNSName);
 		await this.checkInterfaceSupport(resolverContract, methodsInInterface.setAddr);
 

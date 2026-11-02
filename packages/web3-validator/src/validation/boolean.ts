@@ -18,13 +18,18 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import { ValidInputTypes } from '../types.js';
 import { isHexStrict } from './string.js';
 
+/** Accepts exactly the values the ABI `bool` coder encodes, `0n` and `1n` included. */
 export const isBoolean = (value: ValidInputTypes) => {
-	if (!['number', 'string', 'boolean'].includes(typeof value)) {
+	if (!['number', 'string', 'boolean', 'bigint'].includes(typeof value)) {
 		return false;
 	}
 
 	if (typeof value === 'boolean') {
 		return true;
+	}
+
+	if (typeof value === 'bigint') {
+		return value === BigInt(1) || value === BigInt(0);
 	}
 
 	if (typeof value === 'string' && !isHexStrict(value)) {

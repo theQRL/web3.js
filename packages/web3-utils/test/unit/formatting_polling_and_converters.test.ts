@@ -149,6 +149,11 @@ describe('formatting, polling and converter hardening (pass-4 audit)', () => {
 			},
 		);
 
+		it('rejects noquanta, whose denomination is zero, as in 1.x', () => {
+			expect(() => toPlanck('1', 'noquanta')).toThrow(InvalidUnitError);
+			expect(() => fromPlanck('1000', 'noquanta')).toThrow(InvalidUnitError);
+		});
+
 		it('still converts real units', () => {
 			expect(toPlanck('1', 'quanta')).toBe(`1${'0'.repeat(18)}`);
 			expect(fromPlanck('1000000000', 'shor')).toBe('1');

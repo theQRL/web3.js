@@ -19,7 +19,8 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 
 // In addition to the archive integrity pinned in the lockfile, check that the installed
 // package still matches the reviewed tree. This module hashes sorted relative paths and
-// file contents (nested node_modules excluded) for `scripts/doctor.js`.
+// file contents (nested node_modules excluded) for `scripts/doctor.js`, which compares it
+// with the reviewed digest in `scripts/doctor-checks.js`.
 //
 // Recompute a digest after changing the pinned commit:
 //   node scripts/git-dependency-digest.js @theqrl/qrl-contracts

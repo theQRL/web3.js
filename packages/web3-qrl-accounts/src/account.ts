@@ -176,7 +176,8 @@ export const hashMessage = (message: string): string => {
 	let messageBytes: Uint8Array;
 	if (isHexBytesInput(message)) {
 		if (message.length % 2 !== 0) {
-			throw new InvalidBytesError(message);
+			// Describe the message, not its content, like every other error in this file.
+			throw new InvalidBytesError(`odd-length hex string of ${message.length} characters`);
 		}
 		messageBytes = hexToBytes(message);
 	} else {

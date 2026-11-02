@@ -174,6 +174,33 @@ describe('converters', () => {
 				expect(numberToHex(input, true)).toEqual(output);
 			});
 		});
+
+		describe('512-bit word boundaries', () => {
+			const one = BigInt(1);
+			const bits = BigInt(512);
+			const hexOf = (value: bigint) =>
+				value < BigInt(0) ? `-0x${(-value).toString(16)}` : `0x${value.toString(16)}`;
+			it.each([
+				['2^511 - 1', (one << (bits - one)) - one],
+				['2^511', one << (bits - one)],
+				['2^512 - 1', (one << bits) - one],
+				['-(2^511)', -(one << (bits - one))],
+			])('converts %s the same as a bigint, decimal string and hex string', (_, value) => {
+				const expected = hexOf(value);
+				expect(numberToHex(value)).toBe(expected);
+				expect(numberToHex(value.toString())).toBe(expected);
+				expect(numberToHex(expected)).toBe(expected);
+			});
+
+			it.each([
+				['2^512', one << bits],
+				['-(2^511) - 1', -(one << (bits - one)) - one],
+			])('rejects %s as a string but converts it as a bigint', (_, value) => {
+				expect(() => numberToHex(value.toString())).toThrow(Web3ValidatorError);
+				expect(() => numberToHex(hexOf(value))).toThrow(Web3ValidatorError);
+				expect(numberToHex(value)).toBe(hexOf(value));
+			});
+		});
 	});
 
 	describe('fromDecimal', () => {

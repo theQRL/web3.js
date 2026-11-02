@@ -519,6 +519,49 @@ describe('subscription manager and configuration hardening (pass-4 audit)', () =
 			expect(error).not.toBeInstanceOf(ContractExecutionError);
 		});
 
+		it.each([
+			[-32700, 'parse error'],
+			[-32600, 'invalid request'],
+		])(
+			'keeps the error class of a %i %s reply with id null (JSON-RPC 2.0)',
+			async (code, message) => {
+				const provider = {
+					// eslint-disable-next-line @typescript-eslint/require-await
+					request: async () => ({
+						jsonrpc: '2.0',
+						id: null,
+						error: { code, message },
+					}),
+				};
+				const requestManager = new Web3RequestManager(
+					provider as unknown as SupportedProviders,
+					true,
+				);
+				const error = await requestManager
+					.send({ method: 'qrl_call', params: [] })
+					.catch((e: unknown) => e);
+				expect(error).not.toBeInstanceOf(InvalidResponseError);
+				expect(error).toMatchObject({ code });
+			},
+		);
+
+		it('does not treat an id-null revert reply as a revert of the request', async () => {
+			const provider = {
+				// eslint-disable-next-line @typescript-eslint/require-await
+				request: async () => ({
+					jsonrpc: '2.0',
+					id: null,
+					error: { code: 3, message: 'execution reverted', data: '0x08c379a0deadbeef' },
+				}),
+			};
+			const requestManager = new Web3RequestManager(provider as unknown as SupportedProviders);
+			const error = await requestManager
+				.send({ method: 'qrl_call', params: [] })
+				.catch((e: unknown) => e);
+			expect(error).toBeInstanceOf(InvalidResponseError);
+			expect(error).not.toBeInstanceOf(ContractExecutionError);
+		});
+
 		it('still maps a revert reply with the right id to ContractExecutionError', async () => {
 			const provider = {
 				// eslint-disable-next-line @typescript-eslint/require-await
@@ -528,7 +571,9 @@ describe('subscription manager and configuration hardening (pass-4 audit)', () =
 					error: { code: 3, message: 'execution reverted', data: '0x08c379a0deadbeef' },
 				}),
 			};
-			const requestManager = new Web3RequestManager(provider as unknown as SupportedProviders);
+			const requestManager = new Web3RequestManager(
+				provider as unknown as SupportedProviders,
+			);
 			const error = await requestManager
 				.send({ method: 'qrl_call', params: [] })
 				.catch((e: unknown) => e);

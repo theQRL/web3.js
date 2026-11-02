@@ -565,6 +565,26 @@ export class Web3RequestManager<
 		return undefined;
 	}
 
+	/**
+	 * A parse error or invalid request error with `id: null`: JSON-RPC 2.0 §5 has the node
+	 * answer so when it could not read the request id. `isResponseWithError` requires an id.
+	 */
+	private static _isUncorrelatableError(response: unknown): boolean {
+		if (typeof response !== 'object' || isNullish(response) || Array.isArray(response)) {
+			return false;
+		}
+		const { jsonrpc, id, result, error } = response as Record<string, unknown>;
+		const code = (error as { code?: unknown } | undefined)?.code;
+		return (
+			jsonrpc === '2.0' &&
+			// eslint-disable-next-line no-null/no-null
+			id === null &&
+			isNullish(result) &&
+			typeof error === 'object' &&
+			(code === -32700 || code === -32600)
+		);
+	}
+
 	private _processJsonRpcResponse<ResultType, ErrorType, RequestType>(
 		payload: JsonRpcPayload<RequestType>,
 		response: JsonRpcResponse<ResultType, ErrorType>,
@@ -590,6 +610,15 @@ export class Web3RequestManager<
 			(!legacy || response.some(item => Web3RequestManager._isJsonRpcEnvelope(item)))
 		) {
 			throw new ResponseError(response, 'Got batch response for a normal request.');
+		}
+		// The node could not read this single request's id, so the error answers it. It keeps
+		// its RPC error class, and it is never read as a revert of the request.
+		if (Web3RequestManager._isUncorrelatableError(response)) {
+			const rpcErrorResponse = response as unknown as JsonRpcResponseWithError;
+			if (this.useRpcCallSpecification && isResponseRpcError(rpcErrorResponse)) {
+				throw toRpcSpecificationError(rpcErrorResponse);
+			}
+			throw new InvalidResponseError<ErrorType, RequestType>(response, payload);
 		}
 		if (
 			Web3RequestManager._isJsonRpcEnvelope(response) &&

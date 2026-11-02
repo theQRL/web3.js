@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Breaking changes at a glance
+
+This release is a major version. Every item below is described in detail further down.
+
+- ABI words, addresses and log topics are 64 bytes; `function` values are 68 bytes, encoded in two words. Typed-data hashes use the `QRLTypedDataDomain` domain, so earlier signatures do not verify.
+- The ABI decoder is strict: a non-canonical word (dirty high bits in an integer, a boolean other than 0 or 1, non-zero padding in fixed-size bytes or a `function` word) throws, and nested decode errors throw immediately rather than as throwing getters. Data from older or non-Hyperion-0.2.0 producers that used to decode may now fail. Hyperion 0.2.0's legacy pipeline cleans `uint256` values it returns or logs, but contracts that write return data or logs from inline assembly can produce words the decoder now rejects (Hyperion CIPH-HYPERION-9).
+- `encodePacked` still right-pads a short `bytesN` value, while the ABI encoder rejects it.
+- The HTTP provider refuses redirects by default (`redirect: 'error'`).
+- The WebSocket provider's `disconnect()` rejects close codes other than 1000 and 3000-4999.
+- `AbiCoder.getDefaultValue` throws for fixed arrays longer than 65,536 elements.
+- `toPlanck` and `fromPlanck` reject `noquanta`, as in 1.x, and reject decimals that the unit cannot represent.
+- Removed `@theqrl/web3-qrl-iban`, `qrl_protocolVersion` and the compiler RPC methods.
+
+### PR review corrections
+
+- `EventEmitter` calls ordinary function listeners with the emitter as `this`, and a `once` listener runs at most once when an earlier listener re-emits the same event, as with Node's emitter.
+- `numberToHex` accepts the whole `uint512` range as a decimal or hex string, as it already did for a bigint. `toPlanck` and `fromPlanck` reject `noquanta` again.
+- The subscription manager releases a node subscription id it received for a subscription that was marked unsubscribed while subscribing.
+- Keystore parse errors and the odd-length `hashMessage` error no longer include the input. `Registry.getOwner` validates the reply and `Resolver.setAddress` validates the address before any request. The `bool` validator accepts `0n` and `1n`, matching the ABI coder.
+- A parse error or invalid request error with `id: null` keeps its RPC error class when `useRpcCallSpecification` is enabled.
+- `pnpm run doctor` checks the pinned git dependency against the parsed lockfile instead of searching its text. The fixture compiler refuses imports outside `node_modules` and its import callback never throws (Hyperion CIPH-HYPERION-16 and CIPH-HYPERION-22). The local testnet script quotes its paths and rejects unknown options.
+
 ### Supply-chain correction
 
 - Remove the vulnerable `decode-uri-component` dependency (CVE-2026-118664) by moving the Cypress adapter's Jest 24 glob matcher to `micromatch` 4.0.8, preserving its matching and diagnostic behavior.

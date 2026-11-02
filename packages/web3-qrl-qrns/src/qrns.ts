@@ -163,7 +163,7 @@ export class QRNS extends Web3Context<QRLExecutionAPI & Web3NetAPI> {
 	 * const owner = await web3.qrl.qrns.getOwner('qrl.qrns');
 	 * ```
 	 */
-	public async getOwner(name: string): Promise<unknown> {
+	public async getOwner(name: string): Promise<Address> {
 		return this.registry.getOwner(name);
 	}
 

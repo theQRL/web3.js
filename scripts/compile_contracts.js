@@ -17,7 +17,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-const { resolve } = require('path');
+const { isAbsolute, relative, resolve, sep } = require('path');
 const { compile, version } = require('@theqrl/hypc');
 const { format } = require('prettier');
 const { rmSync, readdirSync, readFileSync, writeFileSync, mkdirSync, existsSync } = require('fs');
@@ -43,13 +43,30 @@ const buildPath = resolve(__dirname, '../fixtures/build');
 const contractsPath = resolve(__dirname, '../fixtures/contracts');
 const importDir = resolve(__dirname, '../node_modules');
 
+// The import callback returns an error object and never throws: a JavaScript exception
+// inside `compile()` leaves the wasm compiler unusable for the rest of the process
+// (CIPH-HYPERION-16). The compiler passes rooted and `/../` names through unnormalised
+// (CIPH-HYPERION-22), so containment is checked on the resolved path.
 function findImports(path) {
 	const importPath = resolve(importDir, path);
+	const relativePath = relative(importDir, importPath);
+	if (
+		relativePath === '' ||
+		relativePath === '..' ||
+		relativePath.startsWith(`..${sep}`) ||
+		isAbsolute(relativePath)
+	) {
+		return { error: 'File outside of allowed directories' };
+	}
 
-	if (existsSync(importPath)) {
-		return {
-			contents: readFileSync(importPath, 'utf8'),
-		};
+	try {
+		if (existsSync(importPath)) {
+			return {
+				contents: readFileSync(importPath, 'utf8'),
+			};
+		}
+	} catch {
+		return { error: 'File could not be read' };
 	}
 
 	return { error: 'File not found' };

@@ -17,7 +17,19 @@ along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 import { readFileSync } from 'fs';
 import { join, resolve } from 'path';
 
+interface GitDependency {
+	tarball: string;
+	integrity: string;
+	treeDigest: string;
+}
+
 interface DoctorChecks {
+	expectedGitDependencies: Record<string, GitDependency>;
+	gitDependencyLockfileFailures: (
+		lockfileYaml: string,
+		packageName: string,
+		expected: GitDependency,
+	) => string[];
 	lockfilePolicyFailures: (text: string) => string[];
 	manifestPolicyFailures: (manifest: object) => string[];
 	workspacePolicyFailures: (text: string) => string[];
@@ -412,6 +424,78 @@ describe('pass-7 install policy sources', () => {
 		expect(doctorChecks.workspacePolicyFailures(valid.replace(/true/g, 'false'))).toHaveLength(
 			2,
 		);
+	});
+});
+
+describe('git dependency lockfile pin (doctor substring check)', () => {
+	const name = '@theqrl/qrl-contracts';
+	const expected = doctorChecks.expectedGitDependencies[name];
+	const pinnedLockfile = (options: {
+		version?: string;
+		integrity?: string;
+		extraEntry?: string;
+		comment?: string;
+	}) =>
+		[
+			"lockfileVersion: '9.0'",
+			'importers:',
+			'  .:',
+			'    devDependencies:',
+			`      '${name}':`,
+			'        specifier: github:theQRL/qrl-contracts#abc',
+			`        version: ${options.version ?? expected.tarball}`,
+			'packages:',
+			`  '${name}@${expected.tarball}':`,
+			`    resolution: {integrity: ${options.integrity ?? expected.integrity}, tarball: ${expected.tarball}}`,
+			...(options.extraEntry
+				? [
+						`  '${name}@${options.extraEntry}':`,
+						`    resolution: {integrity: sha512-other, tarball: ${options.extraEntry}}`,
+					]
+				: []),
+			...(options.comment ? [options.comment] : []),
+			'',
+		].join('\n');
+
+	it('accepts the committed lockfile and a minimal pinned lockfile', () => {
+		expect(
+			doctorChecks.gitDependencyLockfileFailures(read('pnpm-lock.yaml'), name, expected),
+		).toEqual([]);
+		expect(
+			doctorChecks.gitDependencyLockfileFailures(pinnedLockfile({}), name, expected),
+		).toEqual([]);
+	});
+
+	it('is not satisfied by the expected resolution text outside the package entry', () => {
+		const text = pinnedLockfile({
+			integrity: 'sha512-tampered',
+			comment: `# resolution: {integrity: ${expected.integrity}, tarball: ${expected.tarball}}`,
+		});
+		expect(text).toContain(
+			`resolution: {integrity: ${expected.integrity}, tarball: ${expected.tarball}}`,
+		);
+		expect(doctorChecks.gitDependencyLockfileFailures(text, name, expected)).toHaveLength(1);
+	});
+
+	it('rejects an importer resolving another archive and a second package entry', () => {
+		const other = 'https://codeload.github.com/theQRL/qrl-contracts/tar.gz/0000';
+		expect(
+			doctorChecks.gitDependencyLockfileFailures(
+				pinnedLockfile({ version: other }),
+				name,
+				expected,
+			),
+		).toHaveLength(1);
+		expect(
+			doctorChecks.gitDependencyLockfileFailures(
+				pinnedLockfile({ extraEntry: other }),
+				name,
+				expected,
+			),
+		).toHaveLength(1);
+		expect(
+			doctorChecks.gitDependencyLockfileFailures("lockfileVersion: '9.0'\n", name, expected),
+		).toHaveLength(2);
 	});
 });
 

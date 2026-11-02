@@ -705,6 +705,8 @@ export class Web3SubscriptionManager<
 		if (isNullish(sub.id)) {
 			this._intendedSubscriptions.delete(sub);
 			this._detachProviderListenerWhenIdle();
+			// The node still holds the id it answered with.
+			release(createdId);
 			throw new SubscriptionError('Subscription is not subscribed yet.');
 		}
 

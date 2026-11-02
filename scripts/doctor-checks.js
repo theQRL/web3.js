@@ -191,6 +191,61 @@ function overridePolicyFailures(workspaceYaml, lockfileYaml) {
 		: ['pnpm-lock.yaml overrides must match pnpm-workspace.yaml exactly'];
 }
 
+// The reviewed archives of git dependencies, checked by scripts/doctor.js.
+const expectedGitDependencies = {
+	'@theqrl/qrl-contracts': {
+		tarball:
+			'https://codeload.github.com/theQRL/qrl-contracts/tar.gz/d3c84eedac4e051f6e99892397c5e42f0f0a2266',
+		integrity:
+			'sha512-l7G9mP4DJR1cF+8Vht3hN9Rk9KjY+/jz2C5BMUq5OaQ0IPcL1exO6Jcb4HgwFuZ3TuecSCVvWnZW2OATzQITAA==',
+		treeDigest: 'ba165d2f1305116539092a351a2c476a0cd3425336183ef6fd5b35f996f2d5b7',
+	},
+};
+
+// A git dependency must resolve to its reviewed archive: every importer that
+// depends on it names the tarball, and the lockfile's only `packages:` entry
+// for it carries exactly the reviewed integrity and URL. The check reads the
+// parsed lockfile, so the expected text elsewhere in the file (a comment, an
+// unrelated entry) does not satisfy it.
+function gitDependencyLockfileFailures(lockfileYaml, packageName, { tarball, integrity }) {
+	const lockfile = parseWorkspace(lockfileYaml);
+	const { isDeepStrictEqual } = require('node:util');
+	const failures = [];
+	const dependencyFields = ['dependencies', 'devDependencies', 'optionalDependencies'];
+	const references = Object.entries(lockfile.importers ?? {}).flatMap(([importer, entry]) =>
+		dependencyFields
+			.map(field => entry?.[field]?.[packageName])
+			.filter(dependency => dependency !== undefined)
+			.map(dependency => ({ importer, version: dependency?.version })),
+	);
+	if (references.length === 0) {
+		failures.push(`pnpm-lock.yaml has no importer that depends on ${packageName}`);
+	}
+	for (const { importer, version } of references) {
+		if (version !== tarball) {
+			failures.push(
+				`pnpm-lock.yaml importer ${importer} resolves ${packageName} to ${String(version)}, not the reviewed archive`,
+			);
+		}
+	}
+	const entries = Object.keys(lockfile.packages ?? {}).filter(key =>
+		key.startsWith(`${packageName}@`),
+	);
+	const expectedKey = `${packageName}@${tarball}`;
+	if (entries.length !== 1 || entries[0] !== expectedKey) {
+		failures.push(
+			`pnpm-lock.yaml must contain exactly one ${packageName} package entry, for the reviewed archive`,
+		);
+	} else if (
+		!isDeepStrictEqual(lockfile.packages[expectedKey]?.resolution, { integrity, tarball })
+	) {
+		failures.push(
+			`${packageName} must retain its reviewed archive integrity and URL in pnpm-lock.yaml`,
+		);
+	}
+	return failures;
+}
+
 // True when the lockfile carries a `packages:` entry for the package, i.e. a
 // header line such as `  keccak@3.0.4:` or `  '@parcel/watcher@2.5.1':`.
 function lockfileHasPackage(lockfileText, packageName) {
@@ -353,6 +408,8 @@ function trivyActionSettings(workflowYaml) {
 }
 
 module.exports = {
+	expectedGitDependencies,
+	gitDependencyLockfileFailures,
 	lockfilePolicyFailures,
 	manifestPolicyFailures,
 	workspacePolicyFailures,

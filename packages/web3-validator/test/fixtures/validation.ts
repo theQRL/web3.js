@@ -516,11 +516,33 @@ export const validHexString32BytesData: (string | [string, false])[] = [
 	['687f28d48c22e9619b36776cf692501b3fc4e2143841efe3c7f45e49ea46b7f0', false],
 ];
 
-export const validBooleanData: any[] = [true, false, 1, 0, '1', '0', '0x0', '0x1'];
+export const validBooleanData: any[] = [
+	true,
+	false,
+	1,
+	0,
+	'1',
+	'0',
+	'0x0',
+	'0x1',
+	BigInt(0),
+	BigInt(1),
+];
 
-export const invalidBooleanData = invalidHexStrictData.filter(
-	data => data !== 1 && data !== 0 && data !== '0' && data !== '1' && typeof data !== 'boolean',
-);
+export const invalidBooleanData = [
+	...invalidHexStrictData.filter(
+		data =>
+			data !== 1 &&
+			data !== 0 &&
+			data !== '0' &&
+			data !== '1' &&
+			data !== BigInt(0) &&
+			data !== BigInt(1) &&
+			typeof data !== 'boolean',
+	),
+	BigInt(2),
+	BigInt(-1),
+];
 export const isTopicData: any[] = [
 	{ in: '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000', out: true },
 	{ in: '0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001a', out: true },

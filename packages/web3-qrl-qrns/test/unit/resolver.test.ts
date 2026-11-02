@@ -135,6 +135,19 @@ describe('resolver', () => {
 			expect(checkInteraface).toHaveBeenCalled();
 			expect(setAddrMock).toHaveBeenCalledWith(namehash(QRNS_NAME), mockAddress);
 		});
+		it.each(['Q1234', `0x${'0'.repeat(128)}`, 42])(
+			'setAddress rejects the malformed address %p before any request',
+			async address => {
+				const getResolverMock = jest.spyOn(registry, 'getResolver');
+				const setAddrMock = jest.spyOn(contract.methods, 'setAddr');
+
+				await expect(
+					resolver.setAddress(QRNS_NAME, address as never, { from: mockAddress }),
+				).rejects.toThrow(InvalidAddressError);
+				expect(getResolverMock).not.toHaveBeenCalled();
+				expect(setAddrMock).not.toHaveBeenCalled();
+			},
+		);
 		it('getAddress calls addr(bytes32) for coin type 60 and returns a checksummed address (L-63)', async () => {
 			const supportsInterfaceMock = jest
 				.spyOn(contract.methods, 'supportsInterface')

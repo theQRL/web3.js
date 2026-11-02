@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### PR review corrections
+
+- `Registry.getOwner` and `QRNS.getOwner` return an `Address` and reject a reply that is not an address. An unowned name returns the zero address.
+- `Resolver.setAddress` rejects a malformed address with `InvalidAddressError` before any request.
+
 ### Pass 8 audit corrections
 
 - Reject null/undefined names with InvalidStringError; only an empty string selects the root node.

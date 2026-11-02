@@ -146,6 +146,72 @@ describe('EventEmitter', () => {
 		expect(calls).toEqual(['first', 'second', 'first', 'added']);
 	});
 
+	it('calls ordinary function listeners with the emitter as receiver from emit and emitSafe', () => {
+		const emitter = new EventEmitter();
+		const receivers: unknown[] = [];
+		function listener(this: EventEmitter) {
+			receivers.push(this);
+			this.removeListener('data', listener);
+		}
+		function onceListener(this: EventEmitter) {
+			receivers.push(this);
+		}
+		emitter.on('data', listener);
+		emitter.once('data', onceListener);
+		expect(() => emitter.emit('data')).not.toThrow();
+		expect(emitter.listenerCount('data')).toBe(0);
+
+		const onError = jest.fn();
+		emitter.on('safe', listener);
+		emitter.on('safe', function safeListener(this: EventEmitter) {
+			receivers.push(this);
+			this.removeListener('safe', safeListener);
+		});
+		emitter.emitSafe('safe', onError);
+		emitter.emitSafe('data', onError);
+		expect(onError).not.toHaveBeenCalled();
+		expect(receivers).toHaveLength(4);
+		for (const receiver of receivers) expect(receiver).toBe(emitter);
+	});
+
+	it('runs a once listener at most once when an earlier listener re-emits the event', () => {
+		const emitter = new EventEmitter();
+		let calls = 0;
+		emitter.once('tick', () => emitter.emit('tick'));
+		emitter.once('tick', () => {
+			calls += 1;
+		});
+		emitter.emit('tick');
+		expect(calls).toBe(1);
+		expect(emitter.listenerCount('tick')).toBe(0);
+
+		const safe = new EventEmitter();
+		const onError = jest.fn();
+		let safeCalls = 0;
+		safe.once('tick', () => safe.emitSafe('tick', onError));
+		safe.once('tick', () => {
+			safeCalls += 1;
+		});
+		safe.emitSafe('tick', onError);
+		expect(safeCalls).toBe(1);
+		expect(onError).not.toHaveBeenCalled();
+
+		// on() listeners keep Node's reentrant behavior: they run in both emissions.
+		const mixed = new EventEmitter();
+		const order: string[] = [];
+		let depth = 0;
+		mixed.on('tick', () => {
+			order.push(`on${depth}`);
+			if (depth === 0) {
+				depth += 1;
+				mixed.emit('tick');
+			}
+		});
+		mixed.once('tick', () => order.push('once'));
+		mixed.emit('tick');
+		expect(order).toEqual(['on0', 'on1', 'once']);
+	});
+
 	it('warns once per event name when the listener threshold is exceeded and validates the threshold', () => {
 		const emitter = new EventEmitter();
 		const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);

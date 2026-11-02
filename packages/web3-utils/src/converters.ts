@@ -21,6 +21,7 @@ import {
 	isHex,
 	isHexStrict,
 	isInt,
+	isUInt,
 	toChecksumAddress as toQrlChecksumAddress,
 	utils as validatorUtils,
 	validator,
@@ -84,6 +85,14 @@ export const qrlUnitMap = {
  */
 const isUnit = (unit: unknown): unit is QRLUnits =>
 	typeof unit === 'string' && Object.prototype.hasOwnProperty.call(qrlUnitMap, unit);
+
+/**
+ * Whether `unit` is a unit amounts can be converted to or from. `noquanta` has a zero
+ * denomination, so it is rejected as in 1.x; the digit-count arithmetic would otherwise treat
+ * it as `planck` and return the amount unchanged.
+ */
+const isConversionUnit = (unit: unknown): unit is QRLUnits =>
+	isUnit(unit) && qrlUnitMap[unit] !== BigInt(0);
 
 export type QRLUnits = keyof typeof qrlUnitMap;
 /**
@@ -233,7 +242,8 @@ export const toDecimal = hexToNumber;
 
 /**
  * Converts value to it's hex representation
- * @param value - Value to be converted
+ * @param value - Value to be converted. A number or string must lie in the `int512` or
+ * `uint512` range; a bigint is converted at any size.
  * @param hexstrict - Add padding to converted value if odd, to make it hexstrict
  * @returns - The hex representation of the input value
  *
@@ -244,7 +254,15 @@ export const toDecimal = hexToNumber;
  * ```
  */
 export const numberToHex = (value: Numbers, hexstrict?: boolean): HexString => {
-	if (typeof value !== 'bigint') validator.validate(['int512'], [value]);
+	// A number or string must be a 512-bit word, signed or unsigned, so the `uint512` range
+	// converts the same as a bigint. A bigint is not range checked, as before.
+	if (
+		typeof value !== 'bigint' &&
+		!isInt(value, { bitSize: 512 }) &&
+		!isUInt(value, { bitSize: 512 })
+	) {
+		validator.validate(['int512'], [value]);
+	}
 	// To avoid duplicate code and circular dependency we will
 	// use `numberToHex` implementation from `web3-validator`
 	let updatedValue = validatorUtils.numberToHex(value);
@@ -579,7 +597,7 @@ export const toBigInt = (value: unknown): bigint => {
  * ```
  */
 export const fromPlanck = (number: Numbers, unit: QRLUnits): string => {
-	if (!isUnit(unit)) {
+	if (!isConversionUnit(unit)) {
 		throw new InvalidUnitError(unit);
 	}
 	const denomination = qrlUnitMap[unit];
@@ -663,7 +681,7 @@ export const toPlanck = (number: Numbers, unit: QRLUnits): string => {
 
 	validator.validate(['number'], [number]);
 
-	if (!isUnit(unit)) {
+	if (!isConversionUnit(unit)) {
 		throw new InvalidUnitError(unit);
 	}
 	const denomination = qrlUnitMap[unit];
