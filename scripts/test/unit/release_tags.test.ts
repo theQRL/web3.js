@@ -204,7 +204,9 @@ describe('tagged releases against the registry (P4-M-12)', () => {
 		expect(result.status).toBe(0);
 		expect(result.stdout).toContain('Skipping @scope/b@1.0.0 (already on the registry)');
 		expect(result.stdout).toContain('Republishing @scope/a@1.0.1');
-		expect(readFileSync(outputPath, 'utf8')).toBe('released=true\ncount=1\npackages=@scope/a\n');
+		expect(readFileSync(outputPath, 'utf8')).toBe(
+			`released=true\ncount=1\npackages=@scope/a\nmode=republish\nsource-commit=${commit2}\n`,
+		);
 
 		expect((await run('republish-plan.js', ['@scope/a@9.9.9', '.release-x'])).stderr).toContain(
 			'@scope/a@9.9.9 does not exist in this checkout',
@@ -218,7 +220,53 @@ describe('tagged releases against the registry (P4-M-12)', () => {
 		const nothing = await run('republish-plan.js', ['@scope/b@1.0.0', '.release-none'], { GITHUB_OUTPUT: outputPath });
 		expect(nothing.status).toBe(0);
 		expect(nothing.stdout).toContain('Nothing to republish');
-		expect(readFileSync(outputPath, 'utf8')).toBe('released=false\ncount=0\npackages=\n');
+		expect(readFileSync(outputPath, 'utf8')).toBe(
+			'released=false\ncount=0\npackages=\nmode=republish\nsource-commit=\n',
+		);
+		expect((await run('republish-plan.js', ['latest', '.release-x'])).stderr).toContain('"latest" is for --reattest');
+	});
+
+	it('republish-plan --reattest plans exactly the tagged versions already on the registry', async () => {
+		const outputPath = join(repo, 'github-output-reattest.txt');
+		writeFileSync(outputPath, '');
+		const latest = await run('republish-plan.js', ['--reattest', 'latest', '.release-reattest'], {
+			GITHUB_OUTPUT: outputPath,
+		});
+		expect(latest.stderr).toBe('');
+		expect(latest.status).toBe(0);
+		// a's last tag (1.0.1) is not on the registry; b's (1.0.0) is.
+		expect(latest.stdout).toContain('Skipping @scope/a@1.0.1 (not on the registry; republish it instead)');
+		expect(latest.stdout).toContain(`Re-attesting @scope/b@1.0.0 from ${commit1}`);
+		expect(readFileSync(join(repo, '.release-reattest/released-packages.tsv'), 'utf8')).toBe(
+			'packages/b\t@scope/b\t1.0.0\t@scope/b@1.0.0\tscope-b-1.0.0.tgz\n',
+		);
+		expect(readFileSync(outputPath, 'utf8')).toBe(
+			`released=true\ncount=1\npackages=@scope/b\nmode=reattest\nsource-commit=${commit1}\n`,
+		);
+
+		// Tags on two commits have no single source commit.
+		published['@scope/a'].push('1.0.1');
+		try {
+			writeFileSync(outputPath, '');
+			const both = await run('republish-plan.js', ['--reattest', '@scope/a@1.0.1,@scope/b@1.0.0', '.release-both'], {
+				GITHUB_OUTPUT: outputPath,
+			});
+			expect(both.status).toBe(0);
+			// Entries are grouped by commit hash, so the package order follows the hashes.
+			const packages = commit1 < commit2 ? '@scope/b,@scope/a' : '@scope/a,@scope/b';
+			expect(readFileSync(outputPath, 'utf8')).toBe(
+				`released=true\ncount=2\npackages=${packages}\nmode=reattest\nsource-commit=\n`,
+			);
+		} finally {
+			published['@scope/a'].pop();
+		}
+
+		expect((await run('republish-plan.js', ['--reattest', 'all-missing', '.release-x'])).stderr).toContain(
+			're-attest takes "latest"',
+		);
+		const nothing = await run('republish-plan.js', ['--reattest', '@scope/a@1.0.1', '.release-none']);
+		expect(nothing.status).toBe(0);
+		expect(nothing.stdout).toContain('Nothing to re-attest');
 	});
 
 	it('restore-tag-manifests rewrites version and sibling ranges exactly as the release run did', async () => {
