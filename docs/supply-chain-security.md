@@ -257,7 +257,7 @@ they execute on developer and CI machines, so they are remediated the same way.
 | `qs@>=6.11.1 <6.15.2` | `6.15.3` | Patch floor. |
 | `cookie@<0.7.0` | `0.7.2` | Patch floor. |
 | `markdown-it@>=14.0.0 <14.3.3` | `14.3.3` | CVE-2026-111758 / CVE-2026-111759 DoS (high); docs build via `typedoc`. |
-| `joi@<17.13.7` | `17.13.7` | CVE-2026-92599 validation DoS (high), retaining the Joi 17 line. |
+| `joi@<17.13.9` | `17.13.9` | GHSA-4528-x5fx-h6hg quadratic email-list split DoS (high) and CVE-2026-92599 validation DoS (high), retaining the Joi 17 line; quarantine-excluded for the security update. |
 | `launch-editor@<2.14.2` | `2.14.2` | CVE-2026-112942 command injection through an unvalidated file path (high); patch floor. |
 | `webpack-dev-server@<5.2.5` | `5.2.6` | Patch floor. |
 | `uuid@<11.1.1` | `11.1.1` | Patch floor. |
@@ -265,7 +265,7 @@ they execute on developer and CI machines, so they are remediated the same way.
 | `js-yaml@>=4.0.0 <4.3.2` | `4.3.2` | GHSA-2883-xcg3-v3hh and GHSA-5p4m-2wfm-xmqj parsing DoS (high), js-yaml 4 line. |
 | `nanoid@<3.3.18` | `3.3.18` | GHSA-2v37-7h3g-55p8 and GHSA-28wg-ghj8-5hjv DoS (high); via the Docusaurus/webpack graph. |
 | `compression@<1.8.2` | `1.8.2` | CVE-2026-87776 memory leak on prematurely closed responses (high). |
-| `follow-redirects@<1.16.1` | `1.16.1` | CVE-2026-111755 / CVE-2026-111756 cross-origin credential disclosure (high). |
+| `follow-redirects@<1.16.2` | `1.16.2` | CVE-2026-116689 cross-realm `sensitiveHeaders` bypass (high), plus CVE-2026-111755 / CVE-2026-111756 cross-origin credential disclosure (high). |
 | `http-cache-semantics@<4.3.0` | `4.3.0` | Source-backed upstream release fixing Vary handling (CVE-2026-93750); the separate max-stale report CVE-2026-93748 against 4.2.0 is [disputed by the maintainer](https://github.com/kornelski/http-cache-semantics/issues/56). |
 | `image-size@>=2.0.0 <2.0.4` | `2.0.4` | CVE-2025-71329 / CVE-2025-71330 image parser infinite loops (high), plus ICO/CUR validation. Verified against the [Codeberg fix](https://codeberg.org/image-size/image-size/commit/e6e83a5578961de81f6d5834d90fb7430d8f29a5) and [2.0.4 release commit](https://codeberg.org/image-size/image-size/commit/763bf4e92e36dd903e0f7d0b0d4d5a43d0e3d5cb); replaces the previous advisory exceptions. |
 | `proxy-addr@<2.0.8` | `2.0.8` | CVE-2026-90711 proxy address validation bypass (critical). |
@@ -281,35 +281,35 @@ seven-day `minimumReleaseAge` quarantine.
 
 | Override | Resolves to | Reason |
 | --- | --- | --- |
-| `@docusaurus/core` | `3.10.1` | Holds the docs stack on one reviewed Docusaurus release. |
-| `@docusaurus/mdx-loader` | `3.10.1` | Docusaurus release-line pin. |
-| `@docusaurus/module-type-aliases` | `3.10.1` | Docusaurus release-line pin. |
-| `@docusaurus/plugin-content-blog` | `3.10.1` | Docusaurus release-line pin. |
-| `@docusaurus/plugin-content-docs` | `3.10.1` | Docusaurus release-line pin. |
-| `@docusaurus/plugin-content-pages` | `3.10.1` | Docusaurus release-line pin. |
-| `@docusaurus/plugin-css-cascade-layers` | `3.10.1` | Docusaurus release-line pin. |
-| `@docusaurus/plugin-debug` | `3.10.1` | Docusaurus release-line pin. |
-| `@docusaurus/plugin-google-analytics` | `3.10.1` | Docusaurus release-line pin. |
-| `@docusaurus/plugin-google-gtag` | `3.10.1` | Docusaurus release-line pin. |
-| `@docusaurus/plugin-google-tag-manager` | `3.10.1` | Docusaurus release-line pin. |
-| `@docusaurus/plugin-sitemap` | `3.10.1` | Docusaurus release-line pin. |
-| `@docusaurus/plugin-svgr` | `3.10.1` | Docusaurus release-line pin. |
-| `@docusaurus/preset-classic` | `3.10.1` | Docusaurus release-line pin. |
-| `@docusaurus/theme-classic` | `3.10.1` | Docusaurus release-line pin. |
-| `@docusaurus/theme-common` | `3.10.1` | Docusaurus release-line pin. |
-| `@docusaurus/theme-live-codeblock` | `3.10.1` | Docusaurus release-line pin. |
-| `@docusaurus/theme-search-algolia` | `3.10.1` | Docusaurus release-line pin. |
-| `@docusaurus/types` | `3.10.1` | Docusaurus release-line pin. |
-| `@docusaurus/utils` | `3.10.1` | Docusaurus release-line pin. |
-| `@docusaurus/utils-common` | `3.10.1` | Docusaurus release-line pin. |
-| `@docusaurus/utils-validation` | `3.10.1` | Docusaurus release-line pin. |
+| `@docusaurus/core` | `3.10.2` | Holds the docs stack on one reviewed Docusaurus release. |
+| `@docusaurus/mdx-loader` | `3.10.2` | Docusaurus release-line pin. |
+| `@docusaurus/module-type-aliases` | `3.10.2` | Docusaurus release-line pin. |
+| `@docusaurus/plugin-content-blog` | `3.10.2` | Docusaurus release-line pin. |
+| `@docusaurus/plugin-content-docs` | `3.10.2` | Docusaurus release-line pin. |
+| `@docusaurus/plugin-content-pages` | `3.10.2` | Docusaurus release-line pin. |
+| `@docusaurus/plugin-css-cascade-layers` | `3.10.2` | Docusaurus release-line pin. |
+| `@docusaurus/plugin-debug` | `3.10.2` | Docusaurus release-line pin. |
+| `@docusaurus/plugin-google-analytics` | `3.10.2` | Docusaurus release-line pin. |
+| `@docusaurus/plugin-google-gtag` | `3.10.2` | Docusaurus release-line pin. |
+| `@docusaurus/plugin-google-tag-manager` | `3.10.2` | Docusaurus release-line pin. |
+| `@docusaurus/plugin-sitemap` | `3.10.2` | Docusaurus release-line pin. |
+| `@docusaurus/plugin-svgr` | `3.10.2` | Docusaurus release-line pin. |
+| `@docusaurus/preset-classic` | `3.10.2` | Docusaurus release-line pin. |
+| `@docusaurus/theme-classic` | `3.10.2` | Docusaurus release-line pin. |
+| `@docusaurus/theme-common` | `3.10.2` | Docusaurus release-line pin. |
+| `@docusaurus/theme-live-codeblock` | `3.10.2` | Docusaurus release-line pin. |
+| `@docusaurus/theme-search-algolia` | `3.10.2` | Docusaurus release-line pin. |
+| `@docusaurus/types` | `3.10.2` | Docusaurus release-line pin. |
+| `@docusaurus/utils` | `3.10.2` | Docusaurus release-line pin. |
+| `@docusaurus/utils-common` | `3.10.2` | Docusaurus release-line pin. |
+| `@docusaurus/utils-validation` | `3.10.2` | Docusaurus release-line pin. |
 | `baseline-browser-mapping` | `2.11.21` | Keeps browser-target resolution on reviewed metadata; the floor browserslist 4.28.x requires. |
 | `browserslist` | `4.28.9` | Keeps browser-target resolution on reviewed metadata; 4.28.7 is the patched floor for GHSA-73wf-gq98-2v4g and GHSA-c83g-rgw3-j3cx (prototype pollution and DoS, high). |
 | `es-module-lexer` | `2.0.0` | Holds webpack's lexer dependency on a reviewed version. |
-| `express` | `5.2.1` | Holds the docs/dev-server graph on one reviewed Express release. |
+| `express` | `5.3.0` | Holds the docs/dev-server graph on one reviewed Express release. |
 | `loader-runner` | `4.3.1` | Holds webpack's loader runner on a reviewed version. |
 | `schema-utils@4>ajv` | `8.17.1` | Keeps modern schema validation on a reviewed Ajv 8 version while avoiding loader stacks that require Ajv 6. |
-| `webpack` | `5.107.1` | Holds the whole graph on the reviewed webpack version declared in the root `devDependencies`. |
+| `webpack` | `5.112.2` | Holds the whole graph on the reviewed webpack version declared in the root `devDependencies`. |
 | `webpack-sources` | `3.3.3` | Holds webpack on a reviewed source-map dependency. |
 
 <!-- overrides:end -->

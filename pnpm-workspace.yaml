@@ -17,6 +17,7 @@ minimumReleaseAgeExclude:
 # would exempt every future release of the package, and `pnpm run doctor`
 # fails on it.
 - 'body-parser@2.4.0'
+- 'joi@17.13.9'
 blockExoticSubdeps: true
 overrides:
   # CVE-2026-118664 — remove decode-uri-component via micromatch 3's
@@ -57,7 +58,9 @@ overrides:
   "cookie@<0.7.0": "0.7.2"
   # CVE-2026-111758 / CVE-2026-111759 — markdown-it DoS (high); docs via typedoc.
   "markdown-it@>=14.0.0 <14.3.3": "14.3.3"
-  "joi@<17.13.7": "17.13.7"
+  # GHSA-4528-x5fx-h6hg — quadratic `string().email({ multiple: true })` split DoS
+  # (high); docs via @docusaurus/types.
+  "joi@<17.13.9": "17.13.9"
   "launch-editor@<2.14.2": "2.14.2"
   "webpack-dev-server@<5.2.5": "5.2.6"
   "@babel/core@<7.29.6": "7.29.7"
@@ -67,43 +70,44 @@ overrides:
   "nanoid@<3.3.18": "3.3.18"
   # October 2026 audit: docs/build/release-tooling security fixes.
   "compression@<1.8.2": "1.8.2"
-  "follow-redirects@<1.16.1": "1.16.1"
+  # CVE-2026-116689 — cross-realm sensitiveHeaders bypass (high); @theqrl/hypc.
+  "follow-redirects@<1.16.2": "1.16.2"
   "http-cache-semantics@<4.3.0": "4.3.0"
   "image-size@>=2.0.0 <2.0.4": "2.0.4"
   "proxy-addr@<2.0.8": "2.0.8"
   "source-map-js@<1.2.2": "1.2.2"
   "tinypool@<2.1.2": "2.1.2"
   "webpack-dev-middleware@>=7.0.0 <7.4.6": "7.4.6"
-  "@docusaurus/core": 3.10.1
-  "@docusaurus/mdx-loader": 3.10.1
-  "@docusaurus/module-type-aliases": 3.10.1
-  "@docusaurus/plugin-content-blog": 3.10.1
-  "@docusaurus/plugin-content-docs": 3.10.1
-  "@docusaurus/plugin-content-pages": 3.10.1
-  "@docusaurus/plugin-css-cascade-layers": 3.10.1
-  "@docusaurus/plugin-debug": 3.10.1
-  "@docusaurus/plugin-google-analytics": 3.10.1
-  "@docusaurus/plugin-google-gtag": 3.10.1
-  "@docusaurus/plugin-google-tag-manager": 3.10.1
-  "@docusaurus/plugin-sitemap": 3.10.1
-  "@docusaurus/plugin-svgr": 3.10.1
-  "@docusaurus/preset-classic": 3.10.1
-  "@docusaurus/theme-classic": 3.10.1
-  "@docusaurus/theme-common": 3.10.1
-  "@docusaurus/theme-live-codeblock": 3.10.1
-  "@docusaurus/theme-search-algolia": 3.10.1
-  "@docusaurus/types": 3.10.1
-  "@docusaurus/utils": 3.10.1
-  "@docusaurus/utils-common": 3.10.1
-  "@docusaurus/utils-validation": 3.10.1
+  "@docusaurus/core": 3.10.2
+  "@docusaurus/mdx-loader": 3.10.2
+  "@docusaurus/module-type-aliases": 3.10.2
+  "@docusaurus/plugin-content-blog": 3.10.2
+  "@docusaurus/plugin-content-docs": 3.10.2
+  "@docusaurus/plugin-content-pages": 3.10.2
+  "@docusaurus/plugin-css-cascade-layers": 3.10.2
+  "@docusaurus/plugin-debug": 3.10.2
+  "@docusaurus/plugin-google-analytics": 3.10.2
+  "@docusaurus/plugin-google-gtag": 3.10.2
+  "@docusaurus/plugin-google-tag-manager": 3.10.2
+  "@docusaurus/plugin-sitemap": 3.10.2
+  "@docusaurus/plugin-svgr": 3.10.2
+  "@docusaurus/preset-classic": 3.10.2
+  "@docusaurus/theme-classic": 3.10.2
+  "@docusaurus/theme-common": 3.10.2
+  "@docusaurus/theme-live-codeblock": 3.10.2
+  "@docusaurus/theme-search-algolia": 3.10.2
+  "@docusaurus/types": 3.10.2
+  "@docusaurus/utils": 3.10.2
+  "@docusaurus/utils-common": 3.10.2
+  "@docusaurus/utils-validation": 3.10.2
   baseline-browser-mapping: 2.11.21
   browserslist: 4.28.9
   es-module-lexer: 2.0.0
-  express: 5.2.1
+  express: 5.3.0
   loader-runner: 4.3.1
   "schema-utils@4>ajv": 8.17.1
   serialize-javascript: 7.0.5
-  webpack: 5.107.1
+  webpack: 5.112.2
   webpack-sources: 3.3.3
 strictDepBuilds: true
 # Every key below must exist in pnpm-lock.yaml: `pnpm run doctor` fails on a
