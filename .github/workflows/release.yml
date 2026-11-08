@@ -290,7 +290,7 @@ jobs:
           node-version: ${{ env.NODE_FLOOR_VERSION }}
 
       - name: Download release candidate tarballs
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: release-candidate-tarballs
           path: dist
@@ -347,7 +347,7 @@ jobs:
           NODE
 
       - name: Download release candidate tarballs
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: release-candidate-tarballs
           path: dist
@@ -457,7 +457,7 @@ jobs:
           persist-credentials: false
 
       - name: Download release candidate tarballs
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: release-candidate-tarballs
           path: dist
@@ -468,7 +468,7 @@ jobs:
         run: scripts/release/verify-artifact-digests.sh dist "${DIGESTS}"
 
       - name: Download SBOMs
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: release-sboms
           path: dist/sbom
@@ -569,7 +569,7 @@ jobs:
           persist-credentials: false
 
       - name: Download release metadata
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: release-candidate-tarballs
           path: dist
@@ -580,7 +580,7 @@ jobs:
         run: scripts/release/verify-artifact-digests.sh dist "${DIGESTS}"
 
       - name: Download SLSA provenance
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: provenance.intoto.jsonl
           path: dist/provenance
